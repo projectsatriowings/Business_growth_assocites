@@ -22,3 +22,4 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
 
   return data;
 }
+

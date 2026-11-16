@@ -98,3 +98,4 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
 });
 
 export default router;
+

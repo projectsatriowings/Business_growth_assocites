@@ -134,3 +134,4 @@ export const createNotification = async (
     console.error('Failed to create notification:', e);
   }
 };
+

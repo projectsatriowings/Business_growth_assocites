@@ -247,3 +247,4 @@ export function generateQuotationPdf(data: QuotationPdfData, res: Response) {
 
   doc.end();
 }
+

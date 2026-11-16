@@ -52,3 +52,4 @@ router.post('/:id/read', async (req: AuthRequest, res: Response): Promise<void> 
 });
 
 export default router;
+

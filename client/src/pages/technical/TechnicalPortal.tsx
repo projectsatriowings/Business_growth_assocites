@@ -699,3 +699,4 @@ export const TechnicalPortal: React.FC = () => {
     </div>
   );
 };
+

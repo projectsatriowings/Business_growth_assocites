@@ -519,3 +519,4 @@ export const RegisterBgaPage: React.FC = () => {
     </div>
   );
 };
+

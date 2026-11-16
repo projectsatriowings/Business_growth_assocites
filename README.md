@@ -113,3 +113,4 @@ npx tsx tests/e2e.test.ts
    - Protected routes on frontend and JWT + Server-side middleware guards on all backend endpoints.
    - Technical users are strictly restricted from viewing BGA bank details, commission calculations, or unrelated financial ledgers.
    - Audit logs recorded for logins, approvals, ownership transfers, payment verifications, and payouts.
+
