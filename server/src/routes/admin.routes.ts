@@ -19,10 +19,12 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
 
     const totalClients = await prisma.client.count();
     const totalEnquiries = await prisma.enquiry.count();
+    const approvedEnquiries = await prisma.enquiry.count({ where: { status: EnquiryStatus.APPROVED } });
     const pendingEnquiries = await prisma.enquiry.count({ where: { status: EnquiryStatus.SUBMITTED } });
 
     const totalQuotations = await prisma.quotation.count();
     const totalWorkOrders = await prisma.workOrder.count();
+    const totalProjects = await prisma.technicalProject.count();
     const activeProjects = await prisma.technicalProject.count({
       where: { status: { in: ['READY_TO_START', 'IN_PROGRESS', 'UNDER_REVIEW', 'CORRECTION_REQUIRED'] } },
     });
@@ -43,17 +45,24 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       _sum: { calculatedCommission: true },
     });
 
+    const pendingCommissions = await prisma.commission.aggregate({
+      where: { payoutStatus: { not: CommissionPayout.PROCESSED } },
+      _sum: { calculatedCommission: true },
+    });
+
     res.json({
       bgas: { total: totalBgas, active: activeBgas, pendingApprovals: pendingBgaApprovals },
       clients: { total: totalClients },
-      enquiries: { total: totalEnquiries, pending: pendingEnquiries },
+      enquiries: { total: totalEnquiries, approved: approvedEnquiries, pending: pendingEnquiries },
       quotations: { total: totalQuotations },
       workOrders: { total: totalWorkOrders },
-      projects: { active: activeProjects, completed: completedProjects },
+      projects: { total: totalProjects, active: activeProjects, completed: completedProjects },
+      technical: { total: totalProjects, active: activeProjects, completed: completedProjects },
       finance: {
         totalVerifiedRevenue: verifiedPayments._sum.amount || 0,
         totalCommissions: totalCommissions._sum.calculatedCommission || 0,
         paidCommissions: paidCommissions._sum.calculatedCommission || 0,
+        pendingCommissions: pendingCommissions._sum.calculatedCommission || 0,
       },
     });
   } catch (error: any) {
@@ -555,7 +564,26 @@ router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> =>
       },
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ clients });
+
+    const enrichedClients = clients.map((c) => {
+      let displayLocation = c.location;
+      let addressDetails: any = null;
+      try {
+        if (c.location && c.location.startsWith('{')) {
+          const parsed = JSON.parse(c.location);
+          addressDetails = parsed;
+          displayLocation = parsed.city ? `${parsed.city}${parsed.state ? ', ' + parsed.state : ''}` : (parsed.fullAddress || c.location);
+        }
+      } catch {}
+      return {
+        ...c,
+        location: displayLocation,
+        displayLocation,
+        addressDetails,
+      };
+    });
+
+    res.json({ clients: enrichedClients });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load clients' });
   }

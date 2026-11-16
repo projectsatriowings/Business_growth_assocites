@@ -611,7 +611,25 @@ export const AdminPortal: React.FC = () => {
         {/* Main Content Area */}
         <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
           {/* TAB 1: DASHBOARD & ANALYTICS */}
-          {activeTab === 'dashboard' && stats && (
+          {activeTab === 'dashboard' && (
+            loading && !stats ? (
+              <div className="w-full flex flex-col items-center justify-center p-20 space-y-4">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600" />
+                <span className="text-xs text-slate-500 font-semibold">Loading consolidated analytics...</span>
+              </div>
+            ) : !stats ? (
+              <div className="w-full p-12 text-center bg-white rounded-2xl border border-slate-200">
+                <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-2" />
+                <h3 className="text-base font-bold text-slate-800">Analytics Synchronizing</h3>
+                <p className="text-xs text-slate-500 mt-1">Connecting to database metrics feed...</p>
+                <button
+                  onClick={loadData}
+                  className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-semibold"
+                >
+                  Load Analytics Feed
+                </button>
+              </div>
+            ) : (
             <div className="space-y-6 w-full">
               {/* Executive Overview Header */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -637,11 +655,11 @@ export const AdminPortal: React.FC = () => {
                 >
                   <span className="text-xs text-slate-500 font-semibold uppercase block">Total Associates</span>
                   <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-purple-600 transition-colors">
-                    {stats.bgas.total}
+                    {stats?.bgas?.total || 0}
                   </div>
                   <div className="flex items-center justify-between text-xs mt-2">
-                    <span className="text-emerald-600 font-bold">{stats.bgas.active} Active</span>
-                    <span className="text-amber-600 font-bold">{stats.bgas.pendingApprovals} Pending</span>
+                    <span className="text-emerald-600 font-bold">{stats?.bgas?.active || 0} Active</span>
+                    <span className="text-amber-600 font-bold">{stats?.bgas?.pendingApprovals || 0} Pending</span>
                   </div>
                 </div>
 
@@ -651,11 +669,11 @@ export const AdminPortal: React.FC = () => {
                 >
                   <span className="text-xs text-slate-500 font-semibold uppercase block">Total Enquiries</span>
                   <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-purple-600 transition-colors">
-                    {stats.enquiries.total}
+                    {stats?.enquiries?.total || 0}
                   </div>
                   <div className="flex items-center justify-between text-xs mt-2">
-                    <span className="text-emerald-600 font-bold">{stats.enquiries.approved} Approved</span>
-                    <span className="text-amber-600 font-bold">{stats.enquiries.pending} Pending</span>
+                    <span className="text-emerald-600 font-bold">{stats?.enquiries?.approved || 0} Approved</span>
+                    <span className="text-amber-600 font-bold">{stats?.enquiries?.pending || 0} Pending</span>
                   </div>
                 </div>
 
@@ -665,7 +683,7 @@ export const AdminPortal: React.FC = () => {
                 >
                   <span className="text-xs text-slate-500 font-semibold uppercase block">Registered Clients</span>
                   <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-purple-600 transition-colors">
-                    {stats.clients.total}
+                    {stats?.clients?.total || 0}
                   </div>
                   <span className="text-xs text-indigo-600 font-medium block mt-2">
                     100% Associate Ownership Guaranteed
@@ -678,10 +696,10 @@ export const AdminPortal: React.FC = () => {
                 >
                   <span className="text-xs text-slate-500 font-semibold uppercase block">Verified Revenue</span>
                   <div className="text-3xl font-extrabold text-emerald-600 mt-1">
-                    ₹{(stats.finance.totalVerifiedRevenue || 0).toLocaleString()}
+                    ₹{(stats?.finance?.totalVerifiedRevenue || 0).toLocaleString()}
                   </div>
                   <span className="text-xs text-slate-400 block mt-2">
-                    {stats.workOrders.total} Work Orders Total
+                    {stats?.workOrders?.total || 0} Work Orders Total
                   </span>
                 </div>
               </div>
@@ -693,11 +711,11 @@ export const AdminPortal: React.FC = () => {
                   className="p-6 rounded-2xl bg-gradient-to-tr from-purple-900 to-indigo-900 text-white shadow-md cursor-pointer hover:shadow-xl transition-all"
                 >
                   <span className="text-xs text-purple-200 uppercase tracking-wider font-semibold">Total Commissions</span>
-                  <div className="text-3xl font-extrabold mt-1">₹{(stats.finance.totalCommissions || 0).toLocaleString()}</div>
+                  <div className="text-3xl font-extrabold mt-1">₹{(stats?.finance?.totalCommissions || 0).toLocaleString()}</div>
                   <p className="text-xs text-purple-200/80 mt-1">Engine computed across all service categories</p>
                   <div className="mt-4 pt-3 border-t border-purple-800/60 flex justify-between text-xs">
                     <span>Pending Approval:</span>
-                    <strong className="text-amber-300 font-bold">₹{(stats.finance.pendingCommissions || 0).toLocaleString()}</strong>
+                    <strong className="text-amber-300 font-bold">₹{(stats?.finance?.pendingCommissions || 0).toLocaleString()}</strong>
                   </div>
                 </div>
 
@@ -706,13 +724,13 @@ export const AdminPortal: React.FC = () => {
                   className="p-6 rounded-2xl bg-gradient-to-tr from-emerald-900 to-teal-900 text-white shadow-md cursor-pointer hover:shadow-xl transition-all"
                 >
                   <span className="text-xs text-emerald-200 uppercase tracking-wider font-semibold">Commissions Disbursed</span>
-                  <div className="text-3xl font-extrabold mt-1">₹{(stats.finance.paidCommissions || 0).toLocaleString()}</div>
+                  <div className="text-3xl font-extrabold mt-1">₹{(stats?.finance?.paidCommissions || 0).toLocaleString()}</div>
                   <p className="text-xs text-emerald-200/80 mt-1">Transferred with bank transaction references</p>
                   <div className="mt-4 pt-3 border-t border-emerald-800/60 flex justify-between text-xs">
                     <span>Disbursement Rate:</span>
                     <strong className="text-emerald-200 font-bold">
-                      {stats.finance.totalCommissions > 0
-                        ? `${Math.round((stats.finance.paidCommissions / stats.finance.totalCommissions) * 100)}%`
+                      {(stats?.finance?.totalCommissions || 0) > 0
+                        ? `${Math.round(((stats?.finance?.paidCommissions || 0) / stats.finance.totalCommissions) * 100)}%`
                         : '100%'}
                     </strong>
                   </div>
@@ -724,12 +742,18 @@ export const AdminPortal: React.FC = () => {
                 >
                   <div>
                     <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Technical Delivery</span>
-                    <div className="text-3xl font-extrabold text-slate-900 mt-1">{stats.technical.total} Projects</div>
+                    <div className="text-3xl font-extrabold text-slate-900 mt-1">
+                      {stats?.technical?.total || stats?.projects?.total || 0} Projects
+                    </div>
                     <p className="text-xs text-slate-500 mt-1">Active delivery sprints and milestones</p>
                   </div>
                   <div className="pt-4 border-t border-slate-100 flex justify-between text-xs">
-                    <span className="text-amber-600 font-bold">{stats.technical.active} In Execution</span>
-                    <span className="text-emerald-600 font-bold">{stats.technical.completed} Completed</span>
+                    <span className="text-amber-600 font-bold">
+                      {stats?.technical?.active || stats?.projects?.active || 0} In Execution
+                    </span>
+                    <span className="text-emerald-600 font-bold">
+                      {stats?.technical?.completed || stats?.projects?.completed || 0} Completed
+                    </span>
                   </div>
                 </div>
               </div>
@@ -766,7 +790,7 @@ export const AdminPortal: React.FC = () => {
                 </div>
               </div>
             </div>
-          )}
+          ))}
 
           {/* TAB 2: BGA MANAGEMENT */}
           {activeTab === 'bgas' && (

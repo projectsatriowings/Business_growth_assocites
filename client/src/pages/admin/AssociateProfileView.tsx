@@ -137,6 +137,30 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
     return '•••••' + pan.slice(-4);
   };
 
+  const formatAddress = (addr?: string | null) => {
+    if (!addr) return 'Not provided';
+    try {
+      if (addr.startsWith('{') && addr.endsWith('}')) {
+        const parsed = JSON.parse(addr);
+        return parsed.fullAddress || [parsed.houseNumber, parsed.streetAddress, parsed.locality, parsed.city, parsed.district, parsed.state, parsed.pinCode].filter(Boolean).join(', ');
+      }
+    } catch {}
+    return addr;
+  };
+
+  const handleReviewCorrection = async (corrId: string, action: 'APPROVE' | 'REJECT', remarks?: string) => {
+    try {
+      await apiRequest(`/api/admin/identity-corrections/${corrId}/review`, {
+        method: 'POST',
+        body: JSON.stringify({ bgaId: associateId, action, remarks }),
+      });
+      fetchProfile();
+      onRefreshList();
+    } catch (e: any) {
+      alert(e.message || 'Failed to review identity correction');
+    }
+  };
+
   if (loading) {
     return (
       <div className="w-full flex items-center justify-center p-16">
@@ -487,7 +511,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                     <div key={c.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex justify-between items-center text-xs">
                       <div>
                         <span className="font-bold text-slate-900">{c.clientName}</span>
-                        <div className="text-[11px] text-slate-500">{c.businessName} • {c.location}</div>
+                        <div className="text-[11px] text-slate-500">{c.businessName} • {formatAddress(c.location)}</div>
                       </div>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
                         {c.enquiries?.length || 0} Enquiries
@@ -547,7 +571,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 md:col-span-2">
               <span className="text-slate-400 font-semibold block uppercase text-[10px]">Residential Address</span>
               <span className="text-slate-900 font-semibold text-sm mt-0.5 block leading-relaxed">
-                {associate.address || 'Not provided'}
+                {formatAddress(associate.address)}
               </span>
             </div>
 
@@ -678,6 +702,107 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Identity Correction Requests Review */}
+          {(() => {
+            const corrections = (associate.auditLogs || [])
+              .filter((l: any) => l.action.startsWith('IDENTITY_CORRECTION'))
+              .map((l: any) => {
+                let d: any = {};
+                try { d = JSON.parse(l.details); } catch {}
+                return {
+                  id: d.id || l.entityId || l.id,
+                  action: l.action,
+                  ...d,
+                  createdAt: l.createdAt,
+                };
+              });
+
+            if (corrections.length === 0) return null;
+
+            return (
+              <div className="pt-6 border-t border-slate-100 space-y-3">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Identity Correction Requests Submitted by Associate</h4>
+                  <p className="text-xs text-slate-500">Formal requests requiring authorized Admin compliance review.</p>
+                </div>
+
+                <div className="space-y-3">
+                  {corrections.map((corr: any, idx: number) => {
+                    const isPending = corr.status === 'PENDING_REVIEW' || corr.action === 'IDENTITY_CORRECTION_REQUEST';
+                    return (
+                      <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50 text-xs space-y-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 text-sm">{corr.correctionType} Correction</span>
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                corr.status === 'APPROVED'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : corr.status === 'REJECTED'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}
+                            >
+                              {corr.status || 'PENDING_REVIEW'}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-400">
+                            Requested: {new Date(corr.requestedAt || corr.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 py-1.5 border-y border-slate-200/60">
+                          <div>
+                            <span className="text-slate-500 block">Current Value on Record:</span>
+                            <strong className="text-slate-800 font-mono">{corr.currentValue || '—'}</strong>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block">Proposed Correct Value:</span>
+                            <strong className="text-purple-700 font-mono">{corr.proposedValue}</strong>
+                          </div>
+                        </div>
+
+                        <div className="text-[11px] text-slate-600">
+                          <strong className="text-slate-700">Reason:</strong> {corr.reason}
+                        </div>
+
+                        {corr.documentUrl && (
+                          <div className="text-[11px]">
+                            <a
+                              href={corr.documentUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-purple-700 hover:underline flex items-center gap-1 font-semibold"
+                            >
+                              <ExternalLink className="w-3 h-3" /> View Supporting Compliance Document
+                            </a>
+                          </div>
+                        )}
+
+                        {isPending && (
+                          <div className="pt-2 flex justify-end gap-2 border-t border-slate-200/60">
+                            <button
+                              onClick={() => handleReviewCorrection(corr.id, 'REJECT', 'Document proof did not meet criteria')}
+                              className="px-3 py-1.5 rounded-lg border border-red-200 bg-white text-red-700 hover:bg-red-50 text-xs font-semibold"
+                            >
+                              Reject Request
+                            </button>
+                            <button
+                              onClick={() => handleReviewCorrection(corr.id, 'APPROVE', 'Verified and approved by Admin')}
+                              className="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-sm"
+                            >
+                              Approve & Update {corr.correctionType} ✓
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -755,6 +880,50 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
               {associate.bankVerified ? 'Revoke Bank Verification' : 'Verify Bank Account Details ✓'}
             </button>
           </div>
+
+          {/* Archived Bank Account History */}
+          {(() => {
+            const bankHistory = (associate.auditLogs || [])
+              .filter((l: any) => l.action === 'BANK_ACCOUNT_REPLACED')
+              .map((l: any) => {
+                let d: any = {};
+                try { d = JSON.parse(l.details); } catch {}
+                return {
+                  id: l.id,
+                  ...d.previousAccount,
+                  replacedAt: l.createdAt,
+                };
+              });
+
+            if (bankHistory.length === 0) return null;
+
+            return (
+              <div className="pt-6 border-t border-slate-100 space-y-3">
+                <h4 className="text-sm font-bold text-slate-900">Archived Bank Account History</h4>
+                <div className="space-y-2">
+                  {bankHistory.map((bh: any, idx: number) => (
+                    <div key={idx} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900">{bh.bankName}</span>
+                          <span className="font-mono text-slate-600">({bh.bankAccountNumberMasked})</span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700 uppercase">
+                            Archived
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Holder: {bh.bankAccountHolder} • IFSC: {bh.bankIfsc}
+                        </p>
+                      </div>
+                      <span className="text-[10px] text-slate-400">
+                        Replaced: {new Date(bh.replacedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -974,7 +1143,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                       </td>
                       <td className="p-3.5">
                         <div className="text-slate-800">{c.email}</div>
-                        <div className="text-[11px] text-slate-500">{c.mobile} • {c.location}</div>
+                        <div className="text-[11px] text-slate-500">{c.mobile} • {formatAddress(c.location)}</div>
                       </td>
                       <td className="p-3.5">
                         <span className="font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">

@@ -651,6 +651,55 @@ router.get('/services', async (req: AuthRequest, res: Response): Promise<void> =
   }
 });
 
+// Helper to parse client location/address consistently
+export function parseClientLocation(locationStr: string | null | undefined) {
+  if (!locationStr) {
+    return {
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      pinCode: '',
+      country: 'India',
+      fullAddress: 'Not provided',
+      displayLocation: '—',
+    };
+  }
+  try {
+    if (locationStr.startsWith('{') && locationStr.endsWith('}')) {
+      const parsed = JSON.parse(locationStr);
+      const parts = [
+        parsed.addressLine1,
+        parsed.addressLine2,
+        parsed.city,
+        parsed.state,
+        parsed.pinCode ? `PIN: ${parsed.pinCode}` : '',
+        parsed.country || 'India',
+      ].filter(Boolean);
+      return {
+        addressLine1: parsed.addressLine1 || '',
+        addressLine2: parsed.addressLine2 || '',
+        city: parsed.city || '',
+        state: parsed.state || '',
+        pinCode: parsed.pinCode || '',
+        country: parsed.country || 'India',
+        fullAddress: parsed.fullAddress || parts.join(', '),
+        displayLocation: parsed.city ? `${parsed.city}${parsed.state ? ', ' + parsed.state : ''}` : (parsed.fullAddress || locationStr),
+      };
+    }
+  } catch {}
+  return {
+    addressLine1: '',
+    addressLine2: '',
+    city: locationStr,
+    state: '',
+    pinCode: '',
+    country: 'India',
+    fullAddress: locationStr,
+    displayLocation: locationStr,
+  };
+}
+
 // 4. Client Management (Strict Ownership Isolation)
 router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -663,8 +712,12 @@ router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> =>
             serviceCategory: true,
             expectedBudget: true,
             status: true,
+            requirements: true,
+            discussionNotes: true,
+            followUpDate: true,
             createdAt: true,
           },
+          orderBy: { createdAt: 'desc' },
         },
         quotations: {
           select: {
@@ -673,13 +726,42 @@ router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> =>
             version: true,
             totalAmount: true,
             status: true,
+            createdAt: true,
           },
+          orderBy: { createdAt: 'desc' },
         },
-        _count: { select: { workOrders: true } },
+        workOrders: {
+          select: {
+            id: true,
+            workOrderNumber: true,
+            status: true,
+            totalAmount: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: { select: { workOrders: true, enquiries: true, quotations: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ clients });
+
+    const enrichedClients = clients.map((c) => {
+      const addr = parseClientLocation(c.location);
+      return {
+        ...c,
+        address: addr,
+        addressLine1: addr.addressLine1,
+        addressLine2: addr.addressLine2,
+        city: addr.city,
+        state: addr.state,
+        pinCode: addr.pinCode,
+        country: addr.country,
+        fullAddress: addr.fullAddress,
+        displayLocation: addr.displayLocation,
+      };
+    });
+
+    res.json({ clients: enrichedClients });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load clients' });
   }
@@ -694,7 +776,14 @@ router.post('/clients', async (req: AuthRequest, res: Response): Promise<void> =
       mobile,
       email,
       location,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      pinCode,
+      country,
       businessCategory,
+      otherCategory,
       requiredService,
       expectedBudget,
       clientRequirements,
@@ -702,8 +791,56 @@ router.post('/clients', async (req: AuthRequest, res: Response): Promise<void> =
       followUpDate,
     } = req.body;
 
-    if (!clientName || !businessName || !mobile || !email || !location || !businessCategory) {
-      res.status(400).json({ error: 'All core client details are required' });
+    // Validate Core Client Details
+    if (!clientName || !clientName.trim()) {
+      res.status(400).json({ error: 'Client contact name is required' });
+      return;
+    }
+    if (!businessName || !businessName.trim()) {
+      res.status(400).json({ error: 'Business / Company name is required' });
+      return;
+    }
+    if (!mobile || !mobile.trim()) {
+      res.status(400).json({ error: 'Mobile phone number is required' });
+      return;
+    }
+    if (!email || !email.trim()) {
+      res.status(400).json({ error: 'Email address is required' });
+      return;
+    }
+
+    // Resolve Business Category (support custom category if 'Other')
+    let resolvedCategory = (businessCategory || '').trim();
+    if (!resolvedCategory || resolvedCategory === 'Other') {
+      if (!otherCategory || !otherCategory.trim()) {
+        res.status(400).json({ error: 'Please enter your custom business category' });
+        return;
+      }
+      resolvedCategory = otherCategory.trim();
+    }
+
+    // Resolve Business Address
+    const resolvedAddressLine1 = (addressLine1 || '').trim();
+    const resolvedAddressLine2 = (addressLine2 || '').trim();
+    const resolvedCity = (city || location || '').trim();
+    const resolvedState = (state || '').trim();
+    const resolvedPinCode = (pinCode || '').trim();
+    const resolvedCountry = (country || 'India').trim();
+
+    if (!resolvedAddressLine1) {
+      res.status(400).json({ error: 'Business Address Line 1 is required' });
+      return;
+    }
+    if (!resolvedCity) {
+      res.status(400).json({ error: 'City is required' });
+      return;
+    }
+    if (!resolvedState) {
+      res.status(400).json({ error: 'State is required' });
+      return;
+    }
+    if (!resolvedPinCode) {
+      res.status(400).json({ error: 'PIN / Postal Code is required' });
       return;
     }
 
@@ -734,6 +871,24 @@ router.post('/clients', async (req: AuthRequest, res: Response): Promise<void> =
       return;
     }
 
+    // Prepare structured address object
+    const structuredAddress = {
+      addressLine1: resolvedAddressLine1,
+      addressLine2: resolvedAddressLine2,
+      city: resolvedCity,
+      state: resolvedState,
+      pinCode: resolvedPinCode,
+      country: resolvedCountry,
+      fullAddress: [
+        resolvedAddressLine1,
+        resolvedAddressLine2,
+        resolvedCity,
+        resolvedState,
+        resolvedPinCode ? `PIN: ${resolvedPinCode}` : '',
+        resolvedCountry,
+      ].filter(Boolean).join(', '),
+    };
+
     // Create Client
     const client = await prisma.client.create({
       data: {
@@ -741,15 +896,15 @@ router.post('/clients', async (req: AuthRequest, res: Response): Promise<void> =
         businessName: businessName.trim(),
         mobile: normalizedMobile,
         email: normalizedEmail,
-        location: location.trim(),
-        businessCategory: businessCategory.trim(),
+        location: JSON.stringify(structuredAddress),
+        businessCategory: resolvedCategory,
         bgaId: req.user!.id,
       },
     });
 
     // If an initial enquiry was submitted along with client registration
     let initialEnquiry = null;
-    if (requiredService && clientRequirements) {
+    if (requiredService && clientRequirements && clientRequirements.trim()) {
       const enquiryId = generateId('ENQ');
       initialEnquiry = await prisma.enquiry.create({
         data: {
@@ -785,13 +940,30 @@ router.post('/clients', async (req: AuthRequest, res: Response): Promise<void> =
       'CLIENT_REGISTERED',
       'CLIENT',
       client.id,
-      { clientName: client.clientName, businessName: client.businessName },
+      { clientName: client.clientName, businessName: client.businessName, businessCategory: resolvedCategory },
       req.ip
     );
 
+    const parsedAddr = parseClientLocation(client.location);
+    const enrichedClient = {
+      ...client,
+      address: parsedAddr,
+      addressLine1: parsedAddr.addressLine1,
+      addressLine2: parsedAddr.addressLine2,
+      city: parsedAddr.city,
+      state: parsedAddr.state,
+      pinCode: parsedAddr.pinCode,
+      country: parsedAddr.country,
+      fullAddress: parsedAddr.fullAddress,
+      displayLocation: parsedAddr.displayLocation,
+      enquiries: initialEnquiry ? [initialEnquiry] : [],
+      quotations: [],
+      workOrders: [],
+    };
+
     res.status(201).json({
-      message: 'Client registered successfully and assigned to your account.',
-      client,
+      message: `Client '${client.clientName}' registered successfully and assigned to your portfolio.`,
+      client: enrichedClient,
       enquiry: initialEnquiry,
     });
   } catch (error: any) {
@@ -804,7 +976,18 @@ router.post('/clients', async (req: AuthRequest, res: Response): Promise<void> =
 router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { location, businessCategory } = req.body;
+    const {
+      businessName,
+      location,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      pinCode,
+      country,
+      businessCategory,
+      otherCategory,
+    } = req.body;
 
     const client = await prisma.client.findFirst({
       where: { id, bgaId: req.user!.id },
@@ -815,9 +998,65 @@ router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
+    let resolvedCategory = businessCategory?.trim() || client.businessCategory;
+    if (resolvedCategory === 'Other') {
+      if (otherCategory && otherCategory.trim()) {
+        resolvedCategory = otherCategory.trim();
+      }
+    }
+
+    let locationToSave = client.location;
+    if (addressLine1 || city || state || pinCode) {
+      const existingAddr = parseClientLocation(client.location);
+      const structuredAddress = {
+        addressLine1: (addressLine1 ?? existingAddr.addressLine1 ?? '').trim(),
+        addressLine2: (addressLine2 ?? existingAddr.addressLine2 ?? '').trim(),
+        city: (city ?? existingAddr.city ?? '').trim(),
+        state: (state ?? existingAddr.state ?? '').trim(),
+        pinCode: (pinCode ?? existingAddr.pinCode ?? '').trim(),
+        country: (country ?? existingAddr.country ?? 'India').trim(),
+        fullAddress: [
+          (addressLine1 ?? existingAddr.addressLine1 ?? '').trim(),
+          (addressLine2 ?? existingAddr.addressLine2 ?? '').trim(),
+          (city ?? existingAddr.city ?? '').trim(),
+          (state ?? existingAddr.state ?? '').trim(),
+          (pinCode ?? existingAddr.pinCode ?? '').trim() ? `PIN: ${(pinCode ?? existingAddr.pinCode ?? '').trim()}` : '',
+          (country ?? existingAddr.country ?? 'India').trim(),
+        ].filter(Boolean).join(', '),
+      };
+      locationToSave = JSON.stringify(structuredAddress);
+    } else if (location) {
+      locationToSave = location.trim();
+    }
+
     const updated = await prisma.client.update({
       where: { id },
-      data: { location, businessCategory },
+      data: {
+        ...(businessName ? { businessName: businessName.trim() } : {}),
+        businessCategory: resolvedCategory,
+        location: locationToSave,
+      },
+    });
+
+    const parsedAddr = parseClientLocation(updated.location);
+    res.json({
+      client: {
+        ...updated,
+        address: parsedAddr,
+        addressLine1: parsedAddr.addressLine1,
+        addressLine2: parsedAddr.addressLine2,
+        city: parsedAddr.city,
+        state: parsedAddr.state,
+        pinCode: parsedAddr.pinCode,
+        country: parsedAddr.country,
+        fullAddress: parsedAddr.fullAddress,
+        displayLocation: parsedAddr.displayLocation,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update client' });
+  }
+});
     });
 
     res.json({ client: updated });
@@ -845,7 +1084,19 @@ router.get('/enquiries', async (req: AuthRequest, res: Response): Promise<void> 
       },
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ enquiries });
+    const enrichedEnquiries = enquiries.map((e) => {
+      const addr = parseClientLocation(e.client.location);
+      return {
+        ...e,
+        client: {
+          ...e.client,
+          displayLocation: addr.displayLocation,
+          city: addr.city,
+          fullAddress: addr.fullAddress,
+        },
+      };
+    });
+    res.json({ enquiries: enrichedEnquiries });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load enquiries' });
   }

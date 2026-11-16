@@ -20,10 +20,35 @@ import {
   Plus,
   Clock,
   ShieldCheck,
+  Search,
+  MapPin,
+  Phone,
+  Mail,
+  Calendar,
+  X,
+  Filter,
+  ArrowLeft,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
+import { BgaProfileView } from './BgaProfileView';
+
+export const BUSINESS_CATEGORIES = [
+  'IT & Software',
+  'Education & Training',
+  'Healthcare & Medical',
+  'Retail & E-commerce',
+  'Manufacturing & Industrial',
+  'Real Estate & Construction',
+  'Finance & Banking',
+  'Hospitality & Tourism',
+  'Food & Restaurants',
+  'Logistics & Transportation',
+  'Media & Entertainment',
+  'Professional Services',
+  'Other',
+];
 
 export const BgaPortal: React.FC = () => {
   const { user } = useAuth();
@@ -41,14 +66,27 @@ export const BgaPortal: React.FC = () => {
   const [resources, setResources] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
 
+  // My Clients UI State
+  const [clientViewMode, setClientViewMode] = useState<'list' | 'add'>('list');
+  const [selectedClientDetails, setSelectedClientDetails] = useState<any | null>(null);
+  const [clientSearch, setClientSearch] = useState('');
+  const [clientCategoryFilter, setClientCategoryFilter] = useState('ALL');
+  const [submittingClient, setSubmittingClient] = useState(false);
+
   // New Client Form
   const [clientForm, setClientForm] = useState({
     clientName: '',
     businessName: '',
     mobile: '',
     email: '',
-    location: '',
     businessCategory: 'IT & Software',
+    otherCategory: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    pinCode: '',
+    country: 'India',
     requiredService: 'DIGITAL_MARKETING',
     expectedBudget: '',
     clientRequirements: '',
@@ -112,6 +150,11 @@ export const BgaPortal: React.FC = () => {
   };
 
   useEffect(() => {
+    if (activeTab === ('new-client' as any)) {
+      setActiveTab('clients');
+      setClientViewMode('add');
+      return;
+    }
     loadData();
   }, [activeTab]);
 
@@ -121,29 +164,77 @@ export const BgaPortal: React.FC = () => {
     setClientFormError(null);
     setClientFormSuccess(null);
 
+    // Business Category Validation
+    if (clientForm.businessCategory === 'Other' && !clientForm.otherCategory.trim()) {
+      setClientFormError('Please enter your custom business category.');
+      return;
+    }
+
+    const cleanMobile = clientForm.mobile.replace(/\D/g, '').slice(-10);
+    if (cleanMobile.length !== 10) {
+      setClientFormError('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    if (!clientForm.addressLine1.trim()) {
+      setClientFormError('Address Line 1 is required.');
+      return;
+    }
+    if (!clientForm.city.trim()) {
+      setClientFormError('City is required.');
+      return;
+    }
+    if (!clientForm.state.trim()) {
+      setClientFormError('State is required.');
+      return;
+    }
+    if (!clientForm.pinCode.trim()) {
+      setClientFormError('PIN / Postal Code is required.');
+      return;
+    }
+
+    setSubmittingClient(true);
     try {
+      const payload = {
+        ...clientForm,
+        mobile: cleanMobile,
+        location: clientForm.city.trim(),
+      };
+
       const res = await apiRequest('/api/bga/clients', {
         method: 'POST',
-        body: JSON.stringify(clientForm),
+        body: JSON.stringify(payload),
       });
 
-      setClientFormSuccess(res.message);
+      setClientFormSuccess(
+        res.message || `Client '${clientForm.clientName}' registered successfully and assigned to your portfolio.`
+      );
       setClientForm({
         clientName: '',
         businessName: '',
         mobile: '',
         email: '',
-        location: '',
         businessCategory: 'IT & Software',
+        otherCategory: '',
+        addressLine1: '',
+        addressLine2: '',
+        city: '',
+        state: '',
+        pinCode: '',
+        country: 'India',
         requiredService: 'DIGITAL_MARKETING',
         expectedBudget: '',
         clientRequirements: '',
         discussionNotes: '',
         followUpDate: '',
       });
-      loadData();
+      await loadData();
+      setClientViewMode('list');
     } catch (err: any) {
-      setClientFormError(err.message);
+      // Keep entered data in form so user does not lose inputs
+      setClientFormError(err.message || 'Failed to register client');
+    } finally {
+      setSubmittingClient(false);
     }
   };
 
@@ -258,17 +349,10 @@ export const BgaPortal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('new-client')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'new-client' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
-              }`}
-            >
-              <UserPlus className="w-4 h-4" />
-              <span>Register New Client</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('clients')}
+              onClick={() => {
+                setActiveTab('clients');
+                setClientViewMode('list');
+              }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'clients' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
               }`}
@@ -427,67 +511,7 @@ export const BgaPortal: React.FC = () => {
           )}
 
           {/* TAB 2: MY PROFILE & KYC */}
-          {activeTab === 'profile' && (
-            <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">My Associate Profile & Verification Badges</h3>
-                <p className="text-xs text-slate-500">
-                  Your identity documents and bank details are securely verified for authorized operations.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
-                  <span className="text-xs text-slate-500 block">PAN Verification</span>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span className="text-xs font-bold text-slate-800">{user?.panVerified ? 'VERIFIED' : 'PENDING'}</span>
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
-                  <span className="text-xs text-slate-500 block">Aadhaar Status</span>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span className="text-xs font-bold text-slate-800">
-                      {user?.aadhaarVerified ? 'VERIFIED (MASKED)' : 'COMPLETED'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
-                  <span className="text-xs text-slate-500 block">Bank Account</span>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span className="text-xs font-bold text-slate-800">
-                      {user?.bankVerified ? 'VERIFIED' : 'PENDING'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 text-xs border-t border-slate-100 pt-4">
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Associate Name</span>
-                  <span className="font-semibold text-slate-900">{user?.name}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Registered Email</span>
-                  <span className="font-semibold text-slate-900">{user?.email}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Mobile Phone</span>
-                  <span className="font-semibold text-slate-900">{user?.mobile}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">System Role</span>
-                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                    {user?.role}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
+          {activeTab === 'profile' && <BgaProfileView />}
 
           {/* TAB 3: NEW CLIENT REGISTRATION (With Strict Duplicate Check) */}
           {activeTab === 'new-client' && (
