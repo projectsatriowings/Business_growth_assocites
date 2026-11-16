@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
+import { SkeletonCard, SkeletonStatsRow, SkeletonTable } from '../../components/Skeleton';
 
 export const AdminPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
@@ -29,6 +30,7 @@ export const AdminPortal: React.FC = () => {
   >('dashboard');
 
   const [loading, setLoading] = useState(false);
+  const [tabLoading, setTabLoading] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [bgas, setBgas] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
@@ -61,59 +63,93 @@ export const AdminPortal: React.FC = () => {
     isConfidential: false,
   });
 
-  // Load Dashboard Data
-  const loadData = async () => {
-    setLoading(true);
+  // Load Dashboard Stats independently
+  const loadStats = async (bypass = false) => {
     try {
-      const statsRes = await apiRequest('/api/admin/dashboard-stats');
+      const statsRes = await apiRequest('/api/admin/dashboard-stats', { bypassCache: bypass });
       setStats(statsRes);
+    } catch (e) {
+      console.error('Failed to load admin stats:', e);
+    }
+  };
 
-      if (activeTab === 'bgas') {
-        const res = await apiRequest(`/api/admin/bgas?status=${bgaStatusFilter}&search=${searchBga}`);
+  // Load Active Tab Data immediately (without blocking on stats)
+  const loadTabData = async (tab = activeTab, filter = bgaStatusFilter, search = searchBga) => {
+    setTabLoading(true);
+    try {
+      if (tab === 'bgas') {
+        const res = await apiRequest(`/api/admin/bgas?status=${filter}&search=${encodeURIComponent(search)}`);
         setBgas(res.bgas || []);
-      } else if (activeTab === 'services') {
+      } else if (tab === 'services') {
         const res = await apiRequest('/api/admin/services');
         setServices(res.services || []);
-      } else if (activeTab === 'resources') {
+      } else if (tab === 'resources') {
         const res = await apiRequest('/api/admin/resources');
         setResources(res.resources || []);
-      } else if (activeTab === 'clients') {
-        const res = await apiRequest('/api/admin/clients');
-        setClients(res.clients || []);
-        // Also fetch active BGAs for transfer modal
-        const bgaRes = await apiRequest('/api/admin/bgas?status=ACTIVE');
+      } else if (tab === 'clients') {
+        const [clientRes, bgaRes] = await Promise.all([
+          apiRequest('/api/admin/clients'),
+          apiRequest('/api/admin/bgas?status=ACTIVE'),
+        ]);
+        setClients(clientRes.clients || []);
         setBgas(bgaRes.bgas || []);
-      } else if (activeTab === 'enquiries') {
+      } else if (tab === 'enquiries') {
         const res = await apiRequest('/api/admin/enquiries');
         setEnquiries(res.enquiries || []);
-      } else if (activeTab === 'quotations') {
+      } else if (tab === 'quotations') {
         const res = await apiRequest('/api/accounts/quotation-requests');
         setQuotations(res.requests || []);
-      } else if (activeTab === 'workorders') {
+      } else if (tab === 'workorders') {
         const res = await apiRequest('/api/accounts/work-orders');
         setWorkOrders(res.workOrders || []);
-      } else if (activeTab === 'technical') {
+      } else if (tab === 'technical') {
         const res = await apiRequest('/api/technical/projects');
         setProjects(res.projects || []);
-      } else if (activeTab === 'commissions') {
+      } else if (tab === 'commissions') {
         const res = await apiRequest('/api/admin/commissions');
         setCommissions(res.commissions || []);
-      } else if (activeTab === 'settings') {
-        const sRes = await apiRequest('/api/admin/settings');
+      } else if (tab === 'settings') {
+        const [sRes, logsRes] = await Promise.all([
+          apiRequest('/api/admin/settings'),
+          apiRequest('/api/admin/audit-logs'),
+        ]);
         setSettings(sRes.settings || []);
-        const logsRes = await apiRequest('/api/admin/audit-logs');
         setAuditLogs(logsRes.logs || []);
       }
     } catch (e) {
       console.error(e);
     } finally {
+      setTabLoading(false);
+    }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([loadStats(), loadTabData()]);
+    } finally {
       setLoading(false);
     }
   };
 
+  // Initial load
   useEffect(() => {
-    loadData();
+    loadStats();
+  }, []);
+
+  // Tab switch or status filter changes: load tab immediately
+  useEffect(() => {
+    loadTabData(activeTab, bgaStatusFilter, searchBga);
   }, [activeTab, bgaStatusFilter]);
+
+  // Debounced search for BGAs
+  useEffect(() => {
+    if (activeTab !== 'bgas') return;
+    const timeout = setTimeout(() => {
+      loadTabData('bgas', bgaStatusFilter, searchBga);
+    }, 250);
+    return () => clearTimeout(timeout);
+  }, [searchBga]);
 
   // Handle BGA Approval Action
   const handleBgaAction = async (id: string, action: string, reason?: string) => {
@@ -371,9 +407,12 @@ export const AdminPortal: React.FC = () => {
         {/* Main Content Area */}
         <main className="flex-1 p-6 overflow-y-auto max-w-7xl">
           {/* TAB 1: DASHBOARD */}
-          {activeTab === 'dashboard' && stats && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {activeTab === 'dashboard' && (
+            !stats ? (
+              <SkeletonStatsRow count={4} />
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <span className="text-xs text-slate-500 font-semibold uppercase">Total BGAs</span>
                   <div className="text-2xl font-bold text-slate-900 mt-1">{stats.bgas.total}</div>
@@ -431,6 +470,7 @@ export const AdminPortal: React.FC = () => {
                 </div>
               </div>
             </div>
+            )
           )}
 
           {/* TAB 2: BGA MANAGEMENT */}
@@ -469,19 +509,22 @@ export const AdminPortal: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                    <tr>
-                      <th className="p-3.5">Associate Details</th>
-                      <th className="p-3.5">KYC Status</th>
-                      <th className="p-3.5">Bank Details</th>
-                      <th className="p-3.5">Status</th>
-                      <th className="p-3.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {bgas.map((b) => (
+              {tabLoading ? (
+                <SkeletonTable rows={5} cols={5} />
+              ) : (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                      <tr>
+                        <th className="p-3.5">Associate Details</th>
+                        <th className="p-3.5">KYC Status</th>
+                        <th className="p-3.5">Bank Details</th>
+                        <th className="p-3.5">Status</th>
+                        <th className="p-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {bgas.map((b) => (
                       <tr key={b.id} className="hover:bg-slate-50/50">
                         <td className="p-3.5">
                           <div className="font-bold text-slate-900">{b.name}</div>
@@ -553,6 +596,7 @@ export const AdminPortal: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
           )}
 

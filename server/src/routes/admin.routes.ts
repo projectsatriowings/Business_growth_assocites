@@ -1,48 +1,65 @@
 import { Router, Response } from 'express';
 import { Role, BgaStatus, EnquiryStatus, ServiceCategoryType, CommissionApproval, CommissionPayout } from '@prisma/client';
 import { prisma } from '../prisma';
-import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification } from '../middleware/auth';
+import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification, invalidateUserCache } from '../middleware/auth';
+import { appCache } from '../utils/cache';
 
 const router = Router();
 router.use(authenticateJWT);
 router.use(authorizeRoles(Role.ADMIN));
 
-// 1. Dashboard Analytics
+// 1. Dashboard Analytics (Optimized with concurrent Promise.all & isolated in-memory cache)
 router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const totalBgas = await prisma.user.count({ where: { role: Role.BGA } });
-    const activeBgas = await prisma.user.count({ where: { role: Role.BGA, status: BgaStatus.ACTIVE } });
-    const pendingBgaApprovals = await prisma.user.count({
-      where: { role: Role.BGA, status: { in: [BgaStatus.SUBMITTED, BgaStatus.UNDER_REVIEW, BgaStatus.VERIFICATION_PENDING] } },
-    });
+    const cached = appCache.get('admin:dashboard-stats');
+    if (cached) {
+      res.json(cached);
+      return;
+    }
 
-    const totalClients = await prisma.client.count();
-    const totalEnquiries = await prisma.enquiry.count();
-    const pendingEnquiries = await prisma.enquiry.count({ where: { status: EnquiryStatus.SUBMITTED } });
+    const [
+      totalBgas,
+      activeBgas,
+      pendingBgaApprovals,
+      totalClients,
+      totalEnquiries,
+      pendingEnquiries,
+      totalQuotations,
+      totalWorkOrders,
+      activeProjects,
+      completedProjects,
+      verifiedPayments,
+      totalCommissions,
+      paidCommissions,
+    ] = await Promise.all([
+      prisma.user.count({ where: { role: Role.BGA } }),
+      prisma.user.count({ where: { role: Role.BGA, status: BgaStatus.ACTIVE } }),
+      prisma.user.count({
+        where: { role: Role.BGA, status: { in: [BgaStatus.SUBMITTED, BgaStatus.UNDER_REVIEW, BgaStatus.VERIFICATION_PENDING] } },
+      }),
+      prisma.client.count(),
+      prisma.enquiry.count(),
+      prisma.enquiry.count({ where: { status: EnquiryStatus.SUBMITTED } }),
+      prisma.quotation.count(),
+      prisma.workOrder.count(),
+      prisma.technicalProject.count({
+        where: { status: { in: ['READY_TO_START', 'IN_PROGRESS', 'UNDER_REVIEW', 'CORRECTION_REQUIRED'] } },
+      }),
+      prisma.technicalProject.count({ where: { status: 'COMPLETED' } }),
+      prisma.payment.aggregate({
+        where: { status: 'VERIFIED' },
+        _sum: { amount: true },
+      }),
+      prisma.commission.aggregate({
+        _sum: { calculatedCommission: true },
+      }),
+      prisma.commission.aggregate({
+        where: { payoutStatus: CommissionPayout.PROCESSED },
+        _sum: { calculatedCommission: true },
+      }),
+    ]);
 
-    const totalQuotations = await prisma.quotation.count();
-    const totalWorkOrders = await prisma.workOrder.count();
-    const activeProjects = await prisma.technicalProject.count({
-      where: { status: { in: ['READY_TO_START', 'IN_PROGRESS', 'UNDER_REVIEW', 'CORRECTION_REQUIRED'] } },
-    });
-    const completedProjects = await prisma.technicalProject.count({ where: { status: 'COMPLETED' } });
-
-    // Financial calculations
-    const verifiedPayments = await prisma.payment.aggregate({
-      where: { status: 'VERIFIED' },
-      _sum: { amount: true },
-    });
-
-    const totalCommissions = await prisma.commission.aggregate({
-      _sum: { calculatedCommission: true },
-    });
-
-    const paidCommissions = await prisma.commission.aggregate({
-      where: { payoutStatus: CommissionPayout.PROCESSED },
-      _sum: { calculatedCommission: true },
-    });
-
-    res.json({
+    const result = {
       bgas: { total: totalBgas, active: activeBgas, pendingApprovals: pendingBgaApprovals },
       clients: { total: totalClients },
       enquiries: { total: totalEnquiries, pending: pendingEnquiries },
@@ -54,7 +71,10 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
         totalCommissions: totalCommissions._sum.calculatedCommission || 0,
         paidCommissions: paidCommissions._sum.calculatedCommission || 0,
       },
-    });
+    };
+
+    appCache.set('admin:dashboard-stats', result, 20);
+    res.json(result);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch admin stats' });
   }
@@ -183,6 +203,10 @@ router.post('/bgas/:id/status', async (req: AuthRequest, res: Response): Promise
       where: { id },
       data: updateData,
     });
+
+    invalidateUserCache(id);
+    appCache.invalidatePrefix('admin:');
+    appCache.invalidatePrefix('bga:');
 
     await logAudit(
       req.user!.id,

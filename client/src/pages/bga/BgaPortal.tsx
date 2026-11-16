@@ -24,6 +24,7 @@ import {
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
+import { SkeletonStatsRow, SkeletonTable } from '../../components/Skeleton';
 
 export const BgaPortal: React.FC = () => {
   const { user } = useAuth();
@@ -32,6 +33,7 @@ export const BgaPortal: React.FC = () => {
   >('dashboard');
 
   const [loading, setLoading] = useState(false);
+  const [tabLoading, setTabLoading] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [enquiries, setEnquiries] = useState<any[]>([]);
@@ -76,43 +78,66 @@ export const BgaPortal: React.FC = () => {
   const [acceptanceModal, setAcceptanceModal] = useState<{ quotationId: string; quotationNumber: string } | null>(null);
   const [acceptanceNotes, setAcceptanceNotes] = useState('');
 
-  const loadData = async () => {
-    setLoading(true);
+  // Load BGA Dashboard Stats independently
+  const loadStats = async (bypass = false) => {
     try {
-      const s = await apiRequest('/api/bga/dashboard-stats');
+      const s = await apiRequest('/api/bga/dashboard-stats', { bypassCache: bypass });
       setStats(s);
+    } catch (e) {
+      console.error('Failed to load BGA stats:', e);
+    }
+  };
 
-      if (activeTab === 'clients') {
+  // Load Active Tab Data immediately without awaiting stats
+  const loadTabData = async (tab = activeTab) => {
+    setTabLoading(true);
+    try {
+      if (tab === 'clients') {
         const c = await apiRequest('/api/bga/clients');
         setClients(c.clients || []);
-      } else if (activeTab === 'enquiries') {
+      } else if (tab === 'enquiries') {
         const e = await apiRequest('/api/bga/enquiries');
         setEnquiries(e.enquiries || []);
-      } else if (activeTab === 'quotations') {
+      } else if (tab === 'quotations') {
         const q = await apiRequest('/api/bga/quotations');
         setQuotations(q.quotations || []);
-      } else if (activeTab === 'projects') {
+      } else if (tab === 'projects') {
         const w = await apiRequest('/api/bga/work-orders');
         setWorkOrders(w.workOrders || []);
-      } else if (activeTab === 'earnings') {
+      } else if (tab === 'earnings') {
         const comm = await apiRequest('/api/bga/commissions');
         setCommissions(comm.commissions || []);
-      } else if (activeTab === 'resources') {
+      } else if (tab === 'resources') {
         const r = await apiRequest('/api/bga/resources');
         setResources(r.resources || []);
-      } else if (activeTab === 'services') {
+      } else if (tab === 'services') {
         const svc = await apiRequest('/api/bga/services');
         setServices(svc.services || []);
       }
     } catch (e) {
       console.error(e);
     } finally {
+      setTabLoading(false);
+    }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([loadStats(), loadTabData()]);
+    } finally {
       setLoading(false);
     }
   };
 
+  // Initial load
   useEffect(() => {
-    loadData();
+    loadStats();
+  }, []);
+
+  // Immediate load on tab switch
+  useEffect(() => {
+    loadTabData(activeTab);
   }, [activeTab]);
 
   // Handle Client Registration
@@ -357,9 +382,12 @@ export const BgaPortal: React.FC = () => {
         {/* Main Content Area */}
         <main className="flex-1 p-6 overflow-y-auto max-w-7xl">
           {/* TAB 1: DASHBOARD */}
-          {activeTab === 'dashboard' && stats && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {activeTab === 'dashboard' && (
+            !stats ? (
+              <SkeletonStatsRow count={4} />
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <span className="text-xs text-slate-500 font-semibold uppercase">My Registered Clients</span>
                   <div className="text-2xl font-bold text-slate-900 mt-1">{stats.clients}</div>
@@ -424,6 +452,7 @@ export const BgaPortal: React.FC = () => {
                 </div>
               </div>
             </div>
+            )
           )}
 
           {/* TAB 2: MY PROFILE & KYC */}

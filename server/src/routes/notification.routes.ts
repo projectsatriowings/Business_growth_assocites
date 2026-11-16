@@ -5,18 +5,19 @@ import { authenticateJWT, AuthRequest } from '../middleware/auth';
 const router = Router();
 router.use(authenticateJWT);
 
-// Get User's notifications
+// Get User's notifications (Optimized with Promise.all)
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const notifications = await prisma.notification.findMany({
-      where: { userId: req.user!.id },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-    });
-
-    const unreadCount = await prisma.notification.count({
-      where: { userId: req.user!.id, isRead: false },
-    });
+    const [notifications, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
+        where: { userId: req.user!.id },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+      prisma.notification.count({
+        where: { userId: req.user!.id, isRead: false },
+      }),
+    ]);
 
     res.json({ notifications, unreadCount });
   } catch (error) {

@@ -2,31 +2,50 @@ import { Router, Response } from 'express';
 import { Role, ProjectStatus, MilestoneStatus, CommissionEligibility, WorkOrderStatus } from '@prisma/client';
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification } from '../middleware/auth';
+import { appCache } from '../utils/cache';
 
 const router = Router();
 router.use(authenticateJWT);
 router.use(authorizeRoles(Role.TECHNICAL, Role.ADMIN));
 
-// 1. Technical Dashboard Stats
+// 1. Technical Dashboard Stats (Optimized with Promise.all & cache)
 router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const totalProjects = await prisma.technicalProject.count();
-    const readyToStart = await prisma.technicalProject.count({ where: { status: ProjectStatus.READY_TO_START } });
-    const inProgress = await prisma.technicalProject.count({ where: { status: ProjectStatus.IN_PROGRESS } });
-    const underReview = await prisma.technicalProject.count({ where: { status: ProjectStatus.UNDER_REVIEW } });
-    const correctionRequired = await prisma.technicalProject.count({
-      where: { status: ProjectStatus.CORRECTION_REQUIRED },
-    });
-    const completed = await prisma.technicalProject.count({ where: { status: ProjectStatus.COMPLETED } });
+    const cached = appCache.get('technical:dashboard-stats');
+    if (cached) {
+      res.json(cached);
+      return;
+    }
 
-    res.json({
+    const [
+      totalProjects,
+      readyToStart,
+      inProgress,
+      underReview,
+      correctionRequired,
+      completed,
+    ] = await Promise.all([
+      prisma.technicalProject.count(),
+      prisma.technicalProject.count({ where: { status: ProjectStatus.READY_TO_START } }),
+      prisma.technicalProject.count({ where: { status: ProjectStatus.IN_PROGRESS } }),
+      prisma.technicalProject.count({ where: { status: ProjectStatus.UNDER_REVIEW } }),
+      prisma.technicalProject.count({
+        where: { status: ProjectStatus.CORRECTION_REQUIRED },
+      }),
+      prisma.technicalProject.count({ where: { status: ProjectStatus.COMPLETED } }),
+    ]);
+
+    const result = {
       total: totalProjects,
       readyToStart,
       inProgress,
       underReview,
       correctionRequired,
       completed,
-    });
+    };
+
+    appCache.set('technical:dashboard-stats', result, 20);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch technical stats' });
   }

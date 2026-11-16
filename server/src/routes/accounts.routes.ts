@@ -13,6 +13,7 @@ import {
 } from '@prisma/client';
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification } from '../middleware/auth';
+import { appCache } from '../utils/cache';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -24,38 +25,53 @@ const generateId = (prefix: string) => {
   return `${prefix}-${dateStr}-${random}`;
 };
 
-// 1. Accounts Dashboard Stats
+// 1. Accounts Dashboard Stats (Optimized with Promise.all & cache)
 router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const quotationRequests = await prisma.quotation.count({
-      where: { status: { in: [QuotationStatus.REQUESTED, QuotationStatus.REVISION_REQUESTED] } },
-    });
-    const acceptedQuotations = await prisma.quotation.count({ where: { status: QuotationStatus.ACCEPTED } });
-    const pendingPaymentVerifications = await prisma.payment.count({
-      where: { status: PaymentStatus.PENDING_VERIFICATION },
-    });
+    const cached = appCache.get('accounts:dashboard-stats');
+    if (cached) {
+      res.json(cached);
+      return;
+    }
 
-    const activeWorkOrders = await prisma.workOrder.count({
-      where: { status: { in: [WorkOrderStatus.PENDING_ADVANCE, WorkOrderStatus.ADVANCE_VERIFIED, WorkOrderStatus.IN_PRODUCTION] } },
-    });
+    const [
+      quotationRequests,
+      acceptedQuotations,
+      pendingPaymentVerifications,
+      activeWorkOrders,
+      eligibleCommissions,
+      totalCollected,
+    ] = await Promise.all([
+      prisma.quotation.count({
+        where: { status: { in: [QuotationStatus.REQUESTED, QuotationStatus.REVISION_REQUESTED] } },
+      }),
+      prisma.quotation.count({ where: { status: QuotationStatus.ACCEPTED } }),
+      prisma.payment.count({
+        where: { status: PaymentStatus.PENDING_VERIFICATION },
+      }),
+      prisma.workOrder.count({
+        where: { status: { in: [WorkOrderStatus.PENDING_ADVANCE, WorkOrderStatus.ADVANCE_VERIFIED, WorkOrderStatus.IN_PRODUCTION] } },
+      }),
+      prisma.commission.count({
+        where: { eligibilityStatus: CommissionEligibility.ELIGIBLE, payoutStatus: CommissionPayout.UNPAID },
+      }),
+      prisma.payment.aggregate({
+        where: { status: PaymentStatus.VERIFIED },
+        _sum: { amount: true },
+      }),
+    ]);
 
-    const eligibleCommissions = await prisma.commission.count({
-      where: { eligibilityStatus: CommissionEligibility.ELIGIBLE, payoutStatus: CommissionPayout.UNPAID },
-    });
-
-    const totalCollected = await prisma.payment.aggregate({
-      where: { status: PaymentStatus.VERIFIED },
-      _sum: { amount: true },
-    });
-
-    res.json({
+    const result = {
       quotationRequests,
       acceptedQuotations,
       pendingPaymentVerifications,
       activeWorkOrders,
       eligibleCommissions,
       totalCollected: totalCollected._sum.amount || 0,
-    });
+    };
+
+    appCache.set('accounts:dashboard-stats', result, 20);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch accounts stats' });
   }

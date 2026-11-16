@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -18,6 +19,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+app.use(compression());
 app.use(
   cors({
     origin: '*',
@@ -32,7 +34,13 @@ const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
-app.use('/uploads', express.static(uploadDir));
+app.use(
+  '/uploads',
+  express.static(uploadDir, {
+    maxAge: '7d',
+    etag: true,
+  })
+);
 
 // Health Check
 app.get('/api/health', (req, res) => {
@@ -41,6 +49,14 @@ app.get('/api/health', (req, res) => {
     system: 'Business Growth Associates Management System',
     timestamp: new Date().toISOString(),
   });
+});
+
+// Cache control for API routes (prevent accidental caching of sensitive data)
+app.use('/api', (req, res, next) => {
+  if (!res.getHeader('Cache-Control')) {
+    res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+  }
+  next();
 });
 
 // API Routes
@@ -52,14 +68,34 @@ app.use('/api/technical', technicalRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/resources', resourceRoutes);
 
-// Serve Frontend Build (client/dist)
+// Serve Frontend Build (client/dist) with optimized caching
 const clientDistPath = path.resolve(__dirname, '../../client/dist');
 if (fs.existsSync(clientDistPath)) {
-  app.use(express.static(clientDistPath));
+  // Vite fingerprinted assets in /assets/ get 1-year immutable caching
+  app.use(
+    '/assets',
+    express.static(path.join(clientDistPath, 'assets'), {
+      maxAge: '1y',
+      immutable: true,
+      etag: true,
+    })
+  );
+
+  // Other static files in dist
+  app.use(
+    express.static(clientDistPath, {
+      maxAge: '1h',
+      etag: true,
+      index: false,
+    })
+  );
+
+  // HTML index fallback: must-revalidate to always serve current client bundle
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
       return next();
     }
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 }

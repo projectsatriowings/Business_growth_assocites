@@ -16,11 +16,13 @@ import {
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
+import { SkeletonStatsRow, SkeletonTable } from '../../components/Skeleton';
 
 export const AccountsPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'quotation-requests' | 'work-orders' | 'payments' | 'commissions'>('dashboard');
 
   const [loading, setLoading] = useState(false);
+  const [tabLoading, setTabLoading] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [quotationRequests, setQuotationRequests] = useState<any[]>([]);
   const [workOrders, setWorkOrders] = useState<any[]>([]);
@@ -51,36 +53,57 @@ export const AccountsPortal: React.FC = () => {
     paymentDate: new Date().toISOString().slice(0, 10),
   });
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadStats = async (bypass = false) => {
     try {
-      const s = await apiRequest('/api/accounts/dashboard-stats');
+      const s = await apiRequest('/api/accounts/dashboard-stats', { bypassCache: bypass });
       setStats(s);
+    } catch (e) {
+      console.error('Failed to load accounts stats:', e);
+    }
+  };
 
-      if (activeTab === 'quotation-requests') {
+  const loadTabData = async (tab = activeTab) => {
+    setTabLoading(true);
+    try {
+      if (tab === 'quotation-requests') {
         const q = await apiRequest('/api/accounts/quotation-requests');
         setQuotationRequests(q.requests || []);
-      } else if (activeTab === 'work-orders') {
+      } else if (tab === 'work-orders') {
         const w = await apiRequest('/api/accounts/work-orders');
         setWorkOrders(w.workOrders || []);
-      } else if (activeTab === 'payments') {
-        const p = await apiRequest('/api/accounts/payments');
+      } else if (tab === 'payments') {
+        const [p, w] = await Promise.all([
+          apiRequest('/api/accounts/payments'),
+          apiRequest('/api/accounts/work-orders'),
+        ]);
         setPayments(p.payments || []);
-        const w = await apiRequest('/api/accounts/work-orders');
         setWorkOrders(w.workOrders || []);
-      } else if (activeTab === 'commissions') {
+      } else if (tab === 'commissions') {
         const comm = await apiRequest('/api/accounts/commissions');
         setCommissions(comm.commissions || []);
       }
     } catch (e) {
       console.error(e);
     } finally {
+      setTabLoading(false);
+    }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([loadStats(), loadTabData()]);
+    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    loadStats();
+  }, []);
+
+  useEffect(() => {
+    loadTabData(activeTab);
   }, [activeTab]);
 
   // Open Prepare Quotation Modal
@@ -244,9 +267,12 @@ export const AccountsPortal: React.FC = () => {
         {/* Main Content Area */}
         <main className="flex-1 p-6 overflow-y-auto max-w-7xl">
           {/* TAB 1: DASHBOARD */}
-          {activeTab === 'dashboard' && stats && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {activeTab === 'dashboard' && (
+            !stats ? (
+              <SkeletonStatsRow count={4} />
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <span className="text-xs text-slate-500 font-semibold uppercase">Pending Quotation Requests</span>
                   <div className="text-2xl font-bold text-amber-600 mt-1">{stats.quotationRequests}</div>
@@ -282,6 +308,7 @@ export const AccountsPortal: React.FC = () => {
                 </p>
               </div>
             </div>
+            )
           )}
 
           {/* TAB 2: QUOTATION REQUESTS */}

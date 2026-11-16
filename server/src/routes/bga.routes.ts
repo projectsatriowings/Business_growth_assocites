@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { Role, BgaStatus, EnquiryStatus, QuotationStatus, WorkOrderStatus, ServiceCategoryType } from '@prisma/client';
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, checkBgaActive, AuthRequest, logAudit, createNotification } from '../middleware/auth';
+import { appCache } from '../utils/cache';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -15,34 +16,47 @@ const generateId = (prefix: string) => {
   return `${prefix}-${dateStr}-${random}`;
 };
 
-// 1. BGA Dashboard Stats
+// 1. BGA Dashboard Stats (Optimized with Promise.all & tenant-isolated cache)
 router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const bgaId = req.user!.id;
+    const cacheKey = `bga:${bgaId}:dashboard-stats`;
+    const cached = appCache.get(cacheKey);
+    if (cached) {
+      res.json(cached);
+      return;
+    }
 
-    const totalClients = await prisma.client.count({ where: { bgaId } });
-    const totalEnquiries = await prisma.enquiry.count({ where: { bgaId } });
-    const totalQuotations = await prisma.quotation.count({ where: { bgaId } });
-    const acceptedQuotations = await prisma.quotation.count({ where: { bgaId, status: QuotationStatus.ACCEPTED } });
+    const [
+      totalClients,
+      totalEnquiries,
+      totalQuotations,
+      acceptedQuotations,
+      activeProjects,
+      totalEarnings,
+      pendingEarnings,
+    ] = await Promise.all([
+      prisma.client.count({ where: { bgaId } }),
+      prisma.enquiry.count({ where: { bgaId } }),
+      prisma.quotation.count({ where: { bgaId } }),
+      prisma.quotation.count({ where: { bgaId, status: QuotationStatus.ACCEPTED } }),
+      prisma.technicalProject.count({
+        where: {
+          workOrder: { bgaId },
+          status: { in: ['READY_TO_START', 'IN_PROGRESS', 'UNDER_REVIEW', 'CORRECTION_REQUIRED'] },
+        },
+      }),
+      prisma.commission.aggregate({
+        where: { bgaId, payoutStatus: 'PROCESSED' },
+        _sum: { calculatedCommission: true },
+      }),
+      prisma.commission.aggregate({
+        where: { bgaId, payoutStatus: 'UNPAID' },
+        _sum: { calculatedCommission: true },
+      }),
+    ]);
 
-    const activeProjects = await prisma.technicalProject.count({
-      where: {
-        workOrder: { bgaId },
-        status: { in: ['READY_TO_START', 'IN_PROGRESS', 'UNDER_REVIEW', 'CORRECTION_REQUIRED'] },
-      },
-    });
-
-    const totalEarnings = await prisma.commission.aggregate({
-      where: { bgaId, payoutStatus: 'PROCESSED' },
-      _sum: { calculatedCommission: true },
-    });
-
-    const pendingEarnings = await prisma.commission.aggregate({
-      where: { bgaId, payoutStatus: 'UNPAID' },
-      _sum: { calculatedCommission: true },
-    });
-
-    res.json({
+    const result = {
       clients: totalClients,
       enquiries: totalEnquiries,
       quotations: totalQuotations,
@@ -52,7 +66,10 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
         paid: totalEarnings._sum.calculatedCommission || 0,
         pending: pendingEarnings._sum.calculatedCommission || 0,
       },
-    });
+    };
+
+    appCache.set(cacheKey, result, 20);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to load BGA stats' });
   }
@@ -61,6 +78,7 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
 // 2. Company Published Resources (Confidential / unpublished resources strictly hidden)
 router.get('/resources', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    res.setHeader('Cache-Control', 'private, max-age=60, stale-while-revalidate=300');
     const resources = await prisma.companyResource.findMany({
       where: {
         isPublished: true,
@@ -77,6 +95,7 @@ router.get('/resources', async (req: AuthRequest, res: Response): Promise<void> 
 // 3. Services Catalog
 router.get('/services', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    res.setHeader('Cache-Control', 'private, max-age=60, stale-while-revalidate=300');
     const services = await prisma.serviceItem.findMany({
       where: { isActive: true },
       orderBy: [{ category: 'asc' }, { name: 'asc' }],
@@ -224,6 +243,9 @@ router.post('/clients', async (req: AuthRequest, res: Response): Promise<void> =
       { clientName: client.clientName, businessName: client.businessName },
       req.ip
     );
+
+    appCache.invalidatePrefix(`bga:${req.user!.id}:`);
+    appCache.invalidatePrefix('admin:');
 
     res.status(201).json({
       message: 'Client registered successfully and assigned to your account.',

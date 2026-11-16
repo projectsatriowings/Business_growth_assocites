@@ -15,10 +15,12 @@ import {
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
+import { SkeletonStatsRow, SkeletonTable } from '../../components/Skeleton';
 
 export const TechnicalPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects'>('dashboard');
   const [loading, setLoading] = useState(false);
+  const [tabLoading, setTabLoading] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
@@ -38,15 +40,20 @@ export const TechnicalPortal: React.FC = () => {
   const [feedbackModal, setFeedbackModal] = useState<boolean>(false);
   const [feedbackContent, setFeedbackContent] = useState('');
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadStats = async (bypass = false) => {
     try {
-      const s = await apiRequest('/api/technical/dashboard-stats');
+      const s = await apiRequest('/api/technical/dashboard-stats', { bypassCache: bypass });
       setStats(s);
+    } catch (e) {
+      console.error('Failed to load technical stats:', e);
+    }
+  };
 
+  const loadProjects = async () => {
+    setTabLoading(true);
+    try {
       const p = await apiRequest('/api/technical/projects');
       setProjects(p.projects || []);
-
       if (selectedProject) {
         const refreshed = (p.projects || []).find((x: any) => x.id === selectedProject.id);
         if (refreshed) setSelectedProject(refreshed);
@@ -54,13 +61,23 @@ export const TechnicalPortal: React.FC = () => {
     } catch (e) {
       console.error(e);
     } finally {
+      setTabLoading(false);
+    }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([loadStats(), loadProjects()]);
+    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, [activeTab]);
+    loadStats();
+    loadProjects();
+  }, []);
 
   // Handle Project Status Update
   const handleUpdateStatus = async (projectId: string, newStatus: string, progress?: number) => {
@@ -210,9 +227,12 @@ export const TechnicalPortal: React.FC = () => {
         {/* Main Content Area */}
         <main className="flex-1 p-6 overflow-y-auto max-w-7xl">
           {/* TAB 1: DASHBOARD */}
-          {activeTab === 'dashboard' && stats && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {activeTab === 'dashboard' && (
+            !stats ? (
+              <SkeletonStatsRow count={5} />
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <span className="text-xs text-slate-500 font-semibold uppercase">Total Projects</span>
                   <div className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</div>
@@ -262,6 +282,7 @@ export const TechnicalPortal: React.FC = () => {
                 </button>
               </div>
             </div>
+            )
           )}
 
           {/* TAB 2: ASSIGNED PROJECTS & PROJECT DETAILS */}
