@@ -51,6 +51,14 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
       if (prepUser) preparedByName = prepUser.name;
     }
 
+    let formattedClientLocation = quotation.client.location;
+    try {
+      if (quotation.client.location && quotation.client.location.startsWith('{')) {
+        const parsed = JSON.parse(quotation.client.location);
+        formattedClientLocation = parsed.city ? `${parsed.city}${parsed.state ? ', ' + parsed.state : ''}` : (parsed.fullAddress || quotation.client.location);
+      }
+    } catch {}
+
     generateQuotationPdf(
       {
         quotationNumber: quotation.quotationNumber,
@@ -62,7 +70,7 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
           businessName: quotation.client.businessName,
           mobile: quotation.client.mobile,
           email: quotation.client.email,
-          location: quotation.client.location,
+          location: formattedClientLocation,
         },
         bga: {
           name: quotation.bga.name,

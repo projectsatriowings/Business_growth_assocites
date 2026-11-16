@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth, UserRole } from './context/AuthContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { LandingPage } from './pages/LandingPage';
 import { RegisterBgaPage } from './pages/RegisterBgaPage';
@@ -13,9 +14,14 @@ import { TechnicalPortal } from './pages/technical/TechnicalPortal';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles: UserRole[];
+  redirectPath?: string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  allowedRoles,
+  redirectPath = '/login',
+}) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -27,7 +33,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={redirectPath} replace />;
   }
 
   if (!allowedRoles.includes(user.role)) {
@@ -57,60 +63,94 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
 
 export function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/register" element={<RegisterBgaPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/login/:role" element={<LoginPage />} />
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/register" element={<RegisterBgaPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/login/:role" element={<LoginPage />} />
 
-          {/* Admin Protected Routes */}
-          <Route
-            path="/admin/*"
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
-                <AdminPortal />
-              </ProtectedRoute>
-            }
-          />
+            {/* Admin Protected Routes (matching both /admin and /admin/*) */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']} redirectPath="/login/admin">
+                  <AdminPortal />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/*"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']} redirectPath="/login/admin">
+                  <AdminPortal />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* BGA Protected Routes */}
-          <Route
-            path="/bga/*"
-            element={
-              <ProtectedRoute allowedRoles={['BGA']}>
-                <BgaPortal />
-              </ProtectedRoute>
-            }
-          />
+            {/* BGA Protected Routes */}
+            <Route
+              path="/bga"
+              element={
+                <ProtectedRoute allowedRoles={['BGA']} redirectPath="/login">
+                  <BgaPortal />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bga/*"
+              element={
+                <ProtectedRoute allowedRoles={['BGA']} redirectPath="/login">
+                  <BgaPortal />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Accounts Protected Routes */}
-          <Route
-            path="/accounts/*"
-            element={
-              <ProtectedRoute allowedRoles={['ACCOUNTS', 'ADMIN']}>
-                <AccountsPortal />
-              </ProtectedRoute>
-            }
-          />
+            {/* Accounts Protected Routes */}
+            <Route
+              path="/accounts"
+              element={
+                <ProtectedRoute allowedRoles={['ACCOUNTS', 'ADMIN']} redirectPath="/login/accounts">
+                  <AccountsPortal />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts/*"
+              element={
+                <ProtectedRoute allowedRoles={['ACCOUNTS', 'ADMIN']} redirectPath="/login/accounts">
+                  <AccountsPortal />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Technical Protected Routes */}
-          <Route
-            path="/technical/*"
-            element={
-              <ProtectedRoute allowedRoles={['TECHNICAL', 'ADMIN']}>
-                <TechnicalPortal />
-              </ProtectedRoute>
-            }
-          />
+            {/* Technical Protected Routes */}
+            <Route
+              path="/technical"
+              element={
+                <ProtectedRoute allowedRoles={['TECHNICAL', 'ADMIN']} redirectPath="/login/technical">
+                  <TechnicalPortal />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/technical/*"
+              element={
+                <ProtectedRoute allowedRoles={['TECHNICAL', 'ADMIN']} redirectPath="/login/technical">
+                  <TechnicalPortal />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Catch-all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+            {/* Catch-all */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

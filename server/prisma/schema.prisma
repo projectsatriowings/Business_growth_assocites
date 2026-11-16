@@ -113,16 +113,29 @@ model User {
   status           BgaStatus    @default(ACTIVE)
   dob              DateTime?
   address          String?
+  city             String?
+  state            String?
+  pinCode          String?
   panNumber        String?
   panVerified      Boolean      @default(false)
+  panVerifiedAt    DateTime?
   aadhaarMasked    String?
   aadhaarVerified  Boolean      @default(false)
+  aadhaarVerifiedAt DateTime?
+  kycSubmittedAt   DateTime?
+  bankName         String?
   bankAccountHolder String?
   bankAccountNumber String?
   bankIfsc         String?
   bankVerified     Boolean      @default(false)
+  bankVerifiedAt   DateTime?
+  panDocumentUrl   String?
+  addressProofUrl  String?
+  bankProofUrl     String?
   agreementAccepted Boolean     @default(false)
   agreementAcceptedAt DateTime?
+  agreementDocumentUrl String?
+  lastLoginAt      DateTime?
   rejectionReason  String?
   statusNotes      String?
   approvedAt       DateTime?

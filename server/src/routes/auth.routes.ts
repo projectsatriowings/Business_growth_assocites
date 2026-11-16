@@ -73,6 +73,12 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       }
     }
 
+    // Update Last Login Timestamp
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
     // Generate JWT
     const token = jwt.sign(
       {
@@ -126,11 +132,15 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
       fullName,
       dob,
       address,
+      city,
+      state,
+      pinCode,
       mobile,
       email,
       password,
       panNumber,
       aadhaarNumber,
+      bankName,
       bankAccountHolder,
       bankAccountNumber,
       bankIfsc,
@@ -203,16 +213,25 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
         status: BgaStatus.SUBMITTED,
         dob: dob ? new Date(dob) : null,
         address: address ? address.trim() : null,
+        city: city ? city.trim() : null,
+        state: state ? state.trim() : null,
+        pinCode: pinCode ? pinCode.trim() : null,
         panNumber: cleanPan,
         panVerified: false,
         aadhaarMasked: maskedAadhaar,
         aadhaarVerified: false, // Pending admin or authorized provider verification
+        kycSubmittedAt: new Date(),
+        bankName: bankName ? bankName.trim() : null,
         bankAccountHolder: bankAccountHolder ? bankAccountHolder.trim() : null,
         bankAccountNumber: bankAccountNumber ? bankAccountNumber.trim() : null,
         bankIfsc: bankIfsc ? bankIfsc.trim().toUpperCase() : null,
         bankVerified: false,
         agreementAccepted: true,
         agreementAcceptedAt: new Date(),
+        panDocumentUrl: cleanPan ? `/uploads/documents/pan-${normalizedMobile}.pdf` : null,
+        addressProofUrl: address ? `/uploads/documents/address-${normalizedMobile}.pdf` : null,
+        bankProofUrl: bankAccountNumber ? `/uploads/documents/bank-${normalizedMobile}.pdf` : null,
+        agreementDocumentUrl: `/uploads/documents/agreement-${normalizedMobile}.pdf`,
       },
     });
 
@@ -265,18 +284,34 @@ router.get('/me', authenticateJWT, async (req: AuthRequest, res: Response): Prom
         status: true,
         dob: true,
         address: true,
+        city: true,
+        state: true,
+        pinCode: true,
         panNumber: true,
         panVerified: true,
+        panVerifiedAt: true,
         aadhaarMasked: true,
         aadhaarVerified: true,
+        aadhaarVerifiedAt: true,
+        kycSubmittedAt: true,
+        bankName: true,
         bankAccountHolder: true,
         bankAccountNumber: true,
         bankIfsc: true,
         bankVerified: true,
+        bankVerifiedAt: true,
+        panDocumentUrl: true,
+        addressProofUrl: true,
+        bankProofUrl: true,
         agreementAccepted: true,
         agreementAcceptedAt: true,
+        agreementDocumentUrl: true,
+        lastLoginAt: true,
+        rejectionReason: true,
+        statusNotes: true,
         approvedAt: true,
         createdAt: true,
+        updatedAt: true,
       },
     });
 
