@@ -44,6 +44,8 @@ enum EnquiryStatus {
 enum QuotationStatus {
   REQUESTED
   PREPARED
+  PENDING_ADMIN_APPROVAL
+  ADMIN_APPROVED
   SENT_TO_BGA
   REVISION_REQUESTED
   ACCEPTED
@@ -151,6 +153,7 @@ model User {
   notifications    Notification[]
   auditLogs        AuditLog[]
   assignedProjects TechnicalProject[] @relation("LeadProjects")
+  quotationReminders QuotationReminder[]
 
   @@index([role, status])
   @@index([role, createdAt])
@@ -278,6 +281,12 @@ model Quotation {
   paymentTerms           String
   validityDate           DateTime
   status                 QuotationStatus @default(REQUESTED)
+  adminApprovalStatus    String?         @default("PENDING")
+  adminNotes             String?
+  adminReviewedAt        DateTime?
+  adminReviewedById      String?
+  lastReminderSentAt     DateTime?
+  reminderCount          Int             @default(0)
   revisionNotes          String?
   previousVersionId      String?
   clientAcceptanceProof  String?
@@ -288,6 +297,7 @@ model Quotation {
   updatedAt              DateTime        @updatedAt
 
   workOrder              WorkOrder?
+  reminders              QuotationReminder[]
 
   @@index([enquiryId])
   @@index([clientId])
@@ -312,6 +322,11 @@ model WorkOrder {
   advancePaid      Float           @default(0)
   advanceVerified  Boolean         @default(false)
   status           WorkOrderStatus @default(PENDING_ADVANCE)
+  handoverApproved     Boolean     @default(false)
+  handoverStatus       String?     @default("PENDING")
+  handoverApprovedAt   DateTime?
+  handoverApprovedById String?
+  handoverNotes        String?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -497,5 +512,18 @@ model AuditLog {
   @@index([userId, createdAt])
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+model QuotationReminder {
+  id          String    @id @default(cuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  bgaId       String
+  bga         User      @relation(fields: [bgaId], references: [id])
+  message     String?
+  createdAt   DateTime  @default(now())
+
+  @@index([quotationId])
+  @@index([bgaId])
 }
 

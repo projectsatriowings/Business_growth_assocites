@@ -1,6 +1,17 @@
 import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { Role, BgaStatus, EnquiryStatus, ServiceCategoryType, CommissionApproval, CommissionPayout } from '@prisma/client';
+import {
+  Role,
+  BgaStatus,
+  EnquiryStatus,
+  QuotationStatus,
+  WorkOrderStatus,
+  PaymentStatus,
+  ProjectStatus,
+  ServiceCategoryType,
+  CommissionApproval,
+  CommissionPayout,
+} from '@prisma/client';
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification, invalidateUserCache } from '../middleware/auth';
 import { appCache } from '../utils/cache';
@@ -35,6 +46,13 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       totalCommissions,
       paidCommissions,
       pendingCommissions,
+      pendingQuotations,
+      delayedQuotations,
+      pendingQuotationApprovals,
+      acceptedQuotations,
+      pendingAdvancePayments,
+      paymentsVerifiedCount,
+      pendingTechnicalHandovers,
     ] = await Promise.all([
       prisma.user.count({ where: { role: Role.BGA } }),
       prisma.user.count({ where: { role: Role.BGA, status: BgaStatus.ACTIVE } }),
@@ -49,11 +67,11 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       prisma.workOrder.count(),
       prisma.technicalProject.count(),
       prisma.technicalProject.count({
-        where: { status: { in: ['READY_TO_START', 'IN_PROGRESS', 'UNDER_REVIEW', 'CORRECTION_REQUIRED'] } },
+        where: { status: { in: [ProjectStatus.READY_TO_START, ProjectStatus.IN_PROGRESS, ProjectStatus.UNDER_REVIEW, ProjectStatus.CORRECTION_REQUIRED] } },
       }),
-      prisma.technicalProject.count({ where: { status: 'COMPLETED' } }),
+      prisma.technicalProject.count({ where: { status: ProjectStatus.COMPLETED } }),
       prisma.payment.aggregate({
-        where: { status: 'VERIFIED' },
+        where: { status: PaymentStatus.VERIFIED },
         _sum: { amount: true },
       }),
       prisma.commission.aggregate({
@@ -66,6 +84,30 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       prisma.commission.aggregate({
         where: { payoutStatus: { not: CommissionPayout.PROCESSED } },
         _sum: { calculatedCommission: true },
+      }),
+      prisma.quotation.count({
+        where: { status: { in: [QuotationStatus.REQUESTED, QuotationStatus.REVISION_REQUESTED] } },
+      }),
+      prisma.quotation.count({
+        where: {
+          status: { in: [QuotationStatus.REQUESTED, QuotationStatus.REVISION_REQUESTED] },
+          reminderCount: { gt: 0 },
+        },
+      }),
+      prisma.quotation.count({
+        where: { status: QuotationStatus.PENDING_ADMIN_APPROVAL },
+      }),
+      prisma.quotation.count({
+        where: { status: QuotationStatus.ACCEPTED },
+      }),
+      prisma.workOrder.count({
+        where: { status: WorkOrderStatus.PENDING_ADVANCE, advanceVerified: false },
+      }),
+      prisma.payment.count({
+        where: { status: PaymentStatus.VERIFIED },
+      }),
+      prisma.workOrder.count({
+        where: { advanceVerified: true, handoverApproved: false },
       }),
     ]);
 
@@ -82,6 +124,18 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
         totalCommissions: totalCommissions._sum.calculatedCommission || 0,
         paidCommissions: paidCommissions._sum.calculatedCommission || 0,
         pendingCommissions: pendingCommissions._sum.calculatedCommission || 0,
+      },
+      workflow: {
+        pendingClientApprovals: pendingEnquiries,
+        approvedEnquiries,
+        pendingQuotations,
+        delayedQuotations,
+        pendingQuotationApprovals,
+        acceptedQuotations,
+        pendingAdvancePayments,
+        paymentsVerified: paymentsVerifiedCount,
+        pendingTechnicalHandovers,
+        activeTechnicalProjects: activeProjects,
       },
     };
 
@@ -734,7 +788,7 @@ router.post('/enquiries/:id/review', async (req: AuthRequest, res: Response): Pr
 
     let newStatus: EnquiryStatus = EnquiryStatus.APPROVED;
     let notifTitle = 'Enquiry Approved by Management';
-    let notifMsg = `Your enquiry for ${enquiry.client.clientName} (${enquiry.serviceCategory}) has been approved. You can now request an official quotation from Accounts.`;
+    let notifMsg = `Your enquiry for ${enquiry.client.clientName} (${enquiry.serviceCategory}) has been approved. Accounts has been assigned to prepare the official quotation.`;
     let notifType: 'SUCCESS' | 'WARNING' | 'ACTION_REQUIRED' = 'SUCCESS';
 
     if (action === 'REJECT') {
@@ -759,8 +813,54 @@ router.post('/enquiries/:id/review', async (req: AuthRequest, res: Response): Pr
       },
     });
 
+    // If approved, automatically create a Quotation task for Accounts & notify Accounts
+    if (action === 'APPROVE') {
+      const existingQuotation = await prisma.quotation.findFirst({
+        where: { enquiryId: enquiry.id },
+      });
+
+      if (!existingQuotation) {
+        const quotationNumber = `QT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+        await prisma.quotation.create({
+          data: {
+            quotationNumber,
+            version: 1,
+            enquiryId: enquiry.id,
+            clientId: enquiry.clientId,
+            bgaId: enquiry.bgaId,
+            serviceCategory: enquiry.serviceCategory,
+            serviceScope: enquiry.requirements,
+            serviceFee: enquiry.expectedBudget || 0,
+            totalAmount: enquiry.expectedBudget || 0,
+            advanceRequiredAmount: (enquiry.expectedBudget || 0) * 0.5,
+            paymentTerms: '50% Advance on Kick-off, 50% on Delivery Completion',
+            validityDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+            status: QuotationStatus.REQUESTED,
+            adminApprovalStatus: 'PENDING',
+          },
+        });
+      }
+
+      // Notify Accounts users
+      const accountsUsers = await prisma.user.findMany({ where: { role: Role.ACCOUNTS } });
+      for (const acc of accountsUsers) {
+        await createNotification(
+          acc.id,
+          'New Approved Enquiry - Quotation Task Assigned',
+          `Admin approved enquiry for ${enquiry.client.clientName} (${enquiry.serviceCategory}). Please prepare official quotation.`,
+          'ACTION_REQUIRED',
+          '/accounts/quotation-requests'
+        );
+      }
+    }
+
     // Notify BGA
-    await createNotification(enquiry.bgaId, notifTitle, notifMsg, notifType, '/bga/quotation-requests');
+    await createNotification(enquiry.bgaId, notifTitle, notifMsg, notifType, '/bga/quotations');
+
+    // Invalidate caches
+    appCache.invalidatePrefix('admin:');
+    appCache.invalidatePrefix('accounts:');
+    appCache.invalidatePrefix('bga:');
 
     // Audit Log
     await logAudit(
@@ -777,6 +877,370 @@ router.post('/enquiries/:id/review', async (req: AuthRequest, res: Response): Pr
     res.json({ message: `Enquiry status updated to ${newStatus}`, enquiry: updated });
   } catch (error) {
     res.status(500).json({ error: 'Failed to review enquiry' });
+  }
+});
+
+// Quotations List & Admin Quotation Approvals
+router.get('/quotations', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { status } = req.query;
+    const where: any = {};
+    if (status && status !== 'ALL') {
+      where.status = status as QuotationStatus;
+    }
+
+    const quotations = await prisma.quotation.findMany({
+      where,
+      include: {
+        client: true,
+        bga: { select: { id: true, name: true, email: true, mobile: true } },
+        enquiry: true,
+        reminders: { orderBy: { createdAt: 'desc' } },
+        workOrder: { select: { id: true, workOrderNumber: true, status: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ quotations });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load quotations' });
+  }
+});
+
+router.get('/quotations/pending-approval', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const pendingQuotations = await prisma.quotation.findMany({
+      where: {
+        OR: [
+          { status: QuotationStatus.PENDING_ADMIN_APPROVAL },
+          { adminApprovalStatus: 'PENDING', preparedById: { not: null } },
+        ],
+      },
+      include: {
+        client: true,
+        bga: { select: { id: true, name: true, email: true, mobile: true } },
+        enquiry: true,
+        reminders: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ quotations: pendingQuotations });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load pending quotation approvals' });
+  }
+});
+
+router.post('/quotations/:id/review', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { action, notes } = req.body; // APPROVE, REQUEST_REVISION, REJECT
+
+    const quotation = await prisma.quotation.findUnique({
+      where: { id },
+      include: { client: true, bga: true },
+    });
+
+    if (!quotation) {
+      res.status(404).json({ error: 'Quotation not found' });
+      return;
+    }
+
+    let newStatus: QuotationStatus = QuotationStatus.ADMIN_APPROVED;
+    let adminApprovalStatus = 'APPROVED';
+
+    if (action === 'APPROVE') {
+      newStatus = QuotationStatus.ADMIN_APPROVED;
+      adminApprovalStatus = 'APPROVED';
+
+      // Notify Accounts
+      const accountsUsers = await prisma.user.findMany({ where: { role: Role.ACCOUNTS } });
+      for (const acc of accountsUsers) {
+        await createNotification(
+          acc.id,
+          'Quotation Approved by Admin',
+          `Official quotation ${quotation.quotationNumber} for ${quotation.client.clientName} approved by Admin and released to BGA.`,
+          'SUCCESS',
+          '/accounts/quotation-requests'
+        );
+      }
+
+      // Notify BGA - Release to BGA
+      await createNotification(
+        quotation.bgaId,
+        'Official Quotation Approved & Ready for Client',
+        `Admin has approved official quotation ${quotation.quotationNumber} for ${quotation.client.clientName} (Total: Rs. ${quotation.totalAmount.toLocaleString('en-IN')}). You can now download the PDF and present it to the client.`,
+        'SUCCESS',
+        '/bga/quotations'
+      );
+    } else if (action === 'REQUEST_REVISION') {
+      newStatus = QuotationStatus.REVISION_REQUESTED;
+      adminApprovalStatus = 'REVISION_REQUESTED';
+
+      // Notify Accounts with revision reason
+      const accountsUsers = await prisma.user.findMany({ where: { role: Role.ACCOUNTS } });
+      for (const acc of accountsUsers) {
+        await createNotification(
+          acc.id,
+          'Quotation Revision Requested by Admin',
+          `Admin requested changes on quotation ${quotation.quotationNumber} for ${quotation.client.clientName}. Note: ${notes || 'Revision required.'}`,
+          'ACTION_REQUIRED',
+          '/accounts/quotation-requests'
+        );
+      }
+    } else if (action === 'REJECT') {
+      newStatus = QuotationStatus.REJECTED;
+      adminApprovalStatus = 'REJECTED';
+
+      // Notify Accounts & BGA
+      const accountsUsers = await prisma.user.findMany({ where: { role: Role.ACCOUNTS } });
+      for (const acc of accountsUsers) {
+        await createNotification(
+          acc.id,
+          'Quotation Rejected by Admin',
+          `Quotation ${quotation.quotationNumber} for ${quotation.client.clientName} was rejected by Admin. Note: ${notes || 'Rejected.'}`,
+          'WARNING',
+          '/accounts/quotation-requests'
+        );
+      }
+      await createNotification(
+        quotation.bgaId,
+        'Quotation Rejected by Admin',
+        `Quotation ${quotation.quotationNumber} for ${quotation.client.clientName} was rejected by Admin.`,
+        'WARNING',
+        '/bga/quotations'
+      );
+    }
+
+    const updated = await prisma.quotation.update({
+      where: { id },
+      data: {
+        status: newStatus,
+        adminApprovalStatus,
+        adminNotes: notes || null,
+        adminReviewedAt: new Date(),
+        adminReviewedById: req.user!.id,
+      },
+    });
+
+    appCache.invalidatePrefix('admin:');
+    appCache.invalidatePrefix('accounts:');
+    appCache.invalidatePrefix('bga:');
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      `QUOTATION_ADMIN_REVIEW_${action}`,
+      'QUOTATION',
+      quotation.id,
+      { previousStatus: quotation.status, newStatus, adminApprovalStatus, notes },
+      req.ip
+    );
+
+    res.json({ message: `Quotation updated to ${newStatus}`, quotation: updated });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to review quotation' });
+  }
+});
+
+// Work Orders & Payment Verification / Technical Handover
+router.get('/work-orders', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const workOrders = await prisma.workOrder.findMany({
+      include: {
+        client: true,
+        bga: { select: { id: true, name: true, email: true, mobile: true } },
+        quotation: true,
+        payments: { orderBy: { createdAt: 'desc' } },
+        project: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ workOrders });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load work orders' });
+  }
+});
+
+router.get('/handovers/pending', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const pendingHandovers = await prisma.workOrder.findMany({
+      where: {
+        advanceVerified: true,
+        handoverApproved: false,
+      },
+      include: {
+        client: true,
+        bga: { select: { id: true, name: true, email: true, mobile: true } },
+        quotation: true,
+        payments: { where: { status: PaymentStatus.VERIFIED }, orderBy: { createdAt: 'desc' } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ handovers: pendingHandovers });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load pending handovers' });
+  }
+});
+
+router.post('/handovers/:id/review', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { action, notes } = req.body; // APPROVE, HOLD, REQUEST_CLARIFICATION
+
+    const workOrder = await prisma.workOrder.findUnique({
+      where: { id },
+      include: {
+        client: true,
+        bga: true,
+        quotation: true,
+        project: true,
+      },
+    });
+
+    if (!workOrder) {
+      res.status(404).json({ error: 'Work order not found' });
+      return;
+    }
+
+    if (!workOrder.advanceVerified) {
+      res.status(400).json({ error: 'Cannot authorize technical handover before advance payment has been verified by Accounts' });
+      return;
+    }
+
+    if (action === 'APPROVE') {
+      const updatedWorkOrder = await prisma.workOrder.update({
+        where: { id },
+        data: {
+          handoverApproved: true,
+          handoverStatus: 'APPROVED',
+          handoverApprovedAt: new Date(),
+          handoverApprovedById: req.user!.id,
+          handoverNotes: notes || null,
+          status: WorkOrderStatus.IN_PRODUCTION,
+        },
+      });
+
+      // Activate or create Technical Project
+      let project = workOrder.project;
+      if (!project) {
+        const projectNumber = `PRJ-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+        project = await prisma.technicalProject.create({
+          data: {
+            projectNumber,
+            workOrderId: workOrder.id,
+            clientId: workOrder.clientId,
+            serviceCategory: workOrder.serviceCategory,
+            approvedScope: workOrder.agreedScope,
+            status: ProjectStatus.READY_TO_START,
+            progressPercentage: 0,
+            startDate: new Date(),
+          },
+        });
+
+        // Seed 5 standard technical milestones
+        await prisma.projectMilestone.createMany({
+          data: [
+            { projectId: project.id, title: 'Project Kick-off & Requirement Deep Dive', status: 'TODO' },
+            { projectId: project.id, title: 'Architecture / Wireframes / Design Approval', status: 'TODO' },
+            { projectId: project.id, title: 'Core Implementation & Deliverable Build', status: 'TODO' },
+            { projectId: project.id, title: 'Quality Assurance & Client Review', status: 'TODO' },
+            { projectId: project.id, title: 'Final Handover & Project Sign-off', status: 'TODO' },
+          ],
+        });
+      }
+
+      // Notify Technical users
+      const techUsers = await prisma.user.findMany({ where: { role: Role.TECHNICAL } });
+      for (const t of techUsers) {
+        await createNotification(
+          t.id,
+          'New Project Handed Over - Ready to Start',
+          `Admin authorized technical handover for ${workOrder.client.clientName} (${workOrder.serviceCategory}). Work Order: ${workOrder.workOrderNumber}.`,
+          'ACTION_REQUIRED',
+          '/technical/projects'
+        );
+      }
+
+      // Notify BGA
+      await createNotification(
+        workOrder.bgaId,
+        'Technical Handover Approved',
+        `Admin has approved technical handover for ${workOrder.client.clientName}. Project has been dispatched to the Technical team!`,
+        'SUCCESS',
+        '/bga/projects'
+      );
+
+      appCache.invalidatePrefix('admin:');
+      appCache.invalidatePrefix('accounts:');
+      appCache.invalidatePrefix('technical:');
+      appCache.invalidatePrefix('bga:');
+
+      await logAudit(
+        req.user!.id,
+        req.user!.email,
+        req.user!.role,
+        'TECHNICAL_HANDOVER_APPROVED',
+        'WORK_ORDER',
+        workOrder.id,
+        { workOrderNumber: workOrder.workOrderNumber, notes },
+        req.ip
+      );
+
+      res.json({ message: 'Technical handover authorized. Project is now active in Technical Department.', workOrder: updatedWorkOrder, project });
+      return;
+    } else if (action === 'HOLD') {
+      const updatedWorkOrder = await prisma.workOrder.update({
+        where: { id },
+        data: {
+          handoverStatus: 'ON_HOLD',
+          handoverNotes: notes || 'Project placed on hold by Admin',
+        },
+      });
+
+      // Notify Accounts and BGA
+      await createNotification(
+        workOrder.bgaId,
+        'Project Placed on Hold by Admin',
+        `Technical handover for ${workOrder.client.clientName} placed on hold. Reason: ${notes || 'Pending administrative review.'}`,
+        'WARNING',
+        '/bga/projects'
+      );
+
+      res.json({ message: 'Handover held successfully', workOrder: updatedWorkOrder });
+      return;
+    } else if (action === 'REQUEST_CLARIFICATION') {
+      const updatedWorkOrder = await prisma.workOrder.update({
+        where: { id },
+        data: {
+          handoverStatus: 'CLARIFICATION_REQUESTED',
+          handoverNotes: notes || 'Clarification requested by Admin',
+        },
+      });
+
+      // Notify Accounts
+      const accountsUsers = await prisma.user.findMany({ where: { role: Role.ACCOUNTS } });
+      for (const acc of accountsUsers) {
+        await createNotification(
+          acc.id,
+          'Handover Clarification Requested by Admin',
+          `Admin requested payment/scope clarification on work order ${workOrder.workOrderNumber} (${workOrder.client.clientName}). Note: ${notes}`,
+          'ACTION_REQUIRED',
+          '/accounts/work-orders'
+        );
+      }
+
+      res.json({ message: 'Clarification requested', workOrder: updatedWorkOrder });
+      return;
+    } else {
+      res.status(400).json({ error: 'Invalid handover review action' });
+      return;
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to review technical handover' });
   }
 });
 

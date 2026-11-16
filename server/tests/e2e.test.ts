@@ -202,26 +202,47 @@ async function runEndToEndTests() {
 
     assert(quotation.status === QuotationStatus.REQUESTED, 'Test 19: Quotation created in REQUESTED status by BGA');
 
-    // TEST 8: Accounts Prepares Official Quotation & Dispatches
-    const dispatchedQuotation = await prisma.quotation.update({
+    // TEST 8: Accounts Prepares Official Quotation & Submits for Admin Approval
+    const preparedQuotation = await prisma.quotation.update({
       where: { id: quotation.id },
       data: {
         preparedById: accountsUser!.id,
-        status: QuotationStatus.SENT_TO_BGA,
+        status: QuotationStatus.PENDING_ADMIN_APPROVAL,
+        adminApprovalStatus: 'PENDING',
       },
     });
 
-    assert(dispatchedQuotation.status === QuotationStatus.SENT_TO_BGA, 'Test 20: Accounts prepared and dispatched quotation to BGA');
+    assert(preparedQuotation.status === QuotationStatus.PENDING_ADMIN_APPROVAL, 'Test 20: Accounts prepared quotation submitted for Admin approval');
 
-    // TEST 9: Quotation Revision Request
+    // TEST 9: BGA Quotation Reminder with Cooldown Tracking
+    const reminder = await prisma.quotationReminder.create({
+      data: {
+        quotationId: preparedQuotation.id,
+        bgaId: bga1!.id,
+        message: 'Accounts and Admin, please expedite quotation review.',
+      },
+    });
+    const quoteWithReminder = await prisma.quotation.update({
+      where: { id: preparedQuotation.id },
+      data: {
+        lastReminderSentAt: new Date(),
+        reminderCount: 1,
+      },
+    });
+    assert(quoteWithReminder.reminderCount === 1, 'Test 21: BGA quotation reminder logged with timestamp');
+
+    // TEST 10: Admin Quotation Review - Revision Request
     const revisionReq = await prisma.quotation.update({
       where: { id: quotation.id },
       data: {
         status: QuotationStatus.REVISION_REQUESTED,
-        revisionNotes: 'Client asked to adjust fee to ₹35,000',
+        adminApprovalStatus: 'REVISION_REQUESTED',
+        adminNotes: 'Please revise scope to include SSL certificate.',
+        adminReviewedById: adminUser!.id,
+        adminReviewedAt: new Date(),
       },
     });
-    assert(revisionReq.status === QuotationStatus.REVISION_REQUESTED, 'Test 21: BGA successfully submitted quotation revision request');
+    assert(revisionReq.status === QuotationStatus.REVISION_REQUESTED, 'Test 22: Admin quotation revision requested');
 
     // Accounts drafts revision v2 preserving previous version
     const revisionV2 = await prisma.quotation.create({
@@ -244,19 +265,32 @@ async function runEndToEndTests() {
         advanceRequiredAmount: 32450,
         paymentTerms: '50% advance before start.',
         validityDate: new Date(Date.now() + 15 * 86400000),
-        status: QuotationStatus.SENT_TO_BGA,
+        status: QuotationStatus.PENDING_ADMIN_APPROVAL,
+        adminApprovalStatus: 'PENDING',
         previousVersionId: quotation.id,
       },
     });
 
-    assert(revisionV2.version === 2 && revisionV2.previousVersionId === quotation.id, 'Test 22: Version 2 created preserving version history');
+    assert(revisionV2.version === 2 && revisionV2.previousVersionId === quotation.id, 'Test 23: Version 2 created preserving version history');
 
-    // TEST 10: Client Acceptance by BGA & Work Order Generation
-    const acceptedQuotation = await prisma.quotation.update({
+    // TEST 11: Admin Approves Quotation V2 -> ADMIN_APPROVED & AVAILABLE
+    const adminApprovedQuote = await prisma.quotation.update({
       where: { id: revisionV2.id },
       data: {
+        status: QuotationStatus.ADMIN_APPROVED,
+        adminApprovalStatus: 'APPROVED',
+        adminReviewedById: adminUser!.id,
+        adminReviewedAt: new Date(),
+      },
+    });
+    assert(adminApprovedQuote.status === QuotationStatus.ADMIN_APPROVED, 'Test 24: Admin approved Quotation V2 and released to BGA');
+
+    // TEST 12: Client Acceptance by BGA & Work Order Generation
+    const acceptedQuotation = await prisma.quotation.update({
+      where: { id: adminApprovedQuote.id },
+      data: {
         status: QuotationStatus.ACCEPTED,
-        clientAcceptanceNotes: 'Client signed commercial proposal on email.',
+        clientAcceptanceNotes: 'Client confirmed via signed order form attached.',
         acceptedAt: new Date(),
         acceptedByBgaId: bga1!.id,
       },
@@ -274,13 +308,15 @@ async function runEndToEndTests() {
         advanceRequired: acceptedQuotation.advanceRequiredAmount,
         advancePaid: 0,
         advanceVerified: false,
+        handoverApproved: false,
+        handoverStatus: 'PENDING_ADVANCE',
         status: WorkOrderStatus.PENDING_ADVANCE,
       },
     });
 
-    assert(workOrder.status === WorkOrderStatus.PENDING_ADVANCE, 'Test 23: Work order auto-created in PENDING_ADVANCE status');
+    assert(workOrder.status === WorkOrderStatus.PENDING_ADVANCE && !workOrder.handoverApproved, 'Test 25: Work order auto-created in PENDING_ADVANCE status');
 
-    // TEST 11: Accounts Advance Payment Verification -> TECHNICAL HANDOVER TRIGGER
+    // TEST 13: Accounts Advance Payment Verification -> PENDING HANDOVER
     const advancePayment = await prisma.payment.create({
       data: {
         workOrderId: workOrder.id,
@@ -295,9 +331,9 @@ async function runEndToEndTests() {
       },
     });
 
-    assert(advancePayment.status === PaymentStatus.PENDING_VERIFICATION, 'Test 24: Payment recorded in PENDING_VERIFICATION');
+    assert(advancePayment.status === PaymentStatus.PENDING_VERIFICATION, 'Test 26: Payment recorded in PENDING_VERIFICATION');
 
-    // Accounts verifies actual bank credit
+    // Accounts verifies bank credit
     const verifiedPayment = await prisma.payment.update({
       where: { id: advancePayment.id },
       data: {
@@ -308,40 +344,72 @@ async function runEndToEndTests() {
       },
     });
 
-    // Advance verification updates WorkOrder and activates Technical Project!
+    // Advance verification updates WorkOrder handoverStatus to PENDING (does NOT directly activate Technical Project)
     const updatedWorkOrder = await prisma.workOrder.update({
       where: { id: workOrder.id },
       data: {
         advancePaid: verifiedPayment.amount,
         advanceVerified: true,
+        handoverStatus: 'PENDING',
         status: WorkOrderStatus.ADVANCE_VERIFIED,
+      },
+    });
+
+    assert(updatedWorkOrder.advanceVerified && updatedWorkOrder.handoverStatus === 'PENDING', 'Test 27: Advance verified by Accounts, handover marked PENDING');
+
+    // Technical projects query excludes unapproved handovers
+    const unapprovedHandoverProjects = await prisma.technicalProject.findMany({
+      where: {
+        workOrder: {
+          handoverApproved: true,
+        },
+      },
+    });
+    const foundPrematureProject = unapprovedHandoverProjects.some((p) => p.workOrderId === updatedWorkOrder.id);
+    assert(!foundPrematureProject, 'Test 28: Technical project NOT created/visible before Admin technical handover authorization');
+
+    // TEST 14: Admin Authorizes Technical Handover -> Technical Project Created
+    const authorizedWorkOrder = await prisma.workOrder.update({
+      where: { id: updatedWorkOrder.id },
+      data: {
+        handoverApproved: true,
+        handoverStatus: 'APPROVED',
+        handoverApprovedAt: new Date(),
+        handoverApprovedById: adminUser!.id,
+        handoverNotes: 'Advance verified. Technical team authorized to initiate project kickoff.',
+        status: WorkOrderStatus.IN_TECHNICAL,
       },
     });
 
     const techProject = await prisma.technicalProject.create({
       data: {
         projectNumber: `PRJ-${Date.now()}`,
-        workOrderId: updatedWorkOrder.id,
+        workOrderId: authorizedWorkOrder.id,
         clientId: clientBga1.id,
         serviceCategory: 'DIGITAL_MARKETING',
-        approvedScope: updatedWorkOrder.agreedScope,
+        approvedScope: authorizedWorkOrder.agreedScope,
         status: ProjectStatus.READY_TO_START,
         progressPercentage: 0,
+        milestones: {
+          create: [
+            { title: 'Project Initiation & Kickoff', description: 'Requirements alignment and baseline setup', status: 'TODO' },
+            { title: 'Design & Architecture', description: 'Wireframes, design mockups, and technical specifications', status: 'TODO' },
+            { title: 'Core Development / Campaign Setup', description: 'Development and configuration of key modules', status: 'TODO' },
+            { title: 'Quality Assurance & Testing', description: 'Internal testing, bug fixes, and performance audits', status: 'TODO' },
+            { title: 'Client Review & Final Handover', description: 'Client demo, acceptance, and deployment/launch', status: 'TODO' },
+          ],
+        },
+      },
+      include: {
+        milestones: true,
       },
     });
 
-    assert(updatedWorkOrder.advanceVerified, 'Test 25: Advance verified by Accounts');
-    assert(techProject.status === ProjectStatus.READY_TO_START, 'Test 26: Technical project activated upon verified advance payment');
+    assert(authorizedWorkOrder.handoverApproved, 'Test 29: Admin authorized technical handover');
+    assert(techProject.status === ProjectStatus.READY_TO_START, 'Test 30: Technical project activated upon Admin handover approval');
+    assert(techProject.milestones.length === 5, 'Test 31: Five standardized milestones automatically initialized');
 
-    // TEST 12: Technical Project Execution & Milestones
-    const milestone = await prisma.projectMilestone.create({
-      data: {
-        projectId: techProject.id,
-        title: 'Initial On-page & Technical Audit',
-        status: 'COMPLETED',
-      },
-    });
-
+    // TEST 15: Technical Project Execution & Milestones
     const inProgressProject = await prisma.technicalProject.update({
       where: { id: techProject.id },
       data: {
@@ -350,7 +418,7 @@ async function runEndToEndTests() {
       },
     });
 
-    assert(inProgressProject.status === ProjectStatus.IN_PROGRESS && inProgressProject.progressPercentage === 50, 'Test 27: Technical project execution updated to IN_PROGRESS');
+    assert(inProgressProject.status === ProjectStatus.IN_PROGRESS && inProgressProject.progressPercentage === 50, 'Test 32: Technical project execution updated to IN_PROGRESS');
 
     // Complete Project
     const completedProject = await prisma.technicalProject.update({
@@ -362,9 +430,9 @@ async function runEndToEndTests() {
       },
     });
 
-    assert(completedProject.status === ProjectStatus.COMPLETED, 'Test 28: Technical project marked COMPLETED');
+    assert(completedProject.status === ProjectStatus.COMPLETED, 'Test 33: Technical project marked COMPLETED');
 
-    // TEST 13: Commission Engine - Digital Marketing Monthly Calculation (EXCLUDING AD SPEND)
+    // TEST 16: Commission Engine - Digital Marketing Monthly Calculation (EXCLUDING AD SPEND)
     const monthlyGrossPayment = 55000;
     const monthlyAdBudget = 20000;
     const commissionableAmount = monthlyGrossPayment - monthlyAdBudget; // ₹35,000
@@ -390,8 +458,8 @@ async function runEndToEndTests() {
       },
     });
 
-    assert(dmCommission.commissionableAmount === 35000, 'Test 29: Commissionable amount excludes advertisement budget (₹35,000 vs ₹55,000)');
-    assert(dmCommission.calculatedCommission === 5250, 'Test 30: Calculated commission accurately reflects 15% of net service fee (₹5,250)');
+    assert(dmCommission.commissionableAmount === 35000, 'Test 34: Commissionable amount excludes advertisement budget (₹35,000 vs ₹55,000)');
+    assert(dmCommission.calculatedCommission === 5250, 'Test 35: Calculated commission accurately reflects 15% of net service fee (₹5,250)');
 
     // Admin approves commission payout
     const approvedCommission = await prisma.commission.update({
@@ -413,9 +481,9 @@ async function runEndToEndTests() {
       },
     });
 
-    assert(paidCommission.payoutStatus === 'PROCESSED', 'Test 31: Commission payout processed with bank transaction reference');
+    assert(paidCommission.payoutStatus === 'PROCESSED', 'Test 36: Commission payout processed with bank transaction reference');
 
-    // TEST 14: Project-Based Commission (Website Development)
+    // TEST 17: Project-Based Commission (Website Development)
     const webCommissionableAmount = 100000;
     const webRate = 12.0; // 12%
     const webCalculatedCommission = (webCommissionableAmount * webRate) / 100; // ₹12,000
@@ -438,15 +506,54 @@ async function runEndToEndTests() {
       },
     });
 
-    assert(webCommission.calculatedCommission === 12000, 'Test 32: Project-based commission correctly calculated at 12% (₹12,000)');
+    assert(webCommission.calculatedCommission === 12000, 'Test 37: Project-based commission correctly calculated at 12% (₹12,000)');
 
-    // TEST 15: Security & Role-Based Access Control
+    // TEST 18: Security & Role-Based Access Control
     const token = jwt.sign(
       { id: techUser!.id, name: techUser!.name, role: Role.TECHNICAL },
       JWT_SECRET
     );
     const decoded = jwt.verify(token, JWT_SECRET) as any;
-    assert(decoded.role === Role.TECHNICAL, 'Test 33: JWT token securely encodes and verifies user role');
+    assert(decoded.role === Role.TECHNICAL, 'Test 38: JWT token securely encodes and verifies user role');
+
+    // TEST 19: 10-Stage Admin Monitoring Dashboard Pipeline Aggregates
+    const [
+      pendingEnquiries,
+      approvedEnquiries,
+      pendingQuotations,
+      approvedQuotations,
+      pendingDecisions,
+      pendingAdvance,
+      pendingHandover,
+      inTechnical,
+      completedProjects,
+      pendingCommissions,
+    ] = await Promise.all([
+      prisma.enquiry.count({ where: { status: EnquiryStatus.SUBMITTED } }),
+      prisma.enquiry.count({ where: { status: EnquiryStatus.APPROVED } }),
+      prisma.quotation.count({ where: { status: QuotationStatus.PENDING_ADMIN_APPROVAL } }),
+      prisma.quotation.count({ where: { status: QuotationStatus.ADMIN_APPROVED } }),
+      prisma.quotation.count({ where: { status: QuotationStatus.SENT_TO_BGA } }),
+      prisma.workOrder.count({ where: { status: WorkOrderStatus.PENDING_ADVANCE } }),
+      prisma.workOrder.count({ where: { handoverStatus: 'PENDING', advanceVerified: true } }),
+      prisma.technicalProject.count({ where: { status: { in: [ProjectStatus.READY_TO_START, ProjectStatus.IN_PROGRESS] } } }),
+      prisma.technicalProject.count({ where: { status: ProjectStatus.COMPLETED } }),
+      prisma.commission.count({ where: { approvalStatus: 'PENDING_APPROVAL' } }),
+    ]);
+
+    assert(
+      typeof pendingEnquiries === 'number' &&
+      typeof approvedEnquiries === 'number' &&
+      typeof pendingQuotations === 'number' &&
+      typeof approvedQuotations === 'number' &&
+      typeof pendingDecisions === 'number' &&
+      typeof pendingAdvance === 'number' &&
+      typeof pendingHandover === 'number' &&
+      typeof inTechnical === 'number' &&
+      typeof completedProjects === 'number' &&
+      typeof pendingCommissions === 'number',
+      'Test 39: 10-Stage Enterprise Pipeline metrics correctly aggregated'
+    );
 
     // Cleanup test records created in this test run
     await prisma.commission.deleteMany({ where: { id: { in: [dmCommission.id, webCommission.id] } } });
@@ -454,6 +561,7 @@ async function runEndToEndTests() {
     await prisma.technicalProject.delete({ where: { id: techProject.id } });
     await prisma.payment.delete({ where: { id: advancePayment.id } });
     await prisma.workOrder.delete({ where: { id: workOrder.id } });
+    await prisma.quotationReminder.deleteMany({ where: { bgaId: bga1!.id } });
     await prisma.quotation.deleteMany({ where: { enquiryId: approvedEnquiry.id } });
     await prisma.enquiry.delete({ where: { id: enqId } });
     await prisma.client.delete({ where: { id: clientBga1.id } });

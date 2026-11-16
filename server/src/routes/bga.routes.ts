@@ -1270,7 +1270,7 @@ router.post('/enquiries/:id/request-quotation', async (req: AuthRequest, res: Re
   }
 });
 
-// View My Quotations
+// View My Quotations (Includes reminder history and status)
 router.get('/quotations', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const quotations = await prisma.quotation.findMany({
@@ -1279,12 +1279,97 @@ router.get('/quotations', async (req: AuthRequest, res: Response): Promise<void>
         client: true,
         enquiry: true,
         workOrder: true,
+        reminders: { orderBy: { createdAt: 'desc' } },
       },
       orderBy: { createdAt: 'desc' },
     });
     res.json({ quotations });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load quotations' });
+  }
+});
+
+// Send Quotation Reminder to Accounts & Admin (with cooldown)
+router.post('/quotations/:id/reminder', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { message } = req.body;
+
+    const quotation = await prisma.quotation.findFirst({
+      where: { id, bgaId: req.user!.id },
+      include: { client: true },
+    });
+
+    if (!quotation) {
+      res.status(404).json({ error: 'Quotation request not found or not owned by you' });
+      return;
+    }
+
+    // Cooldown check: 15 minutes between reminders
+    const cooldownMs = 15 * 60 * 1000;
+    if (quotation.lastReminderSentAt && Date.now() - new Date(quotation.lastReminderSentAt).getTime() < cooldownMs) {
+      const waitMins = Math.ceil((cooldownMs - (Date.now() - new Date(quotation.lastReminderSentAt).getTime())) / (60 * 1000));
+      res.status(429).json({
+        error: `Reminder cooldown active. Please wait ${waitMins} minute(s) before sending another reminder.`,
+      });
+      return;
+    }
+
+    // Record reminder in database
+    await prisma.quotationReminder.create({
+      data: {
+        quotationId: quotation.id,
+        bgaId: req.user!.id,
+        message: message ? String(message).trim() : null,
+      },
+    });
+
+    const updated = await prisma.quotation.update({
+      where: { id },
+      data: {
+        reminderCount: (quotation.reminderCount || 0) + 1,
+        lastReminderSentAt: new Date(),
+      },
+    });
+
+    // Notify Accounts Department
+    const accountsUsers = await prisma.user.findMany({ where: { role: Role.ACCOUNTS } });
+    for (const acc of accountsUsers) {
+      await createNotification(
+        acc.id,
+        'Quotation Preparation Reminder',
+        `BGA ${req.user!.name} sent a reminder for client ${quotation.client.clientName} quotation (${quotation.quotationNumber}).`,
+        'ACTION_REQUIRED',
+        '/accounts/quotation-requests'
+      );
+    }
+
+    // Notify Admin
+    const adminUsers = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+    for (const a of adminUsers) {
+      await createNotification(
+        a.id,
+        'Delayed Quotation Reminder',
+        `BGA ${req.user!.name} sent a reminder regarding pending quotation for ${quotation.client.clientName}. Total reminders: ${updated.reminderCount}.`,
+        'WARNING',
+        '/admin/quotations'
+      );
+    }
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'QUOTATION_REMINDER_SENT',
+      'QUOTATION',
+      quotation.id,
+      { reminderCount: updated.reminderCount, message },
+      req.ip
+    );
+
+    res.json({ message: 'Quotation reminder dispatched to Accounts & Admin successfully', quotation: updated });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to send quotation reminder' });
   }
 });
 
@@ -1318,6 +1403,7 @@ router.post('/quotations/:id/request-revision', async (req: AuthRequest, res: Re
       where: { id },
       data: {
         status: QuotationStatus.REVISION_REQUESTED,
+        adminApprovalStatus: 'PENDING',
         revisionNotes: revisionNotes.trim(),
       },
     });
@@ -1373,7 +1459,19 @@ router.post('/quotations/:id/client-decision', async (req: AuthRequest, res: Res
     }
 
     if (decision === 'ACCEPTED') {
-      if (!clientAcceptanceNotes) {
+      // Must verify quotation is Admin approved before accepting!
+      if (
+        quotation.status !== QuotationStatus.ADMIN_APPROVED &&
+        quotation.status !== QuotationStatus.SENT_TO_BGA &&
+        quotation.adminApprovalStatus !== 'APPROVED'
+      ) {
+        res.status(400).json({
+          error: 'Official quotation has not been approved by Admin yet. Only Admin-approved quotations can be accepted by clients.',
+        });
+        return;
+      }
+
+      if (!clientAcceptanceNotes || !clientAcceptanceNotes.trim()) {
         res.status(400).json({ error: 'Client acceptance details/reference notes are mandatory' });
         return;
       }
@@ -1404,6 +1502,8 @@ router.post('/quotations/:id/client-decision', async (req: AuthRequest, res: Res
           advanceRequired: quotation.advanceRequiredAmount,
           advancePaid: 0,
           advanceVerified: false,
+          handoverApproved: false,
+          handoverStatus: 'PENDING',
           status: WorkOrderStatus.PENDING_ADVANCE,
         },
       });
@@ -1417,6 +1517,18 @@ router.post('/quotations/:id/client-decision', async (req: AuthRequest, res: Res
           `Quotation ${quotation.quotationNumber} accepted for ${quotation.client.clientName}. Work Order ${workOrderNumber} created. Awaiting advance payment receipt & verification.`,
           'ACTION_REQUIRED',
           '/accounts/work-orders'
+        );
+      }
+
+      // Notify Admin
+      const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+      for (const a of admins) {
+        await createNotification(
+          a.id,
+          'Quotation Accepted by Client',
+          `Client ${quotation.client.clientName} has accepted quotation ${quotation.quotationNumber}. Work Order ${workOrderNumber} generated.`,
+          'INFO',
+          '/admin/work-orders'
         );
       }
 
@@ -1442,18 +1554,154 @@ router.post('/quotations/:id/client-decision', async (req: AuthRequest, res: Res
         where: { id },
         data: {
           status: QuotationStatus.REJECTED,
-          revisionNotes: clientAcceptanceNotes || 'Client declined quotation.',
+          clientAcceptanceNotes: clientAcceptanceNotes ? clientAcceptanceNotes.trim() : 'Client rejected quotation',
         },
       });
 
-      await logAudit(req.user!.id, req.user!.email, req.user!.role, 'QUOTATION_CLIENT_REJECTED', 'QUOTATION', id, {
-        notes: clientAcceptanceNotes,
-      });
+      // Notify Accounts & Admin
+      const accounts = await prisma.user.findMany({ where: { role: Role.ACCOUNTS } });
+      for (const a of accounts) {
+        await createNotification(
+          a.id,
+          'Quotation Rejected by Client',
+          `Client ${quotation.client.clientName} has rejected quotation ${quotation.quotationNumber}.`,
+          'WARNING',
+          '/accounts/quotations'
+        );
+      }
 
-      res.json({ message: 'Quotation marked as rejected by client', quotation: updatedQuotation });
+      res.json({ message: 'Client rejection recorded', quotation: updatedQuotation });
     }
   } catch (error) {
     res.status(500).json({ error: 'Failed to record client decision' });
+  }
+});
+
+// Dedicated BGA Approval Tracking: "My Client Requests"
+router.get('/client-requests', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const clients = await prisma.client.findMany({
+      where: { bgaId: req.user!.id },
+      include: {
+        enquiries: {
+          include: {
+            quotations: {
+              include: {
+                reminders: { orderBy: { createdAt: 'desc' } },
+                workOrder: {
+                  include: {
+                    payments: { orderBy: { createdAt: 'desc' } },
+                    project: true,
+                  },
+                },
+              },
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const requests = clients.flatMap((client) => {
+      if (client.enquiries.length === 0) {
+        return [
+          {
+            clientId: client.id,
+            clientName: client.clientName,
+            businessName: client.businessName,
+            enquiryId: 'N/A',
+            serviceCategory: 'N/A',
+            subCategory: 'N/A',
+            submissionDate: client.createdAt,
+            adminApprovalStatus: 'PENDING_ADMIN_APPROVAL',
+            quotationStatus: 'NOT_REQUESTED',
+            clientResponse: 'AWAITING_RESPONSE',
+            paymentStatus: 'AWAITING_PAYMENT',
+            projectStatus: 'NOT_STARTED',
+          },
+        ];
+      }
+
+      return client.enquiries.map((enq) => {
+        const latestQuot = enq.quotations[0];
+        const workOrder = latestQuot?.workOrder;
+        const latestPayment = workOrder?.payments?.[0];
+        const project = workOrder?.project;
+
+        let quotationStatus = 'NOT_REQUESTED';
+        if (latestQuot) {
+          if (latestQuot.status === 'REQUESTED') quotationStatus = 'QUOTATION_REQUESTED';
+          else if (latestQuot.status === 'PREPARED' || latestQuot.status === 'PENDING_ADMIN_APPROVAL') quotationStatus = 'QUOTATION_PENDING_ADMIN_APPROVAL';
+          else if (latestQuot.status === 'ADMIN_APPROVED' || latestQuot.status === 'SENT_TO_BGA') quotationStatus = 'QUOTATION_APPROVED';
+          else if (latestQuot.status === 'REVISION_REQUESTED') quotationStatus = 'QUOTATION_REVISION_REQUESTED';
+          else if (latestQuot.status === 'ACCEPTED') quotationStatus = 'QUOTATION_ACCEPTED';
+          else quotationStatus = latestQuot.status;
+        }
+
+        let clientResponse = 'AWAITING_RESPONSE';
+        if (latestQuot?.status === 'ACCEPTED') clientResponse = 'ACCEPTED';
+        else if (latestQuot?.status === 'REJECTED') clientResponse = 'REJECTED';
+        else if (latestQuot?.status === 'REVISION_REQUESTED') clientResponse = 'REVISION_REQUESTED';
+
+        let paymentStatus = 'AWAITING_PAYMENT';
+        if (latestPayment) {
+          if (latestPayment.status === 'VERIFIED') paymentStatus = 'VERIFIED';
+          else if (latestPayment.status === 'PENDING_VERIFICATION') paymentStatus = 'PAYMENT_SUBMITTED';
+          else paymentStatus = latestPayment.status;
+        }
+
+        let projectStatus = 'NOT_STARTED';
+        if (project) {
+          projectStatus = project.status;
+        } else if (workOrder?.advanceVerified && !workOrder?.handoverApproved) {
+          projectStatus = 'PENDING_HANDOVER_APPROVAL';
+        } else if (workOrder?.status === 'PENDING_ADVANCE') {
+          projectStatus = 'PENDING_ADVANCE_PAYMENT';
+        }
+
+        return {
+          clientId: client.id,
+          clientName: client.clientName,
+          businessName: client.businessName,
+          enquiryId: enq.id,
+          serviceCategory: enq.serviceCategory,
+          subCategory: enq.subCategory || 'General',
+          submissionDate: enq.createdAt,
+          adminApprovalStatus: enq.status,
+          quotationStatus,
+          clientResponse,
+          paymentStatus,
+          projectStatus,
+          quotation: latestQuot
+            ? {
+                id: latestQuot.id,
+                quotationNumber: latestQuot.quotationNumber,
+                totalAmount: latestQuot.totalAmount,
+                status: latestQuot.status,
+                adminApprovalStatus: latestQuot.adminApprovalStatus,
+                reminderCount: latestQuot.reminderCount || 0,
+                lastReminderSentAt: latestQuot.lastReminderSentAt,
+              }
+            : null,
+          workOrder: workOrder
+            ? {
+                id: workOrder.id,
+                workOrderNumber: workOrder.workOrderNumber,
+                advancePaid: workOrder.advancePaid,
+                advanceRequired: workOrder.advanceRequired,
+                advanceVerified: workOrder.advanceVerified,
+                handoverApproved: workOrder.handoverApproved,
+              }
+            : null,
+        };
+      });
+    });
+
+    res.json({ requests });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load client requests' });
   }
 });
 

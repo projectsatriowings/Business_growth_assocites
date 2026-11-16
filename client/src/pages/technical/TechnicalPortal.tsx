@@ -241,7 +241,7 @@ export const TechnicalPortal: React.FC = () => {
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <span className="text-xs text-slate-500 font-semibold uppercase">Ready to Start</span>
                   <div className="text-2xl font-bold text-blue-600 mt-1">{stats.readyToStart}</div>
-                  <span className="text-[11px] text-slate-400">Advance Verified</span>
+                  <span className="text-[11px] text-slate-400">Handover Authorized</span>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
@@ -293,7 +293,7 @@ export const TechnicalPortal: React.FC = () => {
                   <div className="bg-white p-4 rounded-xl border border-slate-200">
                     <h2 className="text-base font-bold text-slate-900">Active Technical Projects</h2>
                     <p className="text-xs text-slate-500">
-                      Projects released by Accounts upon advance payment verification. Click any project to open execution workspace.
+                      Projects authorized for execution following advance payment verification and Admin technical handover approval. Click any project to open execution workspace.
                     </p>
                   </div>
 
@@ -341,6 +341,12 @@ export const TechnicalPortal: React.FC = () => {
                           <div className="mt-3 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 line-clamp-2">
                             <strong>Approved Scope:</strong> {p.approvedScope}
                           </div>
+                          {p.workOrder?.bga && (
+                            <div className="mt-2 text-[11px] text-slate-500 flex justify-between">
+                              <span>BGA: <strong className="text-slate-700">{p.workOrder.bga.name}</strong></span>
+                              <span className="text-emerald-700 font-semibold">✓ Handover Authorized</span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
@@ -422,10 +428,25 @@ export const TechnicalPortal: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 md:col-span-2">
                         <strong className="block text-slate-800 mb-1">Approved Requirements & Scope:</strong>
                         <p className="text-slate-600 leading-relaxed">{selectedProject.approvedScope}</p>
+                      </div>
+
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <strong className="block text-slate-800 mb-1">Handover & Assignment:</strong>
+                        <div className="text-slate-700">WO: <span className="font-mono font-bold text-slate-900">{selectedProject.workOrder?.workOrderNumber || 'N/A'}</span></div>
+                        <div className="text-slate-700 mt-1">BGA: <span className="font-bold text-slate-900">{selectedProject.workOrder?.bga?.name || 'N/A'}</span></div>
+                        <div className="text-emerald-700 font-semibold mt-1 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Handover Authorized
+                        </div>
+                        {selectedProject.workOrder?.handoverApprovedAt && (
+                          <div className="text-[10px] text-slate-400 mt-0.5">
+                            Auth Date: {new Date(selectedProject.workOrder.handoverApprovedAt).toLocaleDateString()}
+                          </div>
+                        )}
                       </div>
 
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
