@@ -1,0 +1,429 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  BGA
+  ACCOUNTS
+  TECHNICAL
+}
+
+enum BgaStatus {
+  DRAFT
+  SUBMITTED
+  VERIFICATION_PENDING
+  UNDER_REVIEW
+  APPROVED
+  ACTIVE
+  REJECTED
+  VERIFICATION_FAILED
+  SUSPENDED
+}
+
+enum ServiceCategoryType {
+  DIGITAL_MARKETING
+  WEBSITE_DEVELOPMENT
+  MOBILE_APPLICATION_DEVELOPMENT
+  SOFTWARE_DEVELOPMENT
+}
+
+enum EnquiryStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+}
+
+enum QuotationStatus {
+  REQUESTED
+  PREPARED
+  SENT_TO_BGA
+  REVISION_REQUESTED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum WorkOrderStatus {
+  PENDING_ADVANCE
+  ADVANCE_VERIFIED
+  IN_PRODUCTION
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentType {
+  ADVANCE
+  INTERIM
+  FINAL
+  MONTHLY_RECURRING
+}
+
+enum PaymentStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+}
+
+enum ProjectStatus {
+  READY_TO_START
+  IN_PROGRESS
+  UNDER_REVIEW
+  CORRECTION_REQUIRED
+  COMPLETED
+}
+
+enum MilestoneStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum CommissionEligibility {
+  PENDING_CRITERIA
+  ELIGIBLE
+  ON_HOLD
+}
+
+enum CommissionApproval {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+enum CommissionPayout {
+  UNPAID
+  PROCESSED
+}
+
+model User {
+  id               String       @id @default(cuid())
+  name             String
+  email            String       @unique
+  mobile           String       @unique
+  passwordHash     String
+  role             Role         @default(BGA)
+  status           BgaStatus    @default(ACTIVE)
+  dob              DateTime?
+  address          String?
+  panNumber        String?
+  panVerified      Boolean      @default(false)
+  aadhaarMasked    String?
+  aadhaarVerified  Boolean      @default(false)
+  bankAccountHolder String?
+  bankAccountNumber String?
+  bankIfsc         String?
+  bankVerified     Boolean      @default(false)
+  agreementAccepted Boolean     @default(false)
+  agreementAcceptedAt DateTime?
+  rejectionReason  String?
+  statusNotes      String?
+  approvedAt       DateTime?
+  approvedById     String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  clients          Client[]     @relation("BgaClients")
+  enquiries        Enquiry[]    @relation("BgaEnquiries")
+  quotations       Quotation[]  @relation("BgaQuotations")
+  workOrders       WorkOrder[]  @relation("BgaWorkOrders")
+  commissions      Commission[] @relation("BgaCommissions")
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  assignedProjects TechnicalProject[] @relation("LeadProjects")
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model ServiceItem {
+  id             String              @id @default(cuid())
+  category       ServiceCategoryType
+  name           String
+  code           String              @unique
+  description    String
+  basePrice      Float               @default(0)
+  defaultCommissionRate Float        @default(10)
+  isMonthly      Boolean             @default(false)
+  isActive       Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+}
+
+model CompanyResource {
+  id              String              @id @default(cuid())
+  title           String
+  description     String?
+  category        String              // PRESENTATION, PROFILE, PORTFOLIO, BROCHURE, CASE_STUDY, DEMO_VIDEO, PRICING
+  serviceCategory ServiceCategoryType?
+  fileUrl         String
+  fileType        String              // PDF, PPT, MP4, IMAGE
+  isPublished     Boolean             @default(true)
+  isConfidential  Boolean             @default(false)
+  uploadedById    String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+model Client {
+  id               String       @id @default(cuid())
+  clientName       String
+  businessName     String
+  mobile           String
+  email            String
+  location         String
+  businessCategory String
+  bgaId            String
+  bga              User         @relation("BgaClients", fields: [bgaId], references: [id])
+  status           String       @default("ACTIVE")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  enquiries        Enquiry[]
+  quotations       Quotation[]
+  workOrders       WorkOrder[]
+  commissions      Commission[]
+  technicalProjects TechnicalProject[]
+
+  @@unique([mobile])
+  @@unique([email])
+  @@index([mobile])
+  @@index([email])
+}
+
+model Enquiry {
+  id               String              @id
+  clientId         String
+  client           Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  bgaId            String
+  bga              User                @relation("BgaEnquiries", fields: [bgaId], references: [id])
+  serviceCategory  ServiceCategoryType
+  subCategory      String?
+  expectedBudget   Float               @default(0)
+  requirements     String
+  discussionNotes  String?
+  followUpDate     DateTime?
+  attachmentUrl    String?
+  status           EnquiryStatus       @default(SUBMITTED)
+  adminNotes       String?
+  reviewedById     String?
+  reviewedAt       DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  quotations       Quotation[]
+}
+
+model Quotation {
+  id                     String          @id @default(cuid())
+  quotationNumber        String          @unique
+  version                Int             @default(1)
+  enquiryId              String
+  enquiry                Enquiry         @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  clientId               String
+  client                 Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  bgaId                  String
+  bga                    User            @relation("BgaQuotations", fields: [bgaId], references: [id])
+  preparedById           String?
+  serviceCategory        ServiceCategoryType
+  serviceScope           String
+  serviceFee             Float
+  adBudget               Float           @default(0)
+  discount               Float           @default(0)
+  taxRate                Float           @default(18)
+  taxAmount              Float           @default(0)
+  totalAmount            Float
+  advanceRequiredPercent Float           @default(50)
+  advanceRequiredAmount  Float
+  paymentTerms           String
+  validityDate           DateTime
+  status                 QuotationStatus @default(REQUESTED)
+  revisionNotes          String?
+  previousVersionId      String?
+  clientAcceptanceProof  String?
+  clientAcceptanceNotes  String?
+  acceptedAt             DateTime?
+  acceptedByBgaId        String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  workOrder              WorkOrder?
+}
+
+model WorkOrder {
+  id               String          @id @default(cuid())
+  workOrderNumber  String          @unique
+  quotationId      String          @unique
+  quotation        Quotation       @relation(fields: [quotationId], references: [id])
+  clientId         String
+  client           Client          @relation(fields: [clientId], references: [id])
+  bgaId            String
+  bga              User            @relation("BgaWorkOrders", fields: [bgaId], references: [id])
+  serviceCategory  ServiceCategoryType
+  agreedScope      String
+  totalValue       Float
+  advanceRequired  Float
+  advancePaid      Float           @default(0)
+  advanceVerified  Boolean         @default(false)
+  status           WorkOrderStatus @default(PENDING_ADVANCE)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  payments         Payment[]
+  project          TechnicalProject?
+  commissions      Commission[]
+}
+
+model Payment {
+  id                   String        @id @default(cuid())
+  workOrderId          String
+  workOrder            WorkOrder     @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  paymentType          PaymentType
+  amount               Float
+  adBudgetAmount       Float         @default(0)
+  netServiceFee        Float
+  paymentMethod        String        // UPI, NEFT, RTGS, CHEQUE, ONLINE
+  transactionReference String
+  paymentDate          DateTime
+  proofAttachmentUrl   String?
+  status               PaymentStatus @default(PENDING_VERIFICATION)
+  verifiedById         String?
+  verifiedAt           DateTime?
+  verificationNotes    String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  commissions          Commission[]
+}
+
+model TechnicalProject {
+  id                   String             @id @default(cuid())
+  projectNumber        String             @unique
+  workOrderId          String             @unique
+  workOrder            WorkOrder          @relation(fields: [workOrderId], references: [id])
+  clientId             String
+  client               Client             @relation(fields: [clientId], references: [id])
+  serviceCategory      ServiceCategoryType
+  approvedScope        String
+  assignedLeadId       String?
+  assignedLead         User?              @relation("LeadProjects", fields: [assignedLeadId], references: [id])
+  status               ProjectStatus      @default(READY_TO_START)
+  progressPercentage   Int                @default(0)
+  startDate            DateTime?
+  targetCompletionDate DateTime?
+  completedAt          DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  milestones           ProjectMilestone[]
+  deliverables         ProjectDeliverable[]
+  feedback             ProjectFeedback[]
+  commissions          Commission[]
+}
+
+model ProjectMilestone {
+  id          String          @id @default(cuid())
+  projectId   String
+  project     TechnicalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  targetDate  DateTime?
+  status      MilestoneStatus @default(TODO)
+  completedAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model ProjectDeliverable {
+  id          String           @id @default(cuid())
+  projectId   String
+  project     TechnicalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  fileUrl     String
+  fileType    String?
+  version     String           @default("1.0")
+  uploadedById String?
+  createdAt   DateTime         @default(now())
+}
+
+model ProjectFeedback {
+  id          String           @id @default(cuid())
+  projectId   String
+  project     TechnicalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  feedbackType String          // CLIENT_FEEDBACK, CORRECTION_REQUEST, INTERNAL_NOTE
+  content     String
+  status      String           @default("OPEN") // OPEN, RESOLVED
+  submittedById String?
+  resolvedAt  DateTime?
+  createdAt   DateTime         @default(now())
+}
+
+model Commission {
+  id                  String                @id @default(cuid())
+  bgaId               String
+  bga                 User                  @relation("BgaCommissions", fields: [bgaId], references: [id])
+  clientId            String
+  client              Client                @relation(fields: [clientId], references: [id])
+  workOrderId         String
+  workOrder           WorkOrder             @relation(fields: [workOrderId], references: [id])
+  paymentId           String?
+  payment             Payment?              @relation(fields: [paymentId], references: [id])
+  projectId           String?
+  project             TechnicalProject?     @relation(fields: [projectId], references: [id])
+  serviceCategory     ServiceCategoryType
+  billingType         String                // MONTHLY_RECURRING, PROJECT_BASED
+  grossAmount         Float
+  excludedAdSpend     Float                 @default(0)
+  commissionableAmount Float
+  commissionRate      Float
+  calculatedCommission Float
+  eligibilityStatus   CommissionEligibility @default(PENDING_CRITERIA)
+  approvalStatus      CommissionApproval    @default(PENDING_APPROVAL)
+  approvedById        String?
+  approvedAt          DateTime?
+  payoutStatus        CommissionPayout      @default(UNPAID)
+  payoutReference     String?
+  payoutDate          DateTime?
+  notes               String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, SUCCESS, WARNING, ACTION_REQUIRED
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userEmail  String?
+  userRole   String?
+  action     String
+  entityType String
+  entityId   String?
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+}

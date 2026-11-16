@@ -1,0 +1,22 @@
+{
+  "name": "business_growth_assocites",
+  "version": "1.0.0",
+  "description": "Business Growth Associates Management System - Four Role-Based Portals",
+  "scripts": {
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "cd client && npx vite build && cd ../server && npx tsc",
+    "start": "cd server && node dist/index.js",
+    "seed": "cd server && npx tsx src/seed.ts",
+    "test:e2e": "npx tsx tests/e2e.test.ts"
+  },
+  "keywords": [
+    "bga",
+    "management-system",
+    "admin",
+    "accounts",
+    "technical"
+  ],
+  "author": "Atriowings",
+  "license": "ISC"
+}
