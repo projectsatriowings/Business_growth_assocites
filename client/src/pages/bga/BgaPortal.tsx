@@ -28,10 +28,14 @@ import {
   X,
   Filter,
   ArrowLeft,
+  FileCheck,
+  Bell,
+  Sparkles,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
+import { SkeletonStatsRow, SkeletonTable } from '../../components/Skeleton';
 import { BgaProfileView } from './BgaProfileView';
 
 export const BUSINESS_CATEGORIES = [
@@ -53,10 +57,11 @@ export const BUSINESS_CATEGORIES = [
 export const BgaPortal: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'profile' | 'services' | 'resources' | 'new-client' | 'clients' | 'enquiries' | 'quotations' | 'projects' | 'earnings' | 'support'
+    'dashboard' | 'profile' | 'services' | 'resources' | 'new-client' | 'clients' | 'enquiries' | 'quotations' | 'projects' | 'earnings' | 'support' | 'requests'
   >('dashboard');
 
   const [loading, setLoading] = useState(false);
+  const [tabLoading, setTabLoading] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [enquiries, setEnquiries] = useState<any[]>([]);
@@ -65,6 +70,7 @@ export const BgaPortal: React.FC = () => {
   const [commissions, setCommissions] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
+  const [clientRequests, setClientRequests] = useState<any[]>([]);
 
   // My Clients UI State
   const [clientViewMode, setClientViewMode] = useState<'list' | 'add'>('list');
@@ -114,48 +120,78 @@ export const BgaPortal: React.FC = () => {
   const [acceptanceModal, setAcceptanceModal] = useState<{ quotationId: string; quotationNumber: string } | null>(null);
   const [acceptanceNotes, setAcceptanceNotes] = useState('');
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const s = await apiRequest('/api/bga/dashboard-stats');
-      setStats(s);
+  // Quotation Reminder Modal
+  const [reminderModal, setReminderModal] = useState<{ quotationId: string; quotationNumber: string; clientName: string } | null>(null);
+  const [reminderMessage, setReminderMessage] = useState('');
 
-      if (activeTab === 'clients') {
+  // Load BGA Dashboard Stats independently
+  const loadStats = async (bypass = false) => {
+    try {
+      const s = await apiRequest('/api/bga/dashboard-stats', { bypassCache: bypass });
+      setStats(s);
+    } catch (e) {
+      console.error('Failed to load BGA stats:', e);
+    }
+  };
+
+  // Load Active Tab Data immediately without awaiting stats
+  const loadTabData = async (tab = activeTab) => {
+    setTabLoading(true);
+    try {
+      if (tab === 'clients') {
         const c = await apiRequest('/api/bga/clients');
         setClients(c.clients || []);
-      } else if (activeTab === 'enquiries') {
+      } else if (tab === 'requests') {
+        const r = await apiRequest('/api/bga/client-requests');
+        setClientRequests(r.requests || []);
+      } else if (tab === 'enquiries') {
         const e = await apiRequest('/api/bga/enquiries');
         setEnquiries(e.enquiries || []);
-      } else if (activeTab === 'quotations') {
+      } else if (tab === 'quotations') {
         const q = await apiRequest('/api/bga/quotations');
         setQuotations(q.quotations || []);
-      } else if (activeTab === 'projects') {
+      } else if (tab === 'projects') {
         const w = await apiRequest('/api/bga/work-orders');
         setWorkOrders(w.workOrders || []);
-      } else if (activeTab === 'earnings') {
+      } else if (tab === 'earnings') {
         const comm = await apiRequest('/api/bga/commissions');
         setCommissions(comm.commissions || []);
-      } else if (activeTab === 'resources') {
+      } else if (tab === 'resources') {
         const r = await apiRequest('/api/bga/resources');
         setResources(r.resources || []);
-      } else if (activeTab === 'services') {
+      } else if (tab === 'services') {
         const svc = await apiRequest('/api/bga/services');
         setServices(svc.services || []);
       }
     } catch (e) {
       console.error(e);
     } finally {
+      setTabLoading(false);
+    }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([loadStats(), loadTabData()]);
+    } finally {
       setLoading(false);
     }
   };
 
+  // Initial load
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  // Immediate load on tab switch
   useEffect(() => {
     if (activeTab === ('new-client' as any)) {
       setActiveTab('clients');
       setClientViewMode('add');
       return;
     }
-    loadData();
+    loadTabData(activeTab);
   }, [activeTab]);
 
   // Handle Client Registration
@@ -316,6 +352,24 @@ export const BgaPortal: React.FC = () => {
     }
   };
 
+  // Handle Quotation Reminder to Accounts & Admin
+  const handleSendReminder = async () => {
+    if (!reminderModal) return;
+    try {
+      const res = await apiRequest(`/api/bga/quotations/${reminderModal.quotationId}/reminder`, {
+        method: 'POST',
+        body: JSON.stringify({ message: reminderMessage }),
+      });
+      alert(res.message || 'Quotation reminder dispatched to Accounts & Admin!');
+      setReminderModal(null);
+      setReminderMessage('');
+      loadTabData('quotations');
+      loadTabData('requests');
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
       <PortalHeader title="BGA Associate Portal" subtitle="Client Management, Quotation Requests & Earnings" />
@@ -359,6 +413,21 @@ export const BgaPortal: React.FC = () => {
             >
               <Users className="w-4 h-4" />
               <span>My Clients</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('requests')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                activeTab === 'requests' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <FileCheck className="w-4 h-4" />
+                <span>My Client Requests</span>
+              </div>
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-1.5 py-0.5 rounded border border-emerald-500/30">
+                Workflow
+              </span>
             </button>
 
             <button
@@ -441,9 +510,12 @@ export const BgaPortal: React.FC = () => {
         {/* Main Content Area */}
         <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
           {/* TAB 1: DASHBOARD */}
-          {activeTab === 'dashboard' && stats && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {activeTab === 'dashboard' && (
+            !stats ? (
+              <SkeletonStatsRow count={4} />
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <span className="text-xs text-slate-500 font-semibold uppercase">My Registered Clients</span>
                   <div className="text-2xl font-bold text-slate-900 mt-1">{stats.clients}</div>
@@ -512,6 +584,7 @@ export const BgaPortal: React.FC = () => {
                 </div>
               </div>
             </div>
+            )
           )}
 
           {/* TAB 2: MY PROFILE & KYC */}
@@ -1542,111 +1615,392 @@ export const BgaPortal: React.FC = () => {
             </div>
           )}
 
+          {/* TAB: MY CLIENT REQUESTS - COMPLETE WORKFLOW PIPELINE TRACKING (MODULE 1.2) */}
+          {activeTab === 'requests' && (
+            <div className="space-y-4">
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <FileCheck className="w-5 h-5 text-emerald-600" />
+                    My Client Requests & End-to-End Workflow Pipeline
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Track complete progress across Admin Enquiry Approval, Accounts Quotation, Client Decision, Payment Clearance, and Technical Delivery.
+                  </p>
+                </div>
+                <button
+                  onClick={() => loadTabData('requests')}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                >
+                  <Clock className="w-3.5 h-3.5" /> Refresh Pipeline
+                </button>
+              </div>
+
+              {tabLoading ? (
+                <SkeletonTable rows={5} cols={8} />
+              ) : clientRequests.length === 0 ? (
+                <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm">
+                  <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <h3 className="text-sm font-bold text-slate-800">No client requests in pipeline yet</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                    When you register a new client or submit an enquiry, it will appear here with live stage-by-stage progression tracking.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setActiveTab('clients');
+                      setClientViewMode('add');
+                    }}
+                    className="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors"
+                  >
+                    + Register New Client
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto shadow-sm">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                      <tr>
+                        <th className="p-3.5">Client & ID</th>
+                        <th className="p-3.5">Enquiry ID</th>
+                        <th className="p-3.5">Service Requested</th>
+                        <th className="p-3.5">Submission Date</th>
+                        <th className="p-3.5">Admin Approval</th>
+                        <th className="p-3.5">Quotation Status</th>
+                        <th className="p-3.5">Client Response</th>
+                        <th className="p-3.5">Payment Status</th>
+                        <th className="p-3.5">Project Status</th>
+                        <th className="p-3.5 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {clientRequests.map((r, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/50">
+                          <td className="p-3.5">
+                            <div className="font-bold text-slate-900 text-sm">{r.clientName}</div>
+                            <div className="text-[11px] text-slate-500">{r.businessName}</div>
+                            <span className="font-mono text-[10px] text-slate-400 block mt-0.5">
+                              ID: {r.clientId.slice(0, 10)}...
+                            </span>
+                          </td>
+                          <td className="p-3.5 font-mono text-slate-700 font-semibold">
+                            {r.enquiryId}
+                          </td>
+                          <td className="p-3.5">
+                            <span className="font-bold text-slate-800">{r.serviceCategory}</span>
+                            <span className="text-slate-400 text-[10px] block">{r.subCategory}</span>
+                          </td>
+                          <td className="p-3.5 text-slate-600">
+                            {new Date(r.submissionDate).toLocaleDateString()}
+                          </td>
+                          <td className="p-3.5">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                r.adminApprovalStatus === 'APPROVED'
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                  : r.adminApprovalStatus === 'REJECTED'
+                                  ? 'bg-red-100 text-red-800 border border-red-200'
+                                  : r.adminApprovalStatus === 'CHANGES_REQUESTED'
+                                  ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                  : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                              }`}
+                            >
+                              {r.adminApprovalStatus === 'SUBMITTED' ? 'PENDING_APPROVAL' : r.adminApprovalStatus}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                r.quotationStatus === 'QUOTATION_APPROVED'
+                                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                  : r.quotationStatus === 'QUOTATION_ACCEPTED'
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                  : r.quotationStatus === 'QUOTATION_PENDING_ADMIN_APPROVAL'
+                                  ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                  : 'bg-slate-100 text-slate-700'
+                              }`}
+                            >
+                              {r.quotationStatus}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                r.clientResponse === 'ACCEPTED'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : r.clientResponse === 'REJECTED'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-slate-100 text-slate-600'
+                              }`}
+                            >
+                              {r.clientResponse}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                r.paymentStatus === 'VERIFIED'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : r.paymentStatus === 'PAYMENT_SUBMITTED'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-slate-100 text-slate-500'
+                              }`}
+                            >
+                              {r.paymentStatus}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                r.projectStatus === 'COMPLETED'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : r.projectStatus === 'IN_PROGRESS'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : r.projectStatus === 'READY_TO_START'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-slate-100 text-slate-500'
+                              }`}
+                            >
+                              {r.projectStatus}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-right">
+                            {r.quotation ? (
+                              <button
+                                onClick={() => setActiveTab('quotations')}
+                                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded text-[11px] font-semibold"
+                              >
+                                View Quote →
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-slate-400">Processing</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* TAB 6: MY QUOTATIONS & CLIENT ACCEPTANCE */}
           {activeTab === 'quotations' && (
             <div className="space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200">
-                <h2 className="text-base font-bold text-slate-900">Official Quotations Received</h2>
-                <p className="text-xs text-slate-500">
-                  Quotations prepared by Accounts. Present to your client, download PDF, request revisions, or record acceptance.
-                </p>
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Official Client Quotations</h2>
+                  <p className="text-xs text-slate-500">
+                    Official quotations prepared by Accounts and authorized by Admin. Send reminders if preparation is delayed, present approved quotes, and record client decisions.
+                  </p>
+                </div>
+                <button
+                  onClick={() => loadTabData('quotations')}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                >
+                  <Clock className="w-3.5 h-3.5" /> Refresh Quotes
+                </button>
               </div>
 
               <div className="space-y-4">
-                {quotations.map((q) => (
-                  <div key={q.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
-                      <div>
+                {quotations.map((q) => {
+                  const isApproved =
+                    q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA' || q.adminApprovalStatus === 'APPROVED';
+                  const isPendingAdmin =
+                    q.status === 'PENDING_ADMIN_APPROVAL' || (q.adminApprovalStatus === 'PENDING' && q.preparedById);
+                  const isUnderPrep = q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED';
+
+                  return (
+                    <div key={q.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-sm font-bold text-slate-900">{q.quotationNumber}</span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                              v{q.version}
+                            </span>
+                            {q.reminderCount > 0 && (
+                              <span className="text-[10px] text-red-700 bg-red-50 px-2 py-0.5 rounded font-bold border border-red-200 flex items-center gap-1">
+                                <Bell className="w-3 h-3 text-red-600" /> {q.reminderCount} Reminder(s) Sent
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="text-xs text-slate-600 mt-0.5">
+                            Client: <strong>{q.client?.clientName}</strong> ({q.client?.businessName})
+                          </h3>
+                        </div>
+
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-bold text-slate-900">{q.quotationNumber}</span>
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                            v{q.version}
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
+                              q.status === 'ACCEPTED'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : isApproved
+                                ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                : isPendingAdmin
+                                ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                : 'bg-amber-100 text-amber-800 border border-amber-200'
+                            }`}
+                          >
+                            {isApproved
+                              ? 'APPROVED & AVAILABLE FOR CLIENT'
+                              : isPendingAdmin
+                              ? 'QUOTATION PENDING ADMIN APPROVAL'
+                              : isUnderPrep
+                              ? 'QUOTATION UNDER PREPARATION'
+                              : q.status}
                           </span>
+                          {isApproved && (
+                            <a
+                              href={`/api/resources/quotations/${q.id}/pdf`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                            >
+                              <Download className="w-3.5 h-3.5" /> PDF
+                            </a>
+                          )}
                         </div>
-                        <h3 className="text-xs text-slate-600 mt-0.5">
-                          Client: <strong>{q.client?.clientName}</strong> ({q.client?.businessName})
-                        </h3>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
-                          q.status === 'ACCEPTED'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : q.status === 'SENT_TO_BGA'
-                            ? 'bg-blue-100 text-blue-800'
-                            : q.status === 'REVISION_REQUESTED'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}>
-                          {q.status}
-                        </span>
-                        <a
-                          href={`/api/resources/quotations/${q.id}/pdf`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-3 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-xs font-bold flex items-center gap-1"
-                        >
-                          <Download className="w-3.5 h-3.5" /> PDF
-                        </a>
-                      </div>
-                    </div>
-
-                    <div className="py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                      <div>
-                        <span className="text-slate-400 block">Service Fee</span>
-                        <span className="font-bold text-slate-800">₹{q.serviceFee?.toLocaleString()}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block">GST ({q.taxRate}%)</span>
-                        <span className="font-bold text-slate-800">₹{q.taxAmount?.toLocaleString()}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block">Total Contract Value</span>
-                        <span className="font-bold text-indigo-700 text-sm">₹{q.totalAmount?.toLocaleString()}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block">Required Advance ({q.advanceRequiredPercent}%)</span>
-                        <span className="font-bold text-emerald-700">₹{q.advanceRequiredAmount?.toLocaleString()}</span>
-                      </div>
-                    </div>
-
-                    {q.serviceScope && (
-                      <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 mb-3">
-                        <strong>Approved Scope:</strong> {q.serviceScope}
-                      </div>
-                    )}
-
-                    <div className="flex justify-between items-center text-xs pt-3 border-t border-slate-100">
-                      <span className="text-slate-400">
-                        Valid until {new Date(q.validityDate).toLocaleDateString()}
-                      </span>
-
-                      {q.status === 'SENT_TO_BGA' && (
-                        <div className="space-x-2">
-                          <button
-                            onClick={() => setRevisionModal({ quotationId: q.id, quotationNumber: q.quotationNumber })}
-                            className="px-3 py-1 bg-amber-50 text-amber-800 hover:bg-amber-100 rounded text-xs font-bold"
-                          >
-                            Request Revision
-                          </button>
-                          <button
-                            onClick={() => setAcceptanceModal({ quotationId: q.id, quotationNumber: q.quotationNumber })}
-                            className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold"
-                          >
-                            Record Client Acceptance ✓
-                          </button>
+                      {/* Financial Breakdown (Visible only when approved or prepared) */}
+                      {isApproved ? (
+                        <div className="py-2 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                          <div>
+                            <span className="text-slate-400 block">Service Fee</span>
+                            <span className="font-bold text-slate-800">₹{q.serviceFee?.toLocaleString()}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block">GST ({q.taxRate}%)</span>
+                            <span className="font-bold text-slate-800">₹{q.taxAmount?.toLocaleString()}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block">Total Contract Value</span>
+                            <span className="font-bold text-indigo-700 text-sm">₹{q.totalAmount?.toLocaleString()}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block">Required Advance ({q.advanceRequiredPercent}%)</span>
+                            <span className="font-bold text-emerald-700">₹{q.advanceRequiredAmount?.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-100 text-xs text-amber-900 flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <strong className="block font-semibold">Official Quotation Under Processing</strong>
+                            <p className="text-[11px] text-amber-800 mt-0.5">
+                              {isPendingAdmin
+                                ? 'Accounts has finalized the quotation. It is currently under review by Admin before release.'
+                                : 'Accounts Department is actively preparing your quotation. Use the button below to send a reminder if delayed.'}
+                            </p>
+                          </div>
                         </div>
                       )}
 
-                      {q.status === 'ACCEPTED' && (
-                        <span className="text-emerald-700 font-bold">
-                          Client Accepted on {new Date(q.acceptedAt).toLocaleDateString()}
-                        </span>
+                      {q.serviceScope && (
+                        <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                          <strong>Approved Scope:</strong> {q.serviceScope}
+                        </div>
                       )}
+
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs pt-3 border-t border-slate-100">
+                        <span className="text-slate-400">
+                          Valid until {new Date(q.validityDate).toLocaleDateString()}
+                        </span>
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Send Reminder button if Accounts has not finished or quote is pending */}
+                          {isUnderPrep && (
+                            <button
+                              onClick={() =>
+                                setReminderModal({
+                                  quotationId: q.id,
+                                  quotationNumber: q.quotationNumber,
+                                  clientName: q.client?.clientName,
+                                })
+                              }
+                              className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                            >
+                              <Bell className="w-3.5 h-3.5 text-amber-700" /> Send Reminder to Accounts
+                            </button>
+                          )}
+
+                          {isApproved && q.status !== 'ACCEPTED' && (
+                            <>
+                              <button
+                                onClick={() => setRevisionModal({ quotationId: q.id, quotationNumber: q.quotationNumber })}
+                                className="px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-bold transition-colors"
+                              >
+                                Request Revision
+                              </button>
+                              <button
+                                onClick={() => setAcceptanceModal({ quotationId: q.id, quotationNumber: q.quotationNumber })}
+                                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                              >
+                                Record Client Acceptance ✓
+                              </button>
+                            </>
+                          )}
+
+                          {q.status === 'ACCEPTED' && (
+                            <span className="text-emerald-700 font-bold flex items-center gap-1">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                              Accepted on {new Date(q.acceptedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Quotation Reminder Modal */}
+              {reminderModal && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <Bell className="w-5 h-5 text-amber-600" />
+                      Send Quotation Reminder
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Dispatches an instant high-priority reminder to the Accounts Department and notifies Admin regarding pending quotation for{' '}
+                      <strong>{reminderModal.clientName}</strong> ({reminderModal.quotationNumber}).
+                    </p>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Optional Note to Accounts & Management
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={reminderMessage}
+                        onChange={(e) => setReminderMessage(e.target.value)}
+                        placeholder="e.g. Client requested urgent review as decision meeting is tomorrow morning..."
+                        className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        onClick={() => {
+                          setReminderModal(null);
+                          setReminderMessage('');
+                        }}
+                        className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSendReminder}
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5"
+                      >
+                        <Send className="w-3.5 h-3.5" /> Dispatch Reminder
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
 
               {/* Revision Request Modal */}
               {revisionModal && (

@@ -15,10 +15,12 @@ import {
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
+import { SkeletonStatsRow, SkeletonTable } from '../../components/Skeleton';
 
 export const TechnicalPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects'>('dashboard');
   const [loading, setLoading] = useState(false);
+  const [tabLoading, setTabLoading] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
@@ -38,15 +40,20 @@ export const TechnicalPortal: React.FC = () => {
   const [feedbackModal, setFeedbackModal] = useState<boolean>(false);
   const [feedbackContent, setFeedbackContent] = useState('');
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadStats = async (bypass = false) => {
     try {
-      const s = await apiRequest('/api/technical/dashboard-stats');
+      const s = await apiRequest('/api/technical/dashboard-stats', { bypassCache: bypass });
       setStats(s);
+    } catch (e) {
+      console.error('Failed to load technical stats:', e);
+    }
+  };
 
+  const loadProjects = async () => {
+    setTabLoading(true);
+    try {
       const p = await apiRequest('/api/technical/projects');
       setProjects(p.projects || []);
-
       if (selectedProject) {
         const refreshed = (p.projects || []).find((x: any) => x.id === selectedProject.id);
         if (refreshed) setSelectedProject(refreshed);
@@ -54,13 +61,23 @@ export const TechnicalPortal: React.FC = () => {
     } catch (e) {
       console.error(e);
     } finally {
+      setTabLoading(false);
+    }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([loadStats(), loadProjects()]);
+    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, [activeTab]);
+    loadStats();
+    loadProjects();
+  }, []);
 
   // Handle Project Status Update
   const handleUpdateStatus = async (projectId: string, newStatus: string, progress?: number) => {
@@ -210,9 +227,12 @@ export const TechnicalPortal: React.FC = () => {
         {/* Main Content Area */}
         <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
           {/* TAB 1: DASHBOARD */}
-          {activeTab === 'dashboard' && stats && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {activeTab === 'dashboard' && (
+            !stats ? (
+              <SkeletonStatsRow count={5} />
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <span className="text-xs text-slate-500 font-semibold uppercase">Total Projects</span>
                   <div className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</div>
@@ -221,7 +241,7 @@ export const TechnicalPortal: React.FC = () => {
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <span className="text-xs text-slate-500 font-semibold uppercase">Ready to Start</span>
                   <div className="text-2xl font-bold text-blue-600 mt-1">{stats.readyToStart}</div>
-                  <span className="text-[11px] text-slate-400">Advance Verified</span>
+                  <span className="text-[11px] text-slate-400">Handover Authorized</span>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
@@ -262,6 +282,7 @@ export const TechnicalPortal: React.FC = () => {
                 </button>
               </div>
             </div>
+            )
           )}
 
           {/* TAB 2: ASSIGNED PROJECTS & PROJECT DETAILS */}
@@ -272,7 +293,7 @@ export const TechnicalPortal: React.FC = () => {
                   <div className="bg-white p-4 rounded-xl border border-slate-200">
                     <h2 className="text-base font-bold text-slate-900">Active Technical Projects</h2>
                     <p className="text-xs text-slate-500">
-                      Projects released by Accounts upon advance payment verification. Click any project to open execution workspace.
+                      Projects authorized for execution following advance payment verification and Admin technical handover approval. Click any project to open execution workspace.
                     </p>
                   </div>
 
@@ -320,6 +341,12 @@ export const TechnicalPortal: React.FC = () => {
                           <div className="mt-3 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 line-clamp-2">
                             <strong>Approved Scope:</strong> {p.approvedScope}
                           </div>
+                          {p.workOrder?.bga && (
+                            <div className="mt-2 text-[11px] text-slate-500 flex justify-between">
+                              <span>BGA: <strong className="text-slate-700">{p.workOrder.bga.name}</strong></span>
+                              <span className="text-emerald-700 font-semibold">✓ Handover Authorized</span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
@@ -401,10 +428,25 @@ export const TechnicalPortal: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 md:col-span-2">
                         <strong className="block text-slate-800 mb-1">Approved Requirements & Scope:</strong>
                         <p className="text-slate-600 leading-relaxed">{selectedProject.approvedScope}</p>
+                      </div>
+
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <strong className="block text-slate-800 mb-1">Handover & Assignment:</strong>
+                        <div className="text-slate-700">WO: <span className="font-mono font-bold text-slate-900">{selectedProject.workOrder?.workOrderNumber || 'N/A'}</span></div>
+                        <div className="text-slate-700 mt-1">BGA: <span className="font-bold text-slate-900">{selectedProject.workOrder?.bga?.name || 'N/A'}</span></div>
+                        <div className="text-emerald-700 font-semibold mt-1 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Handover Authorized
+                        </div>
+                        {selectedProject.workOrder?.handoverApprovedAt && (
+                          <div className="text-[10px] text-slate-400 mt-0.5">
+                            Auth Date: {new Date(selectedProject.workOrder.handoverApprovedAt).toLocaleDateString()}
+                          </div>
+                        )}
                       </div>
 
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">

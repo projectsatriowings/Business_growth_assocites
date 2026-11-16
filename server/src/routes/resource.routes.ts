@@ -38,12 +38,19 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
       return;
     }
 
-    // Fetch company settings
-    const companyName = (await prisma.systemSetting.findUnique({ where: { key: 'company_name' } }))?.value || 'BGA Solutions';
-    const companyEmail = (await prisma.systemSetting.findUnique({ where: { key: 'company_email' } }))?.value || 'billing@bga.com';
-    const companyPhone = (await prisma.systemSetting.findUnique({ where: { key: 'company_phone' } }))?.value || '+91 98765 43210';
-    const companyAddress = (await prisma.systemSetting.findUnique({ where: { key: 'company_address' } }))?.value || 'Cyber Valley, Hyderabad';
-    const companyGstin = (await prisma.systemSetting.findUnique({ where: { key: 'company_gstin' } }))?.value || '36AAACB1234F1Z5';
+    // Fetch company settings in a single query
+    const allSettings = await prisma.systemSetting.findMany({
+      where: {
+        key: { in: ['company_name', 'company_email', 'company_phone', 'company_address', 'company_gstin'] },
+      },
+    });
+    const settingsMap = new Map(allSettings.map((s) => [s.key, s.value]));
+
+    const companyName = settingsMap.get('company_name') || 'BGA Solutions';
+    const companyEmail = settingsMap.get('company_email') || 'billing@bga.com';
+    const companyPhone = settingsMap.get('company_phone') || '+91 98765 43210';
+    const companyAddress = settingsMap.get('company_address') || 'Cyber Valley, Hyderabad';
+    const companyGstin = settingsMap.get('company_gstin') || '36AAACB1234F1Z5';
 
     let preparedByName = 'Accounts Department';
     if (quotation.preparedById) {

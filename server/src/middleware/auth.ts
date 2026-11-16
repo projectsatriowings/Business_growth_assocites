@@ -17,6 +17,22 @@ export interface AuthRequest extends Request {
 
 const JWT_SECRET = process.env.JWT_SECRET || 'bga_super_secret_jwt_key_2026_growth_portal_secure_auth';
 
+interface CachedUserSession {
+  user: AuthenticatedUser;
+  expiresAt: number;
+}
+
+const userSessionCache = new Map<string, CachedUserSession>();
+const USER_CACHE_TTL_MS = 30_000; // 30-second TTL to eliminate redundant remote DB lookups
+
+export const invalidateUserCache = (userId?: string) => {
+  if (userId) {
+    userSessionCache.delete(userId);
+  } else {
+    userSessionCache.clear();
+  }
+};
+
 export const authenticateJWT = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -27,11 +43,21 @@ export const authenticateJWT = async (req: AuthRequest, res: Response, next: Nex
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as AuthenticatedUser;
-    // Check if user still exists in database and is active
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { id: true, name: true, email: true, role: true, status: true },
-    });
+    const now = Date.now();
+    const cached = userSessionCache.get(decoded.id);
+    let user: AuthenticatedUser | null = null;
+
+    if (cached && cached.expiresAt > now) {
+      user = cached.user;
+    } else {
+      user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: { id: true, name: true, email: true, role: true, status: true },
+      });
+      if (user) {
+        userSessionCache.set(decoded.id, { user, expiresAt: now + USER_CACHE_TTL_MS });
+      }
+    }
 
     if (!user) {
       res.status(401).json({ error: 'User no longer exists' });

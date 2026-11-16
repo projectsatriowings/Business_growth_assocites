@@ -23,8 +23,36 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000);
-    return () => clearInterval(interval);
+
+    let intervalId: any = null;
+    const startPolling = () => {
+      if (!intervalId) {
+        intervalId = setInterval(fetchNotifications, 45000); // Efficient 45s interval
+      }
+    };
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const markAllRead = async () => {

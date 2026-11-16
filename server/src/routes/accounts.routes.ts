@@ -13,6 +13,7 @@ import {
 } from '@prisma/client';
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification } from '../middleware/auth';
+import { appCache } from '../utils/cache';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -24,38 +25,53 @@ const generateId = (prefix: string) => {
   return `${prefix}-${dateStr}-${random}`;
 };
 
-// 1. Accounts Dashboard Stats
+// 1. Accounts Dashboard Stats (Optimized with Promise.all & cache)
 router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const quotationRequests = await prisma.quotation.count({
-      where: { status: { in: [QuotationStatus.REQUESTED, QuotationStatus.REVISION_REQUESTED] } },
-    });
-    const acceptedQuotations = await prisma.quotation.count({ where: { status: QuotationStatus.ACCEPTED } });
-    const pendingPaymentVerifications = await prisma.payment.count({
-      where: { status: PaymentStatus.PENDING_VERIFICATION },
-    });
+    const cached = appCache.get('accounts:dashboard-stats');
+    if (cached) {
+      res.json(cached);
+      return;
+    }
 
-    const activeWorkOrders = await prisma.workOrder.count({
-      where: { status: { in: [WorkOrderStatus.PENDING_ADVANCE, WorkOrderStatus.ADVANCE_VERIFIED, WorkOrderStatus.IN_PRODUCTION] } },
-    });
+    const [
+      quotationRequests,
+      acceptedQuotations,
+      pendingPaymentVerifications,
+      activeWorkOrders,
+      eligibleCommissions,
+      totalCollected,
+    ] = await Promise.all([
+      prisma.quotation.count({
+        where: { status: { in: [QuotationStatus.REQUESTED, QuotationStatus.REVISION_REQUESTED] } },
+      }),
+      prisma.quotation.count({ where: { status: QuotationStatus.ACCEPTED } }),
+      prisma.payment.count({
+        where: { status: PaymentStatus.PENDING_VERIFICATION },
+      }),
+      prisma.workOrder.count({
+        where: { status: { in: [WorkOrderStatus.PENDING_ADVANCE, WorkOrderStatus.ADVANCE_VERIFIED, WorkOrderStatus.IN_PRODUCTION] } },
+      }),
+      prisma.commission.count({
+        where: { eligibilityStatus: CommissionEligibility.ELIGIBLE, payoutStatus: CommissionPayout.UNPAID },
+      }),
+      prisma.payment.aggregate({
+        where: { status: PaymentStatus.VERIFIED },
+        _sum: { amount: true },
+      }),
+    ]);
 
-    const eligibleCommissions = await prisma.commission.count({
-      where: { eligibilityStatus: CommissionEligibility.ELIGIBLE, payoutStatus: CommissionPayout.UNPAID },
-    });
-
-    const totalCollected = await prisma.payment.aggregate({
-      where: { status: PaymentStatus.VERIFIED },
-      _sum: { amount: true },
-    });
-
-    res.json({
+    const result = {
       quotationRequests,
       acceptedQuotations,
       pendingPaymentVerifications,
       activeWorkOrders,
       eligibleCommissions,
       totalCollected: totalCollected._sum.amount || 0,
-    });
+    };
+
+    appCache.set('accounts:dashboard-stats', result, 20);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch accounts stats' });
   }
@@ -69,6 +85,7 @@ router.get('/quotation-requests', async (req: AuthRequest, res: Response): Promi
         enquiry: true,
         client: true,
         bga: { select: { id: true, name: true, email: true, mobile: true } },
+        reminders: { orderBy: { createdAt: 'desc' }, include: { bga: { select: { name: true } } } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -144,7 +161,8 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
           advanceRequiredAmount,
           paymentTerms: paymentTerms || existing.paymentTerms,
           validityDate,
-          status: QuotationStatus.SENT_TO_BGA,
+          status: QuotationStatus.PENDING_ADMIN_APPROVAL,
+          adminApprovalStatus: 'PENDING',
           previousVersionId: existing.id,
         },
       });
@@ -157,7 +175,7 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
 
       targetQuotationId = newQuot.id;
     } else {
-      // Update the requested quotation
+      // Update the requested quotation with prepared details
       await prisma.quotation.update({
         where: { id },
         data: {
@@ -173,19 +191,26 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
           advanceRequiredAmount,
           paymentTerms: paymentTerms || existing.paymentTerms,
           validityDate,
-          status: QuotationStatus.SENT_TO_BGA,
+          status: QuotationStatus.PENDING_ADMIN_APPROVAL,
+          adminApprovalStatus: 'PENDING',
         },
       });
     }
 
-    // Notify BGA immediately
-    await createNotification(
-      existing.bgaId,
-      'Official Quotation Prepared & Dispatched',
-      `Accounts has prepared official quotation for ${existing.client.clientName}. Total Value: Rs. ${totalAmount.toLocaleString('en-IN')}. Please present to client.`,
-      'SUCCESS',
-      '/bga/quotations'
-    );
+    // Notify Admin of prepared quotation pending approval
+    const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+    for (const a of admins) {
+      await createNotification(
+        a.id,
+        'Quotation Prepared - Admin Approval Required',
+        `Accounts has prepared official quotation for ${existing.client.clientName}. Total Value: Rs. ${totalAmount.toLocaleString('en-IN')}. Please review and authorize for release to BGA.`,
+        'ACTION_REQUIRED',
+        '/admin/quotations'
+      );
+    }
+
+    appCache.invalidatePrefix('admin:');
+    appCache.invalidatePrefix('accounts:');
 
     await logAudit(
       req.user!.id,
@@ -194,11 +219,11 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
       'QUOTATION_PREPARED',
       'QUOTATION',
       targetQuotationId,
-      { totalAmount, advanceRequiredAmount, isRevision },
+      { totalAmount, advanceRequiredAmount, isRevision, status: 'PENDING_ADMIN_APPROVAL' },
       req.ip
     );
 
-    res.json({ message: 'Quotation successfully prepared and dispatched to BGA' });
+    res.json({ message: 'Quotation submitted to Admin for approval' });
   } catch (error: any) {
     console.error('Quotation prep error:', error);
     res.status(500).json({ error: 'Failed to prepare quotation' });
@@ -337,7 +362,7 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
     const workOrder = payment.workOrder;
 
     if (isVerified) {
-      // 1. Advance Payment Verification Handling -> TRIGGER TECHNICAL HANDOVER!
+      // 1. Advance Payment Verification Handling -> Moves to Admin for Technical Handover!
       if (payment.paymentType === PaymentType.ADVANCE) {
         const newAdvancePaid = workOrder.advancePaid + payment.amount;
         const isAdvanceFulfilled = newAdvancePaid >= workOrder.advanceRequired;
@@ -347,53 +372,29 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
           data: {
             advancePaid: newAdvancePaid,
             advanceVerified: isAdvanceFulfilled,
+            handoverStatus: isAdvanceFulfilled ? 'PENDING' : workOrder.handoverStatus,
             status: isAdvanceFulfilled ? WorkOrderStatus.ADVANCE_VERIFIED : workOrder.status,
           },
         });
 
-        // Trigger Technical Department Handover if advance is verified
-        if (isAdvanceFulfilled && !workOrder.project) {
-          const projectNumber = generateId('PRJ');
-          const technicalProject = await prisma.technicalProject.create({
-            data: {
-              projectNumber,
-              workOrderId: workOrder.id,
-              clientId: workOrder.clientId,
-              serviceCategory: workOrder.serviceCategory,
-              approvedScope: workOrder.agreedScope,
-              status: ProjectStatus.READY_TO_START,
-              progressPercentage: 0,
-            },
-          });
-
-          // Create standard initial milestones based on service
-          await prisma.projectMilestone.createMany({
-            data: [
-              { projectId: technicalProject.id, title: 'Project Kick-off & Requirement Deep Dive', status: 'TODO' },
-              { projectId: technicalProject.id, title: 'Architecture / Wireframes / Design Approval', status: 'TODO' },
-              { projectId: technicalProject.id, title: 'Core Implementation & Deliverable Build', status: 'TODO' },
-              { projectId: technicalProject.id, title: 'Quality Assurance & Client Review', status: 'TODO' },
-              { projectId: technicalProject.id, title: 'Final Handover & Project Sign-off', status: 'TODO' },
-            ],
-          });
-
-          // Notify Technical Department
-          const techUsers = await prisma.user.findMany({ where: { role: Role.TECHNICAL } });
-          for (const t of techUsers) {
+        if (isAdvanceFulfilled) {
+          // Notify Admin to review and authorize Technical Handover
+          const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+          for (const a of admins) {
             await createNotification(
-              t.id,
-              'New Project Released for Execution',
-              `Advance payment for ${workOrder.client.clientName} has been verified by Accounts. Project ${projectNumber} is READY_TO_START.`,
+              a.id,
+              'Advance Payment Verified - Technical Handover Required',
+              `Accounts verified advance payment (Rs. ${payment.amount.toLocaleString('en-IN')}) for ${workOrder.client.clientName}. Please review and authorize Technical Handover.`,
               'ACTION_REQUIRED',
-              '/technical/projects'
+              '/admin/work-orders'
             );
           }
 
-          // Notify BGA
+          // Notify BGA that payment is verified and waiting for Admin handover authorization
           await createNotification(
             workOrder.bgaId,
-            'Advance Payment Verified & Project Activated',
-            `Accounts verified advance payment for ${workOrder.client.clientName}. Technical project ${projectNumber} is now active.`,
+            'Advance Payment Verified',
+            `Accounts verified advance payment for ${workOrder.client.clientName}. Awaiting Admin Technical Handover authorization.`,
             'SUCCESS',
             '/bga/projects'
           );

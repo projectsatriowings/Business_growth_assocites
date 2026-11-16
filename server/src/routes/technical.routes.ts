@@ -2,40 +2,65 @@ import { Router, Response } from 'express';
 import { Role, ProjectStatus, MilestoneStatus, CommissionEligibility, WorkOrderStatus } from '@prisma/client';
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification } from '../middleware/auth';
+import { appCache } from '../utils/cache';
 
 const router = Router();
 router.use(authenticateJWT);
 router.use(authorizeRoles(Role.TECHNICAL, Role.ADMIN));
 
-// 1. Technical Dashboard Stats
+// 1. Technical Dashboard Stats (Optimized with Promise.all & cache)
 router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const totalProjects = await prisma.technicalProject.count();
-    const readyToStart = await prisma.technicalProject.count({ where: { status: ProjectStatus.READY_TO_START } });
-    const inProgress = await prisma.technicalProject.count({ where: { status: ProjectStatus.IN_PROGRESS } });
-    const underReview = await prisma.technicalProject.count({ where: { status: ProjectStatus.UNDER_REVIEW } });
-    const correctionRequired = await prisma.technicalProject.count({
-      where: { status: ProjectStatus.CORRECTION_REQUIRED },
-    });
-    const completed = await prisma.technicalProject.count({ where: { status: ProjectStatus.COMPLETED } });
+    const cached = appCache.get('technical:dashboard-stats');
+    if (cached) {
+      res.json(cached);
+      return;
+    }
 
-    res.json({
+    const [
+      totalProjects,
+      readyToStart,
+      inProgress,
+      underReview,
+      correctionRequired,
+      completed,
+    ] = await Promise.all([
+      prisma.technicalProject.count(),
+      prisma.technicalProject.count({ where: { status: ProjectStatus.READY_TO_START } }),
+      prisma.technicalProject.count({ where: { status: ProjectStatus.IN_PROGRESS } }),
+      prisma.technicalProject.count({ where: { status: ProjectStatus.UNDER_REVIEW } }),
+      prisma.technicalProject.count({
+        where: { status: ProjectStatus.CORRECTION_REQUIRED },
+      }),
+      prisma.technicalProject.count({ where: { status: ProjectStatus.COMPLETED } }),
+    ]);
+
+    const result = {
       total: totalProjects,
       readyToStart,
       inProgress,
       underReview,
       correctionRequired,
       completed,
-    });
+    };
+
+    appCache.set('technical:dashboard-stats', result, 20);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch technical stats' });
   }
 });
 
-// 2. Assigned Projects (NO BGA Commission or Banking details exposed!)
+// 2. Assigned Projects (Only authorized after Admin Handover Approval)
 router.get('/projects', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const projects = await prisma.technicalProject.findMany({
+      where: {
+        workOrder: {
+          advanceVerified: true,
+          handoverApproved: true,
+        },
+      },
       select: {
         id: true,
         projectNumber: true,
@@ -61,7 +86,18 @@ router.get('/projects', async (req: AuthRequest, res: Response): Promise<void> =
             id: true,
             workOrderNumber: true,
             advanceVerified: true,
+            handoverApproved: true,
+            handoverApprovedAt: true,
+            handoverNotes: true,
             status: true,
+            bgaId: true,
+            bga: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         assignedLead: {
@@ -109,10 +145,10 @@ router.put('/projects/:id/status', async (req: AuthRequest, res: Response): Prom
       return;
     }
 
-    // ENFORCE: Project execution can only start if advance payment is verified by Accounts
-    if (!project.workOrder.advanceVerified) {
+    // ENFORCE: Project execution can only start if advance payment is verified AND Admin handover is approved
+    if (!project.workOrder.advanceVerified || !project.workOrder.handoverApproved) {
       res.status(403).json({
-        error: 'Execution Blocked: Advance payment has not yet been verified by the Accounts Department.',
+        error: 'Execution Blocked: Project requires verified advance payment AND Admin Technical Handover authorization before work can proceed.',
       });
       return;
     }
@@ -129,6 +165,26 @@ router.put('/projects/:id/status', async (req: AuthRequest, res: Response): Prom
         where: { id: project.workOrderId },
         data: { status: WorkOrderStatus.IN_PRODUCTION },
       });
+
+      // Notify BGA and Admin that project execution has officially started
+      await createNotification(
+        project.workOrder.bgaId,
+        'Project Execution Started',
+        `Technical team has started work on project ${project.projectNumber} for ${project.client.clientName}.`,
+        'INFO',
+        '/bga/projects'
+      );
+
+      const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+      for (const a of admins) {
+        await createNotification(
+          a.id,
+          'Project Started by Technical Team',
+          `Technical team has initiated execution for project ${project.projectNumber} (${project.client.clientName}).`,
+          'INFO',
+          '/admin/work-orders'
+        );
+      }
     }
 
     if (status === ProjectStatus.COMPLETED) {
@@ -160,7 +216,15 @@ router.put('/projects/:id/status', async (req: AuthRequest, res: Response): Prom
         });
       }
 
-      // Notify Accounts and Admin
+      // Notify BGA, Accounts and Admin
+      await createNotification(
+        project.workOrder.bgaId,
+        'Project Completed by Technical Team',
+        `Project ${project.projectNumber} for ${project.client.clientName} has been marked COMPLETED.`,
+        'SUCCESS',
+        '/bga/projects'
+      );
+
       const notifyUsers = await prisma.user.findMany({
         where: { role: { in: [Role.ACCOUNTS, Role.ADMIN] } },
       });

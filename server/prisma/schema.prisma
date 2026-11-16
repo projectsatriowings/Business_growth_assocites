@@ -44,6 +44,8 @@ enum EnquiryStatus {
 enum QuotationStatus {
   REQUESTED
   PREPARED
+  PENDING_ADMIN_APPROVAL
+  ADMIN_APPROVED
   SENT_TO_BGA
   REVISION_REQUESTED
   ACCEPTED
@@ -151,6 +153,10 @@ model User {
   notifications    Notification[]
   auditLogs        AuditLog[]
   assignedProjects TechnicalProject[] @relation("LeadProjects")
+  quotationReminders QuotationReminder[]
+
+  @@index([role, status])
+  @@index([role, createdAt])
 }
 
 model SystemSetting {
@@ -173,6 +179,8 @@ model ServiceItem {
   isActive       Boolean             @default(true)
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+
+  @@index([category, isActive])
 }
 
 model CompanyResource {
@@ -188,6 +196,9 @@ model CompanyResource {
   uploadedById    String
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
+
+  @@index([isPublished, isConfidential])
+  @@index([category])
 }
 
 model Client {
@@ -214,6 +225,8 @@ model Client {
   @@unique([email])
   @@index([mobile])
   @@index([email])
+  @@index([bgaId])
+  @@index([bgaId, status])
 }
 
 model Enquiry {
@@ -237,6 +250,11 @@ model Enquiry {
   updatedAt        DateTime            @updatedAt
 
   quotations       Quotation[]
+
+  @@index([bgaId])
+  @@index([clientId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Quotation {
@@ -263,6 +281,12 @@ model Quotation {
   paymentTerms           String
   validityDate           DateTime
   status                 QuotationStatus @default(REQUESTED)
+  adminApprovalStatus    String?         @default("PENDING")
+  adminNotes             String?
+  adminReviewedAt        DateTime?
+  adminReviewedById      String?
+  lastReminderSentAt     DateTime?
+  reminderCount          Int             @default(0)
   revisionNotes          String?
   previousVersionId      String?
   clientAcceptanceProof  String?
@@ -273,6 +297,13 @@ model Quotation {
   updatedAt              DateTime        @updatedAt
 
   workOrder              WorkOrder?
+  reminders              QuotationReminder[]
+
+  @@index([enquiryId])
+  @@index([clientId])
+  @@index([bgaId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model WorkOrder {
@@ -291,12 +322,22 @@ model WorkOrder {
   advancePaid      Float           @default(0)
   advanceVerified  Boolean         @default(false)
   status           WorkOrderStatus @default(PENDING_ADVANCE)
+  handoverApproved     Boolean     @default(false)
+  handoverStatus       String?     @default("PENDING")
+  handoverApprovedAt   DateTime?
+  handoverApprovedById String?
+  handoverNotes        String?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
   payments         Payment[]
   project          TechnicalProject?
   commissions      Commission[]
+
+  @@index([clientId])
+  @@index([bgaId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Payment {
@@ -319,6 +360,11 @@ model Payment {
   updatedAt            DateTime      @updatedAt
 
   commissions          Commission[]
+
+  @@index([workOrderId])
+  @@index([status])
+  @@index([paymentType])
+  @@index([createdAt])
 }
 
 model TechnicalProject {
@@ -344,6 +390,11 @@ model TechnicalProject {
   deliverables         ProjectDeliverable[]
   feedback             ProjectFeedback[]
   commissions          Commission[]
+
+  @@index([clientId])
+  @@index([assignedLeadId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model ProjectMilestone {
@@ -357,6 +408,9 @@ model ProjectMilestone {
   completedAt DateTime?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+
+  @@index([projectId])
+  @@index([projectId, status])
 }
 
 model ProjectDeliverable {
@@ -370,6 +424,8 @@ model ProjectDeliverable {
   version     String           @default("1.0")
   uploadedById String?
   createdAt   DateTime         @default(now())
+
+  @@index([projectId])
 }
 
 model ProjectFeedback {
@@ -382,6 +438,9 @@ model ProjectFeedback {
   submittedById String?
   resolvedAt  DateTime?
   createdAt   DateTime         @default(now())
+
+  @@index([projectId])
+  @@index([projectId, status])
 }
 
 model Commission {
@@ -413,6 +472,13 @@ model Commission {
   notes               String?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
+
+  @@index([bgaId])
+  @@index([clientId])
+  @@index([workOrderId])
+  @@index([eligibilityStatus, payoutStatus])
+  @@index([approvalStatus, payoutStatus])
+  @@index([createdAt])
 }
 
 model Notification {
@@ -425,6 +491,9 @@ model Notification {
   link      String?
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
 }
 
 model AuditLog {
@@ -439,5 +508,22 @@ model AuditLog {
   details    String?
   ipAddress  String?
   createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model QuotationReminder {
+  id          String    @id @default(cuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  bgaId       String
+  bga         User      @relation(fields: [bgaId], references: [id])
+  message     String?
+  createdAt   DateTime  @default(now())
+
+  @@index([quotationId])
+  @@index([bgaId])
 }
 

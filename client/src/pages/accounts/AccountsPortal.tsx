@@ -13,14 +13,17 @@ import {
   Send,
   Eye,
   Plus,
+  RefreshCw,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
+import { SkeletonStatsRow, SkeletonTable } from '../../components/Skeleton';
 
 export const AccountsPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'quotation-requests' | 'work-orders' | 'payments' | 'commissions'>('dashboard');
 
   const [loading, setLoading] = useState(false);
+  const [tabLoading, setTabLoading] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [quotationRequests, setQuotationRequests] = useState<any[]>([]);
   const [workOrders, setWorkOrders] = useState<any[]>([]);
@@ -51,36 +54,57 @@ export const AccountsPortal: React.FC = () => {
     paymentDate: new Date().toISOString().slice(0, 10),
   });
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadStats = async (bypass = false) => {
     try {
-      const s = await apiRequest('/api/accounts/dashboard-stats');
+      const s = await apiRequest('/api/accounts/dashboard-stats', { bypassCache: bypass });
       setStats(s);
+    } catch (e) {
+      console.error('Failed to load accounts stats:', e);
+    }
+  };
 
-      if (activeTab === 'quotation-requests') {
+  const loadTabData = async (tab = activeTab) => {
+    setTabLoading(true);
+    try {
+      if (tab === 'quotation-requests') {
         const q = await apiRequest('/api/accounts/quotation-requests');
         setQuotationRequests(q.requests || []);
-      } else if (activeTab === 'work-orders') {
+      } else if (tab === 'work-orders') {
         const w = await apiRequest('/api/accounts/work-orders');
         setWorkOrders(w.workOrders || []);
-      } else if (activeTab === 'payments') {
-        const p = await apiRequest('/api/accounts/payments');
+      } else if (tab === 'payments') {
+        const [p, w] = await Promise.all([
+          apiRequest('/api/accounts/payments'),
+          apiRequest('/api/accounts/work-orders'),
+        ]);
         setPayments(p.payments || []);
-        const w = await apiRequest('/api/accounts/work-orders');
         setWorkOrders(w.workOrders || []);
-      } else if (activeTab === 'commissions') {
+      } else if (tab === 'commissions') {
         const comm = await apiRequest('/api/accounts/commissions');
         setCommissions(comm.commissions || []);
       }
     } catch (e) {
       console.error(e);
     } finally {
+      setTabLoading(false);
+    }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([loadStats(), loadTabData()]);
+    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    loadStats();
+  }, []);
+
+  useEffect(() => {
+    loadTabData(activeTab);
   }, [activeTab]);
 
   // Open Prepare Quotation Modal
@@ -244,9 +268,12 @@ export const AccountsPortal: React.FC = () => {
         {/* Main Content Area */}
         <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
           {/* TAB 1: DASHBOARD */}
-          {activeTab === 'dashboard' && stats && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {activeTab === 'dashboard' && (
+            !stats ? (
+              <SkeletonStatsRow count={4} />
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <span className="text-xs text-slate-500 font-semibold uppercase">Pending Quotation Requests</span>
                   <div className="text-2xl font-bold text-amber-600 mt-1">{stats.quotationRequests}</div>
@@ -282,28 +309,46 @@ export const AccountsPortal: React.FC = () => {
                 </p>
               </div>
             </div>
+            )
           )}
 
           {/* TAB 2: QUOTATION REQUESTS */}
+          {/* TAB 2: APPROVED ENQUIRIES & QUOTATION PREPARATION */}
           {activeTab === 'quotation-requests' && (
             <div className="space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200">
-                <h2 className="text-base font-bold text-slate-900">Quotation Requests & Drafts</h2>
-                <p className="text-xs text-slate-500">
-                  Prepare official quotations requested by BGAs, including taxes, discounts, and advance payment requirements.
-                </p>
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <FileCheck className="w-5 h-5 text-blue-600" />
+                    Approved Client Enquiries & Quotation Preparation
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Accounts prepares official quotations exclusively for Admin-approved enquiries. Drafts are submitted to Admin for executive sign-off.
+                  </p>
+                </div>
+                <button
+                  onClick={loadData}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Refresh Enquiries
+                </button>
               </div>
 
               <div className="space-y-3">
                 {quotationRequests.map((q) => (
-                  <div key={q.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                  <div key={q.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-sm font-bold text-slate-900">{q.quotationNumber}</span>
                           <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                             v{q.version}
                           </span>
+                          {q.reminderCount > 0 && (
+                            <span className="text-[10px] text-red-700 bg-red-50 px-2 py-0.5 rounded font-bold border border-red-200 animate-pulse">
+                              ⚠️ {q.reminderCount} BGA Reminder{q.reminderCount > 1 ? 's' : ''} Received
+                            </span>
+                          )}
                         </div>
                         <h3 className="text-xs text-slate-600 mt-0.5">
                           Client: <strong>{q.client?.clientName}</strong> ({q.client?.businessName}) • BGA: <strong>{q.bga?.name}</strong>
@@ -311,29 +356,33 @@ export const AccountsPortal: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
-                          q.status === 'REQUESTED'
-                            ? 'bg-amber-100 text-amber-800'
-                            : q.status === 'REVISION_REQUESTED'
-                            ? 'bg-red-100 text-red-800'
-                            : q.status === 'SENT_TO_BGA'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-emerald-100 text-emerald-800'
-                        }`}>
-                          {q.status}
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
+                            q.status === 'REQUESTED'
+                              ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                              : q.status === 'REVISION_REQUESTED'
+                              ? 'bg-red-100 text-red-800 border border-red-200'
+                              : q.status === 'PENDING_ADMIN_APPROVAL'
+                              ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                              : q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA'
+                              ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                              : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          }`}
+                        >
+                          {q.status === 'PENDING_ADMIN_APPROVAL' ? 'PENDING ADMIN APPROVAL' : q.status}
                         </span>
                         <a
                           href={`/api/resources/quotations/${q.id}/pdf`}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 rounded text-xs font-bold flex items-center gap-1"
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 rounded text-xs font-bold flex items-center gap-1 transition-colors"
                         >
                           <Download className="w-3.5 h-3.5" /> PDF
                         </a>
                       </div>
                     </div>
 
-                    <div className="py-3 text-xs text-slate-700 space-y-1">
+                    <div className="py-2 text-xs text-slate-700 space-y-1">
                       <div>
                         <strong>Service Category:</strong> {q.serviceCategory}
                       </div>
@@ -341,24 +390,38 @@ export const AccountsPortal: React.FC = () => {
                         <strong>Service Scope:</strong> {q.serviceScope}
                       </div>
                       {q.revisionNotes && (
-                        <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-amber-900">
-                          <strong>BGA Revision Feedback:</strong> {q.revisionNotes}
+                        <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 mt-2">
+                          <strong>Client Revision Feedback:</strong> {q.revisionNotes}
+                        </div>
+                      )}
+                      {q.adminNotes && (
+                        <div className="p-2.5 bg-purple-50 rounded-lg border border-purple-200 text-purple-900 mt-2">
+                          <strong>Admin Guidance:</strong> {q.adminNotes}
                         </div>
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                    <div className="pt-3 border-t border-slate-100 flex justify-between items-center text-xs flex-wrap gap-2">
                       <span className="font-bold text-slate-800">
-                        Total Value: ₹{q.totalAmount?.toLocaleString()} (Advance: ₹{q.advanceRequiredAmount?.toLocaleString()})
+                        Total Value: ₹{(q.totalAmount || 0).toLocaleString()} (Advance: ₹{(q.advanceRequiredAmount || 0).toLocaleString()})
                       </span>
 
-                      {(q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED') && (
+                      {(q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED') ? (
                         <button
                           onClick={() => openPrepModal(q)}
-                          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold flex items-center gap-1"
+                          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition-colors"
                         >
-                          <Send className="w-3.5 h-3.5" /> {q.status === 'REVISION_REQUESTED' ? 'Draft Revised Quotation' : 'Prepare Official Quotation'}
+                          <Send className="w-3.5 h-3.5" />{' '}
+                          {q.status === 'REVISION_REQUESTED' ? 'Draft Revised Quotation' : 'Prepare Official Quotation'}
                         </button>
+                      ) : q.status === 'PENDING_ADMIN_APPROVAL' ? (
+                        <span className="text-purple-700 font-semibold bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
+                          Awaiting Admin Authorization
+                        </span>
+                      ) : (
+                        <span className="text-emerald-700 font-semibold">
+                          Released to BGA & Client
+                        </span>
                       )}
                     </div>
                   </div>
@@ -368,15 +431,23 @@ export const AccountsPortal: React.FC = () => {
               {/* Prepare Quotation Modal */}
               {prepModal && (
                 <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
-                    <h3 className="text-base font-bold text-slate-900">
-                      Prepare Official Quotation: {prepModal.quotation.quotationNumber}
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Client: {prepModal.quotation.client?.clientName} ({prepModal.quotation.serviceCategory})
-                    </p>
+                  <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto space-y-4">
+                    <div className="border-b border-slate-100 pb-3">
+                      <span className="font-mono text-xs font-bold text-blue-600">{prepModal.quotation.quotationNumber}</span>
+                      <h3 className="text-base font-bold text-slate-900">
+                        Official Quotation Builder
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Client: <strong>{prepModal.quotation.client?.clientName}</strong> • Category: <strong>{prepModal.quotation.serviceCategory}</strong>
+                      </p>
+                    </div>
 
-                    <form onSubmit={handlePrepareQuotation} className="mt-4 space-y-3 text-xs">
+                    {/* Company Policy Notice */}
+                    <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900">
+                      <strong>Workflow Policy Notice:</strong> Submitted official quotations are routed to the Admin Department for review. Official quotes are automatically released to the BGA immediately upon Admin approval.
+                    </div>
+
+                    <form onSubmit={handlePrepareQuotation} className="space-y-3 text-xs">
                       <div>
                         <label className="block text-slate-700 font-semibold mb-1">Approved Service Scope Description *</label>
                         <textarea
@@ -384,7 +455,7 @@ export const AccountsPortal: React.FC = () => {
                           required
                           value={quoteForm.serviceScope}
                           onChange={(e) => setQuoteForm({ ...quoteForm, serviceScope: e.target.value })}
-                          className="w-full p-2 border border-slate-300 rounded"
+                          className="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
 
@@ -396,7 +467,7 @@ export const AccountsPortal: React.FC = () => {
                             required
                             value={quoteForm.serviceFee}
                             onChange={(e) => setQuoteForm({ ...quoteForm, serviceFee: e.target.value })}
-                            className="w-full p-2 border border-slate-300 rounded font-semibold"
+                            className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold"
                           />
                         </div>
 
@@ -408,7 +479,7 @@ export const AccountsPortal: React.FC = () => {
                             type="number"
                             value={quoteForm.adBudget}
                             onChange={(e) => setQuoteForm({ ...quoteForm, adBudget: e.target.value })}
-                            className="w-full p-2 border border-slate-300 rounded"
+                            className="w-full p-2.5 border border-slate-300 rounded-xl"
                           />
                         </div>
                       </div>
@@ -420,7 +491,7 @@ export const AccountsPortal: React.FC = () => {
                             type="number"
                             value={quoteForm.discount}
                             onChange={(e) => setQuoteForm({ ...quoteForm, discount: e.target.value })}
-                            className="w-full p-2 border border-slate-300 rounded"
+                            className="w-full p-2.5 border border-slate-300 rounded-xl"
                           />
                         </div>
 
@@ -430,7 +501,7 @@ export const AccountsPortal: React.FC = () => {
                             type="number"
                             value={quoteForm.taxRate}
                             onChange={(e) => setQuoteForm({ ...quoteForm, taxRate: e.target.value })}
-                            className="w-full p-2 border border-slate-300 rounded font-semibold"
+                            className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold"
                           />
                         </div>
 
@@ -440,7 +511,7 @@ export const AccountsPortal: React.FC = () => {
                             type="number"
                             value={quoteForm.advanceRequiredPercent}
                             onChange={(e) => setQuoteForm({ ...quoteForm, advanceRequiredPercent: e.target.value })}
-                            className="w-full p-2 border border-slate-300 rounded font-semibold text-emerald-700"
+                            className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-emerald-700"
                           />
                         </div>
                       </div>
@@ -451,23 +522,23 @@ export const AccountsPortal: React.FC = () => {
                           rows={2}
                           value={quoteForm.paymentTerms}
                           onChange={(e) => setQuoteForm({ ...quoteForm, paymentTerms: e.target.value })}
-                          className="w-full p-2 border border-slate-300 rounded"
+                          className="w-full p-2.5 border border-slate-300 rounded-xl"
                         />
                       </div>
 
-                      <div className="pt-3 flex justify-end gap-2">
+                      <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
                         <button
                           type="button"
                           onClick={() => setPrepModal(null)}
-                          className="px-3 py-1.5 rounded text-slate-600 font-semibold hover:bg-slate-100"
+                          className="px-3.5 py-2 rounded-xl text-slate-600 font-semibold hover:bg-slate-100"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold"
+                          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors shadow-sm"
                         >
-                          Generate & Dispatch Quotation
+                          Submit for Admin Approval →
                         </button>
                       </div>
                     </form>
@@ -643,10 +714,10 @@ export const AccountsPortal: React.FC = () => {
           {/* TAB 4: PAYMENT VERIFICATION */}
           {activeTab === 'payments' && (
             <div className="space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200">
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <h2 className="text-base font-bold text-slate-900">Payment Verification Ledger</h2>
-                <p className="text-xs text-slate-500">
-                  Verify actual bank credit. Advance verification triggers technical handover; final verification triggers commission eligibility.
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Verify actual receipt of bank funds. Advance payment verification immediately forwards the record to Management for Technical Handover authorization; final payments trigger commission calculations.
                 </p>
               </div>
 

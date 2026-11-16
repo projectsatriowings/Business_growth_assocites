@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth, UserRole } from './context/AuthContext';
+import { PageLoadingFallback } from './components/Skeleton';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
-import { LandingPage } from './pages/LandingPage';
-import { RegisterBgaPage } from './pages/RegisterBgaPage';
-import { LoginPage } from './pages/LoginPage';
-import { AdminPortal } from './pages/admin/AdminPortal';
-import { BgaPortal } from './pages/bga/BgaPortal';
-import { AccountsPortal } from './pages/accounts/AccountsPortal';
-import { TechnicalPortal } from './pages/technical/TechnicalPortal';
+// Route-level lazy loading
+const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
+const RegisterBgaPage = lazy(() => import('./pages/RegisterBgaPage').then((m) => ({ default: m.RegisterBgaPage })));
+const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const AdminPortal = lazy(() => import('./pages/admin/AdminPortal').then((m) => ({ default: m.AdminPortal })));
+const BgaPortal = lazy(() => import('./pages/bga/BgaPortal').then((m) => ({ default: m.BgaPortal })));
+const AccountsPortal = lazy(() => import('./pages/accounts/AccountsPortal').then((m) => ({ default: m.AccountsPortal })));
+const TechnicalPortal = lazy(() => import('./pages/technical/TechnicalPortal').then((m) => ({ default: m.TechnicalPortal })));
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -25,11 +27,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
-      </div>
-    );
+    return <PageLoadingFallback />;
   }
 
   if (!user) {
@@ -66,88 +64,90 @@ export function App() {
     <ErrorBoundary>
       <AuthProvider>
         <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/register" element={<RegisterBgaPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/login/:role" element={<LoginPage />} />
+          <Suspense fallback={<PageLoadingFallback />}>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/register" element={<RegisterBgaPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/login/:role" element={<LoginPage />} />
 
-            {/* Admin Protected Routes (matching both /admin and /admin/*) */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute allowedRoles={['ADMIN']} redirectPath="/login/admin">
-                  <AdminPortal />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/*"
-              element={
-                <ProtectedRoute allowedRoles={['ADMIN']} redirectPath="/login/admin">
-                  <AdminPortal />
-                </ProtectedRoute>
-              }
-            />
+              {/* Admin Protected Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN']} redirectPath="/login/admin">
+                    <AdminPortal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/*"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN']} redirectPath="/login/admin">
+                    <AdminPortal />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* BGA Protected Routes */}
-            <Route
-              path="/bga"
-              element={
-                <ProtectedRoute allowedRoles={['BGA']} redirectPath="/login">
-                  <BgaPortal />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/bga/*"
-              element={
-                <ProtectedRoute allowedRoles={['BGA']} redirectPath="/login">
-                  <BgaPortal />
-                </ProtectedRoute>
-              }
-            />
+              {/* BGA Protected Routes */}
+              <Route
+                path="/bga"
+                element={
+                  <ProtectedRoute allowedRoles={['BGA']} redirectPath="/login">
+                    <BgaPortal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bga/*"
+                element={
+                  <ProtectedRoute allowedRoles={['BGA']} redirectPath="/login">
+                    <BgaPortal />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Accounts Protected Routes */}
-            <Route
-              path="/accounts"
-              element={
-                <ProtectedRoute allowedRoles={['ACCOUNTS', 'ADMIN']} redirectPath="/login/accounts">
-                  <AccountsPortal />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/accounts/*"
-              element={
-                <ProtectedRoute allowedRoles={['ACCOUNTS', 'ADMIN']} redirectPath="/login/accounts">
-                  <AccountsPortal />
-                </ProtectedRoute>
-              }
-            />
+              {/* Accounts Protected Routes */}
+              <Route
+                path="/accounts"
+                element={
+                  <ProtectedRoute allowedRoles={['ACCOUNTS', 'ADMIN']} redirectPath="/login/accounts">
+                    <AccountsPortal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/accounts/*"
+                element={
+                  <ProtectedRoute allowedRoles={['ACCOUNTS', 'ADMIN']} redirectPath="/login/accounts">
+                    <AccountsPortal />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Technical Protected Routes */}
-            <Route
-              path="/technical"
-              element={
-                <ProtectedRoute allowedRoles={['TECHNICAL', 'ADMIN']} redirectPath="/login/technical">
-                  <TechnicalPortal />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/technical/*"
-              element={
-                <ProtectedRoute allowedRoles={['TECHNICAL', 'ADMIN']} redirectPath="/login/technical">
-                  <TechnicalPortal />
-                </ProtectedRoute>
-              }
-            />
+              {/* Technical Protected Routes */}
+              <Route
+                path="/technical"
+                element={
+                  <ProtectedRoute allowedRoles={['TECHNICAL', 'ADMIN']} redirectPath="/login/technical">
+                    <TechnicalPortal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/technical/*"
+                element={
+                  <ProtectedRoute allowedRoles={['TECHNICAL', 'ADMIN']} redirectPath="/login/technical">
+                    <TechnicalPortal />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Catch-all */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+              {/* Catch-all */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </AuthProvider>
     </ErrorBoundary>
@@ -155,4 +155,3 @@ export function App() {
 }
 
 export default App;
-

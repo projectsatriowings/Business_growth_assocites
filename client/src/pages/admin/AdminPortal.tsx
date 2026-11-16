@@ -39,6 +39,7 @@ import {
 import { PortalHeader } from '../../components/PortalHeader';
 import { AssociateProfileView } from './AssociateProfileView';
 import { apiRequest } from '../../utils/api';
+import { SkeletonCard, SkeletonStatsRow, SkeletonTable } from '../../components/Skeleton';
 
 // Generic Reusable Empty State Component
 const EmptyState: React.FC<{
@@ -73,6 +74,7 @@ export const AdminPortal: React.FC = () => {
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
+  const [tabLoading, setTabLoading] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [bgas, setBgas] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
@@ -128,6 +130,18 @@ export const AdminPortal: React.FC = () => {
   } | null>(null);
   const [enquiryReviewNotes, setEnquiryReviewNotes] = useState('');
 
+  const [quotationReviewModal, setQuotationReviewModal] = useState<{
+    quotation: any;
+    action: 'APPROVE' | 'REQUEST_REVISION' | 'REJECT';
+  } | null>(null);
+  const [quotationReviewNotes, setQuotationReviewNotes] = useState('');
+
+  const [handoverReviewModal, setHandoverReviewModal] = useState<{
+    workOrder: any;
+    action: 'APPROVE' | 'HOLD' | 'REQUEST_CLARIFICATION';
+  } | null>(null);
+  const [handoverReviewNotes, setHandoverReviewNotes] = useState('');
+
   const [enquiryDetailModal, setEnquiryDetailModal] = useState<any | null>(null);
   const [quotationDetailModal, setQuotationDetailModal] = useState<any | null>(null);
   const [projectDetailModal, setProjectDetailModal] = useState<any | null>(null);
@@ -147,58 +161,93 @@ export const AdminPortal: React.FC = () => {
     isConfidential: false,
   });
 
-  // Load Dashboard Data
-  const loadData = async () => {
-    setLoading(true);
+  // Load Dashboard Stats independently
+  const loadStats = async (bypass = false) => {
     try {
-      const statsRes = await apiRequest('/api/admin/dashboard-stats');
+      const statsRes = await apiRequest('/api/admin/dashboard-stats', { bypassCache: bypass });
       setStats(statsRes);
+    } catch (e) {
+      console.error('Failed to load admin stats:', e);
+    }
+  };
 
-      if (activeTab === 'bgas') {
-        const res = await apiRequest(`/api/admin/bgas?status=${bgaStatusFilter}&search=${searchBga}`);
+  // Load Active Tab Data immediately (without blocking on stats)
+  const loadTabData = async (tab = activeTab, filter = bgaStatusFilter, search = searchBga) => {
+    setTabLoading(true);
+    try {
+      if (tab === 'bgas') {
+        const res = await apiRequest(`/api/admin/bgas?status=${filter}&search=${encodeURIComponent(search)}`);
         setBgas(res.bgas || []);
-      } else if (activeTab === 'services') {
+      } else if (tab === 'services') {
         const res = await apiRequest('/api/admin/services');
         setServices(res.services || []);
-      } else if (activeTab === 'resources') {
+      } else if (tab === 'resources') {
         const res = await apiRequest('/api/admin/resources');
         setResources(res.resources || []);
-      } else if (activeTab === 'clients') {
-        const res = await apiRequest('/api/admin/clients');
-        setClients(res.clients || []);
-        const bgaRes = await apiRequest('/api/admin/bgas?status=ACTIVE');
+      } else if (tab === 'clients') {
+        const [clientRes, bgaRes] = await Promise.all([
+          apiRequest('/api/admin/clients'),
+          apiRequest('/api/admin/bgas?status=ACTIVE'),
+        ]);
+        setClients(clientRes.clients || []);
         setBgas(bgaRes.bgas || []);
-      } else if (activeTab === 'enquiries') {
+      } else if (tab === 'enquiries') {
         const res = await apiRequest('/api/admin/enquiries');
         setEnquiries(res.enquiries || []);
-      } else if (activeTab === 'quotations') {
+      } else if (tab === 'quotations') {
         const res = await apiRequest('/api/accounts/quotation-requests');
         setQuotations(res.requests || []);
-      } else if (activeTab === 'workorders') {
+      } else if (tab === 'workorders') {
         const res = await apiRequest('/api/accounts/work-orders');
         setWorkOrders(res.workOrders || []);
-      } else if (activeTab === 'technical') {
+      } else if (tab === 'technical') {
         const res = await apiRequest('/api/technical/projects');
         setProjects(res.projects || []);
-      } else if (activeTab === 'commissions') {
+      } else if (tab === 'commissions') {
         const res = await apiRequest('/api/admin/commissions');
         setCommissions(res.commissions || []);
-      } else if (activeTab === 'settings') {
-        const sRes = await apiRequest('/api/admin/settings');
+      } else if (tab === 'settings') {
+        const [sRes, logsRes] = await Promise.all([
+          apiRequest('/api/admin/settings'),
+          apiRequest('/api/admin/audit-logs'),
+        ]);
         setSettings(sRes.settings || []);
-        const logsRes = await apiRequest('/api/admin/audit-logs');
         setAuditLogs(logsRes.logs || []);
       }
     } catch (e) {
       console.error('Failed to load portal data:', e);
     } finally {
+      setTabLoading(false);
+    }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([loadStats(), loadTabData()]);
+    } finally {
       setLoading(false);
     }
   };
 
+  // Initial load
   useEffect(() => {
-    loadData();
+    loadStats();
+  }, []);
+
+  // Tab switch or status filter changes: load tab immediately
+  useEffect(() => {
+    loadTabData(activeTab, bgaStatusFilter, searchBga);
   }, [activeTab, bgaStatusFilter]);
+
+  // Debounced search for BGAs
+  useEffect(() => {
+    if (activeTab !== 'bgas') return;
+    const timeout = setTimeout(() => {
+      loadTabData('bgas', bgaStatusFilter, searchBga);
+    }, 250);
+    return () => clearTimeout(timeout);
+  }, [searchBga]);
 
   // Handle BGA Approval Action
   const handleBgaAction = async (id: string, action: string, reason?: string) => {
@@ -226,6 +275,44 @@ export const AdminPortal: React.FC = () => {
       });
       setEnquiryReviewModal(null);
       setEnquiryReviewNotes('');
+      loadData();
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
+  // Handle Quotation Review Execution (Approve, Revision, Reject)
+  const executeQuotationReview = async () => {
+    if (!quotationReviewModal) return;
+    try {
+      await apiRequest(`/api/admin/quotations/${quotationReviewModal.quotation.id}/review`, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: quotationReviewModal.action,
+          notes: quotationReviewNotes,
+        }),
+      });
+      setQuotationReviewModal(null);
+      setQuotationReviewNotes('');
+      loadData();
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
+  // Handle Technical Handover Authorization (Approve, Hold, Clarification)
+  const executeHandoverReview = async () => {
+    if (!handoverReviewModal) return;
+    try {
+      await apiRequest(`/api/admin/handovers/${handoverReviewModal.workOrder.id}/review`, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: handoverReviewModal.action,
+          notes: handoverReviewNotes,
+        }),
+      });
+      setHandoverReviewModal(null);
+      setHandoverReviewNotes('');
       loadData();
     } catch (e: any) {
       alert(e.message);
@@ -399,7 +486,13 @@ export const AdminPortal: React.FC = () => {
         q.quotationNumber?.toLowerCase().includes(quotationSearch.toLowerCase()) ||
         q.client?.clientName?.toLowerCase().includes(quotationSearch.toLowerCase()) ||
         q.bga?.name?.toLowerCase().includes(quotationSearch.toLowerCase());
-      const matchStatus = quotationStatusFilter === 'ALL' || q.status === quotationStatusFilter;
+      
+      let matchStatus = quotationStatusFilter === 'ALL' || q.status === quotationStatusFilter;
+      if (quotationStatusFilter === 'DELAYED') {
+        matchStatus = (q.reminderCount || 0) > 0;
+      } else if (quotationStatusFilter === 'PENDING_ADMIN_APPROVAL') {
+        matchStatus = q.status === 'PENDING_ADMIN_APPROVAL' || (q.adminApprovalStatus === 'PENDING' && q.preparedById);
+      }
       return matchSearch && matchStatus;
     });
   }, [quotations, quotationSearch, quotationStatusFilter]);
@@ -412,7 +505,13 @@ export const AdminPortal: React.FC = () => {
         w.workOrderNumber?.toLowerCase().includes(workOrderSearch.toLowerCase()) ||
         w.client?.clientName?.toLowerCase().includes(workOrderSearch.toLowerCase()) ||
         w.bga?.name?.toLowerCase().includes(workOrderSearch.toLowerCase());
-      const matchStatus = workOrderStatusFilter === 'ALL' || w.status === workOrderStatusFilter;
+      
+      let matchStatus = workOrderStatusFilter === 'ALL' || w.status === workOrderStatusFilter;
+      if (workOrderStatusFilter === 'PENDING_HANDOVER') {
+        matchStatus = w.advanceVerified && !w.handoverApproved;
+      } else if (workOrderStatusFilter === 'ADVANCE_VERIFIED') {
+        matchStatus = w.advanceVerified;
+      }
       return matchSearch && matchStatus;
     });
   }, [workOrders, workOrderSearch, workOrderStatusFilter]);
@@ -613,10 +712,7 @@ export const AdminPortal: React.FC = () => {
           {/* TAB 1: DASHBOARD & ANALYTICS */}
           {activeTab === 'dashboard' && (
             loading && !stats ? (
-              <div className="w-full flex flex-col items-center justify-center p-20 space-y-4">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600" />
-                <span className="text-xs text-slate-500 font-semibold">Loading consolidated analytics...</span>
-              </div>
+              <SkeletonStatsRow count={4} />
             ) : !stats ? (
               <div className="w-full p-12 text-center bg-white rounded-2xl border border-slate-200">
                 <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-2" />
@@ -701,6 +797,203 @@ export const AdminPortal: React.FC = () => {
                   <span className="text-xs text-slate-400 block mt-2">
                     {stats?.workOrders?.total || 0} Work Orders Total
                   </span>
+                </div>
+              </div>
+
+              {/* MODULE 8: 10-STAGE ENTERPRISE WORKFLOW MONITORING PIPELINE */}
+              <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-slate-50 p-6 rounded-2xl border border-purple-100 shadow-sm space-y-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-600" />
+                      10-Stage Enterprise Workflow Pipeline Monitoring
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Real-time progression tracking across client approvals, quotation preparation, payment clearance, and technical delivery. Click any card to filter tasks.
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-bold text-purple-700 bg-purple-100 px-3 py-1 rounded-full border border-purple-200">
+                    Live System Feeds
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                  {/* Stage 1 */}
+                  <div
+                    onClick={() => {
+                      setActiveTab('enquiries');
+                      setEnquiryStatusFilter('SUBMITTED');
+                    }}
+                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 1</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                      Pending Approvals
+                    </span>
+                    <div className="text-2xl font-black text-amber-600 mt-2">
+                      {stats?.workflow?.pendingClientApprovals || 0}
+                    </div>
+                    <span className="text-[10px] text-slate-500 block mt-1">Awaiting Admin sign-off</span>
+                  </div>
+
+                  {/* Stage 2 */}
+                  <div
+                    onClick={() => {
+                      setActiveTab('enquiries');
+                      setEnquiryStatusFilter('APPROVED');
+                    }}
+                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 2</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                      Approved Enquiries
+                    </span>
+                    <div className="text-2xl font-black text-emerald-600 mt-2">
+                      {stats?.workflow?.approvedEnquiries || 0}
+                    </div>
+                    <span className="text-[10px] text-slate-500 block mt-1">Ready for Accounts quotation</span>
+                  </div>
+
+                  {/* Stage 3 */}
+                  <div
+                    onClick={() => {
+                      setActiveTab('quotations');
+                      setQuotationStatusFilter('REQUESTED');
+                    }}
+                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 3</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                      Pending Quotations
+                    </span>
+                    <div className="text-2xl font-black text-blue-600 mt-2">
+                      {stats?.workflow?.pendingQuotations || 0}
+                    </div>
+                    <span className="text-[10px] text-slate-500 block mt-1">Under Accounts preparation</span>
+                  </div>
+
+                  {/* Stage 4 */}
+                  <div
+                    onClick={() => {
+                      setActiveTab('quotations');
+                      setQuotationStatusFilter('DELAYED');
+                    }}
+                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-red-400 hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 4</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-red-600">
+                      Delayed Quotations
+                    </span>
+                    <div className="text-2xl font-black text-red-600 mt-2">
+                      {stats?.workflow?.delayedQuotations || 0}
+                    </div>
+                    <span className="text-[10px] text-slate-500 block mt-1">BGA reminder triggered</span>
+                  </div>
+
+                  {/* Stage 5 */}
+                  <div
+                    onClick={() => {
+                      setActiveTab('quotations');
+                      setQuotationStatusFilter('PENDING_ADMIN_APPROVAL');
+                    }}
+                    className="p-4 rounded-xl bg-white border border-purple-200 bg-purple-50/30 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <span className="text-[10px] text-purple-600 font-bold uppercase block tracking-wider">Stage 5</span>
+                    <span className="text-xs font-bold text-purple-900 mt-0.5 block group-hover:text-purple-600">
+                      Quote Approvals
+                    </span>
+                    <div className="text-2xl font-black text-purple-600 mt-2">
+                      {stats?.workflow?.pendingQuotationApprovals || 0}
+                    </div>
+                    <span className="text-[10px] text-slate-500 block mt-1">Pending Admin release</span>
+                  </div>
+
+                  {/* Stage 6 */}
+                  <div
+                    onClick={() => {
+                      setActiveTab('quotations');
+                      setQuotationStatusFilter('ACCEPTED');
+                    }}
+                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 6</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                      Accepted Quotations
+                    </span>
+                    <div className="text-2xl font-black text-emerald-600 mt-2">
+                      {stats?.workflow?.acceptedQuotations || 0}
+                    </div>
+                    <span className="text-[10px] text-slate-500 block mt-1">Client confirmed contract</span>
+                  </div>
+
+                  {/* Stage 7 */}
+                  <div
+                    onClick={() => {
+                      setActiveTab('workorders');
+                      setWorkOrderStatusFilter('PENDING_ADVANCE');
+                    }}
+                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 7</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                      Pending Advances
+                    </span>
+                    <div className="text-2xl font-black text-amber-600 mt-2">
+                      {stats?.workflow?.pendingAdvancePayments || 0}
+                    </div>
+                    <span className="text-[10px] text-slate-500 block mt-1">Awaiting client payment</span>
+                  </div>
+
+                  {/* Stage 8 */}
+                  <div
+                    onClick={() => {
+                      setActiveTab('workorders');
+                      setWorkOrderStatusFilter('ADVANCE_VERIFIED');
+                    }}
+                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 8</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                      Payments Verified
+                    </span>
+                    <div className="text-2xl font-black text-emerald-600 mt-2">
+                      {stats?.workflow?.paymentsVerified || 0}
+                    </div>
+                    <span className="text-[10px] text-slate-500 block mt-1">Confirmed bank funds</span>
+                  </div>
+
+                  {/* Stage 9 */}
+                  <div
+                    onClick={() => {
+                      setActiveTab('workorders');
+                      setWorkOrderStatusFilter('PENDING_HANDOVER');
+                    }}
+                    className="p-4 rounded-xl bg-white border border-indigo-200 bg-indigo-50/30 hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <span className="text-[10px] text-indigo-600 font-bold uppercase block tracking-wider">Stage 9</span>
+                    <span className="text-xs font-bold text-indigo-900 mt-0.5 block group-hover:text-indigo-600">
+                      Pending Handovers
+                    </span>
+                    <div className="text-2xl font-black text-indigo-600 mt-2">
+                      {stats?.workflow?.pendingTechnicalHandovers || 0}
+                    </div>
+                    <span className="text-[10px] text-slate-500 block mt-1">Admin kickoff authorization</span>
+                  </div>
+
+                  {/* Stage 10 */}
+                  <div
+                    onClick={() => setActiveTab('technical')}
+                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 10</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                      Active Tech Projects
+                    </span>
+                    <div className="text-2xl font-black text-purple-700 mt-2">
+                      {stats?.workflow?.activeTechnicalProjects || 0}
+                    </div>
+                    <span className="text-[10px] text-slate-500 block mt-1">Engineering sprints active</span>
+                  </div>
                 </div>
               </div>
 
@@ -845,7 +1138,9 @@ export const AdminPortal: React.FC = () => {
                   </div>
                 </div>
 
-                {bgas.length === 0 ? (
+                {tabLoading ? (
+                  <SkeletonTable rows={5} cols={5} />
+                ) : bgas.length === 0 ? (
                   <EmptyState
                     icon={Users}
                     title="No Associates Found"
@@ -1639,8 +1934,10 @@ export const AdminPortal: React.FC = () => {
                     className="text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-medium"
                   >
                     <option value="ALL">All Statuses</option>
+                    <option value="PENDING_ADMIN_APPROVAL">PENDING_ADMIN_APPROVAL (Stage 5)</option>
+                    <option value="DELAYED">DELAYED (BGA Reminders Sent)</option>
                     <option value="REQUESTED">REQUESTED</option>
-                    <option value="PREPARED">PREPARED</option>
+                    <option value="ADMIN_APPROVED">ADMIN_APPROVED</option>
                     <option value="SENT_TO_BGA">SENT_TO_BGA</option>
                     <option value="REVISION_REQUESTED">REVISION_REQUESTED</option>
                     <option value="ACCEPTED">ACCEPTED</option>
@@ -1677,68 +1974,114 @@ export const AdminPortal: React.FC = () => {
                         <th className="p-3.5">Client & BGA</th>
                         <th className="p-3.5">Service & Total Value</th>
                         <th className="p-3.5">Advance Req.</th>
-                        <th className="p-3.5">Status</th>
-                        <th className="p-3.5 text-right">Details</th>
+                        <th className="p-3.5">Workflow Status</th>
+                        <th className="p-3.5 text-right">Admin Approval & Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {filteredQuotations.map((q) => (
-                        <tr key={q.id} className="hover:bg-slate-50/50">
-                          <td className="p-3.5">
-                            <span className="font-bold font-mono text-slate-900 text-sm block">
-                              {q.quotationNumber}
-                            </span>
-                            <span className="text-[10px] text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded font-bold border border-purple-100 mt-1 inline-block">
-                              Version {q.version}
-                            </span>
-                          </td>
-                          <td className="p-3.5">
-                            <div className="font-semibold text-slate-800 text-sm">{q.client?.clientName}</div>
-                            <div className="text-[11px] text-slate-500">BGA: {q.bga?.name} ({q.bga?.email})</div>
-                          </td>
-                          <td className="p-3.5">
-                            <div className="text-slate-900 font-extrabold text-sm">
-                              ₹{(q.totalAmount || 0).toLocaleString()}
-                            </div>
-                            <div className="text-[10px] text-slate-500">{q.serviceCategory}</div>
-                          </td>
-                          <td className="p-3.5">
-                            <span className="font-bold text-indigo-700">
-                              ₹{(q.advanceRequiredAmount || 0).toLocaleString()}
-                            </span>
-                            <span className="text-slate-400 text-[10px] block">
-                              ({q.advanceRequiredPercent || 30}% mandatory)
-                            </span>
-                          </td>
-                          <td className="p-3.5">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                              q.status === 'ACCEPTED'
-                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                : q.status === 'SENT_TO_BGA'
-                                ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                : 'bg-amber-100 text-amber-800 border border-amber-200'
-                            }`}>
-                              {q.status}
-                            </span>
-                          </td>
-                          <td className="p-3.5 text-right space-x-2">
-                            <button
-                              onClick={() => setQuotationDetailModal(q)}
-                              className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-purple-50 hover:text-purple-700 text-xs font-semibold"
-                            >
-                              Scope Details
-                            </button>
-                            <a
-                              href={`/api/resources/quotations/${q.id}/pdf`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-semibold inline-block hover:bg-slate-800"
-                            >
-                              PDF
-                            </a>
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredQuotations.map((q) => {
+                        const isPendingApproval =
+                          q.status === 'PENDING_ADMIN_APPROVAL' || (q.adminApprovalStatus === 'PENDING' && q.preparedById);
+
+                        return (
+                          <tr key={q.id} className="hover:bg-slate-50/50">
+                            <td className="p-3.5">
+                              <span className="font-bold font-mono text-slate-900 text-sm block">
+                                {q.quotationNumber}
+                              </span>
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span className="text-[10px] text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded font-bold border border-purple-100">
+                                  Version {q.version}
+                                </span>
+                                {q.reminderCount > 0 && (
+                                  <span className="text-[10px] text-red-700 bg-red-50 px-1.5 py-0.5 rounded font-bold border border-red-200 flex items-center gap-1 animate-pulse">
+                                    ⚠️ {q.reminderCount} Reminder{q.reminderCount > 1 ? 's' : ''}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="font-semibold text-slate-800 text-sm">{q.client?.clientName}</div>
+                              <div className="text-[11px] text-slate-500">BGA: {q.bga?.name} ({q.bga?.email})</div>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="text-slate-900 font-extrabold text-sm">
+                                ₹{(q.totalAmount || 0).toLocaleString()}
+                              </div>
+                              <div className="text-[10px] text-slate-500">{q.serviceCategory}</div>
+                            </td>
+                            <td className="p-3.5">
+                              <span className="font-bold text-indigo-700">
+                                ₹{(q.advanceRequiredAmount || 0).toLocaleString()}
+                              </span>
+                              <span className="text-slate-400 text-[10px] block">
+                                ({q.advanceRequiredPercent || 50}% mandatory)
+                              </span>
+                            </td>
+                            <td className="p-3.5">
+                              <span
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                  q.status === 'ACCEPTED'
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA'
+                                    ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                    : q.status === 'PENDING_ADMIN_APPROVAL'
+                                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                    : q.status === 'REVISION_REQUESTED'
+                                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                    : 'bg-slate-100 text-slate-800 border border-slate-200'
+                                }`}
+                              >
+                                {q.status === 'PENDING_ADMIN_APPROVAL'
+                                  ? 'PENDING_ADMIN_APPROVAL'
+                                  : q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA'
+                                  ? 'APPROVED & SENT TO BGA'
+                                  : q.status}
+                              </span>
+                            </td>
+                            <td className="p-3.5 text-right space-y-1">
+                              <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                {isPendingApproval && (
+                                  <>
+                                    <button
+                                      onClick={() => setQuotationReviewModal({ quotation: q, action: 'APPROVE' })}
+                                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                                    >
+                                      Approve Quote
+                                    </button>
+                                    <button
+                                      onClick={() => setQuotationReviewModal({ quotation: q, action: 'REQUEST_REVISION' })}
+                                      className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-colors"
+                                    >
+                                      Revision
+                                    </button>
+                                    <button
+                                      onClick={() => setQuotationReviewModal({ quotation: q, action: 'REJECT' })}
+                                      className="px-2.5 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-xs font-bold transition-colors"
+                                    >
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+                                <button
+                                  onClick={() => setQuotationDetailModal(q)}
+                                  className="px-2.5 py-1 rounded-lg border border-slate-300 text-slate-700 hover:bg-purple-50 hover:text-purple-700 text-xs font-semibold"
+                                >
+                                  Scope
+                                </button>
+                                <a
+                                  href={`/api/resources/quotations/${q.id}/pdf`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-xs font-semibold inline-block hover:bg-slate-800"
+                                >
+                                  PDF
+                                </a>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1794,6 +2137,63 @@ export const AdminPortal: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* Quotation Review Action Modal (Approve, Revision, Reject) */}
+              {quotationReviewModal && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+                    <h3 className="text-base font-bold text-slate-900">
+                      {quotationReviewModal.action === 'APPROVE'
+                        ? 'Approve Official Quotation & Release to BGA'
+                        : quotationReviewModal.action === 'REQUEST_REVISION'
+                        ? 'Request Quotation Revision from Accounts'
+                        : 'Reject Official Quotation'}
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Quotation: <strong>{quotationReviewModal.quotation?.quotationNumber}</strong> for{' '}
+                      <strong>{quotationReviewModal.quotation?.client?.clientName}</strong>. Total Value: ₹
+                      {(quotationReviewModal.quotation?.totalAmount || 0).toLocaleString()}.
+                    </p>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Executive Remarks / Revision Instructions {quotationReviewModal.action !== 'APPROVE' && '*'}
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={quotationReviewNotes}
+                        onChange={(e) => setQuotationReviewNotes(e.target.value)}
+                        placeholder="Add review guidelines for Accounts or notes for BGA..."
+                        className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        onClick={() => {
+                          setQuotationReviewModal(null);
+                          setQuotationReviewNotes('');
+                        }}
+                        className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={executeQuotationReview}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold text-white transition-colors ${
+                          quotationReviewModal.action === 'APPROVE'
+                            ? 'bg-emerald-600 hover:bg-emerald-700'
+                            : quotationReviewModal.action === 'REQUEST_REVISION'
+                            ? 'bg-amber-600 hover:bg-amber-700'
+                            : 'bg-red-600 hover:bg-red-700'
+                        }`}
+                      >
+                        Confirm {quotationReviewModal.action}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1802,9 +2202,9 @@ export const AdminPortal: React.FC = () => {
             <div className="space-y-4 w-full">
               <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm w-full">
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">Work Orders & Financial Accounts Tracking</h2>
+                  <h2 className="text-base font-bold text-slate-900">Work Orders, Payment Clearance & Technical Handover</h2>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Track agreed contract values, verified client advances, outstanding balances, and project activation states.
+                    Review Accounts-verified advance payments and authorize engineering handover to activate Technical projects.
                   </p>
                 </div>
 
@@ -1815,9 +2215,10 @@ export const AdminPortal: React.FC = () => {
                     className="text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white font-medium"
                   >
                     <option value="ALL">All Statuses</option>
+                    <option value="PENDING_HANDOVER">PENDING_HANDOVER (Payment Verified - Stage 9)</option>
+                    <option value="ADVANCE_VERIFIED">ADVANCE_VERIFIED (Stage 8)</option>
                     <option value="PENDING_ADVANCE">PENDING_ADVANCE</option>
                     <option value="ACTIVE_IN_PROGRESS">ACTIVE_IN_PROGRESS</option>
-                    <option value="FINAL_PAYMENT_PENDING">FINAL_PAYMENT_PENDING</option>
                     <option value="COMPLETED">COMPLETED</option>
                   </select>
 
@@ -1852,8 +2253,8 @@ export const AdminPortal: React.FC = () => {
                         <th className="p-3.5">Contract Value</th>
                         <th className="p-3.5">Advance Verified</th>
                         <th className="p-3.5">Verified Payments</th>
-                        <th className="p-3.5">Outstanding Balance</th>
-                        <th className="p-3.5">Status</th>
+                        <th className="p-3.5">Handover Status</th>
+                        <th className="p-3.5 text-right">Technical Handover Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1863,7 +2264,7 @@ export const AdminPortal: React.FC = () => {
                               .filter((p: any) => p.status === 'VERIFIED')
                               .reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
                           : 0;
-                        const balance = (w.totalValue || 0) - verifiedPayments;
+                        const isPendingHandover = w.advanceVerified && !w.handoverApproved;
 
                         return (
                           <tr key={w.id} className="hover:bg-slate-50/50">
@@ -1878,28 +2279,128 @@ export const AdminPortal: React.FC = () => {
                               ₹{(w.totalValue || 0).toLocaleString()}
                             </td>
                             <td className="p-3.5">
-                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                w.advanceVerified ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'
-                              }`}>
+                              <span
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                  w.advanceVerified
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                }`}
+                              >
                                 {w.advanceVerified ? 'VERIFIED' : 'PENDING RECEIPT'}
                               </span>
                             </td>
                             <td className="p-3.5 font-bold text-emerald-700">
                               ₹{verifiedPayments.toLocaleString()}
                             </td>
-                            <td className="p-3.5 font-bold text-slate-700">
-                              ₹{Math.max(0, balance).toLocaleString()}
-                            </td>
                             <td className="p-3.5">
-                              <span className="font-bold text-slate-800 px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
-                                {w.status}
+                              <span
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                  w.handoverApproved
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : isPendingHandover
+                                    ? 'bg-purple-100 text-purple-800 border border-purple-200 animate-pulse'
+                                    : 'bg-slate-100 text-slate-700'
+                                }`}
+                              >
+                                {w.handoverApproved
+                                  ? 'HANDOVER APPROVED'
+                                  : isPendingHandover
+                                  ? 'AWAITING HANDOVER APPROVAL'
+                                  : w.handoverStatus || 'PENDING'}
                               </span>
+                            </td>
+                            <td className="p-3.5 text-right">
+                              {isPendingHandover ? (
+                                <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                  <button
+                                    onClick={() => setHandoverReviewModal({ workOrder: w, action: 'APPROVE' })}
+                                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                                  >
+                                    Authorize Handover
+                                  </button>
+                                  <button
+                                    onClick={() => setHandoverReviewModal({ workOrder: w, action: 'HOLD' })}
+                                    className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-colors"
+                                  >
+                                    Hold
+                                  </button>
+                                  <button
+                                    onClick={() => setHandoverReviewModal({ workOrder: w, action: 'REQUEST_CLARIFICATION' })}
+                                    className="px-2.5 py-1 bg-slate-200 text-slate-800 hover:bg-slate-300 rounded-lg text-xs font-bold transition-colors"
+                                  >
+                                    Clarify
+                                  </button>
+                                </div>
+                              ) : w.handoverApproved ? (
+                                <span className="text-xs text-emerald-700 font-bold flex items-center justify-end gap-1">
+                                  <CheckCircle2 className="w-3.5 h-3.5" /> Project Active
+                                </span>
+                              ) : (
+                                <span className="text-xs text-slate-400">Awaiting Advance</span>
+                              )}
                             </td>
                           </tr>
                         );
                       })}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* Handover Review Action Modal */}
+              {handoverReviewModal && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+                    <h3 className="text-base font-bold text-slate-900">
+                      {handoverReviewModal.action === 'APPROVE'
+                        ? 'Authorize Technical Handover & Activate Project'
+                        : handoverReviewModal.action === 'HOLD'
+                        ? 'Place Technical Handover On Hold'
+                        : 'Request Handover Clarification'}
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Work Order: <strong>{handoverReviewModal.workOrder?.workOrderNumber}</strong> for{' '}
+                      <strong>{handoverReviewModal.workOrder?.client?.clientName}</strong>. Advance Verified: ₹
+                      {(handoverReviewModal.workOrder?.advancePaid || 0).toLocaleString()}.
+                    </p>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Executive Handover Instructions / Notes {handoverReviewModal.action !== 'APPROVE' && '*'}
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={handoverReviewNotes}
+                        onChange={(e) => setHandoverReviewNotes(e.target.value)}
+                        placeholder="Add kickoff guidelines for Technical Lead or notes for Accounts..."
+                        className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        onClick={() => {
+                          setHandoverReviewModal(null);
+                          setHandoverReviewNotes('');
+                        }}
+                        className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={executeHandoverReview}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold text-white transition-colors ${
+                          handoverReviewModal.action === 'APPROVE'
+                            ? 'bg-emerald-600 hover:bg-emerald-700'
+                            : handoverReviewModal.action === 'HOLD'
+                            ? 'bg-amber-600 hover:bg-amber-700'
+                            : 'bg-slate-700 hover:bg-slate-800'
+                        }`}
+                      >
+                        Confirm {handoverReviewModal.action}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
