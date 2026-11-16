@@ -735,7 +735,7 @@ router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> =>
             id: true,
             workOrderNumber: true,
             status: true,
-            totalAmount: true,
+            totalValue: true,
             createdAt: true,
           },
           orderBy: { createdAt: 'desc' },
@@ -1053,13 +1053,6 @@ router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
         displayLocation: parsedAddr.displayLocation,
       },
     });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to update client' });
-  }
-});
-    });
-
-    res.json({ client: updated });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update client' });
   }

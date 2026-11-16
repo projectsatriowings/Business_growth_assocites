@@ -31,7 +31,7 @@ import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 
 export const BgaProfileView: React.FC = () => {
-  const { user: authUser } = useAuth();
+  const { user: authUser, refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +152,50 @@ export const BgaProfileView: React.FC = () => {
     return pan.slice(0, 2) + '••••••' + pan.slice(-2);
   };
 
+  const openEditPersonalModal = () => {
+    const address = profileData?.addressDetails;
+    const currentUser = profileData?.user;
+    setPersonalForm({
+      houseNumber: address?.houseNumber || '',
+      streetAddress: address?.streetAddress || '',
+      locality: address?.locality || '',
+      district: address?.district || '',
+      city: address?.city || currentUser?.city || '',
+      state: address?.state || currentUser?.state || '',
+      pinCode: address?.pinCode || currentUser?.pinCode || '',
+      country: address?.country || 'India',
+    });
+    setPersonalError(null);
+    setEditPersonalModal(true);
+  };
+
+  const openBankModal = () => {
+    const currentUser = profileData?.user;
+    if (currentUser) {
+      setBankForm({
+        bankAccountHolder: currentUser.bankAccountHolder || '',
+        bankName: currentUser.bankName || '',
+        bankAccountNumber: currentUser.bankAccountNumber || '',
+        confirmAccountNumber: currentUser.bankAccountNumber || '',
+        bankIfsc: currentUser.bankIfsc || '',
+        branchName: '',
+      });
+    }
+    setBankError(null);
+    setBankModal(true);
+  };
+
+  const openCorrectionModal = () => {
+    setCorrectionForm({
+      correctionType: 'PAN',
+      proposedValue: '',
+      reason: '',
+      documentUrl: '',
+    });
+    setCorrectionError(null);
+    setCorrectionModal(true);
+  };
+
   // 1. Save Personal Details & Address
   const handleSavePersonal = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,7 +214,10 @@ export const BgaProfileView: React.FC = () => {
 
       setSuccess(res.message || 'Personal details updated successfully');
       setEditPersonalModal(false);
-      fetchProfile();
+      await fetchProfile();
+      if (refreshUser) {
+        refreshUser();
+      }
       setTimeout(() => setSuccess(null), 4000);
     } catch (err: any) {
       setPersonalError(err.message || 'Failed to update personal details');
@@ -202,7 +249,10 @@ export const BgaProfileView: React.FC = () => {
 
       setSuccess(res.message || 'Bank account updated and queued for Admin verification');
       setBankModal(false);
-      fetchProfile();
+      await fetchProfile();
+      if (refreshUser) {
+        refreshUser();
+      }
       setTimeout(() => setSuccess(null), 5000);
     } catch (err: any) {
       setBankError(err.message || 'Failed to update bank details');
@@ -231,7 +281,7 @@ export const BgaProfileView: React.FC = () => {
         reason: '',
         documentUrl: '',
       });
-      fetchProfile();
+      await fetchProfile();
       setTimeout(() => setSuccess(null), 5000);
     } catch (err: any) {
       setCorrectionError(err.message || 'Failed to submit correction request');
@@ -260,7 +310,10 @@ export const BgaProfileView: React.FC = () => {
       setUploadDocModal(null);
       setUploadDocUrl('');
       setUploadDocName('');
-      fetchProfile();
+      await fetchProfile();
+      if (refreshUser) {
+        refreshUser();
+      }
       setTimeout(() => setSuccess(null), 4000);
     } catch (err: any) {
       alert(err.message || 'Failed to update document');
@@ -347,14 +400,14 @@ export const BgaProfileView: React.FC = () => {
 
           <div className="flex items-center gap-2.5 flex-wrap w-full md:w-auto">
             <button
-              onClick={() => setEditPersonalModal(true)}
+              onClick={openEditPersonalModal}
               className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
             >
               <Edit className="w-3.5 h-3.5" />
               <span>Edit Personal Details</span>
             </button>
             <button
-              onClick={() => setBankModal(true)}
+              onClick={openBankModal}
               className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
             >
               <CreditCard className="w-3.5 h-3.5" />
@@ -489,7 +542,7 @@ export const BgaProfileView: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={() => setEditPersonalModal(true)}
+              onClick={openEditPersonalModal}
               className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
             >
               <Edit className="w-3.5 h-3.5 text-indigo-600" />
@@ -618,7 +671,7 @@ export const BgaProfileView: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={() => setCorrectionModal(true)}
+              onClick={openCorrectionModal}
               className="px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold flex items-center gap-1.5 transition-colors self-start sm:self-auto"
             >
               <ShieldCheck className="w-4 h-4 text-indigo-600" />
@@ -776,7 +829,7 @@ export const BgaProfileView: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={() => setBankModal(true)}
+              onClick={openBankModal}
               className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors self-start sm:self-auto shadow-sm"
             >
               <Plus className="w-3.5 h-3.5" />
