@@ -334,9 +334,18 @@ router.post('/bgas/:id/status', async (req: AuthRequest, res: Response): Promise
 
     const updateData: any = {};
 
-    if (panVerified !== undefined) updateData.panVerified = Boolean(panVerified);
-    if (aadhaarVerified !== undefined) updateData.aadhaarVerified = Boolean(aadhaarVerified);
-    if (bankVerified !== undefined) updateData.bankVerified = Boolean(bankVerified);
+    if (panVerified !== undefined) {
+      updateData.panVerified = Boolean(panVerified);
+      if (Boolean(panVerified)) updateData.panVerifiedAt = new Date();
+    }
+    if (aadhaarVerified !== undefined) {
+      updateData.aadhaarVerified = Boolean(aadhaarVerified);
+      if (Boolean(aadhaarVerified)) updateData.aadhaarVerifiedAt = new Date();
+    }
+    if (bankVerified !== undefined) {
+      updateData.bankVerified = Boolean(bankVerified);
+      updateData.bankVerifiedAt = Boolean(bankVerified) ? new Date() : null;
+    }
 
     if (action === 'APPROVE_AND_ACTIVATE') {
       updateData.status = BgaStatus.ACTIVE;
@@ -763,6 +772,14 @@ router.post('/commissions/:id/approve', async (req: AuthRequest, res: Response):
       return;
     }
 
+    // Payout Security Check: Bank account MUST be verified before funds disbursement
+    if (!comm.bga.bankVerified) {
+      res.status(400).json({
+        error: 'Cannot process payout: Associate bank account is pending verification by Admin. Please review and verify bank details in BGA Management before disbursing funds.'
+      });
+      return;
+    }
+
     const isApprove = action === 'APPROVE';
     const updated = await prisma.commission.update({
       where: { id },
@@ -819,6 +836,14 @@ router.post('/commissions/:id/payout', async (req: AuthRequest, res: Response): 
 
     if (!comm) {
       res.status(404).json({ error: 'Commission record not found' });
+      return;
+    }
+
+    // Payout Security Check: Bank account MUST be verified before funds disbursement
+    if (!comm.bga.bankVerified) {
+      res.status(400).json({
+        error: 'Cannot process payout: Associate bank account is pending verification by Admin. Please review and verify bank details in BGA Management before disbursing funds.'
+      });
       return;
     }
 
@@ -901,6 +926,99 @@ router.get('/audit-logs', async (req: AuthRequest, res: Response): Promise<void>
     res.json({ logs });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load audit logs' });
+  }
+});
+
+// 11. Identity Correction Review (Approve or Reject formal change requests)
+router.post('/identity-corrections/:corrId/review', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { corrId } = req.params;
+    const { bgaId, action, remarks } = req.body;
+
+    if (!bgaId || !action || !['APPROVE', 'REJECT'].includes(action)) {
+      res.status(400).json({ error: 'bgaId and valid action (APPROVE or REJECT) are required' });
+      return;
+    }
+
+    const bga = await prisma.user.findUnique({ where: { id: bgaId } });
+    if (!bga) {
+      res.status(404).json({ error: 'Associate not found' });
+      return;
+    }
+
+    const log = await prisma.auditLog.findFirst({
+      where: {
+        userId: bgaId,
+        entityId: corrId,
+        action: 'IDENTITY_CORRECTION_REQUEST',
+      },
+    });
+
+    let requestDetails: any = {};
+    if (log?.details) {
+      try {
+        requestDetails = JSON.parse(log.details);
+      } catch {
+        requestDetails = { raw: log.details };
+      }
+    }
+
+    const isApprove = action === 'APPROVE';
+    const updateData: any = {};
+
+    if (isApprove && requestDetails.correctionType) {
+      if (requestDetails.correctionType === 'PAN') {
+        updateData.panNumber = requestDetails.proposedValue;
+        updateData.panVerified = true;
+        updateData.panVerifiedAt = new Date();
+      } else if (requestDetails.correctionType === 'AADHAAR') {
+        updateData.aadhaarMasked = requestDetails.proposedValue;
+        updateData.aadhaarVerified = true;
+        updateData.aadhaarVerifiedAt = new Date();
+      } else if (requestDetails.correctionType === 'NAME') {
+        updateData.name = requestDetails.proposedValue;
+      } else if (requestDetails.correctionType === 'DOB') {
+        updateData.dob = new Date(requestDetails.proposedValue);
+      }
+
+      await prisma.user.update({
+        where: { id: bgaId },
+        data: updateData,
+      });
+    }
+
+    // Log the review decision
+    await logAudit(
+      bgaId,
+      bga.email,
+      Role.BGA,
+      isApprove ? 'IDENTITY_CORRECTION_APPROVED' : 'IDENTITY_CORRECTION_REJECTED',
+      'IDENTITY_CORRECTION',
+      corrId,
+      {
+        ...requestDetails,
+        status: isApprove ? 'APPROVED' : 'REJECTED',
+        reviewedById: req.user!.id,
+        reviewedAt: new Date(),
+        adminRemarks: remarks || (isApprove ? 'Approved by Admin' : 'Rejected by Admin'),
+      },
+      req.ip
+    );
+
+    await createNotification(
+      bgaId,
+      isApprove ? 'Identity Correction Approved' : 'Identity Correction Rejected',
+      isApprove
+        ? `Your request to correct ${requestDetails.correctionType || 'identity details'} to ${requestDetails.proposedValue} has been approved by Admin.`
+        : `Your identity correction request was rejected. Remarks: ${remarks || 'Supporting documentation did not meet verification criteria.'}`,
+      isApprove ? 'SUCCESS' : 'WARNING',
+      '/bga/profile'
+    );
+
+    res.json({ message: `Identity correction ${action.toLowerCase()}d successfully` });
+  } catch (error) {
+    console.error('Failed to review identity correction:', error);
+    res.status(500).json({ error: 'Failed to process identity correction review' });
   }
 });
 

@@ -17,7 +17,6 @@ import {
   Eye,
   EyeOff,
   RefreshCw,
-  KeyRound,
   Download,
   Calendar,
   Phone,
@@ -51,13 +50,12 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
 
   // Modals & Action States
   const [actionModal, setActionModal] = useState<{
-    type: 'ACTIVATE' | 'SUSPEND' | 'REJECT' | 'RESET_PASSWORD';
+    type: 'ACTIVATE' | 'SUSPEND' | 'REJECT';
     title: string;
     description: string;
   } | null>(null);
   const [actionReason, setActionReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
-  const [resetPassResult, setResetPassResult] = useState<string | null>(null);
 
   // Document Preview Modal
   const [previewDoc, setPreviewDoc] = useState<{ title: string; url: string; type: string } | null>(null);
@@ -85,34 +83,24 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
     setActionLoading(true);
 
     try {
-      if (actionModal.type === 'RESET_PASSWORD') {
-        const res = await apiRequest(`/api/admin/bgas/${associateId}/reset-password`, {
-          method: 'POST',
-        });
-        setResetPassResult(res.temporaryPassword);
-        setActionModal(null);
-        setActionReason('');
-        fetchProfile();
-      } else {
-        const actionMap: Record<string, string> = {
-          ACTIVATE: 'APPROVE_AND_ACTIVATE',
-          SUSPEND: 'SUSPEND',
-          REJECT: 'REJECT',
-        };
+      const actionMap: Record<string, string> = {
+        ACTIVATE: 'APPROVE_AND_ACTIVATE',
+        SUSPEND: 'SUSPEND',
+        REJECT: 'REJECT',
+      };
 
-        await apiRequest(`/api/admin/bgas/${associateId}/status`, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: actionMap[actionModal.type],
-            reason: actionReason,
-          }),
-        });
+      await apiRequest(`/api/admin/bgas/${associateId}/status`, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: actionMap[actionModal.type],
+          reason: actionReason,
+        }),
+      });
 
-        setActionModal(null);
-        setActionReason('');
-        fetchProfile();
-        onRefreshList();
-      }
+      setActionModal(null);
+      setActionReason('');
+      fetchProfile();
+      onRefreshList();
     } catch (e: any) {
       alert(e.message || 'Action failed');
     } finally {
@@ -219,20 +207,6 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
 
         {/* Executive Actions */}
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
-          <button
-            onClick={() =>
-              setActionModal({
-                type: 'RESET_PASSWORD',
-                title: 'Reset Associate Password',
-                description: `Generate a secure temporary password for ${associate.name}. The associate will use this password on next login.`,
-              })
-            }
-            className="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <KeyRound className="w-4 h-4 text-slate-500" />
-            <span>Reset Password</span>
-          </button>
-
           {associate.status !== 'ACTIVE' ? (
             <button
               onClick={() =>
@@ -272,28 +246,6 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
           </button>
         </div>
       </div>
-
-      {/* Password Reset Result Notification */}
-      {resetPassResult && (
-        <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 text-purple-900 text-xs flex items-start justify-between gap-4">
-          <div>
-            <strong className="block font-bold text-sm mb-1">Temporary Password Generated</strong>
-            <p className="text-purple-800">
-              New login password for <strong>{associate.email}</strong> is:{' '}
-              <code className="px-2 py-1 bg-white font-mono font-bold text-purple-700 rounded border border-purple-200 text-sm ml-1">
-                {resetPassResult}
-              </code>
-            </p>
-            <p className="text-[11px] text-purple-600 mt-1">Please securely communicate this credential to the associate.</p>
-          </div>
-          <button
-            onClick={() => setResetPassResult(null)}
-            className="text-purple-600 hover:text-purple-900 font-bold"
-          >
-            ✕
-          </button>
-        </div>
-      )}
 
       {/* Profile Overview Card (Full-Width Responsive) */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full">
@@ -357,40 +309,50 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         </div>
       </div>
 
-      {/* Navigation Tabs (Full-Width Responsive Scrolling) */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-1.5 shadow-sm overflow-x-auto w-full">
-        <div className="flex gap-1 min-w-max">
-          {[
-            { id: 'overview', label: '1. Overview', icon: Briefcase },
-            { id: 'personal', label: '2. Personal Details', icon: User },
-            { id: 'kyc', label: '3. KYC & Identity', icon: ShieldCheck },
-            { id: 'bank', label: '4. Bank Details', icon: CreditCard },
-            { id: 'account', label: '5. Account & Security', icon: Lock },
-            { id: 'documents', label: '6. Documents & Proofs', icon: FileText },
-            { id: 'clients', label: '7. Clients & Enquiries', icon: Users },
-            { id: 'projects', label: '8. Projects & Delivery', icon: Building2 },
-            { id: 'commissions', label: '9. Commission History', icon: DollarSign },
-            { id: 'audit', label: '10. Activity & Audit', icon: History },
-          ].map((t) => {
-            const Icon = t.icon;
-            const isSel = activeTab === t.id;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id as any)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-                  isSel
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span>{t.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* Main Profile Layout: Vertical Left Navigation on Desktop, Responsive Grid on Mobile */}
+      <div className="flex flex-col lg:flex-row gap-6 w-full items-start">
+        {/* Navigation Sidebar */}
+        <nav className="w-full lg:w-72 shrink-0 bg-white rounded-2xl border border-slate-200 p-3 shadow-sm">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 mb-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Profile Sections</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700">10 Modules</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-1">
+            {[
+              { id: 'overview', label: '1. Overview', icon: Briefcase },
+              { id: 'personal', label: '2. Personal Details', icon: User },
+              { id: 'kyc', label: '3. KYC & Identity', icon: ShieldCheck },
+              { id: 'bank', label: '4. Bank Details', icon: CreditCard },
+              { id: 'account', label: '5. Account & Security', icon: Lock },
+              { id: 'documents', label: '6. Documents & Proofs', icon: FileText },
+              { id: 'clients', label: '7. Clients & Enquiries', icon: Users },
+              { id: 'projects', label: '8. Projects & Delivery', icon: Building2 },
+              { id: 'commissions', label: '9. Commission History', icon: DollarSign },
+              { id: 'audit', label: '10. Activity & Audit', icon: History },
+            ].map((t) => {
+              const Icon = t.icon;
+              const isSel = activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id as any)}
+                  className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
+                    isSel
+                      ? 'bg-purple-600 text-white shadow-sm font-bold'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* Tab Content Area */}
+        <div className="flex-1 min-w-0 w-full space-y-6">
 
       {/* TAB CONTENT AREAS */}
 
@@ -844,26 +806,14 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs">
+          <div className="p-4 rounded-xl bg-purple-50/50 border border-purple-100 flex items-start gap-3 text-xs">
+            <Lock className="w-5 h-5 text-purple-700 shrink-0 mt-0.5" />
             <div>
-              <strong className="text-slate-900 block font-bold">Credential Reset (Admin Action)</strong>
-              <p className="text-slate-500 mt-0.5">
-                Passwords and hashes are encrypted and never exposed in the UI. Generate a temporary password if requested by the associate.
+              <strong className="text-purple-900 block font-bold">Cryptographic Credential Security & Governance</strong>
+              <p className="text-purple-800/90 mt-1 leading-relaxed">
+                Associate credentials, salted password hashes, and identity tokens are stored strictly within the secure database partition. In compliance with security policy, plaintext passwords and hashes are never exposed in the UI or transmitted across client interfaces. Standard account recovery is mediated via authenticated multi-factor recovery channels.
               </p>
             </div>
-
-            <button
-              onClick={() =>
-                setActionModal({
-                  type: 'RESET_PASSWORD',
-                  title: 'Reset Associate Password',
-                  description: `Generate a new temporary password for ${associate.name} (${associate.email})?`,
-                })
-              }
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition-colors shrink-0"
-            >
-              Reset Associate Password
-            </button>
           </div>
         </div>
       )}
@@ -1216,6 +1166,8 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
           )}
         </div>
       )}
+        </div>
+      </div>
 
       {/* Action Confirmation Modal */}
       {actionModal && (
@@ -1224,18 +1176,16 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
             <h3 className="text-base font-bold text-slate-900">{actionModal.title}</h3>
             <p className="text-xs text-slate-600 mt-2 leading-relaxed">{actionModal.description}</p>
 
-            {actionModal.type !== 'RESET_PASSWORD' && (
-              <div className="mt-4">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Reason / Audit Remark</label>
-                <textarea
-                  rows={2}
-                  value={actionReason}
-                  onChange={(e) => setActionReason(e.target.value)}
-                  placeholder="Enter reason for audit record..."
-                  className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-purple-500"
-                />
-              </div>
-            )}
+            <div className="mt-4">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Reason / Audit Remark</label>
+              <textarea
+                rows={2}
+                value={actionReason}
+                onChange={(e) => setActionReason(e.target.value)}
+                placeholder="Enter reason for audit record..."
+                className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-purple-500"
+              />
+            </div>
 
             <div className="mt-6 flex justify-end gap-2">
               <button
@@ -1302,3 +1252,4 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
     </div>
   );
 };
+
