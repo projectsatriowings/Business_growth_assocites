@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { Role, BgaStatus, EnquiryStatus, ServiceCategoryType, CommissionApproval, CommissionPayout } from '@prisma/client';
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification, invalidateUserCache } from '../middleware/auth';
@@ -23,14 +24,17 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       pendingBgaApprovals,
       totalClients,
       totalEnquiries,
+      approvedEnquiries,
       pendingEnquiries,
       totalQuotations,
       totalWorkOrders,
+      totalProjects,
       activeProjects,
       completedProjects,
       verifiedPayments,
       totalCommissions,
       paidCommissions,
+      pendingCommissions,
     ] = await Promise.all([
       prisma.user.count({ where: { role: Role.BGA } }),
       prisma.user.count({ where: { role: Role.BGA, status: BgaStatus.ACTIVE } }),
@@ -39,9 +43,11 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       }),
       prisma.client.count(),
       prisma.enquiry.count(),
+      prisma.enquiry.count({ where: { status: EnquiryStatus.APPROVED } }),
       prisma.enquiry.count({ where: { status: EnquiryStatus.SUBMITTED } }),
       prisma.quotation.count(),
       prisma.workOrder.count(),
+      prisma.technicalProject.count(),
       prisma.technicalProject.count({
         where: { status: { in: ['READY_TO_START', 'IN_PROGRESS', 'UNDER_REVIEW', 'CORRECTION_REQUIRED'] } },
       }),
@@ -57,19 +63,25 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
         where: { payoutStatus: CommissionPayout.PROCESSED },
         _sum: { calculatedCommission: true },
       }),
+      prisma.commission.aggregate({
+        where: { payoutStatus: { not: CommissionPayout.PROCESSED } },
+        _sum: { calculatedCommission: true },
+      }),
     ]);
 
     const result = {
       bgas: { total: totalBgas, active: activeBgas, pendingApprovals: pendingBgaApprovals },
       clients: { total: totalClients },
-      enquiries: { total: totalEnquiries, pending: pendingEnquiries },
+      enquiries: { total: totalEnquiries, approved: approvedEnquiries, pending: pendingEnquiries },
       quotations: { total: totalQuotations },
       workOrders: { total: totalWorkOrders },
-      projects: { active: activeProjects, completed: completedProjects },
+      projects: { total: totalProjects, active: activeProjects, completed: completedProjects },
+      technical: { total: totalProjects, active: activeProjects, completed: completedProjects },
       finance: {
         totalVerifiedRevenue: verifiedPayments._sum.amount || 0,
         totalCommissions: totalCommissions._sum.calculatedCommission || 0,
         paidCommissions: paidCommissions._sum.calculatedCommission || 0,
+        pendingCommissions: pendingCommissions._sum.calculatedCommission || 0,
       },
     };
 
@@ -109,19 +121,34 @@ router.get('/bgas', async (req: AuthRequest, res: Response): Promise<void> => {
         status: true,
         dob: true,
         address: true,
+        city: true,
+        state: true,
+        pinCode: true,
         panNumber: true,
         panVerified: true,
+        panVerifiedAt: true,
         aadhaarMasked: true,
         aadhaarVerified: true,
+        aadhaarVerifiedAt: true,
+        kycSubmittedAt: true,
+        bankName: true,
         bankAccountHolder: true,
         bankAccountNumber: true,
         bankIfsc: true,
         bankVerified: true,
+        bankVerifiedAt: true,
+        panDocumentUrl: true,
+        addressProofUrl: true,
+        bankProofUrl: true,
         agreementAccepted: true,
+        agreementAcceptedAt: true,
+        agreementDocumentUrl: true,
+        lastLoginAt: true,
         rejectionReason: true,
         statusNotes: true,
         approvedAt: true,
         createdAt: true,
+        updatedAt: true,
         _count: {
           select: {
             clients: true,
@@ -139,6 +166,191 @@ router.get('/bgas', async (req: AuthRequest, res: Response): Promise<void> => {
   }
 });
 
+// 2b. Complete Associate Profile by ID
+router.get('/bgas/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const bga = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        clients: {
+          include: {
+            enquiries: {
+              select: {
+                id: true,
+                serviceCategory: true,
+                expectedBudget: true,
+                status: true,
+                createdAt: true,
+              },
+            },
+            quotations: {
+              select: {
+                id: true,
+                quotationNumber: true,
+                totalAmount: true,
+                status: true,
+              },
+            },
+            _count: {
+              select: { workOrders: true },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        enquiries: {
+          include: {
+            client: { select: { id: true, clientName: true, businessName: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        quotations: {
+          include: {
+            client: { select: { id: true, clientName: true, businessName: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        workOrders: {
+          include: {
+            client: { select: { id: true, clientName: true, businessName: true } },
+            project: {
+              select: {
+                id: true,
+                projectNumber: true,
+                status: true,
+                progressPercentage: true,
+              },
+            },
+            payments: {
+              select: {
+                id: true,
+                amount: true,
+                paymentType: true,
+                status: true,
+                transactionReference: true,
+                paymentDate: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        commissions: {
+          include: {
+            client: { select: { id: true, clientName: true, businessName: true } },
+            workOrder: { select: { id: true, workOrderNumber: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        auditLogs: {
+          take: 30,
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    if (!bga || bga.role !== Role.BGA) {
+      res.status(404).json({ error: 'Associate profile not found' });
+      return;
+    }
+
+    // Performance metrics calculated from real DB records
+    const totalClients = bga.clients.length;
+    const enquiriesApproved = bga.enquiries.filter((e) => e.status === EnquiryStatus.APPROVED).length;
+    const enquiriesPending = bga.enquiries.filter(
+      (e) => e.status === EnquiryStatus.SUBMITTED || e.status === EnquiryStatus.UNDER_REVIEW
+    ).length;
+    const enquiriesRejected = bga.enquiries.filter((e) => e.status === EnquiryStatus.REJECTED).length;
+    const enquiriesChangesRequested = bga.enquiries.filter(
+      (e) => e.status === EnquiryStatus.CHANGES_REQUESTED
+    ).length;
+
+    const activeProjects = bga.workOrders.filter(
+      (w) => w.project && ['READY_TO_START', 'IN_PROGRESS', 'UNDER_REVIEW', 'CORRECTION_REQUIRED'].includes(w.project.status)
+    ).length;
+    const completedProjects = bga.workOrders.filter((w) => w.project && w.project.status === 'COMPLETED').length;
+
+    const totalCommissionEarned = bga.commissions.reduce((acc, c) => acc + c.calculatedCommission, 0);
+    const pendingCommission = bga.commissions
+      .filter((c) => c.payoutStatus === CommissionPayout.UNPAID)
+      .reduce((acc, c) => acc + c.calculatedCommission, 0);
+    const paidCommission = bga.commissions
+      .filter((c) => c.payoutStatus === CommissionPayout.PROCESSED)
+      .reduce((acc, c) => acc + c.calculatedCommission, 0);
+
+    // Strip sensitive password hash
+    const { passwordHash, ...safeProfile } = bga;
+
+    res.json({
+      associate: safeProfile,
+      metrics: {
+        totalClients,
+        enquiries: {
+          total: bga.enquiries.length,
+          approved: enquiriesApproved,
+          pending: enquiriesPending,
+          rejected: enquiriesRejected,
+          changesRequested: enquiriesChangesRequested,
+        },
+        projects: {
+          total: bga.workOrders.filter((w) => w.project).length,
+          active: activeProjects,
+          completed: completedProjects,
+        },
+        commissions: {
+          totalEarned: totalCommissionEarned,
+          pending: pendingCommission,
+          paid: paidCommission,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Error loading associate profile:', error);
+    res.status(500).json({ error: 'Failed to load associate profile' });
+  }
+});
+
+// 2c. Secure Associate Password Reset
+router.post('/bgas/:id/reset-password', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    const bga = await prisma.user.findUnique({ where: { id } });
+    if (!bga || bga.role !== Role.BGA) {
+      res.status(404).json({ error: 'Associate not found' });
+      return;
+    }
+
+    const tempPassword = newPassword || `BGA@${Math.floor(100000 + Math.random() * 900000)}`;
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(tempPassword, salt);
+
+    await prisma.user.update({
+      where: { id },
+      data: { passwordHash },
+    });
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'ADMIN_RESET_BGA_PASSWORD',
+      'USER',
+      id,
+      { associateEmail: bga.email },
+      req.ip
+    );
+
+    res.json({
+      message: 'Password reset successfully',
+      temporaryPassword: tempPassword,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
 // 3. BGA Status Action (Approve, Reject, Activate, Suspend, Verify KYC/Bank)
 router.post('/bgas/:id/status', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -153,17 +365,29 @@ router.post('/bgas/:id/status', async (req: AuthRequest, res: Response): Promise
 
     const updateData: any = {};
 
-    if (panVerified !== undefined) updateData.panVerified = Boolean(panVerified);
-    if (aadhaarVerified !== undefined) updateData.aadhaarVerified = Boolean(aadhaarVerified);
-    if (bankVerified !== undefined) updateData.bankVerified = Boolean(bankVerified);
+    if (panVerified !== undefined) {
+      updateData.panVerified = Boolean(panVerified);
+      if (Boolean(panVerified)) updateData.panVerifiedAt = new Date();
+    }
+    if (aadhaarVerified !== undefined) {
+      updateData.aadhaarVerified = Boolean(aadhaarVerified);
+      if (Boolean(aadhaarVerified)) updateData.aadhaarVerifiedAt = new Date();
+    }
+    if (bankVerified !== undefined) {
+      updateData.bankVerified = Boolean(bankVerified);
+      updateData.bankVerifiedAt = Boolean(bankVerified) ? new Date() : null;
+    }
 
     if (action === 'APPROVE_AND_ACTIVATE') {
       updateData.status = BgaStatus.ACTIVE;
       updateData.approvedAt = new Date();
       updateData.approvedById = req.user!.id;
       updateData.panVerified = true;
+      updateData.panVerifiedAt = new Date();
       updateData.aadhaarVerified = true;
+      updateData.aadhaarVerifiedAt = new Date();
       updateData.bankVerified = true;
+      updateData.bankVerifiedAt = new Date();
 
       await createNotification(
         bga.id,
@@ -366,7 +590,26 @@ router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> =>
       },
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ clients });
+
+    const enrichedClients = clients.map((c) => {
+      let displayLocation = c.location;
+      let addressDetails: any = null;
+      try {
+        if (c.location && c.location.startsWith('{')) {
+          const parsed = JSON.parse(c.location);
+          addressDetails = parsed;
+          displayLocation = parsed.city ? `${parsed.city}${parsed.state ? ', ' + parsed.state : ''}` : (parsed.fullAddress || c.location);
+        }
+      } catch {}
+      return {
+        ...c,
+        location: displayLocation,
+        displayLocation,
+        addressDetails,
+      };
+    });
+
+    res.json({ clients: enrichedClients });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load clients' });
   }
@@ -583,6 +826,14 @@ router.post('/commissions/:id/approve', async (req: AuthRequest, res: Response):
       return;
     }
 
+    // Payout Security Check: Bank account MUST be verified before funds disbursement
+    if (!comm.bga.bankVerified) {
+      res.status(400).json({
+        error: 'Cannot process payout: Associate bank account is pending verification by Admin. Please review and verify bank details in BGA Management before disbursing funds.'
+      });
+      return;
+    }
+
     const isApprove = action === 'APPROVE';
     const updated = await prisma.commission.update({
       where: { id },
@@ -639,6 +890,14 @@ router.post('/commissions/:id/payout', async (req: AuthRequest, res: Response): 
 
     if (!comm) {
       res.status(404).json({ error: 'Commission record not found' });
+      return;
+    }
+
+    // Payout Security Check: Bank account MUST be verified before funds disbursement
+    if (!comm.bga.bankVerified) {
+      res.status(400).json({
+        error: 'Cannot process payout: Associate bank account is pending verification by Admin. Please review and verify bank details in BGA Management before disbursing funds.'
+      });
       return;
     }
 
@@ -721,6 +980,99 @@ router.get('/audit-logs', async (req: AuthRequest, res: Response): Promise<void>
     res.json({ logs });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load audit logs' });
+  }
+});
+
+// 11. Identity Correction Review (Approve or Reject formal change requests)
+router.post('/identity-corrections/:corrId/review', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { corrId } = req.params;
+    const { bgaId, action, remarks } = req.body;
+
+    if (!bgaId || !action || !['APPROVE', 'REJECT'].includes(action)) {
+      res.status(400).json({ error: 'bgaId and valid action (APPROVE or REJECT) are required' });
+      return;
+    }
+
+    const bga = await prisma.user.findUnique({ where: { id: bgaId } });
+    if (!bga) {
+      res.status(404).json({ error: 'Associate not found' });
+      return;
+    }
+
+    const log = await prisma.auditLog.findFirst({
+      where: {
+        userId: bgaId,
+        entityId: corrId,
+        action: 'IDENTITY_CORRECTION_REQUEST',
+      },
+    });
+
+    let requestDetails: any = {};
+    if (log?.details) {
+      try {
+        requestDetails = JSON.parse(log.details);
+      } catch {
+        requestDetails = { raw: log.details };
+      }
+    }
+
+    const isApprove = action === 'APPROVE';
+    const updateData: any = {};
+
+    if (isApprove && requestDetails.correctionType) {
+      if (requestDetails.correctionType === 'PAN') {
+        updateData.panNumber = requestDetails.proposedValue;
+        updateData.panVerified = true;
+        updateData.panVerifiedAt = new Date();
+      } else if (requestDetails.correctionType === 'AADHAAR') {
+        updateData.aadhaarMasked = requestDetails.proposedValue;
+        updateData.aadhaarVerified = true;
+        updateData.aadhaarVerifiedAt = new Date();
+      } else if (requestDetails.correctionType === 'NAME') {
+        updateData.name = requestDetails.proposedValue;
+      } else if (requestDetails.correctionType === 'DOB') {
+        updateData.dob = new Date(requestDetails.proposedValue);
+      }
+
+      await prisma.user.update({
+        where: { id: bgaId },
+        data: updateData,
+      });
+    }
+
+    // Log the review decision
+    await logAudit(
+      bgaId,
+      bga.email,
+      Role.BGA,
+      isApprove ? 'IDENTITY_CORRECTION_APPROVED' : 'IDENTITY_CORRECTION_REJECTED',
+      'IDENTITY_CORRECTION',
+      corrId,
+      {
+        ...requestDetails,
+        status: isApprove ? 'APPROVED' : 'REJECTED',
+        reviewedById: req.user!.id,
+        reviewedAt: new Date(),
+        adminRemarks: remarks || (isApprove ? 'Approved by Admin' : 'Rejected by Admin'),
+      },
+      req.ip
+    );
+
+    await createNotification(
+      bgaId,
+      isApprove ? 'Identity Correction Approved' : 'Identity Correction Rejected',
+      isApprove
+        ? `Your request to correct ${requestDetails.correctionType || 'identity details'} to ${requestDetails.proposedValue} has been approved by Admin.`
+        : `Your identity correction request was rejected. Remarks: ${remarks || 'Supporting documentation did not meet verification criteria.'}`,
+      isApprove ? 'SUCCESS' : 'WARNING',
+      '/bga/profile'
+    );
+
+    res.json({ message: `Identity correction ${action.toLowerCase()}d successfully` });
+  } catch (error) {
+    console.error('Failed to review identity correction:', error);
+    res.status(500).json({ error: 'Failed to process identity correction review' });
   }
 });
 

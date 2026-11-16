@@ -20,11 +20,36 @@ import {
   Plus,
   Clock,
   ShieldCheck,
+  Search,
+  MapPin,
+  Phone,
+  Mail,
+  Calendar,
+  X,
+  Filter,
+  ArrowLeft,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import { SkeletonStatsRow, SkeletonTable } from '../../components/Skeleton';
+import { BgaProfileView } from './BgaProfileView';
+
+export const BUSINESS_CATEGORIES = [
+  'IT & Software',
+  'Education & Training',
+  'Healthcare & Medical',
+  'Retail & E-commerce',
+  'Manufacturing & Industrial',
+  'Real Estate & Construction',
+  'Finance & Banking',
+  'Hospitality & Tourism',
+  'Food & Restaurants',
+  'Logistics & Transportation',
+  'Media & Entertainment',
+  'Professional Services',
+  'Other',
+];
 
 export const BgaPortal: React.FC = () => {
   const { user } = useAuth();
@@ -43,14 +68,27 @@ export const BgaPortal: React.FC = () => {
   const [resources, setResources] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
 
+  // My Clients UI State
+  const [clientViewMode, setClientViewMode] = useState<'list' | 'add'>('list');
+  const [selectedClientDetails, setSelectedClientDetails] = useState<any | null>(null);
+  const [clientSearch, setClientSearch] = useState('');
+  const [clientCategoryFilter, setClientCategoryFilter] = useState('ALL');
+  const [submittingClient, setSubmittingClient] = useState(false);
+
   // New Client Form
   const [clientForm, setClientForm] = useState({
     clientName: '',
     businessName: '',
     mobile: '',
     email: '',
-    location: '',
     businessCategory: 'IT & Software',
+    otherCategory: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    pinCode: '',
+    country: 'India',
     requiredService: 'DIGITAL_MARKETING',
     expectedBudget: '',
     clientRequirements: '',
@@ -137,6 +175,11 @@ export const BgaPortal: React.FC = () => {
 
   // Immediate load on tab switch
   useEffect(() => {
+    if (activeTab === ('new-client' as any)) {
+      setActiveTab('clients');
+      setClientViewMode('add');
+      return;
+    }
     loadTabData(activeTab);
   }, [activeTab]);
 
@@ -146,29 +189,77 @@ export const BgaPortal: React.FC = () => {
     setClientFormError(null);
     setClientFormSuccess(null);
 
+    // Business Category Validation
+    if (clientForm.businessCategory === 'Other' && !clientForm.otherCategory.trim()) {
+      setClientFormError('Please enter your custom business category.');
+      return;
+    }
+
+    const cleanMobile = clientForm.mobile.replace(/\D/g, '').slice(-10);
+    if (cleanMobile.length !== 10) {
+      setClientFormError('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    if (!clientForm.addressLine1.trim()) {
+      setClientFormError('Address Line 1 is required.');
+      return;
+    }
+    if (!clientForm.city.trim()) {
+      setClientFormError('City is required.');
+      return;
+    }
+    if (!clientForm.state.trim()) {
+      setClientFormError('State is required.');
+      return;
+    }
+    if (!clientForm.pinCode.trim()) {
+      setClientFormError('PIN / Postal Code is required.');
+      return;
+    }
+
+    setSubmittingClient(true);
     try {
+      const payload = {
+        ...clientForm,
+        mobile: cleanMobile,
+        location: clientForm.city.trim(),
+      };
+
       const res = await apiRequest('/api/bga/clients', {
         method: 'POST',
-        body: JSON.stringify(clientForm),
+        body: JSON.stringify(payload),
       });
 
-      setClientFormSuccess(res.message);
+      setClientFormSuccess(
+        res.message || `Client '${clientForm.clientName}' registered successfully and assigned to your portfolio.`
+      );
       setClientForm({
         clientName: '',
         businessName: '',
         mobile: '',
         email: '',
-        location: '',
         businessCategory: 'IT & Software',
+        otherCategory: '',
+        addressLine1: '',
+        addressLine2: '',
+        city: '',
+        state: '',
+        pinCode: '',
+        country: 'India',
         requiredService: 'DIGITAL_MARKETING',
         expectedBudget: '',
         clientRequirements: '',
         discussionNotes: '',
         followUpDate: '',
       });
-      loadData();
+      await loadData();
+      setClientViewMode('list');
     } catch (err: any) {
-      setClientFormError(err.message);
+      // Keep entered data in form so user does not lose inputs
+      setClientFormError(err.message || 'Failed to register client');
+    } finally {
+      setSubmittingClient(false);
     }
   };
 
@@ -283,17 +374,10 @@ export const BgaPortal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('new-client')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'new-client' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
-              }`}
-            >
-              <UserPlus className="w-4 h-4" />
-              <span>Register New Client</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('clients')}
+              onClick={() => {
+                setActiveTab('clients');
+                setClientViewMode('list');
+              }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'clients' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
               }`}
@@ -380,7 +464,7 @@ export const BgaPortal: React.FC = () => {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 overflow-y-auto max-w-7xl">
+        <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
             !stats ? (
@@ -444,7 +528,11 @@ export const BgaPortal: React.FC = () => {
                     </p>
                   </div>
                   <button
-                    onClick={() => setActiveTab('new-client')}
+                    onClick={() => {
+                      setActiveTab('clients');
+                      setClientViewMode('add');
+                      setClientFormSuccess(null);
+                    }}
                     className="mt-4 px-4 py-2 bg-white text-indigo-900 rounded-lg text-xs font-bold hover:bg-indigo-50 transition-colors w-fit"
                   >
                     Register New Client +
@@ -456,309 +544,892 @@ export const BgaPortal: React.FC = () => {
           )}
 
           {/* TAB 2: MY PROFILE & KYC */}
-          {activeTab === 'profile' && (
-            <div className="max-w-2xl bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">My Associate Profile & Verification Badges</h3>
-                <p className="text-xs text-slate-500">
-                  Your identity documents and bank details are securely verified for authorized operations.
-                </p>
-              </div>
+          {activeTab === 'profile' && <BgaProfileView />}
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
-                  <span className="text-xs text-slate-500 block">PAN Verification</span>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span className="text-xs font-bold text-slate-800">{user?.panVerified ? 'VERIFIED' : 'PENDING'}</span>
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
-                  <span className="text-xs text-slate-500 block">Aadhaar Status</span>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span className="text-xs font-bold text-slate-800">
-                      {user?.aadhaarVerified ? 'VERIFIED (MASKED)' : 'COMPLETED'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
-                  <span className="text-xs text-slate-500 block">Bank Account</span>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span className="text-xs font-bold text-slate-800">
-                      {user?.bankVerified ? 'VERIFIED' : 'PENDING'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 text-xs border-t border-slate-100 pt-4">
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Associate Name</span>
-                  <span className="font-semibold text-slate-900">{user?.name}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Registered Email</span>
-                  <span className="font-semibold text-slate-900">{user?.email}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Mobile Phone</span>
-                  <span className="font-semibold text-slate-900">{user?.mobile}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">System Role</span>
-                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                    {user?.role}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: NEW CLIENT REGISTRATION (With Strict Duplicate Check) */}
-          {activeTab === 'new-client' && (
-            <div className="max-w-3xl bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
-              <div className="border-b border-slate-100 pb-4 mb-6">
-                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
-                  Exclusive Ownership Guarantee
-                </span>
-                <h2 className="text-xl font-bold text-slate-900 mt-1">Register a New Client</h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  Once registered, this client is strictly assigned to you. Our system automatically checks normalized phone and email to prevent duplicate claims.
-                </p>
-              </div>
-
-              {clientFormError && (
-                <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="block font-semibold">Registration Blocked:</strong>
-                    <span>{clientFormError}</span>
-                  </div>
-                </div>
-              )}
-
-              {clientFormSuccess && (
-                <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                  <span>{clientFormSuccess}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleRegisterClient} className="space-y-4 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1">Client Contact Name *</label>
-                    <input
-                      type="text"
-                      required
-                      value={clientForm.clientName}
-                      onChange={(e) => setClientForm({ ...clientForm, clientName: e.target.value })}
-                      placeholder="e.g. Anand Mahindra"
-                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1">Business / Company Name *</label>
-                    <input
-                      type="text"
-                      required
-                      value={clientForm.businessName}
-                      onChange={(e) => setClientForm({ ...clientForm, businessName: e.target.value })}
-                      placeholder="e.g. Apex Global Logistics Pvt Ltd"
-                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1">
-                      Mobile Number (10 Digits) *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={clientForm.mobile}
-                      onChange={(e) => setClientForm({ ...clientForm, mobile: e.target.value })}
-                      placeholder="9876543210"
-                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1">Email Address *</label>
-                    <input
-                      type="email"
-                      required
-                      value={clientForm.email}
-                      onChange={(e) => setClientForm({ ...clientForm, email: e.target.value })}
-                      placeholder="client@company.com"
-                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1">City / Location *</label>
-                    <input
-                      type="text"
-                      required
-                      value={clientForm.location}
-                      onChange={(e) => setClientForm({ ...clientForm, location: e.target.value })}
-                      placeholder="e.g. Mumbai / Bangalore"
-                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1">Business Category *</label>
-                    <input
-                      type="text"
-                      required
-                      value={clientForm.businessCategory}
-                      onChange={(e) => setClientForm({ ...clientForm, businessCategory: e.target.value })}
-                      placeholder="e.g. Healthcare, Retail, Manufacturing"
-                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100">
-                  <h4 className="text-sm font-bold text-slate-900 mb-3">Initial Enquiry Details (Optional)</h4>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
-                    <div>
-                      <label className="block text-slate-700 font-semibold mb-1">Primary Required Service</label>
-                      <select
-                        value={clientForm.requiredService}
-                        onChange={(e) => setClientForm({ ...clientForm, requiredService: e.target.value })}
-                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
-                      >
-                        <option value="DIGITAL_MARKETING">Digital Marketing (SEO, Ads, SMM)</option>
-                        <option value="WEBSITE_DEVELOPMENT">Website Development</option>
-                        <option value="MOBILE_APPLICATION_DEVELOPMENT">Mobile Application</option>
-                        <option value="SOFTWARE_DEVELOPMENT">Custom Software / ERP / CRM</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-700 font-semibold mb-1">Expected Budget (₹)</label>
-                      <input
-                        type="number"
-                        value={clientForm.expectedBudget}
-                        onChange={(e) => setClientForm({ ...clientForm, expectedBudget: e.target.value })}
-                        placeholder="e.g. 50000"
-                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
-                      >
-                      </input>
-                    </div>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="block text-slate-700 font-semibold mb-1">Client Scope & Requirements</label>
-                    <textarea
-                      rows={2}
-                      value={clientForm.clientRequirements}
-                      onChange={(e) => setClientForm({ ...clientForm, clientRequirements: e.target.value })}
-                      placeholder="Describe what the client is looking to build or market..."
-                      className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-slate-700 font-semibold mb-1">Initial Discussion Notes</label>
-                      <input
-                        type="text"
-                        value={clientForm.discussionNotes}
-                        onChange={(e) => setClientForm({ ...clientForm, discussionNotes: e.target.value })}
-                        placeholder="Met CEO on Monday, interested in launching next month"
-                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-700 font-semibold mb-1">Next Follow-Up Date</label>
-                      <input
-                        type="date"
-                        value={clientForm.followUpDate}
-                        onChange={(e) => setClientForm({ ...clientForm, followUpDate: e.target.value })}
-                        className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 flex justify-end">
-                  <button
-                    type="submit"
-                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm shadow-sm transition-colors"
-                  >
-                    Register Client & Submit Enquiry
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* TAB 4: MY CLIENTS */}
-          {activeTab === 'clients' && (
+          {/* TAB 4: MY CLIENTS (Includes integrated client registration, directory, and full details) */}
+          {(activeTab === 'clients' || activeTab === 'new-client') && (
             <div className="space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200 flex justify-between items-center">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">My Client Portfolio</h2>
-                  <p className="text-xs text-slate-500">
-                    Clients exclusively tied to your associate account. (Other BGAs cannot view or access your clients).
-                  </p>
-                </div>
-                <button
-                  onClick={() => setActiveTab('new-client')}
-                  className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700"
-                >
-                  + Add New Client
-                </button>
-              </div>
+              {/* MODE 1: REGISTER NEW CLIENT (Directly inside My Clients module) */}
+              {clientViewMode === 'add' ? (
+                <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+                  {/* Back to Client List */}
+                  <div className="mb-6 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setClientViewMode('list');
+                        setClientFormError(null);
+                      }}
+                      className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Back to My Clients
+                    </button>
+                    <span className="text-xs font-semibold text-slate-400">Step: Client Onboarding</span>
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {clients.map((c) => (
-                  <div key={c.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                  <div className="border-b border-slate-100 pb-4 mb-6">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-2">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      Exclusive Ownership Guarantee
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900">Register a New Client</h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Once registered, this client is strictly assigned to your associate account. Our system automatically checks normalized phone and email to prevent duplicate claims across all associates.
+                    </p>
+                  </div>
+
+                  {clientFormError && (
+                    <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2.5">
+                      <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="block font-semibold">Registration Blocked:</strong>
+                        <span>{clientFormError}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleRegisterClient} className="space-y-6 text-xs">
+                    {/* SECTION 1: Client & Company Information */}
                     <div>
-                      <div className="flex justify-between items-start">
+                      <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-emerald-600" />
+                        1. Client & Company Information
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <h3 className="font-bold text-slate-900 text-sm">{c.clientName}</h3>
-                          <span className="text-xs text-indigo-600 font-semibold">{c.businessName}</span>
+                          <label className="block text-slate-700 font-semibold mb-1">Client Contact Name *</label>
+                          <input
+                            type="text"
+                            required
+                            value={clientForm.clientName}
+                            onChange={(e) => setClientForm({ ...clientForm, clientName: e.target.value })}
+                            placeholder="e.g. Anand Mahindra"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          />
                         </div>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-bold border border-emerald-200">
-                          Active Client
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Business / Company Name *</label>
+                          <input
+                            type="text"
+                            required
+                            value={clientForm.businessName}
+                            onChange={(e) => setClientForm({ ...clientForm, businessName: e.target.value })}
+                            placeholder="e.g. Apex Global Logistics Pvt Ltd"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Mobile Number (10 Digits) *</label>
+                          <input
+                            type="tel"
+                            required
+                            maxLength={10}
+                            value={clientForm.mobile}
+                            onChange={(e) => setClientForm({ ...clientForm, mobile: e.target.value.replace(/\D/g, '') })}
+                            placeholder="9876543210"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Email Address *</label>
+                          <input
+                            type="email"
+                            required
+                            value={clientForm.email}
+                            onChange={(e) => setClientForm({ ...clientForm, email: e.target.value })}
+                            placeholder="client@company.com"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          />
+                        </div>
+                        <div className={clientForm.businessCategory === 'Other' ? 'sm:col-span-1' : 'sm:col-span-2'}>
+                          <label className="block text-slate-700 font-semibold mb-1">Business Category *</label>
+                          <select
+                            required
+                            value={clientForm.businessCategory}
+                            onChange={(e) => setClientForm({ ...clientForm, businessCategory: e.target.value })}
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                          >
+                            {BUSINESS_CATEGORIES.map((cat) => (
+                              <option key={cat} value={cat}>
+                                {cat}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {clientForm.businessCategory === 'Other' && (
+                          <div className="sm:col-span-1">
+                            <label className="block text-slate-700 font-semibold mb-1">
+                              Enter Business Category *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={clientForm.otherCategory}
+                              onChange={(e) => setClientForm({ ...clientForm, otherCategory: e.target.value })}
+                              placeholder="e.g. Agriculture, Energy, Legal..."
+                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* SECTION 2: Complete Business Address */}
+                    <div className="pt-4 border-t border-slate-100">
+                      <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-emerald-600" />
+                        2. Business Address
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Address Line 1 *</label>
+                          <input
+                            type="text"
+                            required
+                            value={clientForm.addressLine1}
+                            onChange={(e) => setClientForm({ ...clientForm, addressLine1: e.target.value })}
+                            placeholder="Building, Suite, Floor or Street Address"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">
+                            Address Line 2 <span className="text-slate-400 font-normal">(Optional)</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={clientForm.addressLine2}
+                            onChange={(e) => setClientForm({ ...clientForm, addressLine2: e.target.value })}
+                            placeholder="Area, Landmark or Additional Details"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">City *</label>
+                            <input
+                              type="text"
+                              required
+                              value={clientForm.city}
+                              onChange={(e) => setClientForm({ ...clientForm, city: e.target.value })}
+                              placeholder="e.g. Mumbai"
+                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">State *</label>
+                            <input
+                              type="text"
+                              required
+                              value={clientForm.state}
+                              onChange={(e) => setClientForm({ ...clientForm, state: e.target.value })}
+                              placeholder="e.g. Maharashtra"
+                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">PIN / Postal Code *</label>
+                            <input
+                              type="text"
+                              required
+                              value={clientForm.pinCode}
+                              onChange={(e) => setClientForm({ ...clientForm, pinCode: e.target.value })}
+                              placeholder="e.g. 400001"
+                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Country *</label>
+                            <input
+                              type="text"
+                              required
+                              value={clientForm.country}
+                              onChange={(e) => setClientForm({ ...clientForm, country: e.target.value })}
+                              placeholder="India"
+                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* SECTION 3: Initial Enquiry Details (Optional) */}
+                    <div className="pt-4 border-t border-slate-100">
+                      <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-emerald-600" />
+                        3. Initial Enquiry Details <span className="text-slate-400 font-normal lowercase">(optional)</span>
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Primary Required Service</label>
+                          <select
+                            value={clientForm.requiredService}
+                            onChange={(e) => setClientForm({ ...clientForm, requiredService: e.target.value })}
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm bg-white"
+                          >
+                            <option value="DIGITAL_MARKETING">Digital Marketing (SEO, Ads, SMM)</option>
+                            <option value="WEBSITE_DEVELOPMENT">Website Development</option>
+                            <option value="MOBILE_APPLICATION_DEVELOPMENT">Mobile Application</option>
+                            <option value="SOFTWARE_DEVELOPMENT">Custom Software / ERP / CRM</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Expected Budget (₹)</label>
+                          <input
+                            type="number"
+                            value={clientForm.expectedBudget}
+                            onChange={(e) => setClientForm({ ...clientForm, expectedBudget: e.target.value })}
+                            placeholder="e.g. 50000"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="mb-3">
+                        <label className="block text-slate-700 font-semibold mb-1">Client Scope & Requirements</label>
+                        <textarea
+                          rows={2}
+                          value={clientForm.clientRequirements}
+                          onChange={(e) => setClientForm({ ...clientForm, clientRequirements: e.target.value })}
+                          placeholder="Describe what the client is looking to build or market..."
+                          className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Initial Discussion Notes</label>
+                          <input
+                            type="text"
+                            value={clientForm.discussionNotes}
+                            onChange={(e) => setClientForm({ ...clientForm, discussionNotes: e.target.value })}
+                            placeholder="Met CEO on Monday, interested in launching next month"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Next Follow-Up Date</label>
+                          <input
+                            type="date"
+                            value={clientForm.followUpDate}
+                            onChange={(e) => setClientForm({ ...clientForm, followUpDate: e.target.value })}
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* FORM ACTIONS */}
+                    <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setClientViewMode('list');
+                          setClientFormError(null);
+                        }}
+                        className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submittingClient}
+                        className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-lg text-sm shadow-sm transition-colors flex items-center gap-2"
+                      >
+                        {submittingClient ? (
+                          <>
+                            <Clock className="w-4 h-4 animate-spin" />
+                            Registering Client...
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-4 h-4" />
+                            Register Client & Submit Enquiry
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                /* MODE 2: CLIENT PORTFOLIO DIRECTORY (Table & Detailed Cards) */
+                <div className="space-y-4">
+                  {/* Portfolio Header Bar */}
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-base font-bold text-slate-900">My Client Portfolio</h2>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          {clients.length} Registered
                         </span>
                       </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Clients exclusively tied to your associate account. Other associates cannot view or access your clients.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setClientViewMode('add');
+                        setClientFormSuccess(null);
+                        setClientFormError(null);
+                      }}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-all shrink-0"
+                    >
+                      <Plus className="w-4 h-4" />
+                      + Add New Client
+                    </button>
+                  </div>
 
-                      <div className="mt-3 text-xs text-slate-600 space-y-1">
-                        <div>📞 {c.mobile}</div>
-                        <div>✉️ {c.email}</div>
-                        <div>📍 {c.location} • Category: {c.businessCategory}</div>
+                  {/* Success Alert Banner (Displayed right after successful client registration) */}
+                  {clientFormSuccess && (
+                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between gap-2 shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                        <span className="font-semibold">{clientFormSuccess}</span>
                       </div>
+                      <button
+                        onClick={() => setClientFormSuccess(null)}
+                        className="p-1 hover:bg-emerald-100 rounded text-emerald-600"
+                        title="Dismiss"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
 
-                      <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-3 text-xs text-slate-500">
-                        <span>{c.enquiries?.length || 0} Enquiries</span>
-                        <span>•</span>
-                        <span>{c.quotations?.length || 0} Quotations</span>
+                  {/* Search and Category Filter */}
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
+                    <div className="relative w-full sm:w-80">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        placeholder="Search by client, business, category, phone, email, city..."
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <Filter className="w-3.5 h-3.5 text-slate-400" />
+                      <select
+                        value={clientCategoryFilter}
+                        onChange={(e) => setClientCategoryFilter(e.target.value)}
+                        className="w-full sm:w-auto text-xs p-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-slate-700"
+                      >
+                        <option value="ALL">All Categories ({clients.length})</option>
+                        {BUSINESS_CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Clients Listing Table */}
+                  {clients.length === 0 ? (
+                    <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center shadow-sm">
+                      <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <h3 className="text-base font-bold text-slate-800">No Clients Registered Yet</h3>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-5">
+                        Start building your exclusive client portfolio. Clients registered under your ID remain strictly assigned to you.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setClientViewMode('add');
+                          setClientFormSuccess(null);
+                        }}
+                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm"
+                      >
+                        + Add Your First Client
+                      </button>
+                    </div>
+                  ) : clients.filter((c) => {
+                      const matchesSearch =
+                        !clientSearch ||
+                        c.clientName?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                        c.businessName?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                        c.mobile?.includes(clientSearch) ||
+                        c.email?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                        c.city?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                        c.location?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                        c.businessCategory?.toLowerCase().includes(clientSearch.toLowerCase());
+                      const matchesCategory =
+                        clientCategoryFilter === 'ALL' || c.businessCategory === clientCategoryFilter;
+                      return matchesSearch && matchesCategory;
+                    }).length === 0 ? (
+                    <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center shadow-sm">
+                      <Search className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                      <p className="text-xs font-semibold text-slate-700">No clients match your filter criteria.</p>
+                      <button
+                        onClick={() => {
+                          setClientSearch('');
+                          setClientCategoryFilter('ALL');
+                        }}
+                        className="mt-3 text-xs text-emerald-600 font-bold hover:underline"
+                      >
+                        Reset Search Filters
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                            <tr>
+                              <th className="p-3.5">Client & Company</th>
+                              <th className="p-3.5">Business Category</th>
+                              <th className="p-3.5">Contact Details</th>
+                              <th className="p-3.5">City</th>
+                              <th className="p-3.5">Enquiry Status</th>
+                              <th className="p-3.5">Registration Date</th>
+                              <th className="p-3.5 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {clients
+                              .filter((c) => {
+                                const matchesSearch =
+                                  !clientSearch ||
+                                  c.clientName?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                                  c.businessName?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                                  c.mobile?.includes(clientSearch) ||
+                                  c.email?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                                  c.city?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                                  c.location?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                                  c.businessCategory?.toLowerCase().includes(clientSearch.toLowerCase());
+                                const matchesCategory =
+                                  clientCategoryFilter === 'ALL' || c.businessCategory === clientCategoryFilter;
+                                return matchesSearch && matchesCategory;
+                              })
+                              .map((c) => {
+                                // Extract structured or legacy location
+                                let displayCity = c.city || '';
+                                if (!displayCity && c.location) {
+                                  try {
+                                    if (c.location.startsWith('{')) {
+                                      const p = JSON.parse(c.location);
+                                      displayCity = p.city || p.displayLocation || '';
+                                    } else {
+                                      displayCity = c.location;
+                                    }
+                                  } catch {
+                                    displayCity = c.location;
+                                  }
+                                }
+
+                                const latestEnquiry = c.enquiries && c.enquiries.length > 0 ? c.enquiries[0] : null;
+
+                                return (
+                                  <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
+                                    {/* 1. Client Contact Name & Business Name */}
+                                    <td className="p-3.5">
+                                      <div className="font-bold text-slate-900 text-sm">{c.clientName}</div>
+                                      <div className="text-xs text-indigo-600 font-semibold mt-0.5">
+                                        {c.businessName}
+                                      </div>
+                                    </td>
+
+                                    {/* 2. Business Category */}
+                                    <td className="p-3.5">
+                                      <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-200">
+                                        {c.businessCategory}
+                                      </span>
+                                    </td>
+
+                                    {/* 3. Mobile and Email */}
+                                    <td className="p-3.5">
+                                      <div className="text-slate-800 font-medium flex items-center gap-1.5">
+                                        <Phone className="w-3 h-3 text-slate-400" />
+                                        <span>{c.mobile}</span>
+                                      </div>
+                                      <div className="text-slate-500 text-[11px] flex items-center gap-1.5 mt-0.5">
+                                        <Mail className="w-3 h-3 text-slate-400" />
+                                        <span>{c.email}</span>
+                                      </div>
+                                    </td>
+
+                                    {/* 4. City */}
+                                    <td className="p-3.5">
+                                      <div className="text-slate-700 font-medium flex items-center gap-1">
+                                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                        <span>{displayCity || '—'}</span>
+                                      </div>
+                                    </td>
+
+                                    {/* 5. Enquiry Status */}
+                                    <td className="p-3.5">
+                                      {latestEnquiry ? (
+                                        <div>
+                                          <span
+                                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                              latestEnquiry.status === 'APPROVED'
+                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                : latestEnquiry.status === 'QUOTATION_REQUESTED'
+                                                ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                                : latestEnquiry.status === 'SUBMITTED'
+                                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                                            }`}
+                                          >
+                                            {latestEnquiry.status.replace(/_/g, ' ')}
+                                          </span>
+                                          <div className="text-[10px] text-slate-400 mt-0.5">
+                                            {c.enquiries.length} {c.enquiries.length === 1 ? 'Enquiry' : 'Enquiries'}
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
+                                          No Enquiries
+                                        </span>
+                                      )}
+                                    </td>
+
+                                    {/* 6. Registration Date */}
+                                    <td className="p-3.5 text-slate-600">
+                                      <div className="flex items-center gap-1 font-medium">
+                                        <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                                        <span>
+                                          {new Date(c.createdAt).toLocaleDateString('en-IN', {
+                                            day: '2-digit',
+                                            month: 'short',
+                                            year: 'numeric',
+                                          })}
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    {/* 7. Actions */}
+                                    <td className="p-3.5 text-right">
+                                      <div className="flex items-center justify-end gap-1.5">
+                                        <button
+                                          onClick={() => setSelectedClientDetails(c)}
+                                          className="px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold flex items-center gap-1 transition-colors"
+                                          title="View Client Details"
+                                        >
+                                          <Eye className="w-3.5 h-3.5" />
+                                          Details
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            setNewEnquiryModal({ clientId: c.id, clientName: c.clientName })
+                                          }
+                                          className="px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold flex items-center gap-1 transition-colors"
+                                          title="Submit New Enquiry"
+                                        >
+                                          <Plus className="w-3.5 h-3.5" />
+                                          Enquiry
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
+                  )}
+                </div>
+              )}
 
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end gap-2">
+              {/* DETAILED CLIENT VIEW MODAL */}
+              {selectedClientDetails && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    {/* Header */}
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-start sticky top-0 bg-white/95 backdrop-blur-sm z-10">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-bold text-slate-900">{selectedClientDetails.clientName}</h3>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Active Associate Client
+                          </span>
+                        </div>
+                        <span className="text-xs font-semibold text-indigo-600 block mt-0.5">
+                          {selectedClientDetails.businessName} • {selectedClientDetails.businessCategory}
+                        </span>
+                      </div>
                       <button
-                        onClick={() => setNewEnquiryModal({ clientId: c.id, clientName: c.clientName })}
-                        className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded text-xs font-bold hover:bg-indigo-100"
+                        onClick={() => setSelectedClientDetails(null)}
+                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                       >
-                        + Submit New Enquiry
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <div className="p-6 space-y-6 text-xs">
+                      {/* Section 1: Contact & Client Overview */}
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                          <Users className="w-4 h-4 text-emerald-600" />
+                          Client Contact Overview
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <span className="text-[10px] font-semibold text-slate-400 uppercase block">
+                              Mobile Number
+                            </span>
+                            <a
+                              href={`tel:${selectedClientDetails.mobile}`}
+                              className="text-sm font-bold text-indigo-600 hover:underline mt-0.5 block"
+                            >
+                              📞 {selectedClientDetails.mobile}
+                            </a>
+                          </div>
+                          <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <span className="text-[10px] font-semibold text-slate-400 uppercase block">
+                              Email Address
+                            </span>
+                            <a
+                              href={`mailto:${selectedClientDetails.email}`}
+                              className="text-sm font-bold text-indigo-600 hover:underline mt-0.5 block truncate"
+                            >
+                              ✉️ {selectedClientDetails.email}
+                            </a>
+                          </div>
+                          <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <span className="text-[10px] font-semibold text-slate-400 uppercase block">
+                              Registration Date
+                            </span>
+                            <span className="text-xs font-bold text-slate-800 mt-0.5 block">
+                              {new Date(selectedClientDetails.createdAt).toLocaleString('en-IN', {
+                                dateStyle: 'medium',
+                                timeStyle: 'short',
+                              })}
+                            </span>
+                          </div>
+                          <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <span className="text-[10px] font-semibold text-slate-400 uppercase block">
+                              Exclusive Owner
+                            </span>
+                            <span className="text-xs font-bold text-emerald-700 mt-0.5 block flex items-center gap-1">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                              Assigned to You ({user?.name})
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 2: Complete Business Address */}
+                      {(() => {
+                        let addr = selectedClientDetails.address || {};
+                        if (!addr.addressLine1 && selectedClientDetails.location) {
+                          try {
+                            if (selectedClientDetails.location.startsWith('{')) {
+                              addr = JSON.parse(selectedClientDetails.location);
+                            }
+                          } catch {}
+                        }
+                        const formattedFull =
+                          addr.fullAddress ||
+                          [
+                            addr.addressLine1,
+                            addr.addressLine2,
+                            addr.city || selectedClientDetails.city,
+                            addr.state,
+                            addr.pinCode ? `PIN: ${addr.pinCode}` : '',
+                            addr.country || 'India',
+                          ]
+                            .filter(Boolean)
+                            .join(', ') ||
+                          selectedClientDetails.location ||
+                          'Not provided';
+
+                        return (
+                          <div>
+                            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-emerald-600" />
+                              Complete Business Address
+                            </h4>
+                            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">
+                                    Address Line 1
+                                  </span>
+                                  <span className="text-xs font-bold text-slate-800 block mt-0.5">
+                                    {addr.addressLine1 || '—'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">
+                                    Address Line 2
+                                  </span>
+                                  <span className="text-xs font-bold text-slate-800 block mt-0.5">
+                                    {addr.addressLine2 || '—'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">
+                                    City & State
+                                  </span>
+                                  <span className="text-xs font-bold text-slate-800 block mt-0.5">
+                                    {addr.city || selectedClientDetails.city || '—'}
+                                    {addr.state ? `, ${addr.state}` : ''}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">
+                                    PIN / Postal Code & Country
+                                  </span>
+                                  <span className="text-xs font-bold text-slate-800 block mt-0.5">
+                                    {addr.pinCode ? `PIN ${addr.pinCode}` : '—'} • {addr.country || 'India'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="pt-2 border-t border-slate-200">
+                                <span className="text-[10px] text-slate-400 font-semibold uppercase block">
+                                  Formatted Postal Address
+                                </span>
+                                <p className="text-xs text-slate-700 font-medium mt-0.5">{formattedFull}</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Section 3: Enquiries, Scope, Requirements & Notes */}
+                      <div>
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                            <MessageSquare className="w-4 h-4 text-emerald-600" />
+                            Client Enquiries & Requirements ({selectedClientDetails.enquiries?.length || 0})
+                          </h4>
+                          <button
+                            onClick={() => {
+                              const c = selectedClientDetails;
+                              setSelectedClientDetails(null);
+                              setNewEnquiryModal({ clientId: c.id, clientName: c.clientName });
+                            }}
+                            className="px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-colors"
+                          >
+                            + Add Another Enquiry
+                          </button>
+                        </div>
+
+                        {selectedClientDetails.enquiries && selectedClientDetails.enquiries.length > 0 ? (
+                          <div className="space-y-3">
+                            {selectedClientDetails.enquiries.map((enq: any, idx: number) => (
+                              <div
+                                key={enq.id || idx}
+                                className="p-4 rounded-xl border border-slate-200 bg-white space-y-2.5 shadow-sm"
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <span className="text-xs font-bold text-slate-900">
+                                      {enq.serviceCategory?.replace(/_/g, ' ')}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 block font-mono">
+                                      ID: {enq.id} •{' '}
+                                      {new Date(enq.createdAt).toLocaleDateString('en-IN', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric',
+                                      })}
+                                    </span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                      {enq.status}
+                                    </span>
+                                    {enq.expectedBudget ? (
+                                      <span className="block text-xs font-bold text-slate-900 mt-1">
+                                        Budget: ₹{enq.expectedBudget.toLocaleString()}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </div>
+
+                                {enq.requirements && (
+                                  <div className="pt-2 border-t border-slate-100">
+                                    <span className="text-[10px] text-slate-400 font-semibold uppercase block mb-1">
+                                      Scope & Deliverables
+                                    </span>
+                                    <p className="text-xs text-slate-700 bg-slate-50 p-2.5 rounded-lg whitespace-pre-wrap">
+                                      {enq.requirements}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {enq.discussionNotes && (
+                                  <div>
+                                    <span className="text-[10px] text-slate-400 font-semibold uppercase block mb-1">
+                                      Discussion Notes
+                                    </span>
+                                    <p className="text-xs text-slate-600 bg-amber-50/50 p-2.5 rounded-lg border border-amber-100">
+                                      💬 {enq.discussionNotes}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {enq.followUpDate && (
+                                  <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>
+                                      Next Scheduled Follow-Up:{' '}
+                                      <strong className="text-slate-800">
+                                        {new Date(enq.followUpDate).toLocaleDateString('en-IN', {
+                                          day: '2-digit',
+                                          month: 'short',
+                                          year: 'numeric',
+                                        })}
+                                      </strong>
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center text-xs text-slate-400">
+                            No enquiries recorded yet for this client.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Section 4: Quotations & Commercial History */}
+                      {selectedClientDetails.quotations && selectedClientDetails.quotations.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <CreditCard className="w-4 h-4 text-emerald-600" />
+                            Commercial Quotations ({selectedClientDetails.quotations.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {selectedClientDetails.quotations.map((q: any) => (
+                              <div
+                                key={q.id}
+                                className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center text-xs"
+                              >
+                                <div>
+                                  <span className="font-bold text-slate-900 font-mono">{q.quotationNumber}</span>
+                                  <span className="text-slate-400 text-[10px] block">
+                                    Version v{q.version} • {new Date(q.createdAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="font-extrabold text-slate-900 block">
+                                    ₹{q.totalAmount?.toLocaleString()}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-indigo-700">{q.status}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50 rounded-b-2xl">
+                      <button
+                        onClick={() => setSelectedClientDetails(null)}
+                        className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-bold transition-colors"
+                      >
+                        Close Details
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
 
               {/* Extra Enquiry Modal */}
               {newEnquiryModal && (
@@ -1291,7 +1962,7 @@ export const BgaPortal: React.FC = () => {
 
           {/* TAB 11: SUPPORT */}
           {activeTab === 'support' && (
-            <div className="max-w-xl bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+            <div className="w-full bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-4">
               <h3 className="text-base font-bold text-slate-900">Associate Support Desk</h3>
               <p className="text-xs text-slate-500">
                 Have questions regarding a quotation, technical feasibility, or commission payout? Reach our executive desk:

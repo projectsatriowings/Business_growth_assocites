@@ -102,8 +102,23 @@ if (fs.existsSync(clientDistPath)) {
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled Server Error:', err);
-  res.status(500).json({ error: 'Internal Server Error', details: err.message });
+  console.error('Server Request Error:', err.message);
+  if (res.headersSent) {
+    return next(err);
+  }
+  const statusCode = err.status || err.statusCode || 500;
+  res.status(statusCode).json({
+    error: statusCode === 400 ? 'Bad Request: Invalid or malformed JSON payload' : 'Internal Server Error',
+    details: err.message,
+  });
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Process Exception (Kept alive):', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Promise Rejection (Kept alive):', reason);
 });
 
 app.listen(PORT, () => {
