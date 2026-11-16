@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { Role, BgaStatus, EnquiryStatus, ServiceCategoryType, CommissionApproval, CommissionPayout } from '@prisma/client';
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification } from '../middleware/auth';
@@ -89,19 +90,34 @@ router.get('/bgas', async (req: AuthRequest, res: Response): Promise<void> => {
         status: true,
         dob: true,
         address: true,
+        city: true,
+        state: true,
+        pinCode: true,
         panNumber: true,
         panVerified: true,
+        panVerifiedAt: true,
         aadhaarMasked: true,
         aadhaarVerified: true,
+        aadhaarVerifiedAt: true,
+        kycSubmittedAt: true,
+        bankName: true,
         bankAccountHolder: true,
         bankAccountNumber: true,
         bankIfsc: true,
         bankVerified: true,
+        bankVerifiedAt: true,
+        panDocumentUrl: true,
+        addressProofUrl: true,
+        bankProofUrl: true,
         agreementAccepted: true,
+        agreementAcceptedAt: true,
+        agreementDocumentUrl: true,
+        lastLoginAt: true,
         rejectionReason: true,
         statusNotes: true,
         approvedAt: true,
         createdAt: true,
+        updatedAt: true,
         _count: {
           select: {
             clients: true,
@@ -116,6 +132,191 @@ router.get('/bgas', async (req: AuthRequest, res: Response): Promise<void> => {
     res.json({ bgas });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load BGAs' });
+  }
+});
+
+// 2b. Complete Associate Profile by ID
+router.get('/bgas/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const bga = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        clients: {
+          include: {
+            enquiries: {
+              select: {
+                id: true,
+                serviceCategory: true,
+                expectedBudget: true,
+                status: true,
+                createdAt: true,
+              },
+            },
+            quotations: {
+              select: {
+                id: true,
+                quotationNumber: true,
+                totalAmount: true,
+                status: true,
+              },
+            },
+            _count: {
+              select: { workOrders: true },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        enquiries: {
+          include: {
+            client: { select: { id: true, clientName: true, businessName: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        quotations: {
+          include: {
+            client: { select: { id: true, clientName: true, businessName: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        workOrders: {
+          include: {
+            client: { select: { id: true, clientName: true, businessName: true } },
+            project: {
+              select: {
+                id: true,
+                projectNumber: true,
+                status: true,
+                progressPercentage: true,
+              },
+            },
+            payments: {
+              select: {
+                id: true,
+                amount: true,
+                paymentType: true,
+                status: true,
+                transactionReference: true,
+                paymentDate: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        commissions: {
+          include: {
+            client: { select: { id: true, clientName: true, businessName: true } },
+            workOrder: { select: { id: true, workOrderNumber: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        auditLogs: {
+          take: 30,
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    if (!bga || bga.role !== Role.BGA) {
+      res.status(404).json({ error: 'Associate profile not found' });
+      return;
+    }
+
+    // Performance metrics calculated from real DB records
+    const totalClients = bga.clients.length;
+    const enquiriesApproved = bga.enquiries.filter((e) => e.status === EnquiryStatus.APPROVED).length;
+    const enquiriesPending = bga.enquiries.filter(
+      (e) => e.status === EnquiryStatus.SUBMITTED || e.status === EnquiryStatus.UNDER_REVIEW
+    ).length;
+    const enquiriesRejected = bga.enquiries.filter((e) => e.status === EnquiryStatus.REJECTED).length;
+    const enquiriesChangesRequested = bga.enquiries.filter(
+      (e) => e.status === EnquiryStatus.CHANGES_REQUESTED
+    ).length;
+
+    const activeProjects = bga.workOrders.filter(
+      (w) => w.project && ['READY_TO_START', 'IN_PROGRESS', 'UNDER_REVIEW', 'CORRECTION_REQUIRED'].includes(w.project.status)
+    ).length;
+    const completedProjects = bga.workOrders.filter((w) => w.project && w.project.status === 'COMPLETED').length;
+
+    const totalCommissionEarned = bga.commissions.reduce((acc, c) => acc + c.calculatedCommission, 0);
+    const pendingCommission = bga.commissions
+      .filter((c) => c.payoutStatus === CommissionPayout.UNPAID)
+      .reduce((acc, c) => acc + c.calculatedCommission, 0);
+    const paidCommission = bga.commissions
+      .filter((c) => c.payoutStatus === CommissionPayout.PROCESSED)
+      .reduce((acc, c) => acc + c.calculatedCommission, 0);
+
+    // Strip sensitive password hash
+    const { passwordHash, ...safeProfile } = bga;
+
+    res.json({
+      associate: safeProfile,
+      metrics: {
+        totalClients,
+        enquiries: {
+          total: bga.enquiries.length,
+          approved: enquiriesApproved,
+          pending: enquiriesPending,
+          rejected: enquiriesRejected,
+          changesRequested: enquiriesChangesRequested,
+        },
+        projects: {
+          total: bga.workOrders.filter((w) => w.project).length,
+          active: activeProjects,
+          completed: completedProjects,
+        },
+        commissions: {
+          totalEarned: totalCommissionEarned,
+          pending: pendingCommission,
+          paid: paidCommission,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Error loading associate profile:', error);
+    res.status(500).json({ error: 'Failed to load associate profile' });
+  }
+});
+
+// 2c. Secure Associate Password Reset
+router.post('/bgas/:id/reset-password', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    const bga = await prisma.user.findUnique({ where: { id } });
+    if (!bga || bga.role !== Role.BGA) {
+      res.status(404).json({ error: 'Associate not found' });
+      return;
+    }
+
+    const tempPassword = newPassword || `BGA@${Math.floor(100000 + Math.random() * 900000)}`;
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(tempPassword, salt);
+
+    await prisma.user.update({
+      where: { id },
+      data: { passwordHash },
+    });
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'ADMIN_RESET_BGA_PASSWORD',
+      'USER',
+      id,
+      { associateEmail: bga.email },
+      req.ip
+    );
+
+    res.json({
+      message: 'Password reset successfully',
+      temporaryPassword: tempPassword,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to reset password' });
   }
 });
 
@@ -142,8 +343,11 @@ router.post('/bgas/:id/status', async (req: AuthRequest, res: Response): Promise
       updateData.approvedAt = new Date();
       updateData.approvedById = req.user!.id;
       updateData.panVerified = true;
+      updateData.panVerifiedAt = new Date();
       updateData.aadhaarVerified = true;
+      updateData.aadhaarVerifiedAt = new Date();
       updateData.bankVerified = true;
+      updateData.bankVerifiedAt = new Date();
 
       await createNotification(
         bga.id,

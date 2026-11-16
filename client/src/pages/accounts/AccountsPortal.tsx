@@ -242,7 +242,7 @@ export const AccountsPortal: React.FC = () => {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 overflow-y-auto max-w-7xl">
+        <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && stats && (
             <div className="space-y-6">

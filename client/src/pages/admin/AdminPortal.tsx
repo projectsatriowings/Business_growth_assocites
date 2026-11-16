@@ -21,12 +21,15 @@ import {
   Plus,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
+import { AssociateProfileView } from './AssociateProfileView';
 import { apiRequest } from '../../utils/api';
 
 export const AdminPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
     'dashboard' | 'bgas' | 'services' | 'resources' | 'clients' | 'enquiries' | 'quotations' | 'workorders' | 'technical' | 'commissions' | 'settings'
   >('dashboard');
+
+  const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<any>(null);
@@ -369,7 +372,7 @@ export const AdminPortal: React.FC = () => {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 overflow-y-auto max-w-7xl">
+        <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && stats && (
             <div className="space-y-6">
@@ -435,125 +438,162 @@ export const AdminPortal: React.FC = () => {
 
           {/* TAB 2: BGA MANAGEMENT */}
           {activeTab === 'bgas' && (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-xl border border-slate-200">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-base font-bold text-slate-900">BGA Associates Directory</h2>
-                  <select
-                    value={bgaStatusFilter}
-                    onChange={(e) => setBgaStatusFilter(e.target.value)}
-                    className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  >
-                    <option value="ALL">All Statuses</option>
-                    <option value="SUBMITTED">SUBMITTED (New)</option>
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="SUSPENDED">SUSPENDED</option>
-                    <option value="REJECTED">REJECTED</option>
-                  </select>
+            selectedAssociateId ? (
+              <AssociateProfileView
+                associateId={selectedAssociateId}
+                onBack={() => setSelectedAssociateId(null)}
+                onRefreshList={loadData}
+              />
+            ) : (
+              <div className="space-y-4 w-full">
+                <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm w-full">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-base font-bold text-slate-900 whitespace-nowrap">BGA Associates Directory</h2>
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 font-bold border border-purple-200">
+                      {bgas.length} Registered Associates
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <select
+                      value={bgaStatusFilter}
+                      onChange={(e) => setBgaStatusFilter(e.target.value)}
+                      className="text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
+                    >
+                      <option value="ALL">All Statuses</option>
+                      <option value="SUBMITTED">SUBMITTED (Awaiting Approval)</option>
+                      <option value="ACTIVE">ACTIVE (Authorized)</option>
+                      <option value="SUSPENDED">SUSPENDED</option>
+                      <option value="REJECTED">REJECTED</option>
+                    </select>
+
+                    <div className="flex items-center gap-2">
+                      <div className="relative w-full sm:w-64">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input
+                          type="text"
+                          placeholder="Search associate, PAN, email..."
+                          value={searchBga}
+                          onChange={(e) => setSearchBga(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && loadData()}
+                          className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                      <button
+                        onClick={loadData}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-colors whitespace-nowrap shadow-sm"
+                      >
+                        Search
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <input
-                    type="text"
-                    placeholder="Search name, PAN, email..."
-                    value={searchBga}
-                    onChange={(e) => setSearchBga(e.target.value)}
-                    className="text-xs px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  />
-                  <button
-                    onClick={loadData}
-                    className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700"
-                  >
-                    Search
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                    <tr>
-                      <th className="p-3.5">Associate Details</th>
-                      <th className="p-3.5">KYC Status</th>
-                      <th className="p-3.5">Bank Details</th>
-                      <th className="p-3.5">Status</th>
-                      <th className="p-3.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {bgas.map((b) => (
-                      <tr key={b.id} className="hover:bg-slate-50/50">
-                        <td className="p-3.5">
-                          <div className="font-bold text-slate-900">{b.name}</div>
-                          <div className="text-slate-500 text-[11px]">{b.email} • {b.mobile}</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">
-                            Clients: {b._count?.clients} • Enquiries: {b._count?.enquiries}
-                          </div>
-                        </td>
-                        <td className="p-3.5">
-                          <div className="space-y-1">
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                              b.panVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                            }`}>
-                              PAN: {b.panNumber || 'Missing'} {b.panVerified ? '✓' : '(Unverified)'}
-                            </span>
-                            <br />
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                              b.aadhaarVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
-                            }`}>
-                              Aadhaar: {b.aadhaarMasked || 'None'} {b.aadhaarVerified ? '✓' : ''}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="p-3.5">
-                          <div className="font-mono text-[11px] text-slate-800">{b.bankAccountNumber || 'N/A'}</div>
-                          <div className="text-[10px] text-slate-500">IFSC: {b.bankIfsc || 'N/A'}</div>
-                          <span className={`text-[10px] font-semibold ${b.bankVerified ? 'text-emerald-600' : 'text-amber-600'}`}>
-                            {b.bankVerified ? 'Verified' : 'Verification Pending'}
-                          </span>
-                        </td>
-                        <td className="p-3.5">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            b.status === 'ACTIVE'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : b.status === 'SUBMITTED'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {b.status}
-                          </span>
-                        </td>
-                        <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
-                          {b.status !== 'ACTIVE' ? (
-                            <button
-                              onClick={() => handleBgaAction(b.id, 'APPROVE_AND_ACTIVATE')}
-                              className="px-2.5 py-1 bg-emerald-600 text-white rounded text-[11px] font-bold hover:bg-emerald-700"
-                            >
-                              Approve & Activate
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleBgaAction(b.id, 'SUSPEND')}
-                              className="px-2.5 py-1 bg-amber-600 text-white rounded text-[11px] font-bold hover:bg-amber-700"
-                            >
-                              Suspend
-                            </button>
-                          )}
-                          {b.status === 'SUBMITTED' && (
-                            <button
-                              onClick={() => handleBgaAction(b.id, 'REJECT')}
-                              className="px-2.5 py-1 bg-red-600 text-white rounded text-[11px] font-bold hover:bg-red-700"
-                            >
-                              Reject
-                            </button>
-                          )}
-                        </td>
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto shadow-sm w-full">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                      <tr>
+                        <th className="p-4 w-[28%]">Associate Details</th>
+                        <th className="p-4 w-[22%]">KYC Status</th>
+                        <th className="p-4 w-[22%]">Bank Verification Status</th>
+                        <th className="p-4 w-[12%]">Account Status</th>
+                        <th className="p-4 w-[16%] text-right">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {bgas.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="p-10 text-center text-slate-400">
+                            No associates found matching the criteria.
+                          </td>
+                        </tr>
+                      ) : (
+                        bgas.map((b) => (
+                          <tr
+                            key={b.id}
+                            onClick={() => setSelectedAssociateId(b.id)}
+                            className="hover:bg-purple-50/50 cursor-pointer transition-colors group"
+                            title="Click row to view complete associate profile"
+                          >
+                            <td className="p-4">
+                              <div className="font-bold text-slate-900 text-sm group-hover:text-purple-700 transition-colors">
+                                {b.name}
+                              </div>
+                              <div className="text-slate-500 text-[11px] mt-0.5">{b.email} • {b.mobile}</div>
+                              <div className="text-[10px] text-slate-400 mt-1 font-mono">
+                                ID: {b.id.slice(0, 10)}... • Clients: <strong className="text-slate-700">{b._count?.clients || 0}</strong>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div className="space-y-1">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                  b.panVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  PAN: {b.panNumber ? b.panNumber.slice(0, 5) + '••••' : 'Missing'} {b.panVerified ? '✓' : '(Unverified)'}
+                                </span>
+                                <br />
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                  b.aadhaarVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+                                }`}>
+                                  Aadhaar: {b.aadhaarMasked || 'Pending'} {b.aadhaarVerified ? '✓' : ''}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div className="font-mono text-xs font-semibold text-slate-800">
+                                {b.bankAccountNumber ? '••••••••' + b.bankAccountNumber.slice(-4) : 'Not provided'}
+                              </div>
+                              <div className="text-[11px] text-slate-500 mt-0.5">
+                                {b.bankName || 'Bank'} {b.bankIfsc ? `(${b.bankIfsc})` : ''}
+                              </div>
+                              <span className={`inline-block mt-1 text-[10px] font-bold ${
+                                b.bankVerified ? 'text-emerald-600' : 'text-amber-600'
+                              }`}>
+                                {b.bankVerified ? 'Verified ✓' : 'Verification Pending'}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                b.status === 'ACTIVE'
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                  : b.status === 'SUBMITTED'
+                                  ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                  : 'bg-red-100 text-red-800 border border-red-200'
+                              }`}>
+                                {b.status}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right space-x-1.5 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                              {b.status !== 'ACTIVE' ? (
+                                <button
+                                  onClick={() => handleBgaAction(b.id, 'APPROVE_AND_ACTIVATE')}
+                                  className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-colors"
+                                >
+                                  Approve & Activate
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleBgaAction(b.id, 'SUSPEND')}
+                                  className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 shadow-sm transition-colors"
+                                >
+                                  Suspend
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setSelectedAssociateId(b.id)}
+                                className="px-3 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-lg text-xs font-bold transition-colors"
+                              >
+                                View Profile →
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+            )
           )}
 
           {/* TAB 3: CLIENTS & OWNERSHIP (With Ownership Transfer) */}

@@ -13,9 +13,14 @@ import { TechnicalPortal } from './pages/technical/TechnicalPortal';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles: UserRole[];
+  redirectPath?: string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  allowedRoles,
+  redirectPath = '/login',
+}) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -27,7 +32,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={redirectPath} replace />;
   }
 
   if (!allowedRoles.includes(user.role)) {
@@ -70,7 +75,7 @@ export function App() {
           <Route
             path="/admin/*"
             element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
+              <ProtectedRoute allowedRoles={['ADMIN']} redirectPath="/login/admin">
                 <AdminPortal />
               </ProtectedRoute>
             }
@@ -80,7 +85,7 @@ export function App() {
           <Route
             path="/bga/*"
             element={
-              <ProtectedRoute allowedRoles={['BGA']}>
+              <ProtectedRoute allowedRoles={['BGA']} redirectPath="/login">
                 <BgaPortal />
               </ProtectedRoute>
             }
@@ -90,7 +95,7 @@ export function App() {
           <Route
             path="/accounts/*"
             element={
-              <ProtectedRoute allowedRoles={['ACCOUNTS', 'ADMIN']}>
+              <ProtectedRoute allowedRoles={['ACCOUNTS', 'ADMIN']} redirectPath="/login/accounts">
                 <AccountsPortal />
               </ProtectedRoute>
             }
@@ -100,7 +105,7 @@ export function App() {
           <Route
             path="/technical/*"
             element={
-              <ProtectedRoute allowedRoles={['TECHNICAL', 'ADMIN']}>
+              <ProtectedRoute allowedRoles={['TECHNICAL', 'ADMIN']} redirectPath="/login/technical">
                 <TechnicalPortal />
               </ProtectedRoute>
             }

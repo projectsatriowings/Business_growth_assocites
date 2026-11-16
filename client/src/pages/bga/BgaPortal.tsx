@@ -355,7 +355,7 @@ export const BgaPortal: React.FC = () => {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 overflow-y-auto max-w-7xl">
+        <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && stats && (
             <div className="space-y-6">
@@ -428,7 +428,7 @@ export const BgaPortal: React.FC = () => {
 
           {/* TAB 2: MY PROFILE & KYC */}
           {activeTab === 'profile' && (
-            <div className="max-w-2xl bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+            <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
               <div>
                 <h3 className="text-base font-bold text-slate-900">My Associate Profile & Verification Badges</h3>
                 <p className="text-xs text-slate-500">
@@ -491,7 +491,7 @@ export const BgaPortal: React.FC = () => {
 
           {/* TAB 3: NEW CLIENT REGISTRATION (With Strict Duplicate Check) */}
           {activeTab === 'new-client' && (
-            <div className="max-w-3xl bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+            <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
               <div className="border-b border-slate-100 pb-4 mb-6">
                 <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
                   Exclusive Ownership Guarantee
@@ -1262,7 +1262,7 @@ export const BgaPortal: React.FC = () => {
 
           {/* TAB 11: SUPPORT */}
           {activeTab === 'support' && (
-            <div className="max-w-xl bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+            <div className="w-full bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-4">
               <h3 className="text-base font-bold text-slate-900">Associate Support Desk</h3>
               <p className="text-xs text-slate-500">
                 Have questions regarding a quotation, technical feasibility, or commission payout? Reach our executive desk:

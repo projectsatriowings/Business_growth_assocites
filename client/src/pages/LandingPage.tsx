@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   TrendingUp,
   ShieldCheck,
@@ -25,8 +25,24 @@ import { Navbar } from '../components/Navbar';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedService, setSelectedService] = useState<'dm' | 'web' | 'mobile' | 'software'>('dm');
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace('#', '');
+      const timer = setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [location.pathname, location.hash]);
 
   const services = [
     {
@@ -182,8 +198,7 @@ export const LandingPage: React.FC = () => {
           </h1>
 
           <p className="mt-6 text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal">
-            A centralized company platform with four synchronized role portals: Admin, BGA, Accounts, and Technical.
-            Empowering associates with guaranteed client protection and transparent payouts.
+            A centralized enterprise platform empowering Business Growth Associates with guaranteed client protection, streamlined quotation approvals, and transparent commission payouts.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -200,15 +215,15 @@ export const LandingPage: React.FC = () => {
               className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-base backdrop-blur-sm transition-all flex items-center justify-center gap-2"
             >
               <Lock className="w-4 h-4 text-indigo-400" />
-              <span>Access Role Portals</span>
+              <span>BGA Portal Login</span>
             </Link>
           </div>
 
           {/* Quick Metrics Bar */}
           <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto border-t border-slate-800/80 pt-10">
             <div>
-              <div className="text-3xl font-extrabold text-white">4 Portals</div>
-              <div className="text-xs text-slate-400 font-medium uppercase mt-1">Admin, BGA, Accounts, Tech</div>
+              <div className="text-3xl font-extrabold text-white">Enterprise</div>
+              <div className="text-xs text-slate-400 font-medium uppercase mt-1">Growth Associate Network</div>
             </div>
             <div>
               <div className="text-3xl font-extrabold text-emerald-400">100%</div>
@@ -226,87 +241,8 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* The 4 Role Portals Quick Selector */}
-      <section className="py-12 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h2 className="text-sm font-bold text-indigo-600 uppercase tracking-widest">Unified Platform Architecture</h2>
-            <p className="text-2xl font-bold text-slate-900 mt-1">Four Role-Specific Login Portals</p>
-            <p className="text-xs text-slate-500 max-w-xl mx-auto mt-1">
-              One integrated backend and PostgreSQL database powering synchronized workflows across departments.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div
-              onClick={() => navigate('/login/admin')}
-              className="p-5 rounded-xl border border-purple-200 bg-purple-50/40 hover:bg-purple-50 hover:border-purple-400 transition-all cursor-pointer group"
-            >
-              <div className="w-9 h-9 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold mb-3 shadow-md shadow-purple-200">
-                1
-              </div>
-              <h3 className="font-bold text-slate-900 group-hover:text-purple-700 transition-colors">Admin Portal</h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                KYC approvals, BGA management, service catalog, enquiry reviews, client ownership transfers, payout authorizations.
-              </p>
-              <span className="inline-flex items-center text-xs font-semibold text-purple-600 mt-3 gap-1">
-                Admin Login <ChevronRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
-
-            <div
-              onClick={() => navigate('/login/bga')}
-              className="p-5 rounded-xl border border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50 hover:border-emerald-400 transition-all cursor-pointer group"
-            >
-              <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold mb-3 shadow-md shadow-emerald-200">
-                2
-              </div>
-              <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">BGA Portal</h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Client onboarding, exclusive enquiry submission, quotation requests, client acceptance recording, commission ledger.
-              </p>
-              <span className="inline-flex items-center text-xs font-semibold text-emerald-600 mt-3 gap-1">
-                BGA Login <ChevronRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
-
-            <div
-              onClick={() => navigate('/login/accounts')}
-              className="p-5 rounded-xl border border-blue-200 bg-blue-50/40 hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer group"
-            >
-              <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold mb-3 shadow-md shadow-blue-200">
-                3
-              </div>
-              <h3 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors">Accounts Portal</h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Official quotation drafting, version revisions, advance payment verification, technical project releases, commission calculation.
-              </p>
-              <span className="inline-flex items-center text-xs font-semibold text-blue-600 mt-3 gap-1">
-                Accounts Login <ChevronRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
-
-            <div
-              onClick={() => navigate('/login/technical')}
-              className="p-5 rounded-xl border border-amber-200 bg-amber-50/40 hover:bg-amber-50 hover:border-amber-400 transition-all cursor-pointer group"
-            >
-              <div className="w-9 h-9 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold mb-3 shadow-md shadow-amber-200">
-                4
-              </div>
-              <h3 className="font-bold text-slate-900 group-hover:text-amber-700 transition-colors">Technical Portal</h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Project execution started strictly upon verified advance, milestone tracking, deliverable uploads, client correction resolution.
-              </p>
-              <span className="inline-flex items-center text-xs font-semibold text-amber-600 mt-3 gap-1">
-                Technical Login <ChevronRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Services Classification Section */}
-      <section id="services" className="py-20 bg-slate-50">
+      <section id="services" className="py-20 bg-slate-50 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
@@ -368,7 +304,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* How It Works Workflow */}
-      <section id="how-it-works" className="py-20 bg-white border-y border-slate-200">
+      <section id="how-it-works" className="py-20 bg-white border-y border-slate-200 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
@@ -395,7 +331,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Commission Model & Benefits */}
-      <section id="earning" className="py-20 bg-slate-900 text-white">
+      <section id="earning" className="py-20 bg-slate-900 text-white scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -489,7 +425,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Portfolio Showcase */}
-      <section id="portfolio" className="py-20 bg-slate-50">
+      <section id="portfolio" className="py-20 bg-slate-50 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
@@ -566,7 +502,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-20 bg-white border-t border-slate-200">
+      <section id="faq" className="py-20 bg-white border-t border-slate-200 scroll-mt-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
@@ -599,7 +535,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-20 bg-slate-900 text-white">
+      <section id="contact" className="py-20 bg-slate-900 text-white scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div>
@@ -691,10 +627,10 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>© 2026 Business Growth Associates Management System. All rights reserved.</p>
           <div className="flex items-center space-x-6">
-            <Link to="/login/admin" className="hover:text-slate-300">Admin Portal</Link>
-            <Link to="/login/bga" className="hover:text-slate-300">BGA Portal</Link>
-            <Link to="/login/accounts" className="hover:text-slate-300">Accounts Portal</Link>
-            <Link to="/login/technical" className="hover:text-slate-300">Technical Portal</Link>
+            <a href="#services" className="hover:text-slate-300">Services</a>
+            <a href="#how-it-works" className="hover:text-slate-300">How It Works</a>
+            <a href="#earning" className="hover:text-slate-300">Commission Model</a>
+            <Link to="/login" className="hover:text-slate-300">BGA Portal</Link>
           </div>
         </div>
       </footer>
