@@ -811,9 +811,9 @@ router.post('/enquiries/:id/review', async (req: AuthRequest, res: Response): Pr
 
     if (action === 'REJECT') {
       newStatus = EnquiryStatus.REJECTED;
-      notifTitle = 'Enquiry Rejected';
-      notifMsg = `Enquiry for ${enquiry.client.clientName} was rejected. Note: ${notes || 'Scope or feasibility constraints.'}`;
-      notifType = 'WARNING';
+      notifTitle = '⚠️ Action Required: Enquiry Rejected by Management';
+      notifMsg = `Management rejected enquiry ${enquiry.id} for client ${enquiry.client.clientName}. Reason: "${notes || 'Scope or feasibility constraints.'}". Please inform the client and record their response.`;
+      notifType = 'ACTION_REQUIRED';
     } else if (action === 'REQUEST_CHANGES') {
       newStatus = EnquiryStatus.CHANGES_REQUESTED;
       notifTitle = 'Enquiry Scope Changes Requested';
@@ -883,7 +883,8 @@ router.post('/enquiries/:id/review', async (req: AuthRequest, res: Response): Pr
     }
 
     // Notify BGA
-    await createNotification(enquiry.bgaId, notifTitle, notifMsg, notifType, '/bga/quotations');
+    const bgaNotifLink = action === 'APPROVE' ? '/bga/quotations' : `/bga?tab=enquiries&enquiryId=${enquiry.id}`;
+    await createNotification(enquiry.bgaId, notifTitle, notifMsg, notifType, bgaNotifLink);
 
     // Invalidate caches
     appCache.invalidatePrefix('admin:');

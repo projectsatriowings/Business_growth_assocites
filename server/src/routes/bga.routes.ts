@@ -734,6 +734,8 @@ router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> =>
             requirements: true,
             discussionNotes: true,
             followUpDate: true,
+            adminNotes: true,
+            reviewedAt: true,
             createdAt: true,
           },
           orderBy: { createdAt: 'desc' },
@@ -1482,6 +1484,8 @@ router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
             requirements: true,
             discussionNotes: true,
             followUpDate: true,
+            adminNotes: true,
+            reviewedAt: true,
             createdAt: true,
           },
           orderBy: { createdAt: 'desc' },
@@ -1628,11 +1632,20 @@ router.post('/enquiries', async (req: AuthRequest, res: Response): Promise<void>
   }
 });
 
-// BGA Client Consultation & Follow-up on Enquiry (Response to Management Scope Changes)
+// BGA Client Consultation & Follow-up on Enquiry (Response to Management Scope Changes or Rejection)
 router.post('/enquiries/:id/follow-up', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { consultationNotes, consultationDate, revisedBudget, revisedRequirements, resubmit } = req.body;
+    const {
+      consultationNotes,
+      consultationDate,
+      contactMethod,
+      clientOutcome,
+      revisedBudget,
+      revisedRequirements,
+      resubmit,
+      isRejectionFollowUp,
+    } = req.body;
 
     if (!consultationNotes || !consultationNotes.trim()) {
       res.status(400).json({ error: 'Client consultation notes are required.' });
@@ -1649,6 +1662,8 @@ router.post('/enquiries/:id/follow-up', async (req: AuthRequest, res: Response):
       return;
     }
 
+    const isRej = enquiry.status === 'REJECTED' || !!isRejectionFollowUp;
+
     const dateObj = consultationDate ? new Date(consultationDate) : new Date();
     const formattedDateTime = dateObj.toLocaleString('en-IN', {
       day: '2-digit',
@@ -1659,7 +1674,17 @@ router.post('/enquiries/:id/follow-up', async (req: AuthRequest, res: Response):
       hour12: true,
     });
 
-    let newEntry = `[${formattedDateTime}] Client Consultation by BGA ${req.user!.name}:\n${consultationNotes.trim()}`;
+    const methodStr = contactMethod ? ` via ${contactMethod}` : '';
+    let newEntry: string;
+    if (isRej) {
+      newEntry = `[${formattedDateTime}] Client Informed of Rejection by BGA ${req.user!.name}${methodStr}:\n${consultationNotes.trim()}`;
+      if (clientOutcome) {
+        newEntry += `\n• Client Outcome / Next Step: ${clientOutcome}`;
+      }
+    } else {
+      newEntry = `[${formattedDateTime}] Client Consultation by BGA ${req.user!.name}${methodStr}:\n${consultationNotes.trim()}`;
+    }
+
     if (revisedBudget !== undefined && !isNaN(Number(revisedBudget)) && Number(revisedBudget) !== enquiry.expectedBudget) {
       newEntry += `\n• Revised Budget: ₹${Number(revisedBudget).toLocaleString('en-IN')} (Previous: ₹${enquiry.expectedBudget.toLocaleString('en-IN')})`;
     }
@@ -1684,9 +1709,16 @@ router.post('/enquiries/:id/follow-up', async (req: AuthRequest, res: Response):
       updateData.requirements = revisedRequirements.trim();
     }
 
-    // Default to true: transition status to SUBMITTED so Admin can verify & approve the enquiry
-    if (resubmit !== false) {
-      updateData.status = EnquiryStatus.SUBMITTED;
+    // Default to true for CHANGES_REQUESTED so Admin can verify & approve;
+    // For REJECTED, only transition to SUBMITTED if BGA explicitly chose to resubmit
+    if (isRej) {
+      if (resubmit === true) {
+        updateData.status = EnquiryStatus.SUBMITTED;
+      }
+    } else {
+      if (resubmit !== false) {
+        updateData.status = EnquiryStatus.SUBMITTED;
+      }
     }
 
     const updatedEnquiry = await prisma.enquiry.update({
@@ -1701,10 +1733,12 @@ router.post('/enquiries/:id/follow-up', async (req: AuthRequest, res: Response):
         data: {
           clientId: enquiry.clientId,
           bgaId: req.user!.id,
-          contactMethod: 'MEETING',
-          discussionSummary: `Consultation on Enquiry ${enquiry.id}: ${consultationNotes.trim().slice(0, 180)}`,
+          contactMethod: contactMethod || (isRej ? 'PHONE_CALL' : 'MEETING'),
+          discussionSummary: isRej
+            ? `Client informed of rejection on ${enquiry.id}: ${consultationNotes.trim().slice(0, 160)}`
+            : `Consultation on Enquiry ${enquiry.id}: ${consultationNotes.trim().slice(0, 180)}`,
           followUpNotes: consultationNotes.trim(),
-          outcome: 'CONNECTED',
+          outcome: clientOutcome || 'CONNECTED',
           createdBy: req.user!.name,
           createdAt: dateObj,
         },
@@ -1716,13 +1750,25 @@ router.post('/enquiries/:id/follow-up', async (req: AuthRequest, res: Response):
     // Notify Management / Admins
     try {
       const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+      const notifTitle = isRej
+        ? resubmit
+          ? `Enquiry Resubmitted After Rejection Discussion`
+          : `Client Informed of Rejection: ${enquiry.client.clientName}`
+        : 'Client Consultation Follow-up Submitted';
+
+      const notifMsg = isRej
+        ? resubmit
+          ? `BGA ${req.user!.name} informed client ${enquiry.client.clientName} of rejected enquiry ${enquiry.id} and resubmitted with revised terms for Admin review.`
+          : `BGA ${req.user!.name} informed client ${enquiry.client.clientName} regarding rejected enquiry ${enquiry.id}. Client Response: "${consultationNotes.trim().slice(0, 120)}"`
+        : `BGA ${req.user!.name} consulted client ${enquiry.client.clientName} on ${enquiry.id}. Ready for management verification.`;
+
       for (const adm of admins) {
         await createNotification(
           adm.id,
-          'Client Consultation Follow-up Submitted',
-          `BGA ${req.user!.name} consulted client ${enquiry.client.clientName} on ${enquiry.id}. Ready for management verification.`,
-          'ACTION_REQUIRED',
-          '/admin/enquiries'
+          notifTitle,
+          notifMsg,
+          isRej && !resubmit ? 'INFO' : 'ACTION_REQUIRED',
+          `/admin?tab=enquiries&enquiryId=${enquiry.id}`
         );
       }
     } catch (notifErr) {
@@ -1733,19 +1779,23 @@ router.post('/enquiries/:id/follow-up', async (req: AuthRequest, res: Response):
       req.user!.id,
       req.user!.email,
       req.user!.role,
-      'ENQUIRY_FOLLOW_UP_SUBMITTED',
+      isRej ? 'ENQUIRY_REJECTION_FOLLOW_UP_SUBMITTED' : 'ENQUIRY_FOLLOW_UP_SUBMITTED',
       'ENQUIRY',
       enquiry.id,
       {
         clientName: enquiry.client.clientName,
         consultationDate: dateObj,
+        isRejection: isRej,
+        outcome: clientOutcome,
         budgetUpdated: !!revisedBudget,
-        resubmitted: resubmit !== false,
+        resubmitted: updateData.status === EnquiryStatus.SUBMITTED,
       }
     );
 
     res.json({
-      message: 'Client consultation follow-up recorded successfully and submitted for Admin verification.',
+      message: isRej
+        ? 'Client rejection follow-up recorded successfully and forwarded to Management.'
+        : 'Client consultation follow-up recorded successfully and submitted for Admin verification.',
       enquiry: updatedEnquiry,
     });
   } catch (error: any) {

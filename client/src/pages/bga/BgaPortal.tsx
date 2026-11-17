@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   LayoutDashboard,
   UserCheck,
@@ -13,6 +14,7 @@ import {
   HelpCircle,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
   Download,
   Send,
@@ -114,25 +116,41 @@ export const BgaPortal: React.FC = () => {
   });
   const [activitySubmitting, setActivitySubmitting] = useState(false);
 
-  // Client Consultation & Follow-up Modal State (Response to Admin Scope Changes)
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['dashboard', 'profile', 'clients', 'enquiries', 'quotations', 'projects', 'earnings', 'resources', 'support'].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+    }
+  }, [searchParams]);
+
+  // Client Consultation & Follow-up Modal State (Response to Admin Scope Changes or Rejection)
   const [followUpModal, setFollowUpModal] = useState<any | null>(null);
   const [followUpForm, setFollowUpForm] = useState({
     consultationDate: new Date().toISOString().slice(0, 16),
+    contactMethod: 'Phone Call',
+    clientOutcome: 'Client Informed - Acknowledged Rejection & Closed',
     consultationNotes: '',
     revisedBudget: '',
     revisedRequirements: '',
-    resubmit: true,
+    resubmit: false,
+    isRejection: false,
   });
   const [submittingFollowUp, setSubmittingFollowUp] = useState(false);
 
-  const handleOpenFollowUpModal = (enq: any) => {
+  const handleOpenFollowUpModal = (enq: any, forceRejection = false) => {
+    const isRej = forceRejection || enq.status === 'REJECTED';
     setFollowUpModal(enq);
     setFollowUpForm({
       consultationDate: new Date().toISOString().slice(0, 16),
+      contactMethod: 'Phone Call',
+      clientOutcome: isRej ? 'Client Informed - Acknowledged Rejection & Closed' : 'Client Agreed to Scope & Budget',
       consultationNotes: '',
       revisedBudget: enq.expectedBudget ? String(enq.expectedBudget) : '',
       revisedRequirements: enq.requirements || '',
-      resubmit: true,
+      resubmit: !isRej,
+      isRejection: isRej,
     });
   };
 
@@ -151,13 +169,19 @@ export const BgaPortal: React.FC = () => {
         body: JSON.stringify({
           consultationNotes: followUpForm.consultationNotes,
           consultationDate: followUpForm.consultationDate,
+          contactMethod: followUpForm.contactMethod,
+          clientOutcome: followUpForm.clientOutcome,
           revisedBudget: followUpForm.revisedBudget ? Number(followUpForm.revisedBudget) : undefined,
           revisedRequirements: followUpForm.revisedRequirements,
           resubmit: followUpForm.resubmit,
+          isRejectionFollowUp: followUpForm.isRejection,
         }),
       });
 
-      toast.success(res.message || 'Client consultation follow-up logged and sent for Admin verification.', 'Follow-up Submitted');
+      toast.success(
+        res.message || 'Client follow-up recorded and updated for Management review.',
+        followUpForm.isRejection ? 'Rejection Follow-up Saved' : 'Follow-up Submitted'
+      );
       setFollowUpModal(null);
       await loadData();
       await loadTabData('enquiries');
@@ -171,6 +195,26 @@ export const BgaPortal: React.FC = () => {
       setSubmittingFollowUp(false);
     }
   };
+
+  // Find rejected enquiries that still need client contact / follow-up
+  const pendingRejectionAlerts = React.useMemo(() => {
+    const list: any[] = [];
+    clients.forEach((c) => {
+      (c.enquiries || []).forEach((e: any) => {
+        if (e.status === 'REJECTED' && (!e.discussionNotes || !e.discussionNotes.includes('Client Informed of Rejection'))) {
+          list.push({ ...e, client: c });
+        }
+      });
+    });
+    enquiries.forEach((e) => {
+      if (e.status === 'REJECTED' && (!e.discussionNotes || !e.discussionNotes.includes('Client Informed of Rejection'))) {
+        if (!list.some((item) => item.id === e.id)) {
+          list.push(e);
+        }
+      }
+    });
+    return list;
+  }, [clients, enquiries]);
 
   // My Earnings & Commissions Dashboard State
   const [earningsData, setEarningsData] = useState<any | null>(null);
@@ -905,6 +949,45 @@ export const BgaPortal: React.FC = () => {
 
         {/* Main Content Area */}
         <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
+          {/* URGENT MANAGEMENT REJECTION ALERT BANNER */}
+          {pendingRejectionAlerts.length > 0 && (
+            <div className="mb-6 p-4 md:p-5 bg-gradient-to-r from-rose-50 via-red-50 to-amber-50 border-2 border-rose-300 rounded-2xl shadow-sm text-xs">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="p-3 bg-rose-100 text-rose-700 rounded-2xl shrink-0 mt-0.5 shadow-sm">
+                    <AlertTriangle className="w-6 h-6 animate-pulse text-rose-600" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-extrabold text-rose-900 uppercase tracking-wider text-[10px] bg-rose-200/80 px-2.5 py-0.5 rounded-full border border-rose-300">
+                        ⚠️ Action Required • Management Rejection Alert
+                      </span>
+                      <span className="text-rose-700 font-bold text-xs">
+                        ({pendingRejectionAlerts.length} {pendingRejectionAlerts.length === 1 ? 'enquiry' : 'enquiries'} awaiting client consultation)
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-900 mt-1">
+                      Enquiry #{pendingRejectionAlerts[0].id} for client <span className="text-rose-700 underline font-extrabold">{pendingRejectionAlerts[0].client?.clientName}</span> was rejected by Management
+                    </h4>
+                    <p className="text-slate-700 mt-1">
+                      <strong className="text-rose-950 font-bold">Admin Rejection Remarks:</strong> "{pendingRejectionAlerts[0].adminNotes || 'Scope/budget feasibility constraints'}"
+                    </p>
+                    <p className="text-slate-500 mt-1 text-[11px]">
+                      Please contact the client to inform them of this management decision and record the consultation outcome so Admin is updated.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenFollowUpModal(pendingRejectionAlerts[0], true)}
+                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shrink-0 shadow-md transition-all flex items-center gap-2 cursor-pointer hover:shadow-lg active:scale-95"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>Inform Client & Record Follow-up</span>
+                </button>
+              </div>
+            </div>
+          )}
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
             !stats ? (
@@ -1794,19 +1877,35 @@ export const BgaPortal: React.FC = () => {
                                       {enq.requirements}
                                     </p>
                                     {enq.adminNotes && (
-                                      <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                      <div className={`p-3 rounded-xl border text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${
+                                        enq.status === 'REJECTED'
+                                          ? 'bg-rose-50 border-rose-200 text-rose-900'
+                                          : 'bg-amber-50 border-amber-200 text-amber-900'
+                                      }`}>
                                         <div>
-                                          <strong className="block font-bold">Management Review Remarks:</strong>
+                                          <strong className="block font-bold">
+                                            {enq.status === 'REJECTED' ? '⚠️ Management Rejection Reason:' : 'Management Review Remarks:'}
+                                          </strong>
                                           <span className="mt-0.5 block text-slate-800">{enq.adminNotes}</span>
                                         </div>
                                         {enq.status === 'CHANGES_REQUESTED' && (
                                           <button
                                             type="button"
-                                            onClick={() => handleOpenFollowUpModal(enq)}
+                                            onClick={() => handleOpenFollowUpModal(enq, false)}
                                             className="px-3 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white text-xs font-bold rounded-lg shrink-0 flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
                                           >
                                             <MessageSquare className="w-3.5 h-3.5" />
                                             Record Follow-up
+                                          </button>
+                                        )}
+                                        {enq.status === 'REJECTED' && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenFollowUpModal(enq, true)}
+                                            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shrink-0 flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                                          >
+                                            <Phone className="w-3.5 h-3.5" />
+                                            Inform Client & Log Follow-up
                                           </button>
                                         )}
                                       </div>
@@ -2521,8 +2620,22 @@ export const BgaPortal: React.FC = () => {
                                             <span className="font-semibold">{latestActivity.contactMethod}:</span> {latestActivity.discussionSummary}
                                           </div>
                                         ) : latestEnq ? (
-                                          <div className="text-[10px] text-slate-500 mt-1">
-                                            Enquiry: {latestEnq.status}
+                                          <div className="space-y-1">
+                                            <div className="text-[10px] text-slate-500">
+                                              Enquiry: <span className={latestEnq.status === 'REJECTED' ? 'font-bold text-red-600' : ''}>{latestEnq.status}</span>
+                                            </div>
+                                            {latestEnq.status === 'REJECTED' && (!latestEnq.discussionNotes || !latestEnq.discussionNotes.includes('Client Informed of Rejection')) && (
+                                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-300 animate-pulse flex items-center gap-1 w-fit">
+                                                <AlertCircle className="w-2.5 h-2.5 text-rose-600" />
+                                                Inform Client
+                                              </span>
+                                            )}
+                                            {latestEnq.status === 'REJECTED' && latestEnq.discussionNotes && latestEnq.discussionNotes.includes('Client Informed of Rejection') && (
+                                              <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1 w-fit">
+                                                <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                                                Client Informed
+                                              </span>
+                                            )}
                                           </div>
                                         ) : (
                                           <span className="text-[10px] text-slate-400 block mt-1">No activity yet</span>
@@ -2546,10 +2659,32 @@ export const BgaPortal: React.FC = () => {
                                       {/* 7. Actions */}
                                       <td className="p-3.5 text-right">
                                         <div className="flex items-center justify-end gap-1.5">
+                                          {latestEnq && latestEnq.status === 'REJECTED' && (!latestEnq.discussionNotes || !latestEnq.discussionNotes.includes('Client Informed of Rejection')) && (
+                                            <button
+                                              type="button"
+                                              onClick={() => handleOpenFollowUpModal(latestEnq, true)}
+                                              className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-sm animate-pulse"
+                                              title="Admin rejected enquiry - Inform client and record follow-up"
+                                            >
+                                              <Phone className="w-3.5 h-3.5" />
+                                              Inform Client
+                                            </button>
+                                          )}
+                                          {latestEnq && latestEnq.status === 'REJECTED' && latestEnq.discussionNotes && latestEnq.discussionNotes.includes('Client Informed of Rejection') && (
+                                            <button
+                                              type="button"
+                                              onClick={() => handleOpenFollowUpModal(latestEnq, true)}
+                                              className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                              title="Client already informed - View or add follow-up"
+                                            >
+                                              <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                                              Follow-up
+                                            </button>
+                                          )}
                                           {latestEnq && latestEnq.status === 'CHANGES_REQUESTED' && (
                                             <button
                                               type="button"
-                                              onClick={() => handleOpenFollowUpModal(latestEnq)}
+                                              onClick={() => handleOpenFollowUpModal(latestEnq, false)}
                                               className="px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-sm animate-pulse"
                                               title="Admin requested scope changes - Record client consultation"
                                             >
@@ -3247,19 +3382,35 @@ export const BgaPortal: React.FC = () => {
                           </p>
                         </div>
                         {enq.adminNotes && (
-                          <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                          <div className={`p-3 rounded-xl border text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${
+                            enq.status === 'REJECTED'
+                              ? 'bg-rose-50 border-rose-200 text-rose-900'
+                              : 'bg-amber-50 border-amber-200 text-amber-900'
+                          }`}>
                             <div>
-                              <strong className="block font-bold">Admin Review Note:</strong>
+                              <strong className="block font-bold">
+                                {enq.status === 'REJECTED' ? '⚠️ Management Rejection Reason:' : 'Admin Review Note:'}
+                              </strong>
                               <span className="mt-0.5 block text-slate-800">{enq.adminNotes}</span>
                             </div>
                             {enq.status === 'CHANGES_REQUESTED' && (
                               <button
                                 type="button"
-                                onClick={() => handleOpenFollowUpModal(enq)}
+                                onClick={() => handleOpenFollowUpModal(enq, false)}
                                 className="px-3 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white text-xs font-bold rounded-lg shrink-0 flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
                               >
                                 <MessageSquare className="w-3.5 h-3.5" />
                                 Record Follow-up
+                              </button>
+                            )}
+                            {enq.status === 'REJECTED' && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenFollowUpModal(enq, true)}
+                                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shrink-0 flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                              >
+                                <Phone className="w-3.5 h-3.5" />
+                                Inform Client & Log Follow-up
                               </button>
                             )}
                           </div>
@@ -3424,6 +3575,33 @@ export const BgaPortal: React.FC = () => {
                                 >
                                   <MessageSquare className="w-3.5 h-3.5" />
                                   Consult Client & Record Follow-up
+                                </button>
+                              </div>
+                            );
+                          }
+
+                          if (enq.status === 'REJECTED') {
+                            const hasInformed = enq.discussionNotes && enq.discussionNotes.includes('Client Informed of Rejection');
+                            return (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {hasInformed ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    Client Informed of Rejection
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-1.5">
+                                    <AlertCircle className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
+                                    Awaiting Client Rejection Follow-up
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenFollowUpModal(enq, true)}
+                                  className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                                >
+                                  <Phone className="w-3.5 h-3.5" />
+                                  {hasInformed ? 'Update Client Follow-up' : 'Inform Client & Record Follow-up'}
                                 </button>
                               </div>
                             );
@@ -5054,7 +5232,7 @@ export const BgaPortal: React.FC = () => {
             </div>
           )}
 
-          {/* CLIENT CONSULTATION & FOLLOW-UP MODAL (ADMIN SCOPE CHANGE RESOLUTION) */}
+          {/* CLIENT CONSULTATION & FOLLOW-UP MODAL (ADMIN SCOPE CHANGE & REJECTION RESOLUTION) */}
           <AnimatePresence>
             {followUpModal && (
               <motion.div
@@ -5073,11 +5251,19 @@ export const BgaPortal: React.FC = () => {
                 >
                   <div className="flex justify-between items-start border-b border-slate-100 pb-4 mb-4">
                     <div>
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                        Client Consultation Follow-up
+                      <span
+                        className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${
+                          followUpForm.isRejection
+                            ? 'text-rose-700 bg-rose-50 border-rose-200'
+                            : 'text-amber-600 bg-amber-50 border-amber-200'
+                        }`}
+                      >
+                        {followUpForm.isRejection ? '⚠️ Rejection Consultation & Alert' : 'Client Consultation Follow-up'}
                       </span>
                       <h3 className="text-base font-bold text-slate-900 mt-1">
-                        Record Client Discussion & Resubmit
+                        {followUpForm.isRejection
+                          ? 'Inform Client of Management Rejection'
+                          : 'Record Client Discussion & Resubmit'}
                       </h3>
                       <p className="text-xs text-slate-500">
                         Enquiry <strong className="text-slate-800">{followUpModal.id}</strong> • Client:{' '}
@@ -5095,27 +5281,54 @@ export const BgaPortal: React.FC = () => {
                   </div>
 
                   {followUpModal.adminNotes && (
-                    <div className="mb-4 p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs">
-                      <span className="font-bold text-amber-900 block mb-0.5">Admin Scope Change Note:</span>
-                      <span className="text-slate-800">{followUpModal.adminNotes}</span>
+                    <div
+                      className={`mb-4 p-3 rounded-xl border text-xs ${
+                        followUpForm.isRejection
+                          ? 'bg-rose-50 border-rose-200 text-rose-950'
+                          : 'bg-amber-50 border-amber-200 text-amber-900'
+                      }`}
+                    >
+                      <span className="font-bold block mb-0.5">
+                        {followUpForm.isRejection ? 'Management Rejection Remarks:' : 'Admin Scope Change Note:'}
+                      </span>
+                      <span className="text-slate-800 block">{followUpModal.adminNotes}</span>
+                      {followUpForm.isRejection && (
+                        <span className="text-[11px] text-rose-700 mt-1.5 block font-medium">
+                          Guidance: Communicate this rejection reason clearly to the client and capture their response below.
+                        </span>
+                      )}
                     </div>
                   )}
 
                   <form onSubmit={handleSubmitFollowUp} className="space-y-4 text-xs">
-                    <div>
-                      <label className="block text-slate-700 font-semibold mb-1">
-                        Consultation Date & Time <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="datetime-local"
-                        required
-                        value={followUpForm.consultationDate}
-                        onChange={(e) => setFollowUpForm({ ...followUpForm, consultationDate: e.target.value })}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                      />
-                      <span className="text-[11px] text-slate-400 mt-1 block">
-                        The exact timestamp when you consulted the client about changes.
-                      </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">
+                          Consultation Date & Time <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="datetime-local"
+                          required
+                          value={followUpForm.consultationDate}
+                          onChange={(e) => setFollowUpForm({ ...followUpForm, consultationDate: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">
+                          Communication Channel <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={followUpForm.contactMethod}
+                          onChange={(e) => setFollowUpForm({ ...followUpForm, contactMethod: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                        >
+                          <option value="Phone Call">Phone Call (Direct)</option>
+                          <option value="WhatsApp Message">WhatsApp Message</option>
+                          <option value="In-person Meeting">In-person Meeting</option>
+                          <option value="Official Email">Official Email</option>
+                        </select>
+                      </div>
                     </div>
 
                     <div>
@@ -5127,48 +5340,118 @@ export const BgaPortal: React.FC = () => {
                         required
                         value={followUpForm.consultationNotes}
                         onChange={(e) => setFollowUpForm({ ...followUpForm, consultationNotes: e.target.value })}
-                        placeholder="Detail what was discussed with the client regarding the scope, payment/budget agreed upon, and client confirmation..."
+                        placeholder={
+                          followUpForm.isRejection
+                            ? 'Detail what you communicated to the client regarding the rejection, how the client reacted, and what was agreed upon...'
+                            : 'Detail what was discussed with the client regarding the scope, payment/budget agreed upon, and client confirmation...'
+                        }
                         className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">
-                          Agreed Expected Budget (₹)
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1000"
-                          value={followUpForm.revisedBudget}
-                          onChange={(e) => setFollowUpForm({ ...followUpForm, revisedBudget: e.target.value })}
-                          placeholder="e.g. 100000"
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">
-                          Resubmit Status
-                        </label>
-                        <div className="h-[38px] flex items-center px-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] font-semibold">
-                          ✓ Send to Admin for Approval
+                    {followUpForm.isRejection ? (
+                      <div className="space-y-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">
+                            Client Response Outcome <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={followUpForm.clientOutcome}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const shouldResubmit = val.includes('Re-evaluation');
+                              setFollowUpForm({
+                                ...followUpForm,
+                                clientOutcome: val,
+                                resubmit: shouldResubmit,
+                              });
+                            }}
+                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                          >
+                            <option value="Client Informed - Acknowledged Rejection & Closed">
+                              Client Informed - Acknowledged Rejection & Enquiry Closed
+                            </option>
+                            <option value="Client Wants Alternate Proposal / Different Service">
+                              Client Wants Alternate Proposal / Different Service
+                            </option>
+                            <option value="Client Agrees to Revised Payment / Scope (Request Re-evaluation)">
+                              Client Agrees to Revised Payment / Scope (Request Re-evaluation)
+                            </option>
+                          </select>
                         </div>
-                      </div>
-                    </div>
 
-                    <div>
-                      <label className="block text-slate-700 font-semibold mb-1">
-                        Updated Project Scope / Requirements (Optional)
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={followUpForm.revisedRequirements}
-                        onChange={(e) => setFollowUpForm({ ...followUpForm, revisedRequirements: e.target.value })}
-                        placeholder="Update scope details if changed based on client discussion..."
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                      />
-                    </div>
+                        {followUpForm.resubmit && (
+                          <div className="space-y-3 pt-2 border-t border-slate-200">
+                            <div>
+                              <label className="block text-slate-700 font-semibold mb-1">
+                                Agreed Revised Expected Budget (₹)
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="1000"
+                                value={followUpForm.revisedBudget}
+                                onChange={(e) => setFollowUpForm({ ...followUpForm, revisedBudget: e.target.value })}
+                                placeholder="e.g. 150000"
+                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-slate-700 font-semibold mb-1">
+                                Revised Scope / Requirements
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={followUpForm.revisedRequirements}
+                                onChange={(e) => setFollowUpForm({ ...followUpForm, revisedRequirements: e.target.value })}
+                                placeholder="Describe agreed revised scope..."
+                                className="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">
+                              Agreed Expected Budget (₹)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1000"
+                              value={followUpForm.revisedBudget}
+                              onChange={(e) => setFollowUpForm({ ...followUpForm, revisedBudget: e.target.value })}
+                              placeholder="e.g. 100000"
+                              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">
+                              Resubmit Status
+                            </label>
+                            <div className="h-[38px] flex items-center px-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] font-semibold">
+                              ✓ Send to Admin for Approval
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">
+                            Updated Project Scope / Requirements (Optional)
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={followUpForm.revisedRequirements}
+                            onChange={(e) => setFollowUpForm({ ...followUpForm, revisedRequirements: e.target.value })}
+                            placeholder="Update scope details if changed based on client discussion..."
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                          />
+                        </div>
+                      </>
+                    )}
 
                     <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                       <button
@@ -5182,7 +5465,11 @@ export const BgaPortal: React.FC = () => {
                       <button
                         type="submit"
                         disabled={submittingFollowUp}
-                        className="px-5 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                        className={`px-5 py-2 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer ${
+                          followUpForm.isRejection
+                            ? 'bg-rose-600 hover:bg-rose-700'
+                            : 'bg-[#3066BE] hover:bg-[#255299]'
+                        }`}
                       >
                         {submittingFollowUp ? (
                           <>
@@ -5192,7 +5479,13 @@ export const BgaPortal: React.FC = () => {
                         ) : (
                           <>
                             <Send className="w-3.5 h-3.5" />
-                            <span>Save & Resubmit to Admin</span>
+                            <span>
+                              {followUpForm.isRejection
+                                ? followUpForm.resubmit
+                                  ? 'Save & Resubmit to Admin'
+                                  : 'Save & Send Follow-up to Admin'
+                                : 'Save & Resubmit to Admin'}
+                            </span>
                           </>
                         )}
                       </button>

@@ -1554,6 +1554,17 @@ export const AdminPortal: React.FC = () => {
                           }`}>
                             {enq.status?.replace('_', ' ')}
                           </span>
+                          {enq.status === 'REJECTED' && (
+                            enq.discussionNotes && enq.discussionNotes.includes('Client Informed of Rejection') ? (
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                                ✓ Client Informed by BGA
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 animate-pulse flex items-center gap-1">
+                                ⚠️ Client Follow-up Pending
+                              </span>
+                            )
+                          )}
                           <span className="text-sm font-extrabold text-slate-900 bg-slate-50 px-3 py-1 rounded-lg border border-slate-200">
                             Expected Budget: ₹{enq.expectedBudget?.toLocaleString()}
                           </span>
@@ -1568,9 +1579,24 @@ export const AdminPortal: React.FC = () => {
                       </div>
 
                       {enq.adminNotes && (
-                        <div className="p-3 bg-blue-50/70 rounded-xl border border-purple-100 text-xs">
-                          <strong className="text-[#152544] block font-semibold">Executive Review Remarks:</strong>
-                          <span className="text-[#152544] mt-0.5 block">{enq.adminNotes}</span>
+                        <div className={`p-3 rounded-xl border text-xs ${
+                          enq.status === 'REJECTED'
+                            ? 'bg-rose-50 border-rose-200 text-rose-950'
+                            : 'bg-blue-50/70 border-purple-100 text-[#152544]'
+                        }`}>
+                          <strong className="block font-semibold">
+                            {enq.status === 'REJECTED' ? 'Management Rejection Remarks:' : 'Executive Review Remarks:'}
+                          </strong>
+                          <span className="mt-0.5 block">{enq.adminNotes}</span>
+                        </div>
+                      )}
+
+                      {enq.status === 'REJECTED' && (!enq.discussionNotes || !enq.discussionNotes.includes('Client Informed of Rejection')) && (
+                        <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs flex items-center gap-2 text-amber-900">
+                          <Clock className="w-4 h-4 text-amber-600 shrink-0 animate-pulse" />
+                          <span>
+                            <strong>Pending BGA Client Follow-up:</strong> BGA has received the rejection alert and must communicate the rejection to the client and update consultation notes here.
+                          </span>
                         </div>
                       )}
 
@@ -1603,7 +1629,7 @@ export const AdminPortal: React.FC = () => {
                             View Full Details
                           </button>
 
-                          {(enq.status === 'SUBMITTED' || enq.status === 'CHANGES_REQUESTED' || enq.status === 'UNDER_REVIEW') && (
+                          {(enq.status === 'SUBMITTED' || enq.status === 'CHANGES_REQUESTED' || enq.status === 'UNDER_REVIEW' || (enq.status === 'REJECTED' && enq.discussionNotes)) && (
                             <>
                               <button
                                 onClick={() => setEnquiryReviewModal({ enquiry: enq, action: 'APPROVE' })}
