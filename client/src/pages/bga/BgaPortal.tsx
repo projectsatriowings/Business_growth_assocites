@@ -37,6 +37,24 @@ import {
   Building,
   Globe,
   ExternalLink,
+  Activity,
+  TrendingUp,
+  BarChart3,
+  PieChart,
+  Award,
+  Check,
+  ChevronRight,
+  Layers,
+  Info,
+  Calculator,
+  SlidersHorizontal,
+  History,
+  Smartphone,
+  Laptop,
+  Code2,
+  Hash,
+  ArrowUpDown,
+  ChevronDown,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
@@ -45,22 +63,7 @@ import { apiRequest } from '../../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SkeletonStatsRow, SkeletonTable, BgaDashboardSkeleton } from '../../components/Skeleton';
 import { BgaProfileView } from './BgaProfileView';
-
-export const BUSINESS_CATEGORIES = [
-  'IT & Software',
-  'Education & Training',
-  'Healthcare & Medical',
-  'Retail & E-commerce',
-  'Manufacturing & Industrial',
-  'Real Estate & Construction',
-  'Finance & Banking',
-  'Hospitality & Tourism',
-  'Food & Restaurants',
-  'Logistics & Transportation',
-  'Media & Entertainment',
-  'Professional Services',
-  'Other',
-];
+import { BUSINESS_CATEGORIES } from '../../constants/categories';
 
 export const BgaPortal: React.FC = () => {
   const { user } = useAuth();
@@ -87,12 +90,36 @@ export const BgaPortal: React.FC = () => {
   const [commissionsLoaded, setCommissionsLoaded] = useState(false);
 
   // My Clients UI State
-  const [clientViewMode, setClientViewMode] = useState<'list' | 'add' | 'edit'>('list');
+  const [clientViewMode, setClientViewMode] = useState<'list' | 'add' | 'edit' | 'detail'>('list');
   const [editingClient, setEditingClient] = useState<any | null>(null);
   const [selectedClientDetails, setSelectedClientDetails] = useState<any | null>(null);
+  const [activeClientDetail, setActiveClientDetail] = useState<any | null>(null);
+  const [loadingClientDetail, setLoadingClientDetail] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
   const [clientCategoryFilter, setClientCategoryFilter] = useState('ALL');
+  const [clientStatusFilter, setClientStatusFilter] = useState('ALL');
+  const [clientFollowUpFilter, setClientFollowUpFilter] = useState<'ALL' | 'TODAY' | 'UPCOMING' | 'OVERDUE' | 'NONE'>('ALL');
+  const [clientSortBy, setClientSortBy] = useState<'latest' | 'newest' | 'oldest' | 'name'>('latest');
   const [submittingClient, setSubmittingClient] = useState(false);
+
+  // Contact Activity Modal State
+  const [activityModal, setActivityModal] = useState<{ clientId: string; clientName: string } | null>(null);
+  const [activityForm, setActivityForm] = useState({
+    contactMethod: 'CALL',
+    discussionSummary: '',
+    followUpNotes: '',
+    nextFollowUpDate: '',
+    outcome: 'CONNECTED',
+  });
+  const [activitySubmitting, setActivitySubmitting] = useState(false);
+
+  // My Earnings & Commissions Dashboard State
+  const [earningsData, setEarningsData] = useState<any | null>(null);
+  const [earningsCategoryFilter, setEarningsCategoryFilter] = useState('ALL');
+  const [earningsStatusFilter, setEarningsStatusFilter] = useState('ALL');
+  const [earningsDateFilter, setEarningsDateFilter] = useState('ALL');
+  const [earningsSearch, setEarningsSearch] = useState('');
+  const [calculationModal, setCalculationModal] = useState<any | null>(null);
 
   // New Client Form
   const [clientForm, setClientForm] = useState({
@@ -198,12 +225,15 @@ export const BgaPortal: React.FC = () => {
     setTabLoading(true);
     try {
       if (tab === 'clients') {
-        const c = await apiRequest('/api/bga/clients');
+        const [c, r] = await Promise.all([
+          apiRequest('/api/bga/clients'),
+          apiRequest('/api/bga/client-requests').catch(() => ({ requests: [] })),
+        ]);
         setClients(c.clients || []);
+        setClientRequests(r.requests || []);
         setClientsLoaded(true);
       } else if (tab === 'requests') {
-        const r = await apiRequest('/api/bga/client-requests');
-        setClientRequests(r.requests || []);
+        setActiveTab('clients');
       } else if (tab === 'enquiries') {
         const e = await apiRequest('/api/bga/enquiries');
         setEnquiries(e.enquiries || []);
@@ -217,8 +247,16 @@ export const BgaPortal: React.FC = () => {
         setWorkOrders(w.workOrders || []);
         setWorkOrdersLoaded(true);
       } else if (tab === 'earnings') {
-        const comm = await apiRequest('/api/bga/commissions');
-        setCommissions(comm.commissions || []);
+        const [dash, comm] = await Promise.all([
+          apiRequest('/api/bga/earnings-dashboard').catch(() => null),
+          apiRequest('/api/bga/commissions').catch(() => ({ commissions: [] })),
+        ]);
+        if (dash) {
+          setEarningsData(dash);
+          setCommissions(dash.commissions || comm.commissions || []);
+        } else {
+          setCommissions(comm.commissions || []);
+        }
         setCommissionsLoaded(true);
       } else if (tab === 'resources') {
         const r = await apiRequest('/api/bga/resources');
@@ -252,8 +290,97 @@ export const BgaPortal: React.FC = () => {
       setClientViewMode('add');
       return;
     }
+    if (activeTab === 'requests') {
+      setActiveTab('clients');
+      return;
+    }
     loadTabData(activeTab);
   }, [activeTab]);
+
+  // Client follow-up helper calculation
+  const getClientFollowUpDate = (c: any): Date | null => {
+    if (c.followUpDate) return new Date(c.followUpDate);
+    if (c.contactActivities && c.contactActivities.length > 0) {
+      const act = c.contactActivities.find((a: any) => a.nextFollowUpDate);
+      if (act) return new Date(act.nextFollowUpDate);
+    }
+    if (c.enquiries && c.enquiries.length > 0) {
+      const enq = c.enquiries.find((e: any) => e.followUpDate);
+      if (enq) return new Date(enq.followUpDate);
+    }
+    return null;
+  };
+
+  const isFollowUpMatching = (c: any, filter: string): boolean => {
+    if (filter === 'ALL') return true;
+    const fDate = getClientFollowUpDate(c);
+    if (filter === 'NONE') return !fDate;
+    if (!fDate) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(fDate);
+    target.setHours(0, 0, 0, 0);
+
+    if (filter === 'TODAY') {
+      return target.getTime() === today.getTime();
+    }
+    if (filter === 'UPCOMING') {
+      return target.getTime() > today.getTime();
+    }
+    if (filter === 'OVERDUE') {
+      return target.getTime() < today.getTime();
+    }
+    return true;
+  };
+
+  const handleOpenClientDetail = async (clientId: string) => {
+    setClientViewMode('detail');
+    setLoadingClientDetail(true);
+    try {
+      const res = await apiRequest(`/api/bga/clients/${clientId}`);
+      setActiveClientDetail(res.client);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to load client details', 'Load Error');
+      setClientViewMode('list');
+    } finally {
+      setLoadingClientDetail(false);
+    }
+  };
+
+  const handleAddActivity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activityModal || activitySubmitting) return;
+    if (!activityForm.discussionSummary.trim()) {
+      toast.error('Please enter a discussion summary', 'Required Field');
+      return;
+    }
+    setActivitySubmitting(true);
+    try {
+      await apiRequest(`/api/bga/clients/${activityModal.clientId}/activities`, {
+        method: 'POST',
+        body: JSON.stringify(activityForm),
+      });
+      toast.success('Contact activity logged successfully!', 'Activity Logged');
+      const refreshedId = activityModal.clientId;
+      setActivityModal(null);
+      setActivityForm({
+        contactMethod: 'CALL',
+        discussionSummary: '',
+        followUpNotes: '',
+        nextFollowUpDate: '',
+        outcome: 'CONNECTED',
+      });
+      if (activeClientDetail?.id === refreshedId) {
+        await handleOpenClientDetail(refreshedId);
+      }
+      await loadTabData('clients');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to log contact activity', 'Logging Failed');
+    } finally {
+      setActivitySubmitting(false);
+    }
+  };
 
   // Reset Client Form State
   const resetClientForm = () => {
@@ -478,10 +605,15 @@ export const BgaPortal: React.FC = () => {
         );
       }
 
+      const editedClientId = editingClient?.id;
       resetClientForm();
       await loadTabData('clients');
       await loadStats(true);
-      setClientViewMode('list');
+      if (editedClientId) {
+        await handleOpenClientDetail(editedClientId);
+      } else {
+        setClientViewMode('list');
+      }
     } catch (err: any) {
       setClientFormError(err.message || 'Operation failed. Please verify your details.');
     } finally {
@@ -643,16 +775,6 @@ export const BgaPortal: React.FC = () => {
             >
               <Users className="w-4 h-4 text-[#80DED9]" />
               <span>My Clients</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('requests')}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'requests' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
-            >
-              <FileCheck className="w-4 h-4 text-[#80DED9]" />
-              <span>My Client Requests</span>
             </button>
 
             <button
@@ -1150,8 +1272,834 @@ export const BgaPortal: React.FC = () => {
                     </div>
                   </form>
                 </div>
+              ) : clientViewMode === 'detail' ? (
+                /* UNIFIED CLIENT WORKSPACE (Sections A, B, C, D/E, F) */
+                <div className="space-y-6">
+                  {/* Workspace Header Bar */}
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex items-start gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setClientViewMode('list');
+                          setActiveClientDetail(null);
+                        }}
+                        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 mt-0.5"
+                        title="Back to My Clients"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Clients</span>
+                      </button>
+                      <div>
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <h2 className="text-lg font-bold text-slate-900">
+                            {activeClientDetail?.clientName || 'Client Workspace'}
+                          </h2>
+                          {activeClientDetail && (
+                            <>
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-[#119DA4] border border-[#119DA4]/20">
+                                {activeClientDetail.status || 'ACTIVE'}
+                              </span>
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                {activeClientDetail.businessCategory}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {activeClientDetail?.businessName} • Unified Client & Quotation Pipeline Workspace
+                        </p>
+                      </div>
+                    </div>
+
+                    {activeClientDetail && (
+                      <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditClient(activeClientDetail)}
+                          className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer border border-amber-200"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          Edit Client
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActivityModal({
+                              clientId: activeClientDetail.id,
+                              clientName: activeClientDetail.clientName,
+                            })
+                          }
+                          className="px-3.5 py-1.5 bg-teal-50 hover:bg-[#80DED9]/20 text-[#119DA4] text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer border border-[#119DA4]/20"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          + Log Activity
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNewEnquiryModal({
+                              clientId: activeClientDetail.id,
+                              clientName: activeClientDetail.clientName,
+                            })
+                          }
+                          className="px-4 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          + New Request
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {loadingClientDetail ? (
+                    <div className="space-y-4">
+                      <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center shadow-sm">
+                        <RefreshCw className="w-6 h-6 animate-spin text-[#119DA4] mx-auto mb-2" />
+                        <p className="text-xs font-semibold text-slate-700">Loading complete client workspace...</p>
+                      </div>
+                    </div>
+                  ) : !activeClientDetail ? (
+                    <div className="p-12 rounded-2xl bg-white border border-slate-200 text-center shadow-sm">
+                      <AlertCircle className="w-10 h-10 text-rose-500 mx-auto mb-2" />
+                      <h3 className="text-sm font-bold text-slate-800">Unable to load client details</h3>
+                      <button
+                        onClick={() => setClientViewMode('list')}
+                        className="mt-3 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl"
+                      >
+                        Back to Clients
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* SECTION A: CLIENT INFORMATION */}
+                      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <Users className="w-4 h-4 text-[#119DA4]" />
+                            Section A — Registered Client Information & Profile
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditClient(activeClientDetail)}
+                            className="text-xs text-[#3066BE] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" /> Edit Record
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                          {/* Col 1: Contact & Owner */}
+                          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2.5">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                              Contact & Identity
+                            </span>
+                            <div>
+                              <span className="text-[11px] text-slate-500 block">Client Contact</span>
+                              <strong className="text-sm text-slate-900">{activeClientDetail.clientName}</strong>
+                            </div>
+                            <div>
+                              <span className="text-[11px] text-slate-500 block">Direct Mobile</span>
+                              <a
+                                href={`tel:${activeClientDetail.mobile}`}
+                                className="font-bold text-indigo-600 hover:underline flex items-center gap-1 mt-0.5"
+                              >
+                                <Phone className="w-3 h-3 text-slate-400" />
+                                {activeClientDetail.mobile}
+                              </a>
+                            </div>
+                            <div>
+                              <span className="text-[11px] text-slate-500 block">Email Address</span>
+                              <a
+                                href={`mailto:${activeClientDetail.email}`}
+                                className="font-bold text-indigo-600 hover:underline flex items-center gap-1 mt-0.5 truncate"
+                              >
+                                <Mail className="w-3 h-3 text-slate-400" />
+                                {activeClientDetail.email}
+                              </a>
+                            </div>
+                            <div className="pt-2 border-t border-slate-200/60">
+                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Ownership</span>
+                              <span className="text-xs font-bold text-[#119DA4] flex items-center gap-1 mt-0.5">
+                                <ShieldCheck className="w-3.5 h-3.5 text-[#119DA4]" />
+                                Assigned to You ({user?.name || 'Associate'})
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Col 2: Business & Service Details */}
+                          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2.5">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                              Business Profile
+                            </span>
+                            <div>
+                              <span className="text-[11px] text-slate-500 block">Company / Business Name</span>
+                              <strong className="text-sm text-slate-900">{activeClientDetail.businessName}</strong>
+                            </div>
+                            <div>
+                              <span className="text-[11px] text-slate-500 block">Business Category</span>
+                              <span className="font-bold text-slate-800">{activeClientDetail.businessCategory}</span>
+                            </div>
+                            <div>
+                              <span className="text-[11px] text-slate-500 block">Required Service</span>
+                              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 inline-block mt-0.5">
+                                {activeClientDetail.requiredService?.replace(/_/g, ' ') || 'General Enquiry'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[11px] text-slate-500 block">Expected Budget</span>
+                              <strong className="text-sm font-extrabold text-slate-900">
+                                {activeClientDetail.expectedBudget
+                                  ? `₹${Number(activeClientDetail.expectedBudget).toLocaleString('en-IN')}`
+                                  : 'Not specified'}
+                              </strong>
+                            </div>
+                          </div>
+
+                          {/* Col 3: Complete Structured Address */}
+                          {(() => {
+                            const addr = activeClientDetail.address || {};
+                            return (
+                              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2.5">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                  Business Location & Address
+                                </span>
+                                <div>
+                                  <span className="text-[11px] text-slate-500 block">Address Line 1</span>
+                                  <strong className="text-xs text-slate-800">
+                                    {addr.addressLine1 || activeClientDetail.addressLine1 || '—'}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span className="text-[11px] text-slate-500 block">Address Line 2</span>
+                                  <span className="text-xs text-slate-700">
+                                    {addr.addressLine2 || activeClientDetail.addressLine2 || '—'}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <span className="text-[11px] text-slate-500 block">City</span>
+                                    <span className="text-xs font-bold text-slate-800">
+                                      {addr.city || activeClientDetail.city || '—'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-[11px] text-slate-500 block">State</span>
+                                    <span className="text-xs font-bold text-slate-800">
+                                      {addr.state || activeClientDetail.state || '—'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-[11px] text-slate-500 block">PIN / Postal Code</span>
+                                  <span className="text-xs font-mono font-bold text-slate-800">
+                                    {addr.pinCode || activeClientDetail.pinCode || '—'} ({addr.country || 'India'})
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Additional Notes & Scope */}
+                        {(activeClientDetail.clientRequirements ||
+                          activeClientDetail.discussionNotes ||
+                          activeClientDetail.followUpDate) && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-100 text-xs">
+                            {activeClientDetail.clientRequirements && (
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                                  Initial Client Scope & Requirements
+                                </span>
+                                <p className="text-slate-700 whitespace-pre-wrap">
+                                  {activeClientDetail.clientRequirements}
+                                </p>
+                              </div>
+                            )}
+                            {activeClientDetail.discussionNotes && (
+                              <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-100">
+                                <span className="text-[10px] font-bold text-amber-700 uppercase block mb-1">
+                                  Discussion Notes
+                                </span>
+                                <p className="text-slate-700 whitespace-pre-wrap">
+                                  {activeClientDetail.discussionNotes}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* SECTION B: CONTACT AND FOLLOW-UP HISTORY */}
+                      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                              <Phone className="w-4 h-4 text-[#119DA4]" />
+                              Section B — Contact & Follow-up History
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Chronological record of phone calls, WhatsApp messages, emails, and meetings.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setActivityModal({
+                                clientId: activeClientDetail.id,
+                                clientName: activeClientDetail.clientName,
+                              })
+                            }
+                            className="px-3.5 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            + Log Contact Activity
+                          </button>
+                        </div>
+
+                        {!activeClientDetail.contactActivities || activeClientDetail.contactActivities.length === 0 ? (
+                          <div className="p-8 text-center rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500">
+                            <Phone className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                            <p className="font-semibold text-slate-700">No contact activities recorded yet.</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">
+                              Click &quot;+ Log Contact Activity&quot; to log follow-up calls, client chats, and scheduled meetings.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {activeClientDetail.contactActivities.map((act: any) => {
+                              const outcomeColor =
+                                act.outcome === 'CONNECTED' || act.outcome === 'CLOSED_WON'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : act.outcome === 'QUOTATION_REQUESTED' || act.outcome === 'INTERESTED'
+                                  ? 'bg-teal-50 text-[#119DA4] border-[#119DA4]/20'
+                                  : act.outcome === 'SCHEDULED_CALLBACK'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                  : 'bg-slate-100 text-slate-600 border-slate-200';
+
+                              return (
+                                <div
+                                  key={act.id}
+                                  className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-slate-300 transition-colors space-y-2 text-xs"
+                                >
+                                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#3066BE]/10 text-[#3066BE] border border-[#3066BE]/20 flex items-center gap-1">
+                                        {act.contactMethod === 'CALL' && <Phone className="w-3 h-3" />}
+                                        {act.contactMethod === 'WHATSAPP' && <MessageSquare className="w-3 h-3" />}
+                                        {act.contactMethod === 'EMAIL' && <Mail className="w-3 h-3" />}
+                                        {act.contactMethod === 'MEETING' && <Users className="w-3 h-3" />}
+                                        {act.contactMethod}
+                                      </span>
+                                      <span
+                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${outcomeColor}`}
+                                      >
+                                        {act.outcome?.replace(/_/g, ' ') || 'LOGGED'}
+                                      </span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                      {new Date(act.createdAt).toLocaleString('en-IN', {
+                                        dateStyle: 'medium',
+                                        timeStyle: 'short',
+                                      })}
+                                    </div>
+                                  </div>
+
+                                  <p className="text-slate-800 font-medium whitespace-pre-wrap">
+                                    {act.discussionSummary}
+                                  </p>
+
+                                  {act.followUpNotes && (
+                                    <div className="text-slate-600 bg-white p-2 rounded-lg border border-slate-200/60 text-[11px]">
+                                      <strong>Notes:</strong> {act.followUpNotes}
+                                    </div>
+                                  )}
+
+                                  {act.nextFollowUpDate && (
+                                    <div className="flex items-center gap-1.5 text-[11px] text-[#119DA4] font-semibold pt-1">
+                                      <Clock className="w-3.5 h-3.5 text-[#119DA4]" />
+                                      Next Scheduled Follow-up:{' '}
+                                      <span className="font-bold">
+                                        {new Date(act.nextFollowUpDate).toLocaleDateString('en-IN', {
+                                          day: '2-digit',
+                                          month: 'short',
+                                          year: 'numeric',
+                                        })}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* SECTION C & D: ENQUIRIES AND SERVICE REQUESTS */}
+                      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                              <FileCheck className="w-4 h-4 text-[#119DA4]" />
+                              Section C & D — Enquiries, Quotations & End-to-End Pipeline
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Track service requests from submission through quotation approval, client acceptance, and project execution.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setNewEnquiryModal({
+                                clientId: activeClientDetail.id,
+                                clientName: activeClientDetail.clientName,
+                              })
+                            }
+                            className="px-3.5 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            + Add Service Request
+                          </button>
+                        </div>
+
+                        {!activeClientDetail.enquiries || activeClientDetail.enquiries.length === 0 ? (
+                          <div className="p-8 text-center rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500">
+                            <MessageSquare className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                            <p className="font-semibold text-slate-700">No enquiries submitted for this client yet.</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">
+                              Click &quot;+ Add Service Request&quot; above to submit project requirements for Admin review.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-5">
+                            {activeClientDetail.enquiries.map((enq: any) => {
+                              const relatedQuote =
+                                enq.quotations && enq.quotations.length > 0 ? enq.quotations[0] : null;
+                              const relatedWorkOrder = relatedQuote?.workOrder || null;
+                              const relatedProject = relatedWorkOrder?.project || null;
+
+                              const isSubmitted = true;
+                              const isAdminApproved = enq.status === 'APPROVED';
+                              const isQuotePrepared = !!relatedQuote;
+                              const isQuoteAccepted = relatedQuote?.status === 'ACCEPTED';
+                              const isAdvanceVerified = !!relatedWorkOrder?.advanceVerified;
+                              const isProjectCompleted = relatedProject?.status === 'COMPLETED';
+
+                              return (
+                                <div
+                                  key={enq.id}
+                                  className="p-5 rounded-xl border border-slate-200 bg-white shadow-sm space-y-4 text-xs"
+                                >
+                                  {/* Top Request Info */}
+                                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-mono font-bold text-slate-700 text-xs">{enq.id}</span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                          {enq.serviceCategory?.replace(/_/g, ' ')}
+                                        </span>
+                                      </div>
+                                      <span className="text-[11px] text-slate-400 block mt-0.5">
+                                        Submitted on {new Date(enq.createdAt).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      <span
+                                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                                          enq.status === 'APPROVED'
+                                            ? 'bg-emerald-50 text-[#119DA4] border-[#119DA4]/20'
+                                            : enq.status === 'SUBMITTED'
+                                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                            : 'bg-red-50 text-red-700 border-red-200'
+                                        }`}
+                                      >
+                                        Admin: {enq.status}
+                                      </span>
+                                      {enq.expectedBudget && (
+                                        <span className="text-xs font-bold text-slate-900">
+                                          Budget: ₹{Number(enq.expectedBudget).toLocaleString('en-IN')}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Scope & Requirements */}
+                                  <div className="space-y-1.5">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                      Scope & Client Requirements
+                                    </span>
+                                    <p className="text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100 whitespace-pre-wrap">
+                                      {enq.requirements}
+                                    </p>
+                                    {enq.discussionNotes && (
+                                      <p className="text-slate-600 bg-amber-50/50 p-2.5 rounded-lg border border-amber-100 text-[11px]">
+                                        💬 {enq.discussionNotes}
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  {/* 6-Step Multi-Stage Pipeline Stepper */}
+                                  <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-2">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                                      End-to-End Workflow Pipeline Progress
+                                    </span>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                                      {/* Stage 1 */}
+                                      <div
+                                        className={`p-2 rounded-lg text-center border ${
+                                          isSubmitted
+                                            ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
+                                            : 'bg-white border-slate-200 text-slate-400'
+                                        }`}
+                                      >
+                                        <span className="block text-[10px] font-bold">1. Submitted</span>
+                                        <span className="text-[10px]">{isSubmitted ? '✓ Complete' : 'Pending'}</span>
+                                      </div>
+                                      {/* Stage 2 */}
+                                      <div
+                                        className={`p-2 rounded-lg text-center border ${
+                                          isAdminApproved
+                                            ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
+                                            : enq.status === 'SUBMITTED'
+                                            ? 'bg-amber-50 border-amber-200 text-amber-700 animate-pulse'
+                                            : 'bg-white border-slate-200 text-slate-400'
+                                        }`}
+                                      >
+                                        <span className="block text-[10px] font-bold">2. Admin Review</span>
+                                        <span className="text-[10px]">{enq.status}</span>
+                                      </div>
+                                      {/* Stage 3 */}
+                                      <div
+                                        className={`p-2 rounded-lg text-center border ${
+                                          isQuotePrepared
+                                            ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
+                                            : isAdminApproved
+                                            ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                            : 'bg-white border-slate-200 text-slate-400'
+                                        }`}
+                                      >
+                                        <span className="block text-[10px] font-bold">3. Quotation</span>
+                                        <span className="text-[10px]">
+                                          {isQuotePrepared ? 'Issued' : isAdminApproved ? 'Ready to Req' : 'Pending'}
+                                        </span>
+                                      </div>
+                                      {/* Stage 4 */}
+                                      <div
+                                        className={`p-2 rounded-lg text-center border ${
+                                          isQuoteAccepted
+                                            ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
+                                            : isQuotePrepared
+                                            ? 'bg-amber-50 border-amber-200 text-amber-700'
+                                            : 'bg-white border-slate-200 text-slate-400'
+                                        }`}
+                                      >
+                                        <span className="block text-[10px] font-bold">4. Client Decision</span>
+                                        <span className="text-[10px]">
+                                          {isQuoteAccepted ? 'Accepted' : isQuotePrepared ? 'Decision Pending' : 'Pending'}
+                                        </span>
+                                      </div>
+                                      {/* Stage 5 */}
+                                      <div
+                                        className={`p-2 rounded-lg text-center border ${
+                                          isAdvanceVerified
+                                            ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
+                                            : isQuoteAccepted
+                                            ? 'bg-purple-50 border-purple-200 text-purple-700'
+                                            : 'bg-white border-slate-200 text-slate-400'
+                                        }`}
+                                      >
+                                        <span className="block text-[10px] font-bold">5. Work Order</span>
+                                        <span className="text-[10px]">
+                                          {isAdvanceVerified ? 'Advance Verified' : isQuoteAccepted ? 'Awaiting Advance' : 'Pending'}
+                                        </span>
+                                      </div>
+                                      {/* Stage 6 */}
+                                      <div
+                                        className={`p-2 rounded-lg text-center border ${
+                                          isProjectCompleted
+                                            ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
+                                            : relatedProject
+                                            ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                            : 'bg-white border-slate-200 text-slate-400'
+                                        }`}
+                                      >
+                                        <span className="block text-[10px] font-bold">6. Execution</span>
+                                        <span className="text-[10px]">
+                                          {isProjectCompleted
+                                            ? 'Completed'
+                                            : relatedProject
+                                            ? `${relatedProject.progressPercentage || 0}% Done`
+                                            : 'Not Started'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Quotation & Action Controls */}
+                                  <div className="pt-2 border-t border-slate-100 flex flex-wrap justify-between items-center gap-3">
+                                    {!relatedQuote ? (
+                                      isAdminApproved ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRequestQuotation(enq.id)}
+                                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                                        >
+                                          <Send className="w-3.5 h-3.5" />
+                                          Request Quotation from Accounts
+                                        </button>
+                                      ) : (
+                                        <span className="text-slate-400 text-[11px]">
+                                          Awaiting Admin approval before quotation request.
+                                        </span>
+                                      )
+                                    ) : (
+                                      <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                                        <div>
+                                          <div className="flex items-center gap-2">
+                                            <strong className="text-slate-900 font-mono">
+                                              {relatedQuote.quotationNumber}
+                                            </strong>
+                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white text-indigo-700 border border-indigo-200">
+                                              ₹{(relatedQuote.totalAmount || 0).toLocaleString('en-IN')}
+                                            </span>
+                                            <span className="text-[10px] font-semibold text-slate-500">
+                                              ({relatedQuote.status})
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <a
+                                            href={getQuotationPdfUrl(relatedQuote.id)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-3 py-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg font-bold text-xs flex items-center gap-1"
+                                          >
+                                            <Eye className="w-3.5 h-3.5" />
+                                            View Quote PDF
+                                          </a>
+
+                                          {relatedQuote.status !== 'ACCEPTED' && (
+                                            <>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  setReminderModal({
+                                                    quotationId: relatedQuote.id,
+                                                    quotationNumber: relatedQuote.quotationNumber,
+                                                    clientName: activeClientDetail.clientName,
+                                                  })
+                                                }
+                                                className="px-2.5 py-1 bg-white hover:bg-slate-50 text-amber-700 border border-amber-200 rounded-lg font-bold text-xs flex items-center gap-1"
+                                                title="Send reminder to Accounts & Admin"
+                                              >
+                                                <Bell className="w-3.5 h-3.5" />
+                                                Reminder
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  setRevisionModal({
+                                                    quotationId: relatedQuote.id,
+                                                    quotationNumber: relatedQuote.quotationNumber,
+                                                  })
+                                                }
+                                                className="px-2.5 py-1 bg-white hover:bg-slate-50 text-purple-700 border border-purple-200 rounded-lg font-bold text-xs flex items-center gap-1"
+                                                title="Request commercial revision"
+                                              >
+                                                <Edit3 className="w-3.5 h-3.5" />
+                                                Revision
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  setAcceptanceModal({
+                                                    quotationId: relatedQuote.id,
+                                                    quotationNumber: relatedQuote.quotationNumber,
+                                                  })
+                                                }
+                                                className="px-3.5 py-1 bg-[#119DA4] hover:bg-[#0e8389] text-white rounded-lg font-bold text-xs flex items-center gap-1 shadow-sm cursor-pointer"
+                                              >
+                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                                Record Acceptance
+                                              </button>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* SECTION F: UNIFIED CLIENT ACTIVITY TIMELINE */}
+                      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                        <div className="border-b border-slate-100 pb-3">
+                          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-[#119DA4]" />
+                            Section F — Complete Client Lifecycle Activity Timeline
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Chronological history of all client events: onboarding, contact interactions, enquiry submissions, quotations, payments, and deliverables.
+                          </p>
+                        </div>
+
+                        {(() => {
+                          const events: any[] = [];
+
+                          if (activeClientDetail.createdAt) {
+                            events.push({
+                              id: `reg-${activeClientDetail.id}`,
+                              type: 'REGISTRATION',
+                              title: 'Client Onboarded & Registered',
+                              description: `Client '${activeClientDetail.clientName}' (${activeClientDetail.businessName}) registered under your associate account.`,
+                              date: new Date(activeClientDetail.createdAt),
+                              icon: UserPlus,
+                              badgeColor: 'bg-emerald-50 text-[#119DA4] border border-[#119DA4]/20',
+                            });
+                          }
+
+                          (activeClientDetail.contactActivities || []).forEach((act: any) => {
+                            events.push({
+                              id: `act-${act.id}`,
+                              type: 'ACTIVITY',
+                              title: `Follow-up: ${act.contactMethod} (${act.outcome?.replace(/_/g, ' ') || 'Logged'})`,
+                              description: act.discussionSummary + (act.followUpNotes ? ` • Notes: ${act.followUpNotes}` : ''),
+                              date: new Date(act.createdAt),
+                              icon: Phone,
+                              badgeColor: 'bg-teal-50 text-[#119DA4] border border-[#119DA4]/20',
+                            });
+                          });
+
+                          (activeClientDetail.enquiries || []).forEach((enq: any) => {
+                            events.push({
+                              id: `enq-${enq.id}`,
+                              type: 'ENQUIRY',
+                              title: `Service Request: ${enq.serviceCategory?.replace(/_/g, ' ')}`,
+                              description: `Scope: ${enq.requirements?.slice(0, 120)}${enq.requirements?.length > 120 ? '...' : ''} • Budget: ₹${enq.expectedBudget ? Number(enq.expectedBudget).toLocaleString('en-IN') : 'N/A'}`,
+                              date: new Date(enq.createdAt),
+                              icon: MessageSquare,
+                              badgeColor: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
+                            });
+
+                            if (enq.status === 'APPROVED') {
+                              events.push({
+                                id: `enq-app-${enq.id}`,
+                                type: 'ADMIN_APPROVAL',
+                                title: `Admin Approved: ${enq.serviceCategory?.replace(/_/g, ' ')}`,
+                                description: enq.adminNotes ? `Admin note: ${enq.adminNotes}` : 'Management validated and approved enquiry for commercial quotation drafting.',
+                                date: new Date(enq.updatedAt || enq.createdAt),
+                                icon: CheckCircle2,
+                                badgeColor: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+                              });
+                            }
+                          });
+
+                          (activeClientDetail.quotations || []).forEach((q: any) => {
+                            events.push({
+                              id: `quote-${q.id}`,
+                              type: 'QUOTATION',
+                              title: `Commercial Quotation ${q.quotationNumber} (${q.status})`,
+                              description: `Total Commercial Value: ₹${(q.totalAmount || 0).toLocaleString('en-IN')} • Version v${q.version}`,
+                              date: new Date(q.createdAt),
+                              icon: CreditCard,
+                              badgeColor: 'bg-purple-50 text-purple-700 border border-purple-200',
+                            });
+
+                            if (q.status === 'ACCEPTED') {
+                              events.push({
+                                id: `quote-acc-${q.id}`,
+                                type: 'ACCEPTANCE',
+                                title: `Client Accepted Quotation ${q.quotationNumber}`,
+                                description: q.clientAcceptanceNotes ? `Notes: ${q.clientAcceptanceNotes}` : 'Client officially approved quotation terms.',
+                                date: new Date(q.updatedAt || q.createdAt),
+                                icon: FileCheck,
+                                badgeColor: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+                              });
+                            }
+                          });
+
+                          (activeClientDetail.workOrders || []).forEach((w: any) => {
+                            events.push({
+                              id: `wo-${w.id}`,
+                              type: 'WORK_ORDER',
+                              title: `Work Order Generated (${w.workOrderNumber})`,
+                              description: `Total Value: ₹${(w.totalValue || 0).toLocaleString('en-IN')} • Advance: ${w.advanceVerified ? 'Verified' : 'Pending Verification'}`,
+                              date: new Date(w.createdAt),
+                              icon: Briefcase,
+                              badgeColor: 'bg-blue-50 text-blue-700 border border-blue-200',
+                            });
+
+                            (w.payments || []).forEach((p: any) => {
+                              events.push({
+                                id: `pay-${p.id}`,
+                                type: 'PAYMENT',
+                                title: `Payment ${p.status}: ₹${(p.amount || 0).toLocaleString('en-IN')}`,
+                                description: `Transaction Ref: ${p.transactionReference || 'N/A'} • Method: ${p.paymentMethod || 'BANK_TRANSFER'}`,
+                                date: new Date(p.paymentDate || p.createdAt),
+                                icon: DollarSign,
+                                badgeColor: p.status === 'VERIFIED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200',
+                              });
+                            });
+
+                            if (w.project) {
+                              events.push({
+                                id: `proj-${w.project.id}`,
+                                type: 'PROJECT',
+                                title: `Project ${w.project.projectNumber}: ${w.project.status}`,
+                                description: `Delivery Progress: ${w.project.progressPercentage || 0}% completed`,
+                                date: new Date(w.project.updatedAt || w.project.createdAt),
+                                icon: Award,
+                                badgeColor: w.project.status === 'COMPLETED' ? 'bg-teal-50 text-[#119DA4] border border-[#119DA4]/20' : 'bg-indigo-50 text-indigo-700 border border-indigo-200',
+                              });
+                            }
+                          });
+
+                          const sortedEvents = events.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+                          return (
+                            <div className="relative pl-6 space-y-4 border-l-2 border-slate-200">
+                              {sortedEvents.map((ev) => {
+                                const IconComponent = ev.icon || Clock;
+                                return (
+                                  <div key={ev.id} className="relative group">
+                                    <span className="absolute -left-[31px] top-1 p-1 bg-white rounded-full border border-slate-300 text-slate-500 shadow-xs">
+                                      <IconComponent className="w-3.5 h-3.5 text-[#3066BE]" />
+                                    </span>
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1 text-xs">
+                                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
+                                        <div className="flex items-center gap-2">
+                                          <strong className="text-slate-900">{ev.title}</strong>
+                                          <span className={`px-2 py-0.2 rounded-full text-[9px] font-bold ${ev.badgeColor}`}>
+                                            {ev.type}
+                                          </span>
+                                        </div>
+                                        <span className="text-[10px] text-slate-400">
+                                          {ev.date.toLocaleString('en-IN', {
+                                            dateStyle: 'medium',
+                                            timeStyle: 'short',
+                                          })}
+                                        </span>
+                                      </div>
+                                      <p className="text-slate-600 text-[11px]">{ev.description}</p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </>
+                  )}
+                </div>
               ) : (
-                /* MODE 2: CLIENT PORTFOLIO DIRECTORY (Table & Detailed Cards) */
+                /* MODE 2: CLIENT PORTFOLIO DIRECTORY (Table & Main Listing) */
                 <div className="space-y-4">
                   {/* Portfolio Header Bar */}
                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1170,7 +2118,7 @@ export const BgaPortal: React.FC = () => {
                         )}
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        Clients exclusively tied to your associate account. Other associates cannot view or access your clients.
+                        Clients exclusively tied to your associate account. Click any client to view their unified workspace, follow-up history, and request pipeline.
                       </p>
                     </div>
                     <button
@@ -1199,33 +2147,74 @@ export const BgaPortal: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Search and Category Filter */}
-                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
-                    <div className="relative w-full sm:w-80">
+                  {/* Multi-Filter and Sorting Toolbar */}
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-3 items-center justify-between">
+                    {/* Search */}
+                    <div className="relative w-full lg:w-72">
                       <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                       <input
                         type="text"
-                        placeholder="Search by client, business, category, phone, email, city..."
+                        placeholder="Search client, company, phone, email, city..."
                         value={clientSearch}
                         onChange={(e) => setClientSearch(e.target.value)}
                         className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                       />
                     </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                      <Filter className="w-3.5 h-3.5 text-slate-400" />
+
+                    {/* Filters & Sorting */}
+                    <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
+                      {/* Category Filter */}
+                      <div className="flex items-center gap-1.5">
+                        <Filter className="w-3.5 h-3.5 text-slate-400" />
+                        <select
+                          value={clientCategoryFilter}
+                          onChange={(e) => setClientCategoryFilter(e.target.value)}
+                          className="text-xs p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                        >
+                          <option value="ALL">All Categories</option>
+                          {BUSINESS_CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Client Status Filter */}
                       <select
-                        value={clientCategoryFilter}
-                        onChange={(e) => setClientCategoryFilter(e.target.value)}
-                        className="w-full sm:w-auto text-xs p-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#3066BE] font-medium text-slate-700"
+                        value={clientStatusFilter}
+                        onChange={(e) => setClientStatusFilter(e.target.value)}
+                        className="text-xs p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                       >
-                        <option value="ALL">
-                          All Categories {!clientsLoaded || tabLoading ? '' : `(${clients.length})`}
-                        </option>
-                        {BUSINESS_CATEGORIES.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
+                        <option value="ALL">All Statuses</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="LEAD">Lead</option>
+                        <option value="INACTIVE">Inactive</option>
+                      </select>
+
+                      {/* Follow-up Filter */}
+                      <select
+                        value={clientFollowUpFilter}
+                        onChange={(e) => setClientFollowUpFilter(e.target.value as any)}
+                        className="text-xs p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                      >
+                        <option value="ALL">All Follow-ups</option>
+                        <option value="TODAY">Due Today</option>
+                        <option value="UPCOMING">Upcoming</option>
+                        <option value="OVERDUE">Overdue</option>
+                        <option value="NONE">No Follow-up</option>
+                      </select>
+
+                      {/* Sort By */}
+                      <select
+                        value={clientSortBy}
+                        onChange={(e) => setClientSortBy(e.target.value as any)}
+                        className="text-xs p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                      >
+                        <option value="latest">Sort: Latest Activity</option>
+                        <option value="newest">Sort: Registration (Newest)</option>
+                        <option value="oldest">Sort: Registration (Oldest)</option>
+                        <option value="name">Sort: Client Name (A-Z)</option>
                       </select>
                     </div>
                   </div>
@@ -1242,7 +2231,7 @@ export const BgaPortal: React.FC = () => {
                           100% Protected
                         </span>
                       </div>
-                      <SkeletonTable rows={4} cols={6} />
+                      <SkeletonTable rows={4} cols={7} />
                     </div>
                   ) : clients.length === 0 ? (
                     <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center shadow-sm">
@@ -1258,200 +2247,253 @@ export const BgaPortal: React.FC = () => {
                         + Add Your First Client
                       </button>
                     </div>
-                  ) : clients.filter((c) => {
-                      const matchesSearch =
-                        !clientSearch ||
-                        c.clientName?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                        c.businessName?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                        c.mobile?.includes(clientSearch) ||
-                        c.email?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                        c.city?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                        c.location?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                        c.businessCategory?.toLowerCase().includes(clientSearch.toLowerCase());
-                      const matchesCategory =
-                        clientCategoryFilter === 'ALL' || c.businessCategory === clientCategoryFilter;
-                      return matchesSearch && matchesCategory;
-                    }).length === 0 ? (
-                    <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center shadow-sm">
-                      <Search className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                      <p className="text-xs font-semibold text-slate-700">No clients match your filter criteria.</p>
-                      <button
-                        onClick={() => {
-                          setClientSearch('');
-                          setClientCategoryFilter('ALL');
-                        }}
-                        className="mt-3 text-xs text-[#119DA4] font-bold hover:underline"
-                      >
-                        Reset Search Filters
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                            <tr>
-                              <th className="p-3.5">Client & Company</th>
-                              <th className="p-3.5">Business Category</th>
-                              <th className="p-3.5">Contact Details</th>
-                              <th className="p-3.5">City</th>
-                              <th className="p-3.5">Enquiry Status</th>
-                              <th className="p-3.5">Registration Date</th>
-                              <th className="p-3.5 text-right">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {clients
-                              .filter((c) => {
-                                const matchesSearch =
-                                  !clientSearch ||
-                                  c.clientName?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                                  c.businessName?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                                  c.mobile?.includes(clientSearch) ||
-                                  c.email?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                                  c.city?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                                  c.location?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                                  c.businessCategory?.toLowerCase().includes(clientSearch.toLowerCase());
-                                const matchesCategory =
-                                  clientCategoryFilter === 'ALL' || c.businessCategory === clientCategoryFilter;
-                                return matchesSearch && matchesCategory;
-                              })
-                              .map((c) => {
-                                // Extract structured or legacy location
-                                let displayCity = c.city || '';
-                                if (!displayCity && c.location) {
-                                  try {
-                                    if (c.location.startsWith('{')) {
-                                      const p = JSON.parse(c.location);
-                                      displayCity = p.city || p.displayLocation || '';
-                                    } else {
+                  ) : (() => {
+                      const filteredClients = clients
+                        .filter((c) => {
+                          const q = clientSearch.toLowerCase().trim();
+                          const matchesSearch =
+                            !q ||
+                            c.clientName?.toLowerCase().includes(q) ||
+                            c.businessName?.toLowerCase().includes(q) ||
+                            c.mobile?.includes(q) ||
+                            c.email?.toLowerCase().includes(q) ||
+                            c.city?.toLowerCase().includes(q) ||
+                            c.location?.toLowerCase().includes(q) ||
+                            c.businessCategory?.toLowerCase().includes(q);
+
+                          const matchesCategory =
+                            clientCategoryFilter === 'ALL' ||
+                            c.businessCategory === clientCategoryFilter ||
+                            c.requiredService === clientCategoryFilter;
+
+                          const matchesStatus =
+                            clientStatusFilter === 'ALL' || c.status === clientStatusFilter;
+
+                          const matchesFollowUp = isFollowUpMatching(c, clientFollowUpFilter);
+
+                          return matchesSearch && matchesCategory && matchesStatus && matchesFollowUp;
+                        })
+                        .sort((a, b) => {
+                          if (clientSortBy === 'name') {
+                            return (a.clientName || '').localeCompare(b.clientName || '');
+                          }
+                          if (clientSortBy === 'oldest') {
+                            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                          }
+                          if (clientSortBy === 'latest') {
+                            const aDate = a.contactActivities?.[0]?.createdAt || a.updatedAt || a.createdAt;
+                            const bDate = b.contactActivities?.[0]?.createdAt || b.updatedAt || b.createdAt;
+                            return new Date(bDate).getTime() - new Date(aDate).getTime();
+                          }
+                          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                        });
+
+                      if (filteredClients.length === 0) {
+                        return (
+                          <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center shadow-sm">
+                            <Search className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                            <p className="text-xs font-semibold text-slate-700">No clients match your filter criteria.</p>
+                            <button
+                              onClick={() => {
+                                setClientSearch('');
+                                setClientCategoryFilter('ALL');
+                                setClientStatusFilter('ALL');
+                                setClientFollowUpFilter('ALL');
+                                setClientSortBy('latest');
+                              }}
+                              className="mt-3 text-xs text-[#119DA4] font-bold hover:underline"
+                            >
+                              Reset Search Filters
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs">
+                              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                                <tr>
+                                  <th className="p-3.5">Client & Company</th>
+                                  <th className="p-3.5">Category & Service</th>
+                                  <th className="p-3.5">Contact & City</th>
+                                  <th className="p-3.5">Status & Follow-up</th>
+                                  <th className="p-3.5">Requests & Activity</th>
+                                  <th className="p-3.5">Registration</th>
+                                  <th className="p-3.5 text-right">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {filteredClients.map((c) => {
+                                  let displayCity = c.city || '';
+                                  if (!displayCity && c.location) {
+                                    try {
+                                      if (c.location.startsWith('{')) {
+                                        const p = JSON.parse(c.location);
+                                        displayCity = p.city || p.displayLocation || '';
+                                      } else {
+                                        displayCity = c.location;
+                                      }
+                                    } catch {
                                       displayCity = c.location;
                                     }
-                                  } catch {
-                                    displayCity = c.location;
                                   }
-                                }
 
-                                const latestEnquiry = c.enquiries && c.enquiries.length > 0 ? c.enquiries[0] : null;
+                                  const fDate = getClientFollowUpDate(c);
+                                  const today = new Date();
+                                  today.setHours(0, 0, 0, 0);
+                                  const targetFDate = fDate ? new Date(fDate) : null;
+                                  if (targetFDate) targetFDate.setHours(0, 0, 0, 0);
 
-                                return (
-                                  <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                                    {/* 1. Client Contact Name & Business Name */}
-                                    <td className="p-3.5">
-                                      <div className="font-bold text-slate-900 text-sm">{c.clientName}</div>
-                                      <div className="text-xs text-indigo-600 font-semibold mt-0.5">
-                                        {c.businessName}
-                                      </div>
-                                    </td>
+                                  const isOverdue = targetFDate && targetFDate.getTime() < today.getTime();
+                                  const isDueToday = targetFDate && targetFDate.getTime() === today.getTime();
 
-                                    {/* 2. Business Category */}
-                                    <td className="p-3.5">
-                                      <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-200">
-                                        {c.businessCategory}
-                                      </span>
-                                    </td>
+                                  const latestActivity = c.contactActivities?.[0] || null;
+                                  const latestEnq = c.enquiries?.[0] || null;
 
-                                    {/* 3. Mobile and Email */}
-                                    <td className="p-3.5">
-                                      <div className="text-slate-800 font-medium flex items-center gap-1.5">
-                                        <Phone className="w-3 h-3 text-slate-400" />
-                                        <span>{c.mobile}</span>
-                                      </div>
-                                      <div className="text-slate-500 text-[11px] flex items-center gap-1.5 mt-0.5">
-                                        <Mail className="w-3 h-3 text-slate-400" />
-                                        <span>{c.email}</span>
-                                      </div>
-                                    </td>
+                                  return (
+                                    <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
+                                      {/* 1. Client & Company */}
+                                      <td className="p-3.5">
+                                        <div className="font-bold text-slate-900 text-sm">{c.clientName}</div>
+                                        <div className="text-xs text-indigo-600 font-semibold mt-0.5">
+                                          {c.businessName}
+                                        </div>
+                                      </td>
 
-                                    {/* 4. City */}
-                                    <td className="p-3.5">
-                                      <div className="text-slate-700 font-medium flex items-center gap-1">
-                                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                        <span>{displayCity || '—'}</span>
-                                      </div>
-                                    </td>
+                                      {/* 2. Business Category & Service */}
+                                      <td className="p-3.5">
+                                        <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-200 block w-max">
+                                          {c.businessCategory}
+                                        </span>
+                                        <span className="text-[10px] text-slate-500 font-medium block mt-1">
+                                          {c.requiredService?.replace(/_/g, ' ') || 'General'}
+                                        </span>
+                                      </td>
 
-                                    {/* 5. Enquiry Status */}
-                                    <td className="p-3.5">
-                                      {latestEnquiry ? (
-                                        <div>
-                                          <span
-                                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                                              latestEnquiry.status === 'APPROVED'
-                                                ? 'bg-teal-50 text-[#119DA4] border-[#119DA4]/20'
-                                                : latestEnquiry.status === 'QUOTATION_REQUESTED'
-                                                ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                                : latestEnquiry.status === 'SUBMITTED'
-                                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                                      {/* 3. Mobile, Email & City */}
+                                      <td className="p-3.5">
+                                        <div className="text-slate-800 font-medium flex items-center gap-1.5">
+                                          <Phone className="w-3 h-3 text-slate-400" />
+                                          <span>{c.mobile}</span>
+                                        </div>
+                                        <div className="text-slate-500 text-[11px] flex items-center gap-1.5 mt-0.5">
+                                          <Mail className="w-3 h-3 text-slate-400" />
+                                          <span className="truncate max-w-[150px]">{c.email}</span>
+                                        </div>
+                                        <div className="text-slate-500 text-[11px] flex items-center gap-1 mt-0.5">
+                                          <MapPin className="w-3 h-3 text-slate-400" />
+                                          <span>{displayCity || '—'}</span>
+                                        </div>
+                                      </td>
+
+                                      {/* 4. Client Status & Next Follow-Up */}
+                                      <td className="p-3.5">
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-[#119DA4] border border-[#119DA4]/20 block w-max">
+                                          {c.status || 'ACTIVE'}
+                                        </span>
+                                        {fDate ? (
+                                          <div
+                                            className={`text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded flex items-center gap-1 w-max ${
+                                              isOverdue
+                                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                                : isDueToday
+                                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                             }`}
                                           >
-                                            {latestEnquiry.status.replace(/_/g, ' ')}
-                                          </span>
-                                          <div className="text-[10px] text-slate-400 mt-0.5">
-                                            {c.enquiries.length} {c.enquiries.length === 1 ? 'Enquiry' : 'Enquiries'}
+                                            <Calendar className="w-3 h-3" />
+                                            <span>
+                                              {isOverdue ? 'Overdue: ' : isDueToday ? 'Today: ' : 'Follow-up: '}
+                                              {fDate.toLocaleDateString('en-IN', {
+                                                day: '2-digit',
+                                                month: 'short',
+                                              })}
+                                            </span>
                                           </div>
+                                        ) : (
+                                          <span className="text-[10px] text-slate-400 block mt-1">No follow-up set</span>
+                                        )}
+                                      </td>
+
+                                      {/* 5. Requests Count & Latest Activity */}
+                                      <td className="p-3.5">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                            {c.enquiries?.length || 0} {(c.enquiries?.length || 0) === 1 ? 'Request' : 'Requests'}
+                                          </span>
                                         </div>
-                                      ) : (
-                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
-                                          No Enquiries
-                                        </span>
-                                      )}
-                                    </td>
+                                        {latestActivity ? (
+                                          <div className="text-[10px] text-slate-600 mt-1 truncate max-w-[170px]" title={latestActivity.discussionSummary}>
+                                            <span className="font-semibold">{latestActivity.contactMethod}:</span> {latestActivity.discussionSummary}
+                                          </div>
+                                        ) : latestEnq ? (
+                                          <div className="text-[10px] text-slate-500 mt-1">
+                                            Enquiry: {latestEnq.status}
+                                          </div>
+                                        ) : (
+                                          <span className="text-[10px] text-slate-400 block mt-1">No activity yet</span>
+                                        )}
+                                      </td>
 
-                                    {/* 6. Registration Date */}
-                                    <td className="p-3.5 text-slate-600">
-                                      <div className="flex items-center gap-1 font-medium">
-                                        <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
-                                        <span>
-                                          {new Date(c.createdAt).toLocaleDateString('en-IN', {
-                                            day: '2-digit',
-                                            month: 'short',
-                                            year: 'numeric',
-                                          })}
-                                        </span>
-                                      </div>
-                                    </td>
+                                      {/* 6. Registration Date */}
+                                      <td className="p-3.5 text-slate-600">
+                                        <div className="flex items-center gap-1 font-medium">
+                                          <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                                          <span>
+                                            {new Date(c.createdAt).toLocaleDateString('en-IN', {
+                                              day: '2-digit',
+                                              month: 'short',
+                                              year: 'numeric',
+                                            })}
+                                          </span>
+                                        </div>
+                                      </td>
 
-                                    {/* 7. Actions */}
-                                    <td className="p-3.5 text-right">
-                                      <div className="flex items-center justify-end gap-1.5">
-                                        <button
-                                          onClick={() => setSelectedClientDetails(c)}
-                                          className="px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                                          title="View Client Details"
-                                        >
-                                          <Eye className="w-3.5 h-3.5" />
-                                          Details
-                                        </button>
-                                        <button
-                                          onClick={() => handleOpenEditClient(c)}
-                                          className="px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                                          title="Edit Client Details & Budget"
-                                        >
-                                          <Edit3 className="w-3.5 h-3.5" />
-                                          Edit
-                                        </button>
-                                        <button
-                                          onClick={() =>
-                                            setNewEnquiryModal({ clientId: c.id, clientName: c.clientName })
-                                          }
-                                          className="px-2.5 py-1.5 rounded-lg bg-teal-50 text-[#119DA4] hover:bg-[#80DED9]/20 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                                          title="Submit New Enquiry"
-                                        >
-                                          <Plus className="w-3.5 h-3.5" />
-                                          Enquiry
-                                        </button>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
+                                      {/* 7. Actions */}
+                                      <td className="p-3.5 text-right">
+                                        <div className="flex items-center justify-end gap-1.5">
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenClientDetail(c.id)}
+                                            className="px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                            title="Open Complete Client Workspace & Requests"
+                                          >
+                                            <Eye className="w-3.5 h-3.5" />
+                                            Workspace →
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenEditClient(c)}
+                                            className="px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                            title="Edit Client Details & Budget"
+                                          >
+                                            <Edit3 className="w-3.5 h-3.5" />
+                                            Edit
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              setNewEnquiryModal({ clientId: c.id, clientName: c.clientName })
+                                            }
+                                            className="px-2.5 py-1.5 rounded-lg bg-teal-50 text-[#119DA4] hover:bg-[#80DED9]/20 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                            title="Submit New Request / Enquiry"
+                                          >
+                                            <Plus className="w-3.5 h-3.5" />
+                                            Request
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })()}
                 </div>
               )}
 
