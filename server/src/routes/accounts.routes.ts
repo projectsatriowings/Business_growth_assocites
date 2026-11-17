@@ -42,6 +42,11 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       activeWorkOrders,
       eligibleCommissions,
       totalCollected,
+      pendingVerificationAmount,
+      eligibleCommissionAmount,
+      recentPayments,
+      recentWorkOrders,
+      recentQuotationRequests,
     ] = await Promise.all([
       prisma.quotation.count({
         where: { status: { in: [QuotationStatus.REQUESTED, QuotationStatus.REVISION_REQUESTED] } },
@@ -60,6 +65,46 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
         where: { status: PaymentStatus.VERIFIED },
         _sum: { amount: true },
       }),
+      prisma.payment.aggregate({
+        where: { status: PaymentStatus.PENDING_VERIFICATION },
+        _sum: { amount: true },
+      }),
+      prisma.commission.aggregate({
+        where: { eligibilityStatus: CommissionEligibility.ELIGIBLE, payoutStatus: CommissionPayout.UNPAID },
+        _sum: { calculatedCommission: true },
+      }),
+      prisma.payment.findMany({
+        take: 6,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          workOrder: {
+            include: {
+              client: true,
+              bga: { select: { id: true, name: true, email: true, mobile: true } },
+            },
+          },
+        },
+      }),
+      prisma.workOrder.findMany({
+        take: 6,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          client: true,
+          bga: { select: { id: true, name: true, email: true, mobile: true } },
+          quotation: true,
+          payments: true,
+        },
+      }),
+      prisma.quotation.findMany({
+        where: { status: { in: [QuotationStatus.REQUESTED, QuotationStatus.REVISION_REQUESTED] } },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          client: true,
+          bga: { select: { id: true, name: true, email: true, mobile: true } },
+          enquiry: true,
+        },
+      }),
     ]);
 
     const result = {
@@ -69,6 +114,11 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       activeWorkOrders,
       eligibleCommissions,
       totalCollected: totalCollected._sum.amount || 0,
+      pendingVerificationAmount: pendingVerificationAmount._sum.amount || 0,
+      eligibleCommissionAmount: eligibleCommissionAmount._sum.calculatedCommission || 0,
+      recentPayments,
+      recentWorkOrders,
+      recentQuotationRequests,
     };
 
     appCache.set('accounts:dashboard-stats', result, 20);
@@ -247,6 +297,172 @@ router.get('/work-orders', async (req: AuthRequest, res: Response): Promise<void
     res.json({ workOrders });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load work orders' });
+  }
+});
+
+// Release Work Order to Technical Department (Accounts Authorization)
+router.post('/work-orders/:id/release', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+
+    const workOrder = await prisma.workOrder.findUnique({
+      where: { id },
+      include: {
+        client: true,
+        bga: true,
+        quotation: true,
+        project: true,
+      },
+    });
+
+    if (!workOrder) {
+      res.status(404).json({ error: 'Work order not found' });
+      return;
+    }
+
+    // Eligibility check: Advance payment must be verified by Accounts
+    if (!workOrder.advanceVerified) {
+      res.status(400).json({
+        error: 'Eligibility Requirement Unfulfilled: Work order cannot be released to Technical Department until advance payment has been verified.',
+      });
+      return;
+    }
+
+    // Prevent duplicate release
+    if (workOrder.handoverApproved) {
+      res.status(400).json({ error: 'Work order has already been released to the Technical Department.' });
+      return;
+    }
+
+    const updatedWorkOrder = await prisma.workOrder.update({
+      where: { id },
+      data: {
+        handoverApproved: true,
+        handoverStatus: 'APPROVED',
+        handoverApprovedAt: new Date(),
+        handoverApprovedById: req.user!.id,
+        handoverNotes: notes || 'Released to Technical by Accounts',
+        status: WorkOrderStatus.IN_PRODUCTION,
+      },
+    });
+
+    // Activate or create Technical Project
+    let project = workOrder.project;
+    if (!project) {
+      const projectNumber = `PRJ-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+      project = await prisma.technicalProject.create({
+        data: {
+          projectNumber,
+          workOrderId: workOrder.id,
+          clientId: workOrder.clientId,
+          serviceCategory: workOrder.serviceCategory,
+          approvedScope: workOrder.agreedScope,
+          status: ProjectStatus.READY_TO_START,
+          progressPercentage: 0,
+          startDate: new Date(),
+        },
+      });
+
+      // Seed 5 standard technical milestones
+      await prisma.projectMilestone.createMany({
+        data: [
+          { projectId: project.id, title: 'Project Kick-off & Requirement Deep Dive', status: 'TODO' },
+          { projectId: project.id, title: 'Architecture / Wireframes / Design Approval', status: 'TODO' },
+          { projectId: project.id, title: 'Core Implementation & Deliverable Build', status: 'TODO' },
+          { projectId: project.id, title: 'Quality Assurance & Client Review', status: 'TODO' },
+          { projectId: project.id, title: 'Final Handover & Project Sign-off', status: 'TODO' },
+        ],
+      });
+    }
+
+    // Notify Technical team
+    const techUsers = await prisma.user.findMany({ where: { role: Role.TECHNICAL } });
+    for (const t of techUsers) {
+      await createNotification(
+        t.id,
+        'Work Order Released - Ready for Technical Execution',
+        `Accounts released work order ${workOrder.workOrderNumber} for ${workOrder.client.clientName} (${workOrder.serviceCategory}). Project is now active.`,
+        'ACTION_REQUIRED',
+        '/technical/projects'
+      );
+    }
+
+    // Notify BGA
+    await createNotification(
+      workOrder.bgaId,
+      'Work Order Released to Technical',
+      `Accounts has verified payments and officially released the work order for ${workOrder.client.clientName} to engineering execution.`,
+      'SUCCESS',
+      '/bga/projects'
+    );
+
+    appCache.invalidatePrefix('accounts:');
+    appCache.invalidatePrefix('admin:');
+    appCache.invalidatePrefix('technical:');
+    appCache.invalidatePrefix('bga:');
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'WORK_ORDER_RELEASED_TO_TECHNICAL',
+      'WORK_ORDER',
+      workOrder.id,
+      { workOrderNumber: workOrder.workOrderNumber, notes },
+      req.ip
+    );
+
+    res.json({
+      message: 'Work order successfully released. Technical project is now active.',
+      workOrder: updatedWorkOrder,
+      project,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to release work order' });
+  }
+});
+
+// Hold or Request Clarification for Work Order
+router.post('/work-orders/:id/hold', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { reason, action } = req.body; // HOLD or REQUEST_CLARIFICATION
+
+    const workOrder = await prisma.workOrder.findUnique({
+      where: { id },
+      include: { client: true, bga: true },
+    });
+
+    if (!workOrder) {
+      res.status(404).json({ error: 'Work order not found' });
+      return;
+    }
+
+    const handoverStatus = action === 'REQUEST_CLARIFICATION' ? 'CLARIFICATION_REQUESTED' : 'ON_HOLD';
+
+    const updated = await prisma.workOrder.update({
+      where: { id },
+      data: {
+        handoverStatus,
+        handoverNotes: reason || 'Action taken by Accounts Department',
+      },
+    });
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      action === 'REQUEST_CLARIFICATION' ? 'WORK_ORDER_CLARIFICATION_REQUESTED' : 'WORK_ORDER_HELD',
+      'WORK_ORDER',
+      workOrder.id,
+      { reason },
+      req.ip
+    );
+
+    res.json({ message: `Work order status updated to ${handoverStatus}.`, workOrder: updated });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update work order status' });
   }
 });
 
@@ -527,6 +743,59 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
   } catch (error: any) {
     console.error('Payment verification error:', error);
     res.status(500).json({ error: 'Failed to verify payment' });
+  }
+});
+
+// Request Additional Payment Information / UTR Clarification
+router.post('/payments/:id/request-info', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+
+    const payment = await prisma.payment.findUnique({
+      where: { id },
+      include: {
+        workOrder: {
+          include: { client: true, bga: true },
+        },
+      },
+    });
+
+    if (!payment) {
+      res.status(404).json({ error: 'Payment not found' });
+      return;
+    }
+
+    const updatedPayment = await prisma.payment.update({
+      where: { id },
+      data: {
+        verificationNotes: notes ? `Clarification Requested: ${notes}` : 'Accounts requested additional bank transfer verification proof.',
+      },
+    });
+
+    // Notify BGA
+    await createNotification(
+      payment.workOrder.bgaId,
+      'Payment Verification Info Requested',
+      `Accounts requires clarification for UTR ${payment.transactionReference} (${payment.workOrder.client.clientName}): ${notes || 'Please verify transaction details.'}`,
+      'ACTION_REQUIRED',
+      '/bga/projects'
+    );
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'PAYMENT_INFO_REQUESTED',
+      'PAYMENT',
+      payment.id,
+      { notes, transactionReference: payment.transactionReference },
+      req.ip
+    );
+
+    res.json({ message: 'Clarification request sent to associate successfully.', payment: updatedPayment });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to request payment info' });
   }
 });
 
