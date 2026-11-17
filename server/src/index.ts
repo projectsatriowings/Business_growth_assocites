@@ -79,8 +79,11 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Process Exception (Kept alive):', err);
+process.on('uncaughtException', (err: any) => {
+  console.error('Uncaught Process Exception:', err);
+  if (err?.code === 'EADDRINUSE') {
+    process.exit(1);
+  }
 });
 
 process.on('unhandledRejection', (reason) => {
@@ -89,7 +92,7 @@ process.on('unhandledRejection', (reason) => {
 
 import { verifySmtpConnection } from './utils/mailer';
 
-app.listen(PORT, async () => {
+const server = app.listen(PORT, async () => {
   console.log(`=======================================================`);
   console.log(`🚀 BGA Management System running on http://localhost:${PORT}`);
   console.log(`📡 Database: Neon Cloud PostgreSQL Connected`);
@@ -107,4 +110,12 @@ app.listen(PORT, async () => {
   }).catch((err) => {
     console.warn(`⚠️ [SMTP Notice] Initial check:`, err.message);
   });
+});
+
+server.on('error', (err: any) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use by another running process.`);
+    console.error(`💡 Run: Stop-Process -Id (Get-NetTCPConnection -LocalPort ${PORT}).OwningProcess -Force`);
+    process.exit(1);
+  }
 });
