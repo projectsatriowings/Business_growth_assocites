@@ -3668,7 +3668,7 @@ export const BgaPortal: React.FC = () => {
                     q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA' || q.adminApprovalStatus === 'APPROVED';
                   const isPendingAdmin =
                     q.status === 'PENDING_ADMIN_APPROVAL' || (q.adminApprovalStatus === 'PENDING' && q.preparedById);
-                  const isUnderPrep = q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED';
+                  const isUnderPrep = q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED' || q.status === 'REJECTED';
 
                   return (
                     <div key={q.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -3708,8 +3708,8 @@ export const BgaPortal: React.FC = () => {
                               ? 'QUOTATION PENDING ADMIN APPROVAL'
                               : q.status === 'REQUESTED'
                               ? 'AWAITING ACCOUNTS PREPARATION'
-                              : q.status === 'REVISION_REQUESTED'
-                              ? 'REVISION REQUESTED BY ADMIN'
+                              : q.status === 'REVISION_REQUESTED' || q.status === 'REJECTED'
+                              ? 'REVISION / CORRECTION UNDERWAY BY ACCOUNTS'
                               : isUnderPrep
                               ? 'QUOTATION UNDER PREPARATION'
                               : q.status}

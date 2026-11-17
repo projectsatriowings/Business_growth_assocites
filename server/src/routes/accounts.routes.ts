@@ -49,7 +49,7 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       recentQuotationRequests,
     ] = await Promise.all([
       prisma.quotation.count({
-        where: { status: { in: [QuotationStatus.REQUESTED, QuotationStatus.REVISION_REQUESTED] } },
+        where: { status: { in: [QuotationStatus.REQUESTED, QuotationStatus.REVISION_REQUESTED, QuotationStatus.REJECTED] } },
       }),
       prisma.quotation.count({ where: { status: QuotationStatus.ACCEPTED } }),
       prisma.payment.count({
@@ -96,7 +96,7 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
         },
       }),
       prisma.quotation.findMany({
-        where: { status: { in: [QuotationStatus.REQUESTED, QuotationStatus.REVISION_REQUESTED] } },
+        where: { status: { in: [QuotationStatus.REQUESTED, QuotationStatus.REVISION_REQUESTED, QuotationStatus.REJECTED] } },
         take: 5,
         orderBy: { createdAt: 'desc' },
         include: {
@@ -132,6 +132,9 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
 router.get('/quotation-requests', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const requests = await prisma.quotation.findMany({
+      where: {
+        status: { not: QuotationStatus.EXPIRED },
+      },
       include: {
         enquiry: true,
         client: true,
@@ -146,7 +149,7 @@ router.get('/quotation-requests', async (req: AuthRequest, res: Response): Promi
   }
 });
 
-// 3. Prepare Official Quotation (or Revision)
+// 3. Prepare Official Quotation (or Revision / Correction)
 router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -186,15 +189,18 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
     const days = parseInt(validityDays) || 15;
     const validityDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 
-    const isRevision = existing.status === QuotationStatus.REVISION_REQUESTED;
+    const isRevision = existing.status === QuotationStatus.REVISION_REQUESTED || existing.status === QuotationStatus.REJECTED;
     let targetQuotationId = id;
+    let targetQuotationNumber = existing.quotationNumber;
 
     if (isRevision) {
       // Archive current version and create new version
       const newVersionNum = existing.version + 1;
+      const baseNumber = existing.quotationNumber.replace(/-V\d+$/i, '');
+      const newQuotNumber = `${baseNumber}-V${newVersionNum}`;
       const newQuot = await prisma.quotation.create({
         data: {
-          quotationNumber: `${existing.quotationNumber}-V${newVersionNum}`,
+          quotationNumber: newQuotNumber,
           version: newVersionNum,
           enquiryId: existing.enquiryId,
           clientId: existing.clientId,
@@ -214,6 +220,7 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
           validityDate,
           status: QuotationStatus.PENDING_ADMIN_APPROVAL,
           adminApprovalStatus: 'PENDING',
+          adminNotes: null,
           previousVersionId: existing.id,
         },
       });
@@ -225,6 +232,7 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
       });
 
       targetQuotationId = newQuot.id;
+      targetQuotationNumber = newQuot.quotationNumber;
     } else {
       // Update the requested quotation with prepared details
       await prisma.quotation.update({
@@ -244,6 +252,7 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
           validityDate,
           status: QuotationStatus.PENDING_ADMIN_APPROVAL,
           adminApprovalStatus: 'PENDING',
+          adminNotes: null,
         },
       });
     }
@@ -253,8 +262,10 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
     for (const a of admins) {
       await createNotification(
         a.id,
-        'Quotation Prepared - Admin Approval Required',
-        `Accounts has prepared official quotation for ${existing.client.clientName}. Total Value: Rs. ${totalAmount.toLocaleString('en-IN')}. Please review and authorize for release to BGA.`,
+        isRevision ? 'Quotation Corrected - Admin Approval Required' : 'Quotation Prepared - Admin Approval Required',
+        isRevision
+          ? `Accounts has submitted corrected quotation ${targetQuotationNumber} for ${existing.client.clientName}. Total Value: Rs. ${totalAmount.toLocaleString('en-IN')}. Please review and authorize for release to BGA.`
+          : `Accounts has prepared official quotation for ${existing.client.clientName}. Total Value: Rs. ${totalAmount.toLocaleString('en-IN')}. Please review and authorize for release to BGA.`,
         'ACTION_REQUIRED',
         '/admin/quotations'
       );

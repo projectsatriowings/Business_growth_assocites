@@ -2651,19 +2651,30 @@ export const AdminPortal: React.FC = () => {
                                     ? 'bg-purple-100 text-[#152544] border border-[#3066BE]/25'
                                     : q.status === 'REVISION_REQUESTED'
                                     ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                    : q.status === 'REJECTED'
+                                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
                                     : 'bg-slate-100 text-slate-800 border border-slate-200'
                                 }`}
                               >
                                 {q.status === 'PENDING_ADMIN_APPROVAL'
-                                  ? 'PENDING_ADMIN_APPROVAL'
+                                  ? 'PENDING ADMIN APPROVAL'
                                   : q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA'
                                   ? 'APPROVED & SENT TO BGA'
+                                  : q.status === 'REJECTED'
+                                  ? 'REJECTED (AWAITING ACCOUNTS CORRECTION)'
+                                  : q.status === 'REVISION_REQUESTED'
+                                  ? 'REVISION REQUESTED FROM ACCOUNTS'
                                   : q.status}
                               </span>
+                              {q.adminNotes && (
+                                <div className="text-[10px] text-slate-500 mt-1 max-w-xs text-left">
+                                  <strong className="text-slate-700">Admin Note:</strong> {q.adminNotes}
+                                </div>
+                              )}
                             </td>
                             <td className="p-3.5 text-right space-y-1">
                               <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                                {isPendingApproval && (
+                                {isPendingApproval ? (
                                   <>
                                     <button
                                       onClick={() => setQuotationReviewModal({ quotation: q, action: 'APPROVE' })}
@@ -2684,7 +2695,11 @@ export const AdminPortal: React.FC = () => {
                                       Reject
                                     </button>
                                   </>
-                                )}
+                                ) : (q.status === 'REJECTED' || q.status === 'REVISION_REQUESTED') ? (
+                                  <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                    Awaiting Accounts Corrections
+                                  </span>
+                                ) : null}
                                 <button
                                   onClick={() => setQuotationDetailModal(q)}
                                   className="px-2.5 py-1 rounded-lg border border-slate-300 text-slate-700 hover:bg-[#AEECEF]/20 hover:text-[#3066BE] text-xs font-semibold"
