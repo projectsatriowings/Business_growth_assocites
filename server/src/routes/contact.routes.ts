@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { createNotification, logAudit } from '../middleware/auth';
 import { Role } from '@prisma/client';
+import { sendContactInquiryAdminAlert, sendContactInquiryConfirmation } from '../utils/mailer';
 
 const router = Router();
 
@@ -57,6 +58,23 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     } catch (notifErr) {
       console.warn('Could not dispatch admin notifications for contact form:', notifErr);
     }
+
+    // Dispatch SMTP Email Notifications asynchronously
+    sendContactInquiryAdminAlert({
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      companyName: cleanCompany,
+      subject: cleanSubject,
+      message: cleanMessage,
+      ip: req.ip,
+    }).catch((mailErr) => console.error('Failed to send contact admin email alert:', mailErr));
+
+    sendContactInquiryConfirmation({
+      name: cleanName,
+      email: cleanEmail,
+      subject: cleanSubject,
+    }).catch((mailErr) => console.error('Failed to send contact visitor auto-reply email:', mailErr));
 
     // Record in Audit Log
     try {

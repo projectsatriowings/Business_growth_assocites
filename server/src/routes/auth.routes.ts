@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { Role, BgaStatus } from '@prisma/client';
 import { prisma } from '../prisma';
 import { authenticateJWT, AuthRequest, logAudit, createNotification } from '../middleware/auth';
+import { sendBgaWelcomeEmail, sendBgaRegistrationAdminAlert } from '../utils/mailer';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'bga_super_secret_jwt_key_2026_growth_portal_secure_auth';
@@ -238,6 +239,23 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
         '/admin/bga-management'
       );
     }
+
+    // Dispatch SMTP Emails asynchronously
+    sendBgaWelcomeEmail({
+      id: newBga.id,
+      name: newBga.name,
+      email: newBga.email,
+      mobile: newBga.mobile,
+    }).catch((err) => console.error('Failed to send BGA welcome email:', err));
+
+    sendBgaRegistrationAdminAlert({
+      id: newBga.id,
+      name: newBga.name,
+      email: newBga.email,
+      mobile: newBga.mobile,
+      city: newBga.city,
+      state: newBga.state,
+    }).catch((err) => console.error('Failed to send BGA registration admin alert email:', err));
 
     // Audit log
     await logAudit(

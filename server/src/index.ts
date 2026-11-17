@@ -87,10 +87,24 @@ process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Promise Rejection (Kept alive):', reason);
 });
 
-app.listen(PORT, () => {
+import { verifySmtpConnection } from './utils/mailer';
+
+app.listen(PORT, async () => {
   console.log(`=======================================================`);
   console.log(`🚀 BGA Management System running on http://localhost:${PORT}`);
   console.log(`📡 Database: Neon Cloud PostgreSQL Connected`);
   console.log(`🛡️  Role Portals Active: Admin | BGA | Accounts | Technical`);
+  console.log(`📧 SMTP Email Active: info@atriowings.in (Nodemailer Gateway)`);
   console.log(`=======================================================`);
+
+  // Non-blocking SMTP connection verification
+  verifySmtpConnection().then((res) => {
+    if (res.success) {
+      console.log(`✅ [SMTP] ${res.message}`);
+    } else {
+      console.warn(`⚠️ [SMTP Notice] ${res.message} (Emails will queue or retry)`);
+    }
+  }).catch((err) => {
+    console.warn(`⚠️ [SMTP Notice] Initial check:`, err.message);
+  });
 });

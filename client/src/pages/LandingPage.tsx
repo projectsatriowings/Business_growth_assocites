@@ -43,6 +43,7 @@ export const LandingPage: React.FC = () => {
   const location = useLocation();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [portfolioTab, setPortfolioTab] = useState<'all' | 'web' | 'specialized' | 'campaign'>('all');
+  const [brandViewMode, setBrandViewMode] = useState<'marquee' | 'grid'>('marquee');
 
   // Contact Form State
   const [contactName, setContactName] = useState('');
@@ -122,82 +123,89 @@ export const LandingPage: React.FC = () => {
       id: 'dm',
       title: 'Digital Marketing',
       subtitle: 'Monthly Retainer Subscription',
+      model: 'Monthly Retainer Subscription',
       icon: BarChart3,
-      tag: 'Monthly Subscription',
-      tagColor: 'bg-[#AEECEF]/40 text-[#119DA4] border-[#80DED9]/50',
-      commission: '15% Monthly Recurring',
+      tag: 'Subscription Retainer',
+      tagColor: 'bg-[#119DA4]/10 text-[#119DA4] border-[#119DA4]/20',
+      commissionRule: 'Monthly Recurring Commission',
+      payoutTerms: 'Credited monthly on verified subscription client payments',
       color: 'from-[#3066BE] to-[#119DA4]',
       description:
-        'Data-driven campaigns including Search Engine Optimization, Social Media Marketing, Google Ads, Meta Ads, and content marketing.',
-      items: [
+        'Data-driven growth marketing, performance advertising, organic search authority, and high-conversion multi-channel customer acquisition.',
+      deliverables: [
         'Search Engine Optimization (SEO)',
-        'Social Media Marketing (SMM & Brand Awareness)',
-        'Google Ads & Search PPC Management',
-        'Meta Ads (Facebook & Instagram Campaigns)',
-        'Content Marketing & Brand Copywriting',
+        'Google Ads & Search PPC',
+        'Meta (FB & IG) Advertising',
+        'Social Media Management (SMM)',
+        'Content & Brand Copywriting',
+        'Conversion & ROI Analytics',
       ],
-      pricingExample: 'Client Retainer: ₹30,000/mo → BGA Earns ₹4,500 every month (recurring!)',
-      note: 'Note: Advertisement media spend is strictly excluded from commissionable calculation.',
     },
     {
       id: 'web',
       title: 'Website Development',
       subtitle: 'Milestone & Project Based',
+      model: 'Milestone & Project Based',
       icon: Globe,
-      tag: 'High Demand',
-      tagColor: 'bg-[#edf4fc] text-[#3066BE] border-[#6D96C5]/30',
-      commission: '12% On Final Delivery',
+      tag: 'Project Milestone',
+      tagColor: 'bg-[#3066BE]/10 text-[#3066BE] border-[#3066BE]/20',
+      commissionRule: 'Project Completion Commission',
+      payoutTerms: 'Disbursed upon final project handover and payment verification',
       color: 'from-[#119DA4] to-[#80DED9]',
       description:
-        'Custom high-performance websites built with modern frameworks, blazing speeds, mobile responsiveness, and modern UX design.',
-      items: [
-        'Corporate & Business Showcase Websites',
-        'Full-scale E-Commerce Online Stores',
-        'High-Conversion Campaign Landing Pages',
-        'Website Redesign, Maintenance & Modernization',
+        'Custom high-performance websites and digital portals built with modern frameworks, mobile responsiveness, fast load speeds, and modern UX design.',
+      deliverables: [
+        'Corporate & Business Websites',
+        'E-Commerce & Digital Stores',
+        'High-Conversion Landing Pages',
+        'UI/UX Design & Prototyping',
+        'Modern Frameworks (Next.js/React)',
+        'Cloud Hosting & Maintenance',
       ],
-      pricingExample: 'Project Value: ₹1,00,000 → BGA Earns ₹12,000 upon project sign-off',
-      note: 'Disbursed immediately upon technical completion & verified final payment.',
     },
     {
       id: 'mobile',
       title: 'Mobile App Development',
       subtitle: 'iOS & Android Engineering',
+      model: 'Milestone & Project Based',
       icon: Smartphone,
-      tag: 'Enterprise',
-      tagColor: 'bg-[#e7f7f8] text-[#119DA4] border-[#80DED9]/60',
-      commission: '12% On Final Delivery',
+      tag: 'iOS & Android',
+      tagColor: 'bg-[#3066BE]/10 text-[#3066BE] border-[#3066BE]/20',
+      commissionRule: 'Project Completion Commission',
+      payoutTerms: 'Disbursed upon technical completion and verified payment',
       color: 'from-[#3066BE] to-[#6D96C5]',
       description:
-        'Native and cross-platform mobile applications for iOS and Android engineered with Flutter, React Native, Kotlin, and Swift.',
-      items: [
-        'Native Android Applications',
-        'Native iOS (iPhone & iPad) Applications',
-        'Cross-Platform Hybrid Mobile Apps (Flutter/React Native)',
-        'App Store & Google Play Store Publishing & Optimization',
+        'Scalable native and cross-platform mobile applications for iOS and Android engineered with modern architectural best practices and store deployment.',
+      deliverables: [
+        'Native Android Apps (Kotlin)',
+        'Native iOS Apps (Swift)',
+        'Cross-Platform Hybrid (Flutter)',
+        'App Store & Play Store Launch',
+        'Push Notifications & Auth',
+        'Backend API Integration',
       ],
-      pricingExample: 'Project Value: ₹2,50,000 → BGA Earns ₹30,000',
-      note: 'Complete technical architecture and store approvals handled by company.',
     },
     {
       id: 'software',
       title: 'Software Development',
       subtitle: 'Custom Cloud & ERP Solutions',
+      model: 'Milestone & Project Based',
       icon: Layers,
-      tag: 'High Ticket',
-      tagColor: 'bg-[#edf4fc] text-[#3066BE] border-[#3066BE]/30',
-      commission: '10% On Final Delivery',
+      tag: 'Custom ERP & Cloud',
+      tagColor: 'bg-[#119DA4]/10 text-[#119DA4] border-[#119DA4]/20',
+      commissionRule: 'Project Completion Commission',
+      payoutTerms: 'Disbursed upon technical completion and verified payment',
       color: 'from-[#152544] to-[#3066BE]',
       description:
-        'Custom business software, ERP, CRM, inventory, and cloud billing applications engineered to automate business workflows.',
-      items: [
-        'Custom Enterprise Cloud Software & SaaS',
-        'Enterprise Resource Planning (ERP Systems)',
-        'Customer Relationship Management (CRM)',
-        'Inventory, Invoicing & GST Billing Systems',
+        'Custom cloud enterprise software, ERP, CRM, inventory, and cloud billing applications engineered to automate business workflows.',
+      deliverables: [
+        'Custom Enterprise Cloud SaaS',
+        'ERP & Resource Management',
+        'Customer Relationship Management',
+        'Inventory & Warehouse Systems',
+        'GST Invoicing & Billing Engines',
+        'Role-Based Security & Audit Logs',
       ],
-      pricingExample: 'Project Value: ₹5,00,000 → BGA Earns ₹50,000',
-      note: 'Dedicated solution architects and technical leads assigned to every project.',
     },
   ];
 
@@ -225,52 +233,76 @@ export const LandingPage: React.FC = () => {
     },
   ];
 
-  // 9-Step Associate Journey
-  const journeySteps = [
+  // 9-Step Associate Journey grouped into 3 compact progressive phases
+  const journeyPhases = [
     {
-      step: '01',
-      title: 'Register as Growth Associate',
-      desc: 'Submit your profile, credentials, and basic details through our fast online onboarding portal.',
+      phaseNumber: '01',
+      phaseTitle: 'Associate Setup & KYC',
+      badge: 'Phase 1 • Onboarding',
+      indicator: 'Clearance Required',
+      steps: [
+        {
+          step: '01',
+          title: 'Register as Growth Associate',
+          desc: 'Submit basic profile and contact credentials through our fast onboarding portal.',
+        },
+        {
+          step: '02',
+          title: 'Complete Identity & Bank KYC',
+          desc: 'Provide PAN, Aadhaar consent, and verified bank details for direct payouts.',
+        },
+        {
+          step: '03',
+          title: 'Company Approval & Activation',
+          desc: 'Admin team verifies documentation and activates your personalized BGA workspace.',
+        },
+      ],
     },
     {
-      step: '02',
-      title: 'Complete Identity & Bank KYC',
-      desc: 'Provide PAN, Aadhaar consent, and bank details for transparent verification and direct bank payouts.',
+      phaseNumber: '02',
+      phaseTitle: 'Client Origination & Quotes',
+      badge: 'Phase 2 • Deal Pipeline',
+      indicator: 'Exclusive Locking',
+      steps: [
+        {
+          step: '04',
+          title: 'Discover Potential Clients',
+          desc: 'Identify businesses, startups, and institutions seeking IT & digital solutions.',
+        },
+        {
+          step: '05',
+          title: 'Register Clients & Submit Enquiries',
+          desc: 'Lock in 100% exclusive client ownership with automated duplicate blocking.',
+        },
+        {
+          step: '06',
+          title: 'Request Official Quotations',
+          desc: 'Submit requirements for Accounts to draft commercial scope and pricing.',
+        },
+      ],
     },
     {
-      step: '03',
-      title: 'Company Approval & Activation',
-      desc: 'Administration reviews your documentation and activates full access to your personalized associate workspace.',
-    },
-    {
-      step: '04',
-      title: 'Discover Potential Clients',
-      desc: 'Identify local businesses, retailers, startups, and organizations seeking digital transformation.',
-    },
-    {
-      step: '05',
-      title: 'Register Clients & Submit Enquiries',
-      desc: 'Lock in 100% exclusive client ownership. Our system automatically blocks duplicate mobile and email registrations.',
-    },
-    {
-      step: '06',
-      title: 'Request Official Quotations',
-      desc: 'Submit client requirements. Our dedicated Accounts department drafts a formal, branded Atriowings quotation.',
-    },
-    {
-      step: '07',
-      title: 'Present Quotation to Client',
-      desc: 'Share verified commercial terms, scope breakdown, and payment milestones with complete professional PDF support.',
-    },
-    {
-      step: '08',
-      title: 'Convert to Live Projects',
-      desc: 'Upon client advance payment verification, Atriowings technical teams execute end-to-end design, code, and deployment.',
-    },
-    {
-      step: '09',
-      title: 'Earn Guaranteed Commissions',
-      desc: 'Receive recurring monthly payouts for Digital Marketing or lump-sum completion fees directly into your bank account.',
+      phaseNumber: '03',
+      phaseTitle: 'Fulfillment & Guaranteed Payouts',
+      badge: 'Phase 3 • Execution & Rewards',
+      indicator: 'Bank Disbursement',
+      steps: [
+        {
+          step: '07',
+          title: 'Present Quotation to Client',
+          desc: 'Share verified scope, payment milestones, and branded proposal PDF.',
+        },
+        {
+          step: '08',
+          title: 'Convert to Live Projects',
+          desc: 'Upon advance payment verification, technical teams initiate architecture.',
+        },
+        {
+          step: '09',
+          title: 'Earn Guaranteed Commissions',
+          desc: 'Receive recurring monthly subscription share or milestone payouts to your bank.',
+        },
+      ],
     },
   ];
 
@@ -602,100 +634,117 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 4. OUR CORE SERVICES & SUPPORTING CAPABILITIES */}
-      <section id="services" className="py-24 bg-[#f8fafc] scroll-mt-20">
+      <section id="services" className="py-16 sm:py-20 bg-[#f8fafc] scroll-mt-20 border-b border-slate-200/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#119DA4] bg-[#e7f7f8] px-3.5 py-1.5 rounded-full border border-[#80DED9]/40">
-              Company Capabilities & Offerings
+          {/* Section Header */}
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#3066BE] bg-[#3066BE]/10 px-3 py-1 rounded-full border border-[#3066BE]/20">
+              Core Capabilities
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-4 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 mt-2.5 tracking-tight">
               Four Core BGA Technology Classifications
             </h2>
-            <p className="text-slate-600 text-sm sm:text-base mt-3 leading-relaxed">
-              Standardized, high-impact digital solutions delivered by Atriowings Technologies with clear, pre-configured commission rules for Growth Associates.
+            <p className="text-slate-500 text-xs sm:text-sm mt-2 leading-relaxed">
+              Standardized digital solutions engineered by Atriowings Technologies with clear, rule-based commission structures for Growth Associates.
             </p>
           </div>
 
-          {/* Four Core Categories Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* 2x2 Balanced Bento Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {bgaServices.map((svc) => {
               const Icon = svc.icon;
               return (
                 <div
                   key={svc.id}
-                  className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col justify-between group hover:border-[#3066BE]/50"
+                  className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-sm hover:shadow-md hover:border-[#3066BE]/40 transition-all duration-300 flex flex-col justify-between group"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-5">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-tr ${svc.color} flex items-center justify-center text-white shadow-md shadow-[#3066BE]/20 group-hover:scale-110 transition-transform duration-200`}>
-                        <Icon className="w-6 h-6" />
+                    {/* Top Row: Icon + Title + Model Tag */}
+                    <div className="flex items-start justify-between gap-3 mb-3.5">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#3066BE] to-[#119DA4] text-white flex items-center justify-center shrink-0 shadow-sm shadow-[#3066BE]/20 group-hover:scale-105 transition-transform">
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#3066BE] transition-colors">
+                            {svc.title}
+                          </h3>
+                          <span className="text-xs text-slate-400 font-medium">
+                            {svc.model}
+                          </span>
+                        </div>
                       </div>
-                      <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${svc.tagColor}`}>
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 ${svc.tagColor}`}>
                         {svc.tag}
                       </span>
                     </div>
 
-                    <h3 className="text-xl font-bold text-slate-900 group-hover:text-[#3066BE] transition-colors">
-                      {svc.title}
-                    </h3>
-                    <p className="text-xs text-slate-400 font-medium mt-0.5">{svc.subtitle}</p>
-
-                    <div className="inline-block px-3 py-1 rounded-lg bg-[#e7f7f8] text-[#119DA4] text-xs font-bold mt-3 border border-[#80DED9]/40">
-                      💰 {svc.commission}
-                    </div>
-
-                    <p className="text-xs text-slate-600 mt-3.5 leading-relaxed">
+                    {/* Description */}
+                    <p className="text-xs text-slate-600 leading-relaxed mt-2">
                       {svc.description}
                     </p>
 
-                    <div className="mt-5 pt-4 border-t border-slate-100">
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">
+                    {/* Deliverables as Compact Badge Pills */}
+                    <div className="mt-4 pt-3.5 border-t border-slate-100">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
                         Deliverable Scopes
                       </div>
-                      <ul className="space-y-2 text-xs text-slate-700">
-                        {svc.items.map((it, idx) => (
-                          <li key={idx} className="flex items-center gap-2">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#119DA4] shrink-0" />
-                            <span>{it}</span>
-                          </li>
+                      <div className="flex flex-wrap gap-1.5">
+                        {svc.deliverables.map((item, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/80 text-[11px] font-medium text-slate-700 group-hover:border-[#3066BE]/20 transition-colors"
+                          >
+                            <CheckCircle2 className="w-3 h-3 text-[#119DA4] shrink-0" />
+                            <span>{item}</span>
+                          </span>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-6 pt-4 bg-[#edf4fc]/50 -mx-6 sm:-mx-7 -mb-6 sm:-mb-7 p-4 sm:p-5 rounded-b-2xl border-t border-[#6D96C5]/20">
-                    <p className="text-[11px] font-bold text-slate-900">{svc.pricingExample}</p>
-                    <p className="text-[10px] text-slate-500 mt-1">{svc.note}</p>
+                  {/* Commission Mechanics Footer Strip */}
+                  <div className="mt-5 pt-3.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-[#119DA4] bg-[#119DA4]/10 px-2 py-0.5 rounded-md">
+                        {svc.commissionRule}
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        • {svc.payoutTerms}
+                      </span>
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Supporting Company Capabilities Banner */}
-          <div className="mt-16 bg-white rounded-3xl p-8 sm:p-10 border border-slate-200/90 shadow-sm">
-            <div className="text-center max-w-2xl mx-auto mb-8">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#3066BE] bg-[#edf4fc] px-3 py-1 rounded-full border border-[#6D96C5]/30">
-                Full-Service Capabilities
-              </span>
-              <h3 className="text-2xl font-bold text-slate-900 mt-2">
-                Additional Creative & Strategic Services
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                Atriowings Technologies supports client growth with end-to-end creative and multimedia production.
+          {/* Supporting Creative & Strategic Capabilities Ribbon */}
+          <div className="mt-10 bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#3066BE] bg-[#3066BE]/10 px-2.5 py-0.5 rounded-full border border-[#3066BE]/20">
+                  Full-Service Stack
+                </span>
+                <h4 className="text-base font-bold text-slate-900 mt-1">
+                  Additional Creative & Strategic Capabilities
+                </h4>
+              </div>
+              <p className="text-xs text-slate-500 max-w-md">
+                Atriowings delivers complete digital transformation with end-to-end creative, multimedia, and consulting support.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {supportingCapabilities.map((cap, idx) => {
                 const Icon = cap.icon;
                 return (
-                  <div key={idx} className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-[#3066BE]/40 transition-colors">
-                    <div className="w-10 h-10 rounded-xl bg-white text-[#3066BE] border border-slate-200 flex items-center justify-center mb-3 shadow-sm">
-                      <Icon className="w-5 h-5 text-[#119DA4]" />
+                  <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 hover:border-[#3066BE]/30 transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-white text-[#3066BE] border border-slate-200 flex items-center justify-center mb-2 shadow-2xs">
+                      <Icon className="w-4 h-4 text-[#119DA4]" />
                     </div>
-                    <h4 className="font-bold text-slate-900 text-sm mb-1">{cap.title}</h4>
-                    <p className="text-xs text-slate-600 leading-relaxed">{cap.desc}</p>
+                    <h5 className="font-bold text-slate-900 text-xs mb-0.5">{cap.title}</h5>
+                    <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{cap.desc}</p>
                   </div>
                 );
               })}
@@ -763,41 +812,79 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 6. HOW THE GROWTH ASSOCIATE PROGRAMME WORKS (9-STEP JOURNEY) */}
-      <section id="how-it-works" className="py-24 bg-[#f8fafc] border-y border-slate-200/80 scroll-mt-20">
+      {/* 6. HOW THE GROWTH ASSOCIATE PROGRAMME WORKS (9-STEP COMPACT JOURNEY) */}
+      <section id="how-it-works" className="py-14 sm:py-16 bg-[#f8fafc] border-y border-slate-200/70 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#119DA4] bg-[#e7f7f8] px-3.5 py-1.5 rounded-full border border-[#80DED9]/40">
+          {/* Compact Header */}
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#3066BE] bg-[#3066BE]/10 px-3 py-1 rounded-full border border-[#3066BE]/20">
               Associate Lifecycle
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-4 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2.5 tracking-tight">
               The 9-Step Growth Associate Journey
             </h2>
-            <p className="text-slate-600 text-sm sm:text-base mt-3 leading-relaxed">
-              From onboarding and exclusive client registration to official quotation delivery and guaranteed payout disbursement.
+            <p className="text-slate-500 text-xs sm:text-sm mt-1.5 leading-relaxed">
+              A structured 3-phase pathway from onboarding to exclusive client locking and guaranteed payout disbursement.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {journeySteps.map((wf) => (
+          {/* 3-Phase Compact Pipeline Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
+            {journeyPhases.map((phase, pIdx) => (
               <div
-                key={wf.step}
-                className="p-6 sm:p-7 rounded-2xl bg-white border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-[#3066BE]/40 transition-all duration-300 relative group"
+                key={phase.phaseNumber}
+                className="bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md hover:border-[#3066BE]/30 transition-all p-5 sm:p-6 flex flex-col justify-between group relative"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-[#3066BE] to-[#119DA4] bg-clip-text text-transparent">
-                    {wf.step}
-                  </span>
-                  <div className="w-8 h-8 rounded-full bg-[#edf4fc] text-[#3066BE] flex items-center justify-center font-bold text-xs group-hover:bg-[#3066BE] group-hover:text-white transition-colors duration-200">
-                    <Check className="w-4 h-4" />
+                <div>
+                  {/* Phase Header */}
+                  <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-7 h-7 rounded-lg bg-[#3066BE]/10 text-[#3066BE] font-mono text-xs font-bold flex items-center justify-center">
+                        P{phase.phaseNumber}
+                      </span>
+                      <h3 className="text-sm font-bold text-slate-900">
+                        {phase.phaseTitle}
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-semibold text-[#119DA4] bg-[#119DA4]/10 px-2.5 py-0.5 rounded-full">
+                      {phase.badge}
+                    </span>
+                  </div>
+
+                  {/* 3 Steps in Vertical Flow */}
+                  <div className="space-y-4 relative">
+                    {/* Vertical connecting line */}
+                    <div className="absolute left-[15px] top-3 bottom-3 w-[1.5px] bg-slate-100" />
+
+                    {phase.steps.map((st) => (
+                      <div key={st.step} className="flex items-start gap-3 relative z-10">
+                        {/* Step Circle Badge */}
+                        <div className="w-8 h-8 rounded-full bg-[#f8fafc] border border-slate-200 text-slate-700 font-mono text-[11px] font-bold flex items-center justify-center shrink-0 group-hover:border-[#3066BE]/40 group-hover:text-[#3066BE] group-hover:bg-[#3066BE]/5 transition-all shadow-2xs">
+                          {st.step}
+                        </div>
+
+                        {/* Step Details */}
+                        <div className="min-w-0 pt-0.5">
+                          <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#3066BE] transition-colors">
+                            {st.title}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                            {st.desc}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-[#3066BE] transition-colors">
-                  {wf.title}
-                </h3>
-                <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
-                  {wf.desc}
-                </p>
+
+                {/* Phase Footer Indicator */}
+                <div className="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-medium">
+                  <span>Stage {pIdx + 1} of 3</span>
+                  <span className="text-[#119DA4] font-semibold flex items-center gap-1">
+                    {phase.indicator}
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -949,54 +1036,95 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Trusted Brand Network Sub-Header */}
-          <div className="flex items-center justify-center gap-2 mb-8">
-            <div className="w-2 h-2 rounded-full bg-[#119DA4] animate-pulse" />
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Trusted Client Network
-            </span>
+          {/* Interactive Presentation Control Bar */}
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-4 pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#119DA4] animate-pulse" />
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Live Partner Network • {clientLogos.length} Verified Brands
+              </span>
+            </div>
+            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
+              <button
+                onClick={() => setBrandViewMode('marquee')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${brandViewMode === 'marquee' ? 'bg-[#3066BE] text-white shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+              >
+                <Play className="w-3.5 h-3.5" />
+                <span>Dynamic Stream</span>
+              </button>
+              <button
+                onClick={() => setBrandViewMode('grid')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${brandViewMode === 'grid' ? 'bg-[#3066BE] text-white shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Full Directory ({clientLogos.length})</span>
+              </button>
+            </div>
           </div>
 
-          {/* Dynamic Marquee Stream */}
-          <div className="relative overflow-hidden py-3 mb-12 -mx-4 sm:-mx-6 lg:-mx-8">
-            {/* Left & Right Edge Gradient Masks */}
-            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-24 sm:w-48 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-24 sm:w-48 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
+          {/* Dynamic Marquee Stream Mode */}
+          {brandViewMode === 'marquee' && (
+            <div className="relative overflow-hidden py-3 mb-12 -mx-4 sm:-mx-6 lg:-mx-8">
+              {/* Left & Right Edge Gradient Masks */}
+              <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-24 sm:w-48 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
+              <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-24 sm:w-48 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
 
-            {/* Track 1: Smooth Left Scroll */}
-            <div className="animate-marquee gap-5 py-2">
-              {[...clientLogos.slice(0, 9), ...clientLogos.slice(0, 9)].map((client, idx) => (
+              {/* Track 1: Smooth Left Scroll */}
+              <div className="animate-marquee gap-5 py-2">
+                {[...clientLogos.slice(0, 9), ...clientLogos.slice(0, 9)].map((client, idx) => (
+                  <div
+                    key={`track1-${idx}`}
+                    className="w-48 sm:w-56 h-24 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#3066BE]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center shrink-0 group cursor-default"
+                  >
+                    <img
+                      src={client.file}
+                      alt="Client Logo"
+                      className="max-h-12 max-w-[80%] object-contain filter group-hover:scale-105 transition-all duration-200"
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Track 2: Smooth Right Scroll */}
+              <div className="animate-marquee-reverse gap-5 py-2 mt-3">
+                {[...clientLogos.slice(9), ...clientLogos.slice(9)].map((client, idx) => (
+                  <div
+                    key={`track2-${idx}`}
+                    className="w-48 sm:w-56 h-24 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#119DA4]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center shrink-0 group cursor-default"
+                  >
+                    <img
+                      src={client.file}
+                      alt="Client Logo"
+                      className="max-h-12 max-w-[80%] object-contain filter group-hover:scale-105 transition-all duration-200"
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Full Directory Grid Mode */}
+          {brandViewMode === 'grid' && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-12">
+              {clientLogos.map((client, idx) => (
                 <div
-                  key={`track1-${idx}`}
-                  className="w-48 sm:w-56 h-24 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#3066BE]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center shrink-0 group cursor-default"
+                  key={`grid-${idx}`}
+                  className="h-28 bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md hover:border-[#3066BE]/40 hover:-translate-y-1 transition-all flex items-center justify-center group"
                 >
                   <img
                     src={client.file}
                     alt="Client Logo"
-                    className="max-h-12 max-w-[80%] object-contain filter group-hover:scale-105 transition-all duration-200"
+                    className="max-h-12 max-w-[80%] object-contain group-hover:scale-105 transition-transform duration-200"
                     loading="lazy"
                   />
                 </div>
               ))}
             </div>
-
-            {/* Track 2: Smooth Right Scroll */}
-            <div className="animate-marquee-reverse gap-5 py-2 mt-3">
-              {[...clientLogos.slice(9), ...clientLogos.slice(9)].map((client, idx) => (
-                <div
-                  key={`track2-${idx}`}
-                  className="w-48 sm:w-56 h-24 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#119DA4]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center shrink-0 group cursor-default"
-                >
-                  <img
-                    src={client.file}
-                    alt="Client Logo"
-                    className="max-h-12 max-w-[80%] object-contain filter group-hover:scale-105 transition-all duration-200"
-                    loading="lazy"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* BGA Network Opportunity Callout Banner */}
           <div className="mb-20 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-[#152544] to-[#3066BE] text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800">
@@ -1040,36 +1168,32 @@ export const LandingPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setPortfolioTab('all')}
-                  className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                    portfolioTab === 'all' ? 'bg-white text-[#3066BE] shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`px-3.5 py-1.5 rounded-lg transition-all ${portfolioTab === 'all' ? 'bg-white text-[#3066BE] shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   All Projects
                 </button>
                 <button
                   type="button"
                   onClick={() => setPortfolioTab('web')}
-                  className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                    portfolioTab === 'web' ? 'bg-white text-[#3066BE] shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`px-3.5 py-1.5 rounded-lg transition-all ${portfolioTab === 'web' ? 'bg-white text-[#3066BE] shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   Web Solutions
                 </button>
                 <button
                   type="button"
                   onClick={() => setPortfolioTab('specialized')}
-                  className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                    portfolioTab === 'specialized' ? 'bg-white text-[#3066BE] shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`px-3.5 py-1.5 rounded-lg transition-all ${portfolioTab === 'specialized' ? 'bg-white text-[#3066BE] shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   Enterprise & Platforms
                 </button>
                 <button
                   type="button"
                   onClick={() => setPortfolioTab('campaign')}
-                  className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                    portfolioTab === 'campaign' ? 'bg-white text-[#3066BE] shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`px-3.5 py-1.5 rounded-lg transition-all ${portfolioTab === 'campaign' ? 'bg-white text-[#3066BE] shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   Campaigns & Media
                 </button>
@@ -1446,17 +1570,18 @@ export const LandingPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-slate-800/80">
             {/* Column 1: Company Profile */}
             <div className="md:col-span-1">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#3066BE] to-[#119DA4] flex items-center justify-center text-white">
-                  <Building className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="font-bold text-white text-sm block">Atriowings Technologies</span>
-                  <span className="text-[10px] text-[#80DED9] block">BGA Enterprise Platform</span>
-                </div>
+              <div className="mb-4">
+                <img
+                  src="/img/atriowings-official-logo.png"
+                  alt="Atriowings Technologies India Private Limited"
+                  className="h-10 w-auto object-contain bg-white/10 p-1.5 rounded-lg"
+                />
               </div>
+              <p className="font-bold text-white text-xs mb-1.5">
+                Atriowings Technologies India Private Limited
+              </p>
               <p className="text-slate-400 text-xs leading-relaxed">
-                A leading IT solutions company offering web development, digital marketing, mobile apps, and enterprise software.
+                A premier IT solutions company delivering enterprise web development, digital marketing, mobile apps, and custom software.
               </p>
               <div className="mt-4 text-[11px] text-slate-400">
                 <span>Official Website: </span>
@@ -1545,7 +1670,7 @@ export const LandingPage: React.FC = () => {
 
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-[11px]">
             <p>
-              © 2026 Atriowings Technologies. All rights reserved. BGA Enterprise Management System.
+              © 2026 Atriowings Technologies India Private Limited. All rights reserved.
             </p>
             <p>
               Corporate Office: No. 1, Gurudev Complex, Korattur, Chennai - 600080
