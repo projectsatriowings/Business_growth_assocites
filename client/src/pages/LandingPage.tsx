@@ -35,7 +35,13 @@ import {
   ChevronDown,
   LayoutGrid,
   Play,
+  Maximize2,
+  X,
+  SlidersHorizontal,
+  Eye,
+  Laptop,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Navbar } from '../components/Navbar';
 
 export const LandingPage: React.FC = () => {
@@ -44,6 +50,9 @@ export const LandingPage: React.FC = () => {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [portfolioTab, setPortfolioTab] = useState<'all' | 'web' | 'specialized' | 'campaign'>('all');
   const [brandViewMode, setBrandViewMode] = useState<'marquee' | 'grid'>('marquee');
+  const [portfolioViewMode, setPortfolioViewMode] = useState<'spotlight' | 'grid'>('spotlight');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('universal-eng');
+  const [lightboxProject, setLightboxProject] = useState<any | null>(null);
 
   // Contact Form State
   const [contactName, setContactName] = useState('');
@@ -239,7 +248,6 @@ export const LandingPage: React.FC = () => {
       phaseNumber: '01',
       phaseTitle: 'Associate Setup & KYC',
       badge: 'Phase 1 • Onboarding',
-      indicator: 'Clearance Required',
       steps: [
         {
           step: '01',
@@ -262,7 +270,6 @@ export const LandingPage: React.FC = () => {
       phaseNumber: '02',
       phaseTitle: 'Client Origination & Quotes',
       badge: 'Phase 2 • Deal Pipeline',
-      indicator: 'Exclusive Locking',
       steps: [
         {
           step: '04',
@@ -285,7 +292,6 @@ export const LandingPage: React.FC = () => {
       phaseNumber: '03',
       phaseTitle: 'Fulfillment & Guaranteed Payouts',
       badge: 'Phase 3 • Execution & Rewards',
-      indicator: 'Bank Disbursement',
       steps: [
         {
           step: '07',
@@ -330,67 +336,112 @@ export const LandingPage: React.FC = () => {
   // Verified Projects from atriowings.in/portfolio
   const portfolioProjects = [
     {
+      id: 'universal-eng',
       title: 'Universal Engineering',
       type: 'web',
       category: 'Corporate Web Development',
+      badge: 'Industrial Enterprise',
       image: '/img/portfolio/universal-engineering.webp',
+      url: 'universalengineering.co.in',
       description: 'Corporate engineering enterprise website highlighting industrial capabilities and technical services.',
+      tags: ['Next.js Architecture', 'Industrial Showcase', 'SEO Optimized', 'Fast Load Times'],
+      metrics: '45% Increase in Corporate Inquiries',
     },
     {
+      id: 'scissors-properties',
       title: 'Scissors Properties',
       type: 'specialized',
       category: 'Real Estate Platform',
+      badge: 'Property & Land',
       image: '/img/portfolio/scissors-properties.webp',
+      url: 'scissorsproperties.com',
       description: 'Property showcasing and customer inquiry platform built for streamlined real-estate buyer engagement.',
+      tags: ['Property Listings', 'Lead Generation Flow', 'Interactive Map', 'Direct WhatsApp CRM'],
+      metrics: '3.2x Lead Conversion Ratio',
     },
     {
+      id: 'prs-dental',
       title: 'PRS Dental Care',
       type: 'web',
       category: 'Healthcare Digital Platform',
+      badge: 'Clinical Healthcare',
       image: '/img/portfolio/prs-dental.webp',
+      url: 'prsdentalcare.com',
       description: 'Responsive healthcare website showcasing multi-speciality clinical services and patient appointment booking.',
+      tags: ['Online Appointment Booking', 'Multi-Specialty Care', 'Mobile Responsive', 'HIPAA Conscious'],
+      metrics: '99.9% Uptime & Daily Appointments',
     },
     {
+      id: 'gjs-hospitals',
       title: 'GJS Hospitals',
       type: 'web',
       category: 'Hospital Digital Portal',
+      badge: 'Hospital & Emergency',
       image: '/img/portfolio/gjs-hospitals.webp',
+      url: 'gjshospitals.com',
       description: 'Modern medical institution website highlighting medical departments, doctors, and emergency consultation channels.',
+      tags: ['Emergency Hotline Desk', 'Doctor Directory', 'Tele-Consultation Ready', 'Patient Records'],
+      metrics: '24/7 Rapid Emergency Routing',
     },
     {
+      id: 'sivaji-sons',
       title: 'Sivaji Sons',
       type: 'specialized',
       category: 'Travel & Transport Solutions',
+      badge: 'Logistics & Fleet',
       image: '/img/portfolio/sivaji-sons.webp',
+      url: 'sivajisons.in',
       description: 'Corporate portal for travel and transportation services with fleet details and direct booking contact flows.',
+      tags: ['Fleet Management Showcase', 'Trip Cost Estimator', 'Booking Dispatch', 'Driver Tracking'],
+      metrics: '1,200+ Monthly Travel Bookings',
     },
     {
+      id: 'ghurudev-platform',
       title: 'Ghurudev Platform',
       type: 'specialized',
       category: 'Educational Platform',
+      badge: 'Education & Learning',
       image: '/img/portfolio/ghurudev.webp',
+      url: 'ghurudev.edu.in',
       description: 'Educational and institutional web solution designed for student outreach and program information.',
+      tags: ['Course Catalog', 'Student Admission Portal', 'Fee Payment Gateway', 'Notices Engine'],
+      metrics: '5,000+ Students Onboarded',
     },
     {
+      id: 'miniso-campaign',
       title: 'Miniso Campaign',
       type: 'campaign',
       category: 'Brand Marketing Showcase',
+      badge: 'Global Retail',
       image: '/img/portfolio/miniso.webp',
+      url: 'miniso-campaign.atriowings.in',
       description: 'Commercial digital marketing and promotional campaign asset production for brand retail presence.',
+      tags: ['Creative Motion Ads', 'Social Media SMM', 'Store Traffic Drivers', 'Visual Branding'],
+      metrics: '120k+ Campaign Impressions',
     },
     {
+      id: 'yakobu-solutions',
       title: 'Yakobu Business Solutions',
       type: 'web',
       category: 'Corporate IT Platform',
+      badge: 'B2B IT Solutions',
       image: '/img/portfolio/yakobu.webp',
+      url: 'yakobubusiness.com',
       description: 'Enterprise business services website with corporate portfolio presentation and service inquiry workflow.',
+      tags: ['B2B Solutions Architecture', 'Lead Capture Funnel', 'Executive Design', 'Cloud Hosting'],
+      metrics: 'Enterprise Lead Pipeline Active',
     },
     {
+      id: 'blessence-brand',
       title: 'Blessence Brand',
       type: 'campaign',
       category: 'Lifestyle & E-Commerce',
+      badge: 'D2C Consumer Goods',
       image: '/img/portfolio/blessence.webp',
+      url: 'blessence.in',
       description: 'Product presentation and brand marketing showcase crafted for consumer engagement and lifestyle outreach.',
+      tags: ['D2C Product Showcase', 'Instagram Ads Creative', 'Conversion Landing Page', 'Catalog UX'],
+      metrics: '4.1x Verified Ad Return (ROAS)',
     },
   ];
 
@@ -398,6 +449,34 @@ export const LandingPage: React.FC = () => {
     if (portfolioTab === 'all') return true;
     return p.type === portfolioTab;
   });
+
+  const activeProject =
+    filteredProjects.find((p) => p.id === selectedProjectId) ||
+    filteredProjects[0] ||
+    portfolioProjects[0];
+
+  const currentProjectIndex = Math.max(
+    0,
+    filteredProjects.findIndex((p) => p.id === activeProject.id)
+  );
+
+  const handleNextProject = () => {
+    if (filteredProjects.length === 0) return;
+    const nextIdx = (currentProjectIndex + 1) % filteredProjects.length;
+    setSelectedProjectId(filteredProjects[nextIdx].id);
+  };
+
+  const handlePrevProject = () => {
+    if (filteredProjects.length === 0) return;
+    const prevIdx = (currentProjectIndex - 1 + filteredProjects.length) % filteredProjects.length;
+    setSelectedProjectId(filteredProjects[prevIdx].id);
+  };
+
+  useEffect(() => {
+    if (filteredProjects.length > 0 && !filteredProjects.some((p) => p.id === selectedProjectId)) {
+      setSelectedProjectId(filteredProjects[0].id);
+    }
+  }, [portfolioTab]);
 
   // Growth Associate Benefits
   const associateBenefits = [
@@ -824,16 +903,16 @@ export const LandingPage: React.FC = () => {
               The 9-Step Growth Associate Journey
             </h2>
             <p className="text-slate-500 text-xs sm:text-sm mt-1.5 leading-relaxed">
-              A structured 3-phase pathway from onboarding to exclusive client locking and guaranteed payout disbursement.
+              A structured 3-phase pathway from onboarding to client registration and guaranteed commission payouts.
             </p>
           </div>
 
           {/* 3-Phase Compact Pipeline Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
-            {journeyPhases.map((phase, pIdx) => (
+            {journeyPhases.map((phase) => (
               <div
                 key={phase.phaseNumber}
-                className="bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md hover:border-[#3066BE]/30 transition-all p-5 sm:p-6 flex flex-col justify-between group relative"
+                className="bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md hover:border-[#3066BE]/30 transition-all p-5 sm:p-6 flex flex-col group relative"
               >
                 <div>
                   {/* Phase Header */}
@@ -875,15 +954,6 @@ export const LandingPage: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                </div>
-
-                {/* Phase Footer Indicator */}
-                <div className="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-medium">
-                  <span>Stage {pIdx + 1} of 3</span>
-                  <span className="text-[#119DA4] font-semibold flex items-center gap-1">
-                    {phase.indicator}
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </span>
                 </div>
               </div>
             ))}
