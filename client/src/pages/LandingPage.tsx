@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   TrendingUp,
@@ -17,7 +17,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  Lock,
   FileText,
   Clock,
   Sparkles,
@@ -54,6 +53,41 @@ export const LandingPage: React.FC = () => {
   const [portfolioViewMode, setPortfolioViewMode] = useState<'spotlight' | 'grid'>('spotlight');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('universal-eng');
   const [lightboxProject, setLightboxProject] = useState<any | null>(null);
+
+  // FAQ Chat State
+  const [askedFaqIds, setAskedFaqIds] = useState<string[]>([]);
+  const [chatMessages, setChatMessages] = useState<Array<{
+    id: string;
+    sender: 'user' | 'bot';
+    text: string;
+    time: string;
+    isStreaming?: boolean;
+    followUps?: string[];
+  }>>([
+    {
+      id: 'welcome',
+      sender: 'bot',
+      text: "Hi! I'm here to help. Pick any question on the left and I'll answer it right here.",
+      time: 'Just now',
+    },
+  ]);
+  const [isBotThinking, setIsBotThinking] = useState(false);
+  const chatFeedRef = useRef<HTMLDivElement>(null);
+  const streamIntervalRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (streamIntervalRef.current) {
+        clearInterval(streamIntervalRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (chatFeedRef.current) {
+      chatFeedRef.current.scrollTop = chatFeedRef.current.scrollHeight;
+    }
+  }, [chatMessages, isBotThinking]);
 
   // Contact Form State
   const [contactName, setContactName] = useState('');
@@ -513,33 +547,134 @@ export const LandingPage: React.FC = () => {
     },
   ];
 
-  // Frequently Asked Questions
-  const faqs = [
+  // Interactive FAQ Data
+  const interactiveFaqs = [
     {
-      q: 'What is the relationship between Atriowings Technologies and BGA Enterprise?',
-      a: 'Atriowings Technologies is the parent IT solutions company that delivers the actual engineering, development, and digital marketing services to clients. BGA Enterprise is the official Business Growth Associates Management System where independent growth partners register clients, request quotations, track live projects, and earn verified commissions.',
+      id: 'relationship',
+      q: 'What is the relationship between Atriowings & BGA?',
+      userQ: 'What is the relationship between Atriowings Technologies and BGA Enterprise?',
+      a: 'Atriowings Technologies is the parent IT solutions enterprise that designs, engineers, and delivers web, mobile, custom software, and digital marketing solutions. BGA Enterprise is our official partner platform where independent Growth Associates register exclusive clients, request official commercial quotations, monitor live project stages, and earn guaranteed commissions.',
+      followUpIds: ['client-ownership', 'commissions'],
     },
     {
-      q: 'How does exclusive client ownership work in BGA Enterprise?',
-      a: 'Whenever you register a new client in your associate portal, our system checks mobile numbers and email addresses. If the client is unique, they are locked exclusively to your profile. If another associate attempts to register the same client, the system blocks the duplicate, guaranteeing that all future enquiries and commissions belong to you.',
+      id: 'client-ownership',
+      q: 'How does exclusive client ownership work?',
+      userQ: 'How does exclusive client ownership work in BGA Enterprise?',
+      a: 'Whenever you register a new prospective client with their verified phone number and email, BGA Enterprise creates a 100% exclusive ownership lock under your associate profile. Any duplicate submissions by other associates are automatically blocked by the system, guaranteeing that all future projects and recurring commissions from that client are permanently credited to you.',
+      followUpIds: ['quotations', 'registration-cost'],
     },
     {
-      q: 'Does the Growth Associate prepare official quotations or technical scopes?',
-      a: 'No. You only need to collect and submit the client’s high-level business requirements. Atriowings Technologies has a dedicated Accounts and Technical department that evaluates the requirements, prepares the professional commercial quotation, and sets milestone pricing.',
+      id: 'quotations',
+      q: 'Do I need technical skills to submit quotations?',
+      userQ: 'Do I need technical skills or quotation preparation experience?',
+      a: 'Not at all! You only need to discover client business needs and submit high-level requirements. Atriowings Technologies has a dedicated in-house technical architecture and accounts team that formulates detailed scope documents, milestone pricing, and official branded PDF quotations for you to present to your client.',
+      followUpIds: ['commissions', 'payouts'],
     },
     {
-      q: 'How are commissions calculated for Digital Marketing versus IT Projects?',
-      a: 'For Digital Marketing subscriptions, Associates receive a 15% recurring monthly commission on the verified retainer fee (excluding media ad spend). For Website, Mobile, and Software projects, Associates earn 10% to 12% milestone commissions disbursed promptly upon technical handover and verified final payment.',
+      id: 'commissions',
+      q: 'How are partner commissions calculated?',
+      userQ: 'How are commissions calculated for Marketing vs. Development projects?',
+      a: 'For Digital Marketing retainers, Associates receive a 15% recurring monthly commission on eligible retainer fees for the full lifetime of the client subscription. For Website, Mobile App, and Custom Software projects, Associates earn 10% to 12% milestone completion commissions upon verified client handover and final payment.',
+      followUpIds: ['payouts', 'relationship'],
     },
     {
-      q: 'When do I receive my BGA portal login credentials?',
-      a: 'Immediately after submitting your registration, your account is created in SUBMITTED status. Once the Atriowings Administration verifies your identity KYC and bank details, your account is activated and you can log in to your associate dashboard.',
+      id: 'registration-cost',
+      q: 'Are there any upfront fees or registration costs?',
+      userQ: 'Are there any upfront fees, onboarding charges, or hidden deposits?',
+      a: 'Zero. Registering as a Business Growth Associate is 100% free with no deposit, membership charge, or software fee. We believe in high-trust, transparent collaboration where your compensation is directly tied to the client business value you introduce.',
+      followUpIds: ['verification', 'client-ownership'],
     },
     {
-      q: 'Are there any upfront fees, registration costs, or hidden charges?',
-      a: 'No. Becoming a Business Growth Associate is completely free. Atriowings Technologies believes in transparent, mutually profitable partnerships where your income is directly tied to the client value generated.',
+      id: 'verification',
+      q: 'When do I receive my BGA portal access?',
+      userQ: 'How quickly is my BGA account approved and activated?',
+      a: 'Upon completing our fast online registration, your profile enters SUBMITTED status. Our administrative verification team reviews your identity documentation and bank payout details within 24 to 48 hours. Once approved, you gain full access to your personalized dashboard, quotation request forms, and client CRM.',
+      followUpIds: ['client-ownership', 'quotations'],
+    },
+    {
+      id: 'payouts',
+      q: 'When and how are commission payouts disbursed?',
+      userQ: 'When and how are associate commission payouts disbursed to my bank?',
+      a: 'Commissions are disbursed directly to your verified bank account via audited NEFT/IMPS transfers promptly upon client payment realization. Every transfer includes official transaction reference numbers, GST/tax compliance documentation, and immutable audit logs viewable in your portal.',
+      followUpIds: ['commissions', 'registration-cost'],
+    },
+    {
+      id: 'services-scope',
+      q: 'What service categories can I offer to clients?',
+      userQ: 'What full service categories can I offer to prospective clients?',
+      a: 'You can offer our full engineering suite across 4 major classifications: 1) Digital Marketing (monthly SEO, SMM, PPC retainers), 2) Website Development (corporate, showcase, and e-commerce stores), 3) Mobile Application Development (iOS, Android, cross-platform apps), and 4) Custom Software Development (cloud ERP, CRM, inventory, and SaaS solutions).',
+      followUpIds: ['commissions', 'quotations'],
     },
   ];
+
+  const handleTriggerFaq = (faqId: string) => {
+    const faq = interactiveFaqs.find((f) => f.id === faqId);
+    if (!faq || isBotThinking) return;
+
+    if (streamIntervalRef.current) {
+      clearInterval(streamIntervalRef.current);
+      streamIntervalRef.current = null;
+    }
+
+    setAskedFaqIds((prev) => (prev.includes(faqId) ? prev : [...prev, faqId]));
+
+    const userMsgId = `user-${Date.now()}`;
+    const botMsgId = `bot-${Date.now()}`;
+
+    setChatMessages((prev) => [
+      ...prev.map((m) => ({ ...m, isStreaming: false })),
+      {
+        id: userMsgId,
+        sender: 'user',
+        text: faq.userQ,
+        time: 'Just now',
+      },
+    ]);
+
+    setIsBotThinking(true);
+
+    setTimeout(() => {
+      setIsBotThinking(false);
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: botMsgId,
+          sender: 'bot',
+          text: '',
+          time: 'Just now',
+          isStreaming: true,
+          followUps: faq.followUpIds,
+        },
+      ]);
+
+      const fullText = faq.a;
+      let charIndex = 0;
+      const chunkSize = 3;
+
+      streamIntervalRef.current = setInterval(() => {
+        charIndex += chunkSize;
+        if (charIndex >= fullText.length) {
+          clearInterval(streamIntervalRef.current);
+          streamIntervalRef.current = null;
+          setChatMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === botMsgId
+                ? { ...msg, text: fullText, isStreaming: false }
+                : msg
+            )
+          );
+        } else {
+          const partial = fullText.slice(0, charIndex);
+          setChatMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === botMsgId ? { ...msg, text: partial } : msg
+            )
+          );
+        }
+      }, 15);
+    }, 250);
+  };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col text-slate-800 selection:bg-[#80DED9]/30 selection:text-[#152544]">
@@ -1422,11 +1557,6 @@ export const LandingPage: React.FC = () => {
                           <div className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]" />
                           <div className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]" />
                         </div>
-                        {/* URL Bar */}
-                        <div className="flex-1 max-w-sm mx-auto bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1 flex items-center justify-center gap-2 text-[11px] text-slate-400 font-mono truncate">
-                          <Lock className="w-3 h-3 text-emerald-400 shrink-0" />
-                          <span className="truncate">https://atriowings.in/portfolio/{activeProject.id}</span>
-                        </div>
                         {/* Maximize Button */}
                         <button
                           type="button"
@@ -1675,43 +1805,201 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 11. FREQUENTLY ASKED QUESTIONS */}
-      <section id="faq" className="py-24 bg-white scroll-mt-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#3066BE] bg-[#edf4fc] px-3.5 py-1.5 rounded-full border border-[#6D96C5]/30">
-              Clear Answers
+      {/* 11. FREQUENTLY ASKED QUESTIONS – INTERACTIVE ASK US ANYTHING CHAT */}
+      <section id="faq" className="py-24 bg-gradient-to-b from-[#f8fafc] via-[#fdfbf7]/60 to-[#edf4fc]/30 scroll-mt-20 border-t border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="text-center mb-12 sm:mb-14">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#3066BE] bg-[#edf4fc] px-4 py-1.5 rounded-full border border-[#6D96C5]/30 inline-block mb-3.5 shadow-2xs">
+              FREQUENTLY ASKED QUESTIONS
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-4 tracking-tight">
-              Frequently Asked Questions
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0f172a] tracking-tight">
+              Ask Us{' '}
+              <span className="bg-gradient-to-r from-[#3066BE] to-[#119DA4] bg-clip-text text-transparent">
+                Anything
+              </span>
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-2">
-              Everything you need to know about Atriowings Technologies and the BGA Enterprise platform.
+            <p className="text-xs sm:text-sm text-slate-500 mt-2.5 max-w-2xl mx-auto">
+              Tap a question to get an instant answer about partnerships, commissions, client ownership, and workflows.
             </p>
           </div>
 
-          <div className="space-y-4">
-            {faqs.map((faq, i) => (
-              <div
-                key={i}
-                className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm transition-all duration-200 hover:border-[#3066BE]/40"
-              >
-                <button
-                  onClick={() => setActiveFaq(activeFaq === i ? null : i)}
-                  className="w-full text-left p-5 sm:p-6 flex justify-between items-center font-bold text-slate-900 hover:bg-slate-50/60 transition-colors text-sm sm:text-base"
-                >
-                  <span className="pr-4">{faq.q}</span>
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 ${activeFaq === i ? 'bg-[#3066BE] text-white rotate-90' : 'bg-slate-100 text-slate-500'}`}>
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                </button>
-                {activeFaq === i && (
-                  <div className="px-6 pb-6 pt-1 text-xs sm:text-sm text-slate-600 border-t border-slate-100 bg-[#edf4fc]/20 leading-relaxed animate-fadeIn">
-                    {faq.a}
-                  </div>
-                )}
+          {/* 2-Column Split: 38% Left Sidebar, 62% Right Chat Card */}
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+            {/* Left Column (POPULAR QUESTIONS) ~38% */}
+            <div className="w-full lg:w-[38%] flex flex-col space-y-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 px-1">
+                POPULAR QUESTIONS
+              </span>
+
+              <div className="space-y-2.5">
+                {interactiveFaqs.map((faq) => {
+                  const isAsked = askedFaqIds.includes(faq.id);
+                  return (
+                    <div
+                      key={faq.id}
+                      onClick={() => handleTriggerFaq(faq.id)}
+                      className={`w-full text-left rounded-xl border p-4 sm:py-3.5 sm:px-4 flex items-center justify-between transition-all duration-200 cursor-pointer shadow-2xs group ${
+                        isAsked
+                          ? 'border-slate-200 bg-white/70'
+                          : 'border-slate-200 bg-white hover:border-[#80DED9] hover:bg-[#edf4fc]/40 hover:shadow-sm'
+                      }`}
+                    >
+                      <span
+                        className={`text-xs sm:text-sm pr-3 transition-colors ${
+                          isAsked
+                            ? 'text-slate-400 font-medium'
+                            : 'text-slate-800 font-semibold group-hover:text-[#3066BE]'
+                        }`}
+                      >
+                        {faq.q}
+                      </span>
+                      <div className="shrink-0 flex items-center">
+                        {isAsked ? (
+                          <span className="text-[10px] font-bold tracking-wider text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded uppercase">
+                            ASKED
+                          </span>
+                        ) : (
+                          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#3066BE] group-hover:translate-x-1 transition-all" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+
+              {/* Bottom link to contact */}
+              <div className="pt-3 px-1">
+                <a
+                  href="#contact"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#3066BE] hover:text-[#119DA4] transition-colors group"
+                >
+                  <span>Still have questions? Talk to an Associate Coordinator</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </a>
+              </div>
+            </div>
+
+            {/* Right Column (Chat Container) ~62% */}
+            <div className="w-full lg:w-[62%]">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-md flex flex-col h-[520px] overflow-hidden">
+                {/* Top Header */}
+                <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#3066BE] to-[#119DA4] text-white font-bold flex items-center justify-center text-xs shadow-sm ring-2 ring-[#80DED9]/30 shrink-0">
+                      AW
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900 leading-tight">
+                        Atriowings Associate Desk
+                      </h4>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-xs text-slate-500 font-medium">
+                          Online · replies instantly
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scrollable Feed */}
+                <div
+                  ref={chatFeedRef}
+                  className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 scroll-smooth bg-[#fafbfc]"
+                >
+                  {chatMessages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${
+                        msg.sender === 'user' ? 'items-end' : 'items-start'
+                      }`}
+                    >
+                      {msg.sender === 'user' ? (
+                        <div className="max-w-[85%]">
+                          <div className="bg-[#3066BE] text-white text-xs sm:text-sm rounded-2xl rounded-br-sm px-4 py-3 leading-relaxed shadow-sm">
+                            {msg.text}
+                          </div>
+                          <span className="text-[10px] text-slate-400 mt-1 block text-right pr-1">
+                            {msg.time}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="max-w-[88%]">
+                          <div className="bg-[#F3F4F6] text-[#1F2937] text-xs sm:text-sm rounded-2xl rounded-bl-sm px-4 py-3 leading-relaxed border border-slate-200/60 shadow-2xs">
+                            {msg.text || (
+                              <span className="inline-flex items-center gap-1.5 py-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#119DA4] animate-bounce" style={{ animationDelay: '0ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#119DA4] animate-bounce" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#119DA4] animate-bounce" style={{ animationDelay: '300ms' }} />
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400 mt-1 block pl-1">
+                            {msg.time}
+                          </span>
+
+                          {/* Suggested Follow-Ups */}
+                          {!msg.isStreaming && msg.followUps && msg.followUps.length > 0 && (
+                            <div className="mt-3 pt-2.5 border-t border-slate-200/60">
+                              <span className="text-[10px] font-bold tracking-wider text-slate-500 uppercase block mb-1.5">
+                                SUGGESTED FOLLOW-UPS:
+                              </span>
+                              <div className="flex flex-wrap gap-2">
+                                {msg.followUps.map((fId) => {
+                                  const targetFaq = interactiveFaqs.find((f) => f.id === fId);
+                                  if (!targetFaq) return null;
+                                  return (
+                                    <button
+                                      key={fId}
+                                      type="button"
+                                      onClick={() => handleTriggerFaq(fId)}
+                                      className="border border-[#80DED9]/70 bg-[#e7f7f8] text-[#119DA4] hover:bg-[#80DED9]/25 hover:border-[#119DA4] transition-all rounded-full text-xs font-semibold px-3 py-1 flex items-center gap-1 shadow-2xs"
+                                    >
+                                      <span>{targetFaq.q}</span>
+                                      <ArrowRight className="w-3 h-3 shrink-0" />
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {isBotThinking && (
+                    <div className="flex flex-col items-start max-w-[88%]">
+                      <div className="bg-[#F3F4F6] text-[#1F2937] rounded-2xl rounded-bl-sm px-4 py-3 border border-slate-200/60 shadow-2xs flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#119DA4] animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-2 h-2 rounded-full bg-[#119DA4] animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="w-2 h-2 rounded-full bg-[#119DA4] animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom Bar: Pinned footer */}
+                <div className="px-4 py-3 border-t border-slate-200 bg-white flex items-center gap-2 shrink-0">
+                  <input
+                    type="text"
+                    readOnly
+                    value=""
+                    placeholder="Choose a question from the list..."
+                    className="flex-1 bg-slate-50 border border-slate-200 text-slate-400 placeholder:text-slate-400 rounded-xl px-4 py-2.5 text-xs sm:text-sm outline-none cursor-default select-none"
+                  />
+                  <button
+                    type="button"
+                    disabled
+                    className="bg-gradient-to-r from-[#3066BE] to-[#119DA4] text-white px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-sm opacity-90 cursor-default shrink-0"
+                  >
+                    <span>Send</span>
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
