@@ -273,6 +273,22 @@ export const BgaPortal: React.FC = () => {
   const [reminderModal, setReminderModal] = useState<{ quotationId: string; quotationNumber: string; clientName: string } | null>(null);
   const [reminderMessage, setReminderMessage] = useState('');
 
+  // Deliverable Review Modal for BGA
+  const [deliverableReviewModal, setDeliverableReviewModal] = useState<{
+    deliverable: any;
+    project: any;
+  } | null>(null);
+  const [reviewAction, setReviewAction] = useState<'APPROVE_AND_SHARE' | 'REQUEST_CHANGES'>('APPROVE_AND_SHARE');
+  const [reviewNotes, setReviewNotes] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+
+  // BGA Feedback / Three-Way Communication Modal
+  const [bgaFeedbackModal, setBgaFeedbackModal] = useState<{ project: any } | null>(null);
+  const [bgaFeedbackContent, setBgaFeedbackContent] = useState('');
+  const [bgaFeedbackType, setBgaFeedbackType] = useState<'CLIENT_FEEDBACK' | 'INTERNAL_NOTE'>('CLIENT_FEEDBACK');
+  const [bgaFeedbackMilestoneId, setBgaFeedbackMilestoneId] = useState('');
+  const [bgaFeedbackSubmitting, setBgaFeedbackSubmitting] = useState(false);
+
   // Associate Support Desk State
   const [supportCategory, setSupportCategory] = useState('Quotation & Commercial Inquiries');
   const [supportMessage, setSupportMessage] = useState('');

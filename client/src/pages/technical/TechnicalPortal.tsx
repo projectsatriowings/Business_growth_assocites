@@ -603,78 +603,181 @@ export const TechnicalPortal: React.FC = () => {
                   {/* Deliverables Section */}
                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                      <h3 className="font-bold text-slate-900 text-sm">Deliverables & Releases</h3>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm">Deliverables & Releases</h3>
+                        <p className="text-[11px] text-slate-500">
+                          Upload project artifacts. Assigned BGA reviews and shares with client.
+                        </p>
+                      </div>
                       <button
                         onClick={() => setDeliverableModal(true)}
-                        className="px-3 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded text-xs font-bold flex items-center gap-1"
+                        className="px-3 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
                       >
                         <Upload className="w-3.5 h-3.5" /> Upload / Register Deliverable
                       </button>
                     </div>
 
-                    <div className="space-y-2">
-                      {selectedProject.deliverables?.length === 0 ? (
-                        <div className="text-xs text-slate-400 py-3 text-center">No deliverables recorded yet.</div>
+                    <div className="space-y-3">
+                      {(!selectedProject.deliverables || selectedProject.deliverables.length === 0) ? (
+                        <div className="text-xs text-slate-400 py-4 text-center">No deliverables recorded yet. Click above to register deliverables for client review.</div>
                       ) : (
-                        selectedProject.deliverables?.map((d: any) => (
-                          <div
-                            key={d.id}
-                            className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex justify-between items-center text-xs"
-                          >
-                            <div>
-                              <span className="font-bold text-slate-800">{d.title}</span>
-                              <span className="text-[10px] text-slate-400 ml-2">v{d.version}</span>
-                              <div className="text-slate-500 font-mono text-[11px]">{d.fileUrl}</div>
+                        selectedProject.deliverables.map((d: any) => {
+                          const linkedMilestone = d.milestone || selectedProject.milestones?.find((m: any) => m.id === d.milestoneId);
+                          return (
+                            <div
+                              key={d.id}
+                              className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-xs"
+                            >
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-slate-900">{d.title}</span>
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">v{d.version}</span>
+                                  {linkedMilestone && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
+                                      Milestone: {linkedMilestone.title}
+                                    </span>
+                                  )}
+                                </div>
+                                {d.description && <p className="text-slate-600 text-[11px]">{d.description}</p>}
+                                <div className="flex items-center gap-3 text-slate-500 font-mono text-[11px]">
+                                  <a
+                                    href={d.fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1 font-semibold"
+                                  >
+                                    <ExternalLink className="w-3 h-3" /> Access Deliverable Artifact
+                                  </a>
+                                  <span className="text-slate-400">Uploaded {new Date(d.createdAt).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                {d.status === 'SHARED_WITH_CLIENT' || d.isClientVisible ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3" /> Approved & Shared with Client
+                                  </span>
+                                ) : d.status === 'REVISION_REQUIRED' ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" /> Changes Requested by BGA
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" /> Pending BGA Review
+                                  </span>
+                                )}
+
+                                {d.clientViewedAt && (
+                                  <span className="text-[10px] text-teal-700 font-medium flex items-center gap-1">
+                                    <Eye className="w-3 h-3" /> Client Viewed: {new Date(d.clientViewedAt).toLocaleDateString()}
+                                  </span>
+                                )}
+
+                                {d.bgaReviewNotes && (
+                                  <span className="text-[10px] text-slate-600 italic max-w-xs text-right">
+                                    BGA Note: {d.bgaReviewNotes}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <span className="text-[10px] text-slate-400">
-                              {new Date(d.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </div>
 
-                  {/* Correction Requests & Feedback */}
+                  {/* Three-Way Synchronized Feedback & Communication Thread */}
                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                      <h3 className="font-bold text-slate-900 text-sm">Client Feedback & Corrections</h3>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm">Unified Communication & Feedback Thread</h3>
+                        <p className="text-[11px] text-slate-500">
+                          Three-way discussion between Client, BGA, and Technical Team.
+                        </p>
+                      </div>
                       <button
                         onClick={() => setFeedbackModal(true)}
-                        className="px-3 py-1 bg-red-50 text-red-700 hover:bg-red-100 rounded text-xs font-bold flex items-center gap-1"
+                        className="px-3 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" /> Log Correction Request
+                        <MessageSquare className="w-3.5 h-3.5" /> Post Technical Update / Reply
                       </button>
                     </div>
 
-                    <div className="space-y-2">
-                      {selectedProject.feedback?.length === 0 ? (
-                        <div className="text-xs text-slate-400 py-3 text-center">No correction requests logged.</div>
+                    <div className="space-y-3">
+                      {(!selectedProject.feedback || selectedProject.feedback.length === 0) ? (
+                        <div className="text-xs text-slate-400 py-4 text-center">No feedback messages yet. Post an update or wait for client/BGA review comments.</div>
                       ) : (
-                        selectedProject.feedback?.map((f: any) => (
-                          <div
-                            key={f.id}
-                            className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex justify-between items-start text-xs"
-                          >
-                            <div>
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                f.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                              }`}>
-                                {f.status}
-                              </span>
-                              <p className="text-slate-700 mt-1.5">{f.content}</p>
-                            </div>
+                        selectedProject.feedback.map((f: any) => {
+                          const isClient = f.authorRole === 'CLIENT' || f.authorRole === 'CLIENT_USER';
+                          const isBga = f.authorRole === 'BGA' || f.authorRole === 'BGA_REPRESENTATIVE';
+                          const isInternal = f.visibility === 'INTERNAL' || f.feedbackType === 'INTERNAL_NOTE';
 
-                            {f.status !== 'RESOLVED' && (
-                              <button
-                                onClick={() => handleResolveFeedback(f.id)}
-                                className="px-2.5 py-1 bg-emerald-600 text-white rounded text-[11px] font-semibold hover:bg-emerald-700 shrink-0 ml-4"
-                              >
-                                Mark Resolved ✓
-                              </button>
-                            )}
-                          </div>
-                        ))
+                          return (
+                            <div
+                              key={f.id}
+                              className={`p-3.5 rounded-xl border text-xs ${
+                                isInternal
+                                  ? 'bg-amber-50/40 border-amber-200'
+                                  : isClient
+                                  ? 'bg-teal-50/40 border-teal-200'
+                                  : isBga
+                                  ? 'bg-blue-50/40 border-blue-200'
+                                  : 'bg-slate-50 border-slate-200'
+                              }`}
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-200/60">
+                                <div className="flex items-center gap-2">
+                                  {isClient ? (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800">
+                                      👤 CLIENT: {f.authorName || 'Client'}
+                                    </span>
+                                  ) : isBga ? (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
+                                      💼 BGA: {f.authorName || 'BGA Representative'}
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">
+                                      🛠️ TECHNICAL TEAM: {f.authorName || 'Engineer'}
+                                    </span>
+                                  )}
+
+                                  {isInternal ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800">
+                                      🔒 Internal Note (Client Cannot See)
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800">
+                                      🌐 Visible to Client
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-slate-400">
+                                    {new Date(f.createdAt).toLocaleString()}
+                                  </span>
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    f.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
+                                  }`}>
+                                    {f.status}
+                                  </span>
+                                  {f.status !== 'RESOLVED' && (
+                                    <button
+                                      onClick={() => handleResolveFeedback(f.id)}
+                                      className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold cursor-pointer transition-colors"
+                                    >
+                                      Mark Resolved ✓
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              <p className="text-slate-800 leading-relaxed font-normal whitespace-pre-wrap">
+                                {f.content}
+                              </p>
+                            </div>
+                          );
+                        })
                       )}
                     </div>
                   </div>
@@ -724,7 +827,7 @@ export const TechnicalPortal: React.FC = () => {
                         </button>
                         <button
                           type="submit"
-                          className="px-4 py-1.5 bg-[#3066BE] text-white shadow-sm rounded font-bold hover:bg-amber-700"
+                          className="px-4 py-1.5 bg-[#3066BE] text-white shadow-sm rounded font-bold hover:bg-[#255299]"
                         >
                           Add Milestone
                         </button>
@@ -744,7 +847,10 @@ export const TechnicalPortal: React.FC = () => {
                     className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <h3 className="text-base font-bold text-slate-900">Register Deliverable</h3>
+                    <h3 className="text-base font-bold text-slate-900">Register Project Deliverable</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Deliverables will be forwarded to BGA for review before client release.
+                    </p>
                     <form onSubmit={handleAddDeliverable} className="mt-4 space-y-3 text-xs">
                       <div>
                         <label className="block text-slate-700 font-semibold mb-1">Deliverable Title *</label>
@@ -753,42 +859,76 @@ export const TechnicalPortal: React.FC = () => {
                           required
                           value={deliverableTitle}
                           onChange={(e) => setDeliverableTitle(e.target.value)}
-                          placeholder="e.g. Production Release Artifacts"
+                          placeholder="e.g. Website Core Implementation v1"
                           className="w-full p-2 border border-slate-300 rounded"
                         />
                       </div>
+
                       <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Download / Staging Link</label>
+                        <label className="block text-slate-700 font-semibold mb-1">Associated Milestone</label>
+                        <select
+                          value={deliverableMilestoneId}
+                          onChange={(e) => setDeliverableMilestoneId(e.target.value)}
+                          className="w-full p-2 border border-slate-300 rounded bg-white text-slate-800"
+                        >
+                          <option value="">-- General / No Milestone Attached --</option>
+                          {selectedProject?.milestones?.map((m: any) => (
+                            <option key={m.id} value={m.id}>
+                              {m.title} ({m.status})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">Artifact / Staging / Download Link *</label>
                         <input
                           type="text"
+                          required
                           value={deliverableUrl}
                           onChange={(e) => setDeliverableUrl(e.target.value)}
-                          placeholder="https://client-staging.bga.com or zip URL"
-                          className="w-full p-2 border border-slate-300 rounded"
+                          placeholder="https://staging.domain.com or google drive / release URL"
+                          className="w-full p-2 border border-slate-300 rounded font-mono text-[11px]"
                         />
                       </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Version Number</label>
+                          <input
+                            type="text"
+                            value={deliverableVersion}
+                            onChange={(e) => setDeliverableVersion(e.target.value)}
+                            placeholder="1.0"
+                            className="w-full p-2 border border-slate-300 rounded"
+                          />
+                        </div>
+                      </div>
+
                       <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Version</label>
-                        <input
-                          type="text"
-                          value={deliverableVersion}
-                          onChange={(e) => setDeliverableVersion(e.target.value)}
+                        <label className="block text-slate-700 font-semibold mb-1">Description / Release Notes</label>
+                        <textarea
+                          rows={2}
+                          value={deliverableDesc}
+                          onChange={(e) => setDeliverableDesc(e.target.value)}
+                          placeholder="Explain what has been completed, test instructions, or notes for BGA/Client..."
                           className="w-full p-2 border border-slate-300 rounded"
                         />
                       </div>
-                      <div className="flex justify-end gap-2 pt-2">
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                         <button
                           type="button"
                           onClick={() => setDeliverableModal(false)}
-                          className="px-3 py-1.5 rounded text-slate-600 font-semibold"
+                          className="px-3 py-1.5 rounded text-slate-600 font-semibold hover:bg-slate-100 transition-colors"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="px-4 py-1.5 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700"
+                          className="px-4 py-1.5 bg-[#3066BE] text-white rounded font-bold hover:bg-[#255299] transition-colors"
                         >
-                          Save Deliverable
+                          Upload & Submit for BGA Review
                         </button>
                       </div>
                     </form>
@@ -796,7 +936,7 @@ export const TechnicalPortal: React.FC = () => {
                 )}
               </ModalPortal>
 
-              {/* Feedback Modal */}
+              {/* Three-Way Feedback & Communication Modal */}
               <ModalPortal
                 isOpen={feedbackModal}
                 onClose={() => setFeedbackModal(false)}
@@ -806,32 +946,82 @@ export const TechnicalPortal: React.FC = () => {
                     className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <h3 className="text-base font-bold text-slate-900">Log Correction Request</h3>
+                    <h3 className="text-base font-bold text-slate-900">Post Technical Update / Reply</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Post response to client questions or coordinate internally with BGA.
+                    </p>
                     <form onSubmit={handleAddFeedback} className="mt-4 space-y-3 text-xs">
                       <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Feedback / Defect Details *</label>
+                        <label className="block text-slate-700 font-semibold mb-1">Audience & Visibility *</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setFeedbackVisibility('CLIENT_VISIBLE')}
+                            className={`p-2.5 rounded-lg border text-left font-semibold transition-all ${
+                              feedbackVisibility === 'CLIENT_VISIBLE'
+                                ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
+                                : 'border-slate-200 bg-white text-slate-600'
+                            }`}
+                          >
+                            <span className="block font-bold">🌐 Client & BGA</span>
+                            <span className="text-[10px] font-normal text-slate-500">Visible to client in their portal</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFeedbackVisibility('INTERNAL')}
+                            className={`p-2.5 rounded-lg border text-left font-semibold transition-all ${
+                              feedbackVisibility === 'INTERNAL'
+                                ? 'border-amber-500 bg-amber-50 text-amber-900'
+                                : 'border-slate-200 bg-white text-slate-600'
+                            }`}
+                          >
+                            <span className="block font-bold">🔒 Internal Note</span>
+                            <span className="text-[10px] font-normal text-slate-500">Only BGA & Technical team see this</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">Related Milestone (Optional)</label>
+                        <select
+                          value={feedbackMilestoneId}
+                          onChange={(e) => setFeedbackMilestoneId(e.target.value)}
+                          className="w-full p-2 border border-slate-300 rounded bg-white text-slate-800"
+                        >
+                          <option value="">-- General Project Communication --</option>
+                          {selectedProject?.milestones?.map((m: any) => (
+                            <option key={m.id} value={m.id}>
+                              {m.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">Message / Response Content *</label>
                         <textarea
-                          rows={3}
+                          rows={4}
                           required
                           value={feedbackContent}
                           onChange={(e) => setFeedbackContent(e.target.value)}
-                          placeholder="Describe the requested correction from the client or QA..."
+                          placeholder="Type technical update, answer client queries, or notify BGA..."
                           className="w-full p-2 border border-slate-300 rounded"
                         />
                       </div>
-                      <div className="flex justify-end gap-2 pt-2">
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                         <button
                           type="button"
                           onClick={() => setFeedbackModal(false)}
-                          className="px-3 py-1.5 rounded text-slate-600 font-semibold"
+                          className="px-3 py-1.5 rounded text-slate-600 font-semibold hover:bg-slate-100 transition-colors"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="px-4 py-1.5 bg-red-600 text-white rounded font-bold hover:bg-red-700"
+                          className="px-4 py-1.5 bg-[#3066BE] text-white rounded font-bold hover:bg-[#255299] transition-colors"
                         >
-                          Submit Correction
+                          Send Message
                         </button>
                       </div>
                     </form>
