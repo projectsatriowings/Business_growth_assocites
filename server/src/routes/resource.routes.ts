@@ -46,11 +46,11 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
     });
     const settingsMap = new Map(allSettings.map((s) => [s.key, s.value]));
 
-    const companyName = settingsMap.get('company_name') || 'BGA Solutions';
-    const companyEmail = settingsMap.get('company_email') || 'billing@bga.com';
-    const companyPhone = settingsMap.get('company_phone') || '+91 98765 43210';
-    const companyAddress = settingsMap.get('company_address') || 'Cyber Valley, Hyderabad';
-    const companyGstin = settingsMap.get('company_gstin') || '36AAACB1234F1Z5';
+    const companyName = settingsMap.get('company_name') || 'Atriowings Technologies India Private Limited';
+    const companyEmail = settingsMap.get('company_email') || 'info@atriowings.in';
+    const companyPhone = settingsMap.get('company_phone') || '+91 8825948859';
+    const companyAddress = settingsMap.get('company_address') || 'No. 1, Gurudev Complex, 57th St, Venkat Raman Nagar, Korattur, Chennai - 600080';
+    const companyGstin = settingsMap.get('company_gstin') || '33AASCA7189D1ZD';
 
     let preparedByName = 'Accounts Department';
     if (quotation.preparedById) {
@@ -66,7 +66,9 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
       }
     } catch {}
 
-    generateQuotationPdf(
+    const isDownload = req.query.download === 'true' || req.query.preview !== 'true';
+
+    await generateQuotationPdf(
       {
         quotationNumber: quotation.quotationNumber,
         version: quotation.version,
@@ -101,10 +103,15 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
           email: companyEmail,
           phone: companyPhone,
           address: companyAddress,
+          headOffice: 'No.45 , 2nd Floor , 3rd Avenue , Anna Nagar East , Chennai - 600102 Tamil Nadu, INDIA',
           gstin: companyGstin,
+          pan: 'AASCA7189D',
+          cin: 'U72900TN20190TC131558',
+          website: 'https://atriowings.in',
         },
       },
-      res
+      res,
+      { download: isDownload }
     );
   } catch (error) {
     console.error('PDF error:', error);

@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth, UserRole } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import { PageLoadingFallback } from './components/Skeleton';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -63,9 +64,10 @@ export function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <BrowserRouter>
-          <Suspense fallback={<PageLoadingFallback />}>
-            <Routes>
+        <ToastProvider>
+          <BrowserRouter>
+            <Suspense fallback={<PageLoadingFallback />}>
+              <Routes>
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/register" element={<RegisterBgaPage />} />
@@ -149,8 +151,9 @@ export function App() {
             </Routes>
           </Suspense>
         </BrowserRouter>
-      </AuthProvider>
-    </ErrorBoundary>
+      </ToastProvider>
+    </AuthProvider>
+  </ErrorBoundary>
   );
 }
 

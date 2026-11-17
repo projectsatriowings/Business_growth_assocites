@@ -34,10 +34,15 @@ import {
   RefreshCw,
   Edit3,
   Save,
+  Building,
+  Globe,
+  ExternalLink,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { apiRequest } from '../../utils/api';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SkeletonStatsRow, SkeletonTable, BgaDashboardSkeleton } from '../../components/Skeleton';
 import { BgaProfileView } from './BgaProfileView';
 
@@ -59,6 +64,8 @@ export const BUSINESS_CATEGORIES = [
 
 export const BgaPortal: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [modalSubmitting, setModalSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<
     'dashboard' | 'profile' | 'services' | 'resources' | 'new-client' | 'clients' | 'enquiries' | 'quotations' | 'projects' | 'earnings' | 'support' | 'requests'
   >('dashboard');
@@ -132,6 +139,50 @@ export const BgaPortal: React.FC = () => {
   // Quotation Reminder Modal
   const [reminderModal, setReminderModal] = useState<{ quotationId: string; quotationNumber: string; clientName: string } | null>(null);
   const [reminderMessage, setReminderMessage] = useState('');
+
+  // Associate Support Desk State
+  const [supportCategory, setSupportCategory] = useState('Quotation & Commercial Inquiries');
+  const [supportMessage, setSupportMessage] = useState('');
+  const [supportSending, setSupportSending] = useState(false);
+  const [supportSuccess, setSupportSuccess] = useState<string | null>(null);
+  const [supportError, setSupportError] = useState<string | null>(null);
+
+  const handleSupportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supportMessage.trim()) {
+      setSupportError('Please describe your query or support requirement.');
+      return;
+    }
+    setSupportSending(true);
+    setSupportSuccess(null);
+    setSupportError(null);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: user?.name || 'BGA Associate',
+          email: user?.email || '',
+          phone: user?.mobile || '',
+          companyName: 'BGA Enterprise Associate Network',
+          subject: `[Associate Support - ${supportCategory}] from ${user?.name || 'Associate'}`,
+          message: supportMessage.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to submit support request');
+      }
+      setSupportSuccess('Support ticket submitted successfully! Our executive desk at Atriowings headquarters will review and respond promptly.');
+      setSupportMessage('');
+      toast.success('Support message submitted successfully');
+    } catch (err: any) {
+      setSupportError(err.message || 'Unable to submit request. Please reach info@atriowings.in directly.');
+      toast.error('Failed to send support request');
+    } finally {
+      setSupportSending(false);
+    }
+  };
 
   // Load BGA Dashboard Stats independently
   const loadStats = async (bypass = false) => {
@@ -448,18 +499,19 @@ export const BgaPortal: React.FC = () => {
       const res = await apiRequest(`/api/bga/enquiries/${enquiryId}/request-quotation`, {
         method: 'POST',
       });
-      alert(res.message);
+      toast.success(res.message || 'Quotation request submitted to Accounts.', 'Quotation Requested');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to request quotation', 'Request Failed');
     }
   };
 
   // Handle Create Extra Enquiry for existing client
   const handleCreateEnquiry = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEnquiryModal) return;
+    if (!newEnquiryModal || modalSubmitting) return;
 
+    setModalSubmitting(true);
     try {
       await apiRequest('/api/bga/enquiries', {
         method: 'POST',
@@ -468,7 +520,7 @@ export const BgaPortal: React.FC = () => {
           ...enquiryForm,
         }),
       });
-      alert('Enquiry submitted successfully and forwarded to Admin for approval.');
+      toast.success('Enquiry submitted successfully and forwarded to Admin for approval.', 'Enquiry Created');
       setNewEnquiryModal(null);
       setEnquiryForm({
         serviceCategory: 'WEBSITE_DEVELOPMENT',
@@ -479,30 +531,36 @@ export const BgaPortal: React.FC = () => {
       });
       loadData();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Failed to submit enquiry', 'Enquiry Submission Failed');
+    } finally {
+      setModalSubmitting(false);
     }
   };
 
   // Handle Submit Revision
   const handleSubmitRevision = async () => {
-    if (!revisionModal || !revisionNotes) return;
+    if (!revisionModal || !revisionNotes || modalSubmitting) return;
+    setModalSubmitting(true);
     try {
       await apiRequest(`/api/bga/quotations/${revisionModal.quotationId}/request-revision`, {
         method: 'POST',
         body: JSON.stringify({ revisionNotes }),
       });
-      alert('Revision request forwarded to Accounts Department.');
+      toast.success('Revision request forwarded to Accounts Department.', 'Revision Requested');
       setRevisionModal(null);
       setRevisionNotes('');
       loadData();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Failed to submit revision request', 'Revision Failed');
+    } finally {
+      setModalSubmitting(false);
     }
   };
 
   // Handle Client Acceptance
   const handleClientAcceptance = async () => {
-    if (!acceptanceModal || !acceptanceNotes) return;
+    if (!acceptanceModal || !acceptanceNotes || modalSubmitting) return;
+    setModalSubmitting(true);
     try {
       const res = await apiRequest(`/api/bga/quotations/${acceptanceModal.quotationId}/client-decision`, {
         method: 'POST',
@@ -511,30 +569,38 @@ export const BgaPortal: React.FC = () => {
           clientAcceptanceNotes: acceptanceNotes,
         }),
       });
-      alert(res.message);
+      toast.success(
+        res.message || 'Client acceptance recorded successfully. Work Order generated in PENDING_ADVANCE status.',
+        'Acceptance Recorded'
+      );
       setAcceptanceModal(null);
       setAcceptanceNotes('');
       loadData();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Failed to record client acceptance', 'Acceptance Failed');
+    } finally {
+      setModalSubmitting(false);
     }
   };
 
   // Handle Quotation Reminder to Accounts & Admin
   const handleSendReminder = async () => {
-    if (!reminderModal) return;
+    if (!reminderModal || modalSubmitting) return;
+    setModalSubmitting(true);
     try {
       const res = await apiRequest(`/api/bga/quotations/${reminderModal.quotationId}/reminder`, {
         method: 'POST',
         body: JSON.stringify({ message: reminderMessage }),
       });
-      alert(res.message || 'Quotation reminder dispatched to Accounts & Admin!');
+      toast.success(res.message || 'Quotation reminder dispatched to Accounts & Admin!', 'Reminder Sent');
       setReminderModal(null);
       setReminderMessage('');
       loadTabData('quotations');
       loadTabData('requests');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Failed to send reminder', 'Reminder Failed');
+    } finally {
+      setModalSubmitting(false);
     }
   };
 
@@ -1732,69 +1798,110 @@ export const BgaPortal: React.FC = () => {
               )}
 
               {/* Extra Enquiry Modal */}
-              {newEnquiryModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-                    <h3 className="text-base font-bold text-slate-900">
-                      Submit Enquiry for {newEnquiryModal.clientName}
-                    </h3>
-                    <form onSubmit={handleCreateEnquiry} className="mt-4 space-y-3 text-xs">
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Service</label>
-                        <select
-                          value={enquiryForm.serviceCategory}
-                          onChange={(e) => setEnquiryForm({ ...enquiryForm, serviceCategory: e.target.value })}
-                          className="w-full p-2 border border-slate-300 rounded"
-                        >
-                          <option value="DIGITAL_MARKETING">Digital Marketing</option>
-                          <option value="WEBSITE_DEVELOPMENT">Website Development</option>
-                          <option value="MOBILE_APPLICATION_DEVELOPMENT">Mobile Application</option>
-                          <option value="SOFTWARE_DEVELOPMENT">Custom Software / ERP</option>
-                        </select>
-                      </div>
+              <AnimatePresence>
+                {newEnquiryModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                    onClick={() => !modalSubmitting && setNewEnquiryModal(null)}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-cyan-500" />
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
+                              <Plus className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">
+                                Submit New Enquiry
+                              </h3>
+                              <p className="text-xs text-slate-500">
+                                Client: <strong className="text-slate-800">{newEnquiryModal.clientName}</strong>
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => !modalSubmitting && setNewEnquiryModal(null)}
+                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
 
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Expected Budget (₹)</label>
-                        <input
-                          type="number"
-                          value={enquiryForm.expectedBudget}
-                          onChange={(e) => setEnquiryForm({ ...enquiryForm, expectedBudget: e.target.value })}
-                          placeholder="e.g. 75000"
-                          className="w-full p-2 border border-slate-300 rounded"
-                        />
-                      </div>
+                        <form onSubmit={handleCreateEnquiry} className="space-y-3.5 text-xs">
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Service Category</label>
+                            <select
+                              value={enquiryForm.serviceCategory}
+                              onChange={(e) => setEnquiryForm({ ...enquiryForm, serviceCategory: e.target.value })}
+                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                            >
+                              <option value="DIGITAL_MARKETING">Digital Marketing</option>
+                              <option value="WEBSITE_DEVELOPMENT">Website Development</option>
+                              <option value="MOBILE_APPLICATION_DEVELOPMENT">Mobile Application</option>
+                              <option value="SOFTWARE_DEVELOPMENT">Custom Software / ERP</option>
+                            </select>
+                          </div>
 
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Detailed Requirements</label>
-                        <textarea
-                          rows={3}
-                          required
-                          value={enquiryForm.requirements}
-                          onChange={(e) => setEnquiryForm({ ...enquiryForm, requirements: e.target.value })}
-                          placeholder="Specify features, modules, deliverables..."
-                          className="w-full p-2 border border-slate-300 rounded"
-                        />
-                      </div>
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Expected Budget (₹)</label>
+                            <input
+                              type="number"
+                              value={enquiryForm.expectedBudget}
+                              onChange={(e) => setEnquiryForm({ ...enquiryForm, expectedBudget: e.target.value })}
+                              placeholder="e.g. 75000"
+                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                            />
+                          </div>
 
-                      <div className="flex justify-end gap-2 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setNewEnquiryModal(null)}
-                          className="px-3 py-1.5 rounded text-slate-600 hover:bg-slate-100 font-semibold"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-4 py-1.5 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700"
-                        >
-                          Submit Enquiry
-                        </button>
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Detailed Requirements <span className="text-rose-500">*</span></label>
+                            <textarea
+                              rows={3}
+                              required
+                              value={enquiryForm.requirements}
+                              onChange={(e) => setEnquiryForm({ ...enquiryForm, requirements: e.target.value })}
+                              placeholder="Specify features, modules, deliverables..."
+                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none"
+                            />
+                          </div>
+
+                          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                            <button
+                              type="button"
+                              disabled={modalSubmitting}
+                              onClick={() => setNewEnquiryModal(null)}
+                              className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={modalSubmitting}
+                              className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                            >
+                              {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                              {modalSubmitting ? 'Submitting...' : 'Submit Enquiry'}
+                            </button>
+                          </div>
+                        </form>
                       </div>
-                    </form>
-                  </div>
-                </div>
-              )}
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
@@ -2234,131 +2341,280 @@ export const BgaPortal: React.FC = () => {
               </div>
 
               {/* Quotation Reminder Modal */}
-              {reminderModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                      <Bell className="w-5 h-5 text-amber-600" />
-                      Send Quotation Reminder
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Dispatches an instant high-priority reminder to the Accounts Department and notifies Admin regarding pending quotation for{' '}
-                      <strong>{reminderModal.clientName}</strong> ({reminderModal.quotationNumber}).
-                    </p>
+              <AnimatePresence>
+                {reminderModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                    onClick={() => !modalSubmitting && setReminderModal(null)}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600" />
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200">
+                              <Bell className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">
+                                Send Quotation Reminder
+                              </h3>
+                              <p className="text-xs text-slate-500 font-mono">
+                                {reminderModal.quotationNumber}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!modalSubmitting) {
+                                setReminderModal(null);
+                                setReminderMessage('');
+                              }
+                            }}
+                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Optional Note to Accounts & Management
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={reminderMessage}
-                        onChange={(e) => setReminderMessage(e.target.value)}
-                        placeholder="e.g. Client requested urgent review as decision meeting is tomorrow morning..."
-                        className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
-                      />
-                    </div>
+                        <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/60 text-xs text-amber-900">
+                          Dispatches an instant high-priority reminder to the Accounts Department and notifies Admin regarding pending quotation for{' '}
+                          <strong className="font-semibold">{reminderModal.clientName}</strong>.
+                        </div>
 
-                    <div className="flex justify-end gap-2 pt-2">
-                      <button
-                        onClick={() => {
-                          setReminderModal(null);
-                          setReminderMessage('');
-                        }}
-                        className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleSendReminder}
-                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5"
-                      >
-                        <Send className="w-3.5 h-3.5" /> Dispatch Reminder
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                            Optional Note to Accounts & Management
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={reminderMessage}
+                            onChange={(e) => setReminderMessage(e.target.value)}
+                            placeholder="e.g. Client requested urgent review as decision meeting is tomorrow morning..."
+                            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none transition-all"
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            disabled={modalSubmitting}
+                            onClick={() => {
+                              setReminderModal(null);
+                              setReminderMessage('');
+                            }}
+                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            disabled={modalSubmitting}
+                            onClick={handleSendReminder}
+                            className="px-5 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                          >
+                            {modalSubmitting ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Send className="w-3.5 h-3.5" />
+                            )}
+                            {modalSubmitting ? 'Dispatching...' : 'Dispatch Reminder'}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Revision Request Modal */}
-              {revisionModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-                    <h3 className="text-base font-bold text-slate-900">
-                      Request Quotation Revision ({revisionModal.quotationNumber})
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Enter the changes or commercial feedback requested by the client. Accounts will prepare a revised version.
-                    </p>
-                    <div className="mt-4">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Client Feedback / Notes *</label>
-                      <textarea
-                        rows={3}
-                        value={revisionNotes}
-                        onChange={(e) => setRevisionNotes(e.target.value)}
-                        placeholder="Client requested a 10% discount and inclusion of 2 additional landing pages..."
-                        className="w-full text-xs p-2.5 border border-slate-300 rounded focus:ring-1 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <div className="mt-4 flex justify-end gap-2">
-                      <button
-                        onClick={() => setRevisionModal(null)}
-                        className="px-3 py-1.5 text-xs text-slate-600 font-semibold"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleSubmitRevision}
-                        disabled={!revisionNotes}
-                        className="px-4 py-1.5 bg-indigo-600 text-white rounded text-xs font-bold hover:bg-indigo-700 disabled:opacity-50"
-                      >
-                        Send to Accounts
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <AnimatePresence>
+                {revisionModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                    onClick={() => !modalSubmitting && setRevisionModal(null)}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600" />
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
+                              <Edit3 className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">
+                                Request Quotation Revision
+                              </h3>
+                              <p className="text-xs text-slate-500 font-mono">
+                                {revisionModal.quotationNumber}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => !modalSubmitting && setRevisionModal(null)}
+                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          Enter the requested scope modifications, commercial revisions, or client feedback. The Accounts Department will draft an updated quotation.
+                        </p>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                            Client Feedback / Revision Notes <span className="text-rose-500">*</span>
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={revisionNotes}
+                            onChange={(e) => setRevisionNotes(e.target.value)}
+                            placeholder="e.g. Client requested a 10% commercial discount and inclusion of 2 additional landing pages..."
+                            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none transition-all"
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            disabled={modalSubmitting}
+                            onClick={() => setRevisionModal(null)}
+                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!revisionNotes.trim() || modalSubmitting}
+                            onClick={handleSubmitRevision}
+                            className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                          >
+                            {modalSubmitting ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Send className="w-3.5 h-3.5" />
+                            )}
+                            {modalSubmitting ? 'Sending...' : 'Send to Accounts'}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Client Acceptance Modal */}
-              {acceptanceModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-                    <h3 className="text-base font-bold text-slate-900">
-                      Record Client Acceptance ({acceptanceModal.quotationNumber})
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Recording client acceptance generates a Work Order and alerts Accounts to collect/verify the advance payment.
-                    </p>
-                    <div className="mt-4">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Acceptance Evidence / PO Reference Notes *
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={acceptanceNotes}
-                        onChange={(e) => setAcceptanceNotes(e.target.value)}
-                        placeholder="e.g. Approved via email confirmation from MD on 16 Nov 2026. PO Ref: APEX-2026-PO99"
-                        className="w-full text-xs p-2.5 border border-slate-300 rounded focus:ring-1 focus:ring-[#3066BE]"
-                      />
-                    </div>
-                    <div className="mt-4 flex justify-end gap-2">
-                      <button
-                        onClick={() => setAcceptanceModal(null)}
-                        className="px-3 py-1.5 text-xs text-slate-600 font-semibold"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleClientAcceptance}
-                        disabled={!acceptanceNotes}
-                        className="px-4 py-1.5 bg-[#3066BE] text-white rounded text-xs font-bold hover:bg-[#255299] disabled:opacity-50"
-                      >
-                        Confirm Acceptance
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <AnimatePresence>
+                {acceptanceModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                    onClick={() => !modalSubmitting && setAcceptanceModal(null)}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-600" />
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 border border-teal-200">
+                              <CheckCircle2 className="w-5 h-5 text-teal-600" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">
+                                Record Client Acceptance
+                              </h3>
+                              <p className="text-xs text-slate-500 font-mono">
+                                {acceptanceModal.quotationNumber}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => !modalSubmitting && setAcceptanceModal(null)}
+                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-200/70 text-xs text-teal-900 leading-relaxed">
+                          Recording client acceptance automatically generates an official <strong>Work Order</strong> and notifies Accounts to collect and verify the required advance payment.
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                            Acceptance Evidence / PO Reference Notes <span className="text-rose-500">*</span>
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={acceptanceNotes}
+                            onChange={(e) => setAcceptanceNotes(e.target.value)}
+                            placeholder="e.g. Approved via email confirmation from MD on 17 Nov 2026. PO Ref: APEX-2026-PO99"
+                            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 resize-none transition-all"
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            disabled={modalSubmitting}
+                            onClick={() => setAcceptanceModal(null)}
+                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!acceptanceNotes.trim() || modalSubmitting}
+                            onClick={handleClientAcceptance}
+                            className="px-5 py-2 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                          >
+                            {modalSubmitting ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            )}
+                            {modalSubmitting ? 'Confirming...' : 'Confirm Acceptance'}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
@@ -2562,7 +2818,7 @@ export const BgaPortal: React.FC = () => {
                     <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
                       <span className="font-mono text-slate-400">{r.fileType} Document</span>
                       <button
-                        onClick={() => alert(`Downloading presentation: ${r.title}`)}
+                        onClick={() => toast.info(`Downloading presentation: ${r.title}`)}
                         className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded font-semibold hover:bg-indigo-100 flex items-center gap-1"
                       >
                         <Download className="w-3.5 h-3.5" /> Download
@@ -2576,26 +2832,312 @@ export const BgaPortal: React.FC = () => {
 
           {/* TAB 11: SUPPORT */}
           {activeTab === 'support' && (
-            <div className="w-full bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-4">
-              <h3 className="text-base font-bold text-slate-900">Associate Support Desk</h3>
-              <p className="text-xs text-slate-500">
-                Have questions regarding a quotation, technical feasibility, or commission payout? Reach our executive desk:
-              </p>
+            <div className="w-full space-y-6">
+              {/* Header Banner */}
+              <div className="bg-gradient-to-r from-slate-900 via-[#152544] to-[#3066BE] text-white p-6 sm:p-8 rounded-2xl border border-slate-800 shadow-md">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#80DED9] bg-[#119DA4]/20 px-3 py-1 rounded-full border border-[#80DED9]/30 inline-block mb-2">
+                      Associate Support & Headquarters Desk
+                    </span>
+                    <h3 className="text-xl sm:text-2xl font-black text-white">
+                      Connect with Atriowings Technologies
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-1.5 max-w-2xl leading-relaxed">
+                      Have questions regarding quotation preparation, technical project feasibility, client onboarding, or commission disbursement? Reach our executive desk directly.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <a
+                      href="https://wa.me/918825948859"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-sm transition-all"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>WhatsApp Desk</span>
+                    </a>
+                    <a
+                      href="tel:+918825948859"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold transition-all"
+                    >
+                      <Phone className="w-4 h-4 text-[#80DED9]" />
+                      <span>Call Now</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
 
-              <div className="space-y-3 text-xs">
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <span className="text-slate-400 block text-[10px]">Accounts & Quotation Queries</span>
-                  <span className="font-semibold text-slate-800">accounts@bga-solutions.com</span>
+              {/* Contact Information Cards (From Landing Page) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Corporate Office */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-[#3066BE]/10 text-[#3066BE] flex items-center justify-center mb-3">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Corporate Office</span>
+                    <h4 className="font-bold text-slate-800 text-sm mt-0.5">Atriowings Technologies</h4>
+                    <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                      No. 1, Gurudev Complex, 57th St, Venkatraman Nagar, Korattur, Chennai, Tamil Nadu 600080.
+                    </p>
+                  </div>
+                  <a
+                    href="https://www.google.com/maps/search/?api=1&query=No.+1,+Gurudev+Complex,+57th+St,+Venkatraman+Nagar,+Korattur,+Chennai,+Tamil+Nadu+600080"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-[#3066BE] font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
+                  >
+                    <span>Google Maps Directions</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <span className="text-slate-400 block text-[10px]">Technical Project Feasibility</span>
-                  <span className="font-semibold text-slate-800">tech@bga-solutions.com</span>
+                {/* Telephone Support */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-[#119DA4]/10 text-[#119DA4] flex items-center justify-center mb-3">
+                      <Phone className="w-5 h-5" />
+                    </div>
+                    <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Direct Phone Helpline</span>
+                    <h4 className="font-bold text-slate-800 text-sm mt-0.5">Associate Line</h4>
+                    <a
+                      href="tel:+918825948859"
+                      className="text-base font-extrabold text-[#3066BE] hover:underline block mt-2"
+                    >
+                      +91 8825948859
+                    </a>
+                    <span className="text-xs text-slate-500 mt-1 block">
+                      Mon – Sat, 9:00 AM – 7:00 PM IST
+                    </span>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Live Desk Active</span>
+                  </div>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <span className="text-slate-400 block text-[10px]">Direct Associate Helpline</span>
-                  <span className="font-semibold text-slate-800">+91 98765 43210 (Mon - Sat, 9 AM - 7 PM)</span>
+                {/* Official Email */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-[#6D96C5]/10 text-[#3066BE] flex items-center justify-center mb-3">
+                      <Mail className="w-5 h-5" />
+                    </div>
+                    <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Official Email Address</span>
+                    <h4 className="font-bold text-slate-800 text-sm mt-0.5">Corporate & Support Desk</h4>
+                    <a
+                      href="mailto:info@atriowings.in"
+                      className="text-sm font-bold text-[#3066BE] hover:underline block mt-2 break-all"
+                    >
+                      info@atriowings.in
+                    </a>
+                    <span className="text-xs text-slate-500 mt-1 block">
+                      Guaranteed response within 2–4 hours
+                    </span>
+                  </div>
+                  <a
+                    href="mailto:info@atriowings.in"
+                    className="inline-flex items-center gap-1.5 text-xs text-[#3066BE] font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
+                  >
+                    <span>Send Email to Desk</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+
+                {/* WhatsApp & Web */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
+                      <MessageSquare className="w-5 h-5" />
+                    </div>
+                    <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Direct WhatsApp & Web</span>
+                    <h4 className="font-bold text-slate-800 text-sm mt-0.5">Atriowings Corporate Portal</h4>
+                    <a
+                      href="https://wa.me/918825948859"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-emerald-600 hover:underline block mt-2"
+                    >
+                      WhatsApp: +91 8825948859
+                    </a>
+                    <a
+                      href="https://atriowings.in/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold text-slate-600 hover:text-[#3066BE] flex items-center gap-1 mt-1.5"
+                    >
+                      <span>https://atriowings.in</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <a
+                    href="https://wa.me/918825948859"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
+                  >
+                    <span>Instant WhatsApp Chat</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Two Column Layout: Support Department Directory + In-Portal Support Ticket Form */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left: Department Operations Directory */}
+                <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-4">
+                  <div className="border-b border-slate-100 pb-3">
+                    <h4 className="text-sm font-bold text-slate-900">Specialized Department Desks</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">Route your queries to the appropriate management desk for faster turnaround:</p>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900">Commercial & Quotation Desk</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">Accounts</span>
+                      </div>
+                      <p className="text-slate-600 text-[11px]">
+                        For quotation approvals, customized milestone billing terms, and official commercial pricing.
+                      </p>
+                      <a href="mailto:info@atriowings.in?subject=Commercial%20Quotation%20Desk%20Inquiry" className="text-[#3066BE] font-semibold hover:underline block pt-1">
+                        info@atriowings.in
+                      </a>
+                    </div>
+
+                    <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900">Technical Feasibility & Architecture</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-bold">Technical</span>
+                      </div>
+                      <p className="text-slate-600 text-[11px]">
+                        Technical scoping, requirement analysis, tech stack validation, and project delivery schedules.
+                      </p>
+                      <a href="mailto:info@atriowings.in?subject=Technical%20Feasibility%20Desk%20Inquiry" className="text-[#119DA4] font-semibold hover:underline block pt-1">
+                        info@atriowings.in
+                      </a>
+                    </div>
+
+                    <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900">Commission & Payout Reconciliation</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">Finance</span>
+                      </div>
+                      <p className="text-slate-600 text-[11px]">
+                        Commission disbursements, bank NEFT/IMPS confirmations, TDS records, and milestone payout releases.
+                      </p>
+                      <a href="mailto:info@atriowings.in?subject=Commission%20Payout%20Desk%20Inquiry" className="text-emerald-700 font-semibold hover:underline block pt-1">
+                        info@atriowings.in
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: In-Portal Support Ticket Form */}
+                <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs">
+                  <div className="border-b border-slate-100 pb-3 mb-4">
+                    <h4 className="text-sm font-bold text-slate-900">Submit a Support Request</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">Send a message directly to Atriowings management from your associate workspace:</p>
+                  </div>
+
+                  {supportSuccess && (
+                    <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{supportSuccess}</span>
+                    </div>
+                  )}
+
+                  {supportError && (
+                    <div className="mb-4 p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                      <span>{supportError}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSupportSubmit} className="space-y-3.5 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Associate Name</label>
+                        <input
+                          type="text"
+                          value={user?.name || ''}
+                          readOnly
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Registered Email</label>
+                        <input
+                          type="email"
+                          value={user?.email || ''}
+                          readOnly
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Contact Number</label>
+                        <input
+                          type="text"
+                          value={user?.mobile || '+91 8825948859'}
+                          readOnly
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Query Department *</label>
+                        <select
+                          value={supportCategory}
+                          onChange={(e) => setSupportCategory(e.target.value)}
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3066BE]"
+                        >
+                          <option value="Quotation & Commercial Inquiries">Quotation & Commercial Inquiries</option>
+                          <option value="Technical Project Feasibility">Technical Project Feasibility</option>
+                          <option value="Commission & Bank Payout">Commission & Bank Payout</option>
+                          <option value="Client Registration & Ownership">Client Registration & Ownership</option>
+                          <option value="KYC & Bank Verification">KYC & Bank Verification</option>
+                          <option value="General Support">General Support</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Message & Request Details *</label>
+                      <textarea
+                        rows={4}
+                        value={supportMessage}
+                        onChange={(e) => setSupportMessage(e.target.value)}
+                        placeholder="Please describe your enquiry, client ID, quotation reference, or questions in detail..."
+                        className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3066BE]"
+                        required
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[11px] text-slate-400">
+                        Dispatched directly to Atriowings Executive Operations
+                      </span>
+                      <button
+                        type="submit"
+                        disabled={supportSending}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
+                      >
+                        {supportSending ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Sending...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-3.5 h-3.5" />
+                            <span>Submit Request</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>
