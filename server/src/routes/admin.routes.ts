@@ -97,7 +97,12 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
         },
       }),
       prisma.quotation.count({
-        where: { status: QuotationStatus.PENDING_ADMIN_APPROVAL },
+        where: {
+          OR: [
+            { status: QuotationStatus.PENDING_ADMIN_APPROVAL },
+            { adminApprovalStatus: 'PENDING', preparedById: { not: null } },
+          ],
+        },
       }),
       prisma.quotation.count({
         where: { status: QuotationStatus.ACCEPTED },
@@ -117,7 +122,7 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       bgas: { total: totalBgas, active: activeBgas, pendingApprovals: pendingBgaApprovals },
       clients: { total: totalClients },
       enquiries: { total: totalEnquiries, approved: approvedEnquiries, pending: pendingEnquiries },
-      quotations: { total: totalQuotations },
+      quotations: { total: totalQuotations, pendingApprovals: pendingQuotationApprovals },
       workOrders: { total: totalWorkOrders },
       projects: { total: totalProjects, active: activeProjects, completed: completedProjects },
       technical: { total: totalProjects, active: activeProjects, completed: completedProjects },

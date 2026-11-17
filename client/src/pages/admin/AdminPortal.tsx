@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -269,9 +270,43 @@ export const AdminPortal: React.FC = () => {
     }
   };
 
-  // Initial load
+  const location = useLocation();
+
+  // Sync active tab with URL path (e.g. from in-app notifications like /admin/quotations)
+  useEffect(() => {
+    const path = (location.pathname || '').toLowerCase().replace(/\/+$/, '');
+    if (path.includes('/admin/quotations')) {
+      setActiveTab('quotations');
+    } else if (path.includes('/admin/bga')) {
+      setActiveTab('bgas');
+    } else if (path.includes('/admin/enquiries')) {
+      setActiveTab('enquiries');
+    } else if (path.includes('/admin/work-orders') || path.includes('/admin/workorders')) {
+      setActiveTab('workorders');
+    } else if (path.includes('/admin/commissions')) {
+      setActiveTab('commissions');
+    } else if (path.includes('/admin/technical')) {
+      setActiveTab('technical');
+    } else if (path.includes('/admin/clients')) {
+      setActiveTab('clients');
+    } else if (path.includes('/admin/services')) {
+      setActiveTab('services');
+    } else if (path.includes('/admin/resources')) {
+      setActiveTab('resources');
+    } else if (path.includes('/admin/settings') || path.includes('/admin/audit')) {
+      setActiveTab('settings');
+    }
+  }, [location.pathname]);
+
+  // Initial load & periodic stats background polling
   useEffect(() => {
     loadStats();
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadStats();
+      }
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Tab switch or status filter changes: load tab immediately
@@ -615,6 +650,20 @@ export const AdminPortal: React.FC = () => {
     });
   }, [auditLogs, auditLogRoleFilter, auditLogSearch]);
 
+  // Pending Quotation Approvals Count for Sidebar Badge & Module Highlights
+  const pendingQuotationApprovalsCount = useMemo(() => {
+    if (loadedTabs['quotations']) {
+      return quotations.filter(
+        (q: any) => q.status === 'PENDING_ADMIN_APPROVAL' || (q.adminApprovalStatus === 'PENDING' && q.preparedById)
+      ).length;
+    }
+    return (
+      stats?.quotations?.pendingApprovals ??
+      stats?.workflow?.pendingQuotationApprovals ??
+      0
+    );
+  }, [loadedTabs, quotations, stats]);
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
       <PortalHeader title="Admin Portal" subtitle="Central Company Management & Executive Controls" />
@@ -706,12 +755,19 @@ export const AdminPortal: React.FC = () => {
 
             <button
               onClick={() => switchTab('quotations')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'quotations' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <CreditCard className="w-4 h-4 text-[#80DED9]" />
-              <span>Quotation Monitoring</span>
+              <div className="flex items-center gap-2.5">
+                <CreditCard className="w-4 h-4 text-[#80DED9]" />
+                <span>Quotation Monitoring</span>
+              </div>
+              {pendingQuotationApprovalsCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                  {pendingQuotationApprovalsCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -1097,25 +1153,32 @@ export const AdminPortal: React.FC = () => {
                 <h3 className="text-base font-bold text-slate-900">Direct Module Navigation</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                   {[
-                    { label: 'BGA Management', tab: 'bgas', icon: Users, desc: 'Approve & manage associates' },
-                    { label: 'Enquiry Approvals', tab: 'enquiries', icon: CheckSquare, desc: 'Review client requirements' },
+                    { label: 'BGA Management', tab: 'bgas', icon: Users, desc: 'Approve & manage associates', badge: stats?.bgas?.pendingApprovals },
+                    { label: 'Enquiry Approvals', tab: 'enquiries', icon: CheckSquare, desc: 'Review client requirements', badge: stats?.enquiries?.pending },
                     { label: 'Clients & Ownership', tab: 'clients', icon: UserCheck, desc: 'Client registry & transfers' },
                     { label: 'Services & Pricing', tab: 'services', icon: Layers, desc: 'Commission rates & prices' },
                     { label: 'Company Resources', tab: 'resources', icon: FileText, desc: 'Presentations & brochures' },
-                    { label: 'Quotation Monitoring', tab: 'quotations', icon: CreditCard, desc: 'Official quote tracking' },
+                    { label: 'Quotation Monitoring', tab: 'quotations', icon: CreditCard, desc: 'Official quote tracking', badge: pendingQuotationApprovalsCount },
                     { label: 'Work Orders', tab: 'workorders', icon: Briefcase, desc: 'Contract & payment tracking' },
                     { label: 'Technical Projects', tab: 'technical', icon: Layers, desc: 'Milestone & progress monitoring' },
                     { label: 'Commissions', tab: 'commissions', icon: DollarSign, desc: 'Authorize & disburse payouts' },
                     { label: 'System Audit Logs', tab: 'settings', icon: Settings, desc: 'Immutable security trail' },
-                  ].map((m) => {
+                  ].map((m: any) => {
                     const Icon = m.icon;
                     return (
                       <button
                         key={m.tab}
                         onClick={() => switchTab(m.tab as any)}
-                        className="p-3.5 rounded-xl border border-slate-200 hover:border-[#3066BE]/35 hover:bg-[#AEECEF]/20 text-left transition-all group"
+                        className="p-3.5 rounded-xl border border-slate-200 hover:border-[#3066BE]/35 hover:bg-[#AEECEF]/20 text-left transition-all group relative"
                       >
-                        <Icon className="w-5 h-5 text-[#3066BE] group-hover:scale-110 transition-transform mb-2" />
+                        <div className="flex items-center justify-between mb-2">
+                          <Icon className="w-5 h-5 text-[#3066BE] group-hover:scale-110 transition-transform" />
+                          {m.badge != null && m.badge > 0 && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                              {m.badge}
+                            </span>
+                          )}
+                        </div>
                         <span className="font-bold text-xs text-slate-900 block">{m.label}</span>
                         <span className="text-[10px] text-slate-400 block mt-0.5">{m.desc}</span>
                       </button>
@@ -2484,6 +2547,35 @@ export const AdminPortal: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {pendingQuotationApprovalsCount > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0 text-amber-700">
+                      <AlertCircle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-amber-900 flex items-center gap-2">
+                        <span>Action Required: {pendingQuotationApprovalsCount} Quotation{pendingQuotationApprovalsCount > 1 ? 's' : ''} Awaiting Executive Approval</span>
+                        <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                          {pendingQuotationApprovalsCount}
+                        </span>
+                      </h4>
+                      <p className="text-[11px] text-amber-700 mt-0.5">
+                        Accounts has drafted official quotation pricing. Review and approve to release the quotation to the BGA and client.
+                      </p>
+                    </div>
+                  </div>
+                  {quotationStatusFilter !== 'PENDING_ADMIN_APPROVAL' && (
+                    <button
+                      onClick={() => setQuotationStatusFilter('PENDING_ADMIN_APPROVAL')}
+                      className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shrink-0 transition-colors shadow-sm"
+                    >
+                      Show Pending Only
+                    </button>
+                  )}
+                </div>
+              )}
 
               {!loadedTabs['quotations'] || (tabLoading && quotations.length === 0) ? (
                 <SkeletonTable rows={5} cols={6} />
