@@ -1970,10 +1970,10 @@ router.post('/quotations/:id/reminder', async (req: AuthRequest, res: Response):
     for (const acc of accountsUsers) {
       await createNotification(
         acc.id,
-        'Quotation Preparation Reminder',
-        `BGA ${req.user!.name} sent a reminder for client ${quotation.client.clientName} quotation (${quotation.quotationNumber}).`,
+        '⚠️ Quotation Preparation Reminder',
+        `BGA ${req.user!.name} sent an urgent reminder to prepare quotation for client ${quotation.client.clientName} (${quotation.quotationNumber}).`,
         'ACTION_REQUIRED',
-        '/accounts/quotation-requests'
+        '/accounts'
       );
     }
 

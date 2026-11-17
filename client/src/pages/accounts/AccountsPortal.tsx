@@ -10,6 +10,7 @@ import {
   AlertCircle,
   AlertTriangle,
   Clock,
+  Bell,
   Download,
   Send,
   Eye,
@@ -1176,6 +1177,26 @@ export const AccountsPortal: React.FC = () => {
                       <div>
                         <strong>Service Scope:</strong> {q.serviceScope}
                       </div>
+                      {q.reminderCount > 0 && (
+                        <div className="p-3 bg-amber-50 rounded-xl border border-amber-300 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mt-2">
+                          <div className="flex items-center gap-2">
+                            <Bell className="w-4 h-4 text-amber-700 animate-pulse shrink-0" />
+                            <div>
+                              <strong className="text-amber-950 font-bold block">
+                                Quotation Preparation Reminder ({q.reminderCount} {q.reminderCount === 1 ? 'time' : 'times'}):
+                              </strong>
+                              <span className="text-amber-900 mt-0.5 block">
+                                BGA <strong>{q.bga?.name}</strong> has sent a reminder requesting immediate preparation of this official quotation for client <strong>{q.client?.clientName}</strong>.
+                              </span>
+                            </div>
+                          </div>
+                          {q.lastReminderSentAt && (
+                            <span className="text-[10px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-mono shrink-0">
+                              Reminder sent: {new Date(q.lastReminderSentAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {q.revisionNotes && (
                         <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 mt-2">
                           <strong>Client Revision Feedback:</strong> {q.revisionNotes}
