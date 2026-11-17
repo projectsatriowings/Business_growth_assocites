@@ -60,6 +60,11 @@ import {
   Copy,
   Share2,
   CheckSquare,
+  Upload,
+  Image as ImageIcon,
+  Video,
+  Music,
+  Archive,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
@@ -71,6 +76,7 @@ import { BgaProfileView } from './BgaProfileView';
 import { getQuotationPdfUrl } from '../../utils/downloadPdf';
 import { BUSINESS_CATEGORIES } from '../../constants/categories';
 import { ModalPortal } from '../../components/ModalPortal';
+import { MediaUploader, MediaUploadResult } from '../../components/MediaUploader';
 
 export const BgaPortal: React.FC = () => {
   const { user } = useAuth();
@@ -392,6 +398,16 @@ export const BgaPortal: React.FC = () => {
     }
   };
 
+  // Copy Client Project Portal Direct Access Link
+  const handleCopyClientPortalLink = (token: string, clientName?: string) => {
+    const url = `${window.location.origin}/client/project/${token}`;
+    navigator.clipboard.writeText(url);
+    toast.success(
+      `Direct Client Portal link for ${clientName || 'client'} copied to clipboard! Send this link to the client to let them review deliverables and leave feedback.`,
+      'Client Link Copied'
+    );
+  };
+
   // Load BGA Dashboard Stats independently
   const loadStats = async (bypass = false) => {
     try {
@@ -604,7 +620,7 @@ export const BgaPortal: React.FC = () => {
         if (c.location.startsWith('{')) {
           addr = JSON.parse(c.location);
         }
-      } catch {}
+      } catch { }
     }
 
     const latestEnq = c.enquiries && c.enquiries.length > 0 ? c.enquiries[0] : null;
@@ -616,7 +632,7 @@ export const BgaPortal: React.FC = () => {
     if (latestEnq?.followUpDate) {
       try {
         formattedDate = new Date(latestEnq.followUpDate).toISOString().split('T')[0];
-      } catch {}
+      } catch { }
     }
 
     setEditingClient(c);
@@ -928,9 +944,8 @@ export const BgaPortal: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'dashboard' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'dashboard' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <LayoutDashboard className="w-4 h-4 text-[#80DED9]" />
               <span>Dashboard</span>
@@ -938,9 +953,8 @@ export const BgaPortal: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('profile')}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'profile' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'profile' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <UserCheck className="w-4 h-4 text-[#80DED9]" />
               <span>My Profile & KYC</span>
@@ -951,9 +965,8 @@ export const BgaPortal: React.FC = () => {
                 setActiveTab('clients');
                 setClientViewMode('list');
               }}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'clients' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'clients' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <Users className="w-4 h-4 text-[#80DED9]" />
               <span>My Clients</span>
@@ -961,9 +974,8 @@ export const BgaPortal: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('enquiries')}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'enquiries' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'enquiries' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <MessageSquare className="w-4 h-4 text-[#80DED9]" />
               <span>Enquiries & Quotation Req.</span>
@@ -971,9 +983,8 @@ export const BgaPortal: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('quotations')}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'quotations' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'quotations' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <CreditCard className="w-4 h-4 text-[#80DED9]" />
               <span>My Quotations</span>
@@ -981,9 +992,8 @@ export const BgaPortal: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('projects')}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'projects' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'projects' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <Briefcase className="w-4 h-4 text-[#80DED9]" />
               <span>Work Orders & Projects</span>
@@ -991,9 +1001,8 @@ export const BgaPortal: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('earnings')}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'earnings' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'earnings' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <DollarSign className="w-4 h-4 text-[#80DED9]" />
               <span>My Earnings & Commissions</span>
@@ -1001,9 +1010,8 @@ export const BgaPortal: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('resources')}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'resources' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'resources' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <FileText className="w-4 h-4 text-[#80DED9]" />
               <span>Pitch Decks & Resources</span>
@@ -1011,9 +1019,8 @@ export const BgaPortal: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('support')}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'support' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'support' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <HelpCircle className="w-4 h-4 text-[#80DED9]" />
               <span>Associate Support</span>
@@ -1074,74 +1081,74 @@ export const BgaPortal: React.FC = () => {
             ) : (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                  <span className="text-xs text-slate-500 font-semibold uppercase">My Registered Clients</span>
-                  <div className="text-2xl font-bold text-slate-900 mt-1">{stats.clients}</div>
-                  <span className="text-xs text-[#119DA4] font-medium">100% Exclusive Ownership</span>
+                  <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                    <span className="text-xs text-slate-500 font-semibold uppercase">My Registered Clients</span>
+                    <div className="text-2xl font-bold text-slate-900 mt-1">{stats.clients}</div>
+                    <span className="text-xs text-[#119DA4] font-medium">100% Exclusive Ownership</span>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                    <span className="text-xs text-slate-500 font-semibold uppercase">Submitted Enquiries</span>
+                    <div className="text-2xl font-bold text-indigo-600 mt-1">{stats.enquiries}</div>
+                    <span className="text-xs text-slate-400">Under Review / Approved</span>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                    <span className="text-xs text-slate-500 font-semibold uppercase">Accepted Quotations</span>
+                    <div className="text-2xl font-bold text-slate-900 mt-1">{stats.acceptedQuotations}</div>
+                    <span className="text-xs text-slate-400">Total Quotes: {stats.quotations}</span>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                    <span className="text-xs text-slate-500 font-semibold uppercase">Active In-Progress Projects</span>
+                    <div className="text-2xl font-bold text-amber-600 mt-1">{stats.activeProjects}</div>
+                    <span className="text-xs text-slate-400">Technical Execution Active</span>
+                  </div>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                  <span className="text-xs text-slate-500 font-semibold uppercase">Submitted Enquiries</span>
-                  <div className="text-2xl font-bold text-indigo-600 mt-1">{stats.enquiries}</div>
-                  <span className="text-xs text-slate-400">Under Review / Approved</span>
-                </div>
+                {/* Commission Earnings Banner */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-6 rounded-2xl bg-gradient-to-tr from-[#3066BE] to-[#119DA4] text-white shadow-sm flex flex-col justify-between">
+                    <div>
+                      <span className="text-xs text-[#80DED9] uppercase tracking-wider font-semibold">
+                        Commissions Received (Paid Out)
+                      </span>
+                      <div className="text-3xl font-extrabold mt-2">₹{stats.earnings.paid.toLocaleString()}</div>
+                      <p className="text-xs text-blue-100/90 mt-1">
+                        Directly disbursed to your verified bank account via NEFT/IMPS.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('earnings')}
+                      className="mt-4 px-4 py-2 bg-white text-[#152544] rounded-lg text-xs font-bold hover:bg-[#AEECEF]/20 transition-colors w-fit"
+                    >
+                      View Commission Ledger →
+                    </button>
+                  </div>
 
-                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                  <span className="text-xs text-slate-500 font-semibold uppercase">Accepted Quotations</span>
-                  <div className="text-2xl font-bold text-slate-900 mt-1">{stats.acceptedQuotations}</div>
-                  <span className="text-xs text-slate-400">Total Quotes: {stats.quotations}</span>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                  <span className="text-xs text-slate-500 font-semibold uppercase">Active In-Progress Projects</span>
-                  <div className="text-2xl font-bold text-amber-600 mt-1">{stats.activeProjects}</div>
-                  <span className="text-xs text-slate-400">Technical Execution Active</span>
+                  <div className="p-6 rounded-2xl bg-gradient-to-tr from-[#152544] to-[#3066BE] text-white shadow-sm flex flex-col justify-between">
+                    <div>
+                      <span className="text-xs text-[#AEECEF] uppercase tracking-wider font-semibold">
+                        Commissions in Processing
+                      </span>
+                      <div className="text-3xl font-extrabold mt-2">₹{stats.earnings.pending.toLocaleString()}</div>
+                      <p className="text-xs text-blue-100/90 mt-1">
+                        Awaiting monthly cycle or technical project milestone completion.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setActiveTab('clients');
+                        setClientViewMode('add');
+                        setClientFormSuccess(null);
+                      }}
+                      className="mt-4 px-4 py-2 bg-white text-indigo-900 rounded-lg text-xs font-bold hover:bg-indigo-50 transition-colors w-fit"
+                    >
+                      Register New Client +
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              {/* Commission Earnings Banner */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-6 rounded-2xl bg-gradient-to-tr from-[#3066BE] to-[#119DA4] text-white shadow-sm flex flex-col justify-between">
-                  <div>
-                    <span className="text-xs text-[#80DED9] uppercase tracking-wider font-semibold">
-                      Commissions Received (Paid Out)
-                    </span>
-                    <div className="text-3xl font-extrabold mt-2">₹{stats.earnings.paid.toLocaleString()}</div>
-                    <p className="text-xs text-blue-100/90 mt-1">
-                      Directly disbursed to your verified bank account via NEFT/IMPS.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab('earnings')}
-                    className="mt-4 px-4 py-2 bg-white text-[#152544] rounded-lg text-xs font-bold hover:bg-[#AEECEF]/20 transition-colors w-fit"
-                  >
-                    View Commission Ledger →
-                  </button>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-gradient-to-tr from-[#152544] to-[#3066BE] text-white shadow-sm flex flex-col justify-between">
-                  <div>
-                    <span className="text-xs text-[#AEECEF] uppercase tracking-wider font-semibold">
-                      Commissions in Processing
-                    </span>
-                    <div className="text-3xl font-extrabold mt-2">₹{stats.earnings.pending.toLocaleString()}</div>
-                    <p className="text-xs text-blue-100/90 mt-1">
-                      Awaiting monthly cycle or technical project milestone completion.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setActiveTab('clients');
-                      setClientViewMode('add');
-                      setClientFormSuccess(null);
-                    }}
-                    className="mt-4 px-4 py-2 bg-white text-indigo-900 rounded-lg text-xs font-bold hover:bg-indigo-50 transition-colors w-fit"
-                  >
-                    Register New Client +
-                  </button>
-                </div>
-              </div>
-            </div>
             )
           )}
 
@@ -1467,11 +1474,10 @@ export const BgaPortal: React.FC = () => {
                       <button
                         type="submit"
                         disabled={submittingClient}
-                        className={`px-6 py-2.5 text-white font-bold rounded-lg text-sm shadow-sm transition-colors flex items-center gap-2 cursor-pointer ${
-                          clientViewMode === 'edit'
-                            ? 'bg-amber-600 hover:bg-amber-700 disabled:opacity-50'
-                            : 'bg-[#3066BE] hover:bg-[#255299] disabled:opacity-50'
-                        }`}
+                        className={`px-6 py-2.5 text-white font-bold rounded-lg text-sm shadow-sm transition-colors flex items-center gap-2 cursor-pointer ${clientViewMode === 'edit'
+                          ? 'bg-amber-600 hover:bg-amber-700 disabled:opacity-50'
+                          : 'bg-[#3066BE] hover:bg-[#255299] disabled:opacity-50'
+                          }`}
                       >
                         {submittingClient ? (
                           <>
@@ -1726,29 +1732,29 @@ export const BgaPortal: React.FC = () => {
                         {(activeClientDetail.clientRequirements ||
                           activeClientDetail.discussionNotes ||
                           activeClientDetail.followUpDate) && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-100 text-xs">
-                            {activeClientDetail.clientRequirements && (
-                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
-                                  Initial Client Scope & Requirements
-                                </span>
-                                <p className="text-slate-700 whitespace-pre-wrap">
-                                  {activeClientDetail.clientRequirements}
-                                </p>
-                              </div>
-                            )}
-                            {activeClientDetail.discussionNotes && (
-                              <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-100">
-                                <span className="text-[10px] font-bold text-amber-700 uppercase block mb-1">
-                                  Discussion Notes
-                                </span>
-                                <p className="text-slate-700 whitespace-pre-wrap">
-                                  {activeClientDetail.discussionNotes}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-100 text-xs">
+                              {activeClientDetail.clientRequirements && (
+                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                                    Initial Client Scope & Requirements
+                                  </span>
+                                  <p className="text-slate-700 whitespace-pre-wrap">
+                                    {activeClientDetail.clientRequirements}
+                                  </p>
+                                </div>
+                              )}
+                              {activeClientDetail.discussionNotes && (
+                                <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-100">
+                                  <span className="text-[10px] font-bold text-amber-700 uppercase block mb-1">
+                                    Discussion Notes
+                                  </span>
+                                  <p className="text-slate-700 whitespace-pre-wrap">
+                                    {activeClientDetail.discussionNotes}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
                       </div>
 
                       {/* SECTION B: CONTACT AND FOLLOW-UP HISTORY */}
@@ -1793,10 +1799,10 @@ export const BgaPortal: React.FC = () => {
                                 act.outcome === 'CONNECTED' || act.outcome === 'CLOSED_WON'
                                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                   : act.outcome === 'QUOTATION_REQUESTED' || act.outcome === 'INTERESTED'
-                                  ? 'bg-teal-50 text-[#119DA4] border-[#119DA4]/20'
-                                  : act.outcome === 'SCHEDULED_CALLBACK'
-                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                  : 'bg-slate-100 text-slate-600 border-slate-200';
+                                    ? 'bg-teal-50 text-[#119DA4] border-[#119DA4]/20'
+                                    : act.outcome === 'SCHEDULED_CALLBACK'
+                                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                      : 'bg-slate-100 text-slate-600 border-slate-200';
 
                               return (
                                 <div
@@ -1927,15 +1933,14 @@ export const BgaPortal: React.FC = () => {
                                     </div>
                                     <div className="flex items-center gap-3">
                                       <span
-                                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                                          enq.status === 'APPROVED'
-                                            ? 'bg-emerald-50 text-[#119DA4] border-[#119DA4]/20'
-                                            : enq.status === 'CHANGES_REQUESTED'
+                                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${enq.status === 'APPROVED'
+                                          ? 'bg-emerald-50 text-[#119DA4] border-[#119DA4]/20'
+                                          : enq.status === 'CHANGES_REQUESTED'
                                             ? 'bg-amber-100 text-amber-800 border-amber-300'
                                             : enq.status === 'SUBMITTED'
-                                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                            : 'bg-red-50 text-red-700 border-red-200'
-                                        }`}
+                                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                              : 'bg-red-50 text-red-700 border-red-200'
+                                          }`}
                                       >
                                         Admin: {enq.status}
                                       </span>
@@ -1956,11 +1961,10 @@ export const BgaPortal: React.FC = () => {
                                       {enq.requirements}
                                     </p>
                                     {enq.adminNotes && (
-                                      <div className={`p-3 rounded-xl border text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${
-                                        enq.status === 'REJECTED'
-                                          ? 'bg-rose-50 border-rose-200 text-rose-900'
-                                          : 'bg-amber-50 border-amber-200 text-amber-900'
-                                      }`}>
+                                      <div className={`p-3 rounded-xl border text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${enq.status === 'REJECTED'
+                                        ? 'bg-rose-50 border-rose-200 text-rose-900'
+                                        : 'bg-amber-50 border-amber-200 text-amber-900'
+                                        }`}>
                                         <div>
                                           <strong className="block font-bold">
                                             {enq.status === 'REJECTED' ? '⚠️ Management Rejection Reason:' : 'Management Review Remarks:'}
@@ -2017,37 +2021,34 @@ export const BgaPortal: React.FC = () => {
                                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                                       {/* Stage 1 */}
                                       <div
-                                        className={`p-2 rounded-lg text-center border ${
-                                          isSubmitted
-                                            ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
-                                            : 'bg-white border-slate-200 text-slate-400'
-                                        }`}
+                                        className={`p-2 rounded-lg text-center border ${isSubmitted
+                                          ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
+                                          : 'bg-white border-slate-200 text-slate-400'
+                                          }`}
                                       >
                                         <span className="block text-[10px] font-bold">1. Submitted</span>
                                         <span className="text-[10px]">{isSubmitted ? '✓ Complete' : 'Pending'}</span>
                                       </div>
                                       {/* Stage 2 */}
                                       <div
-                                        className={`p-2 rounded-lg text-center border ${
-                                          isAdminApproved
-                                            ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
-                                            : enq.status === 'SUBMITTED'
+                                        className={`p-2 rounded-lg text-center border ${isAdminApproved
+                                          ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
+                                          : enq.status === 'SUBMITTED'
                                             ? 'bg-amber-50 border-amber-200 text-amber-700 animate-pulse'
                                             : 'bg-white border-slate-200 text-slate-400'
-                                        }`}
+                                          }`}
                                       >
                                         <span className="block text-[10px] font-bold">2. Admin Review</span>
                                         <span className="text-[10px]">{enq.status}</span>
                                       </div>
                                       {/* Stage 3 */}
                                       <div
-                                        className={`p-2 rounded-lg text-center border ${
-                                          isQuotePrepared
-                                            ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
-                                            : isAdminApproved
+                                        className={`p-2 rounded-lg text-center border ${isQuotePrepared
+                                          ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
+                                          : isAdminApproved
                                             ? 'bg-blue-50 border-blue-200 text-blue-700'
                                             : 'bg-white border-slate-200 text-slate-400'
-                                        }`}
+                                          }`}
                                       >
                                         <span className="block text-[10px] font-bold">3. Quotation</span>
                                         <span className="text-[10px]">
@@ -2056,13 +2057,12 @@ export const BgaPortal: React.FC = () => {
                                       </div>
                                       {/* Stage 4 */}
                                       <div
-                                        className={`p-2 rounded-lg text-center border ${
-                                          isQuoteAccepted
-                                            ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
-                                            : isQuotePrepared
+                                        className={`p-2 rounded-lg text-center border ${isQuoteAccepted
+                                          ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
+                                          : isQuotePrepared
                                             ? 'bg-amber-50 border-amber-200 text-amber-700'
                                             : 'bg-white border-slate-200 text-slate-400'
-                                        }`}
+                                          }`}
                                       >
                                         <span className="block text-[10px] font-bold">4. Client Decision</span>
                                         <span className="text-[10px]">
@@ -2071,13 +2071,12 @@ export const BgaPortal: React.FC = () => {
                                       </div>
                                       {/* Stage 5 */}
                                       <div
-                                        className={`p-2 rounded-lg text-center border ${
-                                          isAdvanceVerified
-                                            ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
-                                            : isQuoteAccepted
+                                        className={`p-2 rounded-lg text-center border ${isAdvanceVerified
+                                          ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
+                                          : isQuoteAccepted
                                             ? 'bg-purple-50 border-purple-200 text-purple-700'
                                             : 'bg-white border-slate-200 text-slate-400'
-                                        }`}
+                                          }`}
                                       >
                                         <span className="block text-[10px] font-bold">5. Work Order</span>
                                         <span className="text-[10px]">
@@ -2086,21 +2085,20 @@ export const BgaPortal: React.FC = () => {
                                       </div>
                                       {/* Stage 6 */}
                                       <div
-                                        className={`p-2 rounded-lg text-center border ${
-                                          isProjectCompleted
-                                            ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
-                                            : relatedProject
+                                        className={`p-2 rounded-lg text-center border ${isProjectCompleted
+                                          ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
+                                          : relatedProject
                                             ? 'bg-blue-50 border-blue-200 text-blue-700'
                                             : 'bg-white border-slate-200 text-slate-400'
-                                        }`}
+                                          }`}
                                       >
                                         <span className="block text-[10px] font-bold">6. Execution</span>
                                         <span className="text-[10px]">
                                           {isProjectCompleted
                                             ? 'Completed'
                                             : relatedProject
-                                            ? `${relatedProject.progressPercentage || 0}% Done`
-                                            : 'Not Started'}
+                                              ? `${relatedProject.progressPercentage || 0}% Done`
+                                              : 'Not Started'}
                                         </span>
                                       </div>
                                     </div>
@@ -2518,299 +2516,298 @@ export const BgaPortal: React.FC = () => {
                       </button>
                     </div>
                   ) : (() => {
-                      const filteredClients = clients
-                        .filter((c) => {
-                          const q = clientSearch.toLowerCase().trim();
-                          const matchesSearch =
-                            !q ||
-                            c.clientName?.toLowerCase().includes(q) ||
-                            c.businessName?.toLowerCase().includes(q) ||
-                            c.mobile?.includes(q) ||
-                            c.email?.toLowerCase().includes(q) ||
-                            c.city?.toLowerCase().includes(q) ||
-                            c.location?.toLowerCase().includes(q) ||
-                            c.businessCategory?.toLowerCase().includes(q);
+                    const filteredClients = clients
+                      .filter((c) => {
+                        const q = clientSearch.toLowerCase().trim();
+                        const matchesSearch =
+                          !q ||
+                          c.clientName?.toLowerCase().includes(q) ||
+                          c.businessName?.toLowerCase().includes(q) ||
+                          c.mobile?.includes(q) ||
+                          c.email?.toLowerCase().includes(q) ||
+                          c.city?.toLowerCase().includes(q) ||
+                          c.location?.toLowerCase().includes(q) ||
+                          c.businessCategory?.toLowerCase().includes(q);
 
-                          const matchesCategory =
-                            clientCategoryFilter === 'ALL' ||
-                            c.businessCategory === clientCategoryFilter ||
-                            c.requiredService === clientCategoryFilter;
+                        const matchesCategory =
+                          clientCategoryFilter === 'ALL' ||
+                          c.businessCategory === clientCategoryFilter ||
+                          c.requiredService === clientCategoryFilter;
 
-                          const matchesStatus =
-                            clientStatusFilter === 'ALL' || c.status === clientStatusFilter;
+                        const matchesStatus =
+                          clientStatusFilter === 'ALL' || c.status === clientStatusFilter;
 
-                          const matchesFollowUp = isFollowUpMatching(c, clientFollowUpFilter);
+                        const matchesFollowUp = isFollowUpMatching(c, clientFollowUpFilter);
 
-                          return matchesSearch && matchesCategory && matchesStatus && matchesFollowUp;
-                        })
-                        .sort((a, b) => {
-                          if (clientSortBy === 'name') {
-                            return (a.clientName || '').localeCompare(b.clientName || '');
-                          }
-                          if (clientSortBy === 'oldest') {
-                            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-                          }
-                          if (clientSortBy === 'latest') {
-                            const aDate = a.contactActivities?.[0]?.createdAt || a.updatedAt || a.createdAt;
-                            const bDate = b.contactActivities?.[0]?.createdAt || b.updatedAt || b.createdAt;
-                            return new Date(bDate).getTime() - new Date(aDate).getTime();
-                          }
-                          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                        });
+                        return matchesSearch && matchesCategory && matchesStatus && matchesFollowUp;
+                      })
+                      .sort((a, b) => {
+                        if (clientSortBy === 'name') {
+                          return (a.clientName || '').localeCompare(b.clientName || '');
+                        }
+                        if (clientSortBy === 'oldest') {
+                          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                        }
+                        if (clientSortBy === 'latest') {
+                          const aDate = a.contactActivities?.[0]?.createdAt || a.updatedAt || a.createdAt;
+                          const bDate = b.contactActivities?.[0]?.createdAt || b.updatedAt || b.createdAt;
+                          return new Date(bDate).getTime() - new Date(aDate).getTime();
+                        }
+                        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                      });
 
-                      if (filteredClients.length === 0) {
-                        return (
-                          <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center shadow-sm">
-                            <Search className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                            <p className="text-xs font-semibold text-slate-700">No clients match your filter criteria.</p>
-                            <button
-                              onClick={() => {
-                                setClientSearch('');
-                                setClientCategoryFilter('ALL');
-                                setClientStatusFilter('ALL');
-                                setClientFollowUpFilter('ALL');
-                                setClientSortBy('latest');
-                              }}
-                              className="mt-3 text-xs text-[#119DA4] font-bold hover:underline"
-                            >
-                              Reset Search Filters
-                            </button>
-                          </div>
-                        );
-                      }
-
+                    if (filteredClients.length === 0) {
                       return (
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs">
-                              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                                <tr>
-                                  <th className="p-3.5">Client & Company</th>
-                                  <th className="p-3.5">Category & Service</th>
-                                  <th className="p-3.5">Contact & City</th>
-                                  <th className="p-3.5">Status & Follow-up</th>
-                                  <th className="p-3.5">Requests & Activity</th>
-                                  <th className="p-3.5">Registration</th>
-                                  <th className="p-3.5 text-right">Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100">
-                                {filteredClients.map((c) => {
-                                  let displayCity = c.city || '';
-                                  if (!displayCity && c.location) {
-                                    try {
-                                      if (c.location.startsWith('{')) {
-                                        const p = JSON.parse(c.location);
-                                        displayCity = p.city || p.displayLocation || '';
-                                      } else {
-                                        displayCity = c.location;
-                                      }
-                                    } catch {
+                        <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center shadow-sm">
+                          <Search className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                          <p className="text-xs font-semibold text-slate-700">No clients match your filter criteria.</p>
+                          <button
+                            onClick={() => {
+                              setClientSearch('');
+                              setClientCategoryFilter('ALL');
+                              setClientStatusFilter('ALL');
+                              setClientFollowUpFilter('ALL');
+                              setClientSortBy('latest');
+                            }}
+                            className="mt-3 text-xs text-[#119DA4] font-bold hover:underline"
+                          >
+                            Reset Search Filters
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                              <tr>
+                                <th className="p-3.5">Client & Company</th>
+                                <th className="p-3.5">Category & Service</th>
+                                <th className="p-3.5">Contact & City</th>
+                                <th className="p-3.5">Status & Follow-up</th>
+                                <th className="p-3.5">Requests & Activity</th>
+                                <th className="p-3.5">Registration</th>
+                                <th className="p-3.5 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {filteredClients.map((c) => {
+                                let displayCity = c.city || '';
+                                if (!displayCity && c.location) {
+                                  try {
+                                    if (c.location.startsWith('{')) {
+                                      const p = JSON.parse(c.location);
+                                      displayCity = p.city || p.displayLocation || '';
+                                    } else {
                                       displayCity = c.location;
                                     }
+                                  } catch {
+                                    displayCity = c.location;
                                   }
+                                }
 
-                                  const fDate = getClientFollowUpDate(c);
-                                  const today = new Date();
-                                  today.setHours(0, 0, 0, 0);
-                                  const targetFDate = fDate ? new Date(fDate) : null;
-                                  if (targetFDate) targetFDate.setHours(0, 0, 0, 0);
+                                const fDate = getClientFollowUpDate(c);
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                const targetFDate = fDate ? new Date(fDate) : null;
+                                if (targetFDate) targetFDate.setHours(0, 0, 0, 0);
 
-                                  const isOverdue = targetFDate && targetFDate.getTime() < today.getTime();
-                                  const isDueToday = targetFDate && targetFDate.getTime() === today.getTime();
+                                const isOverdue = targetFDate && targetFDate.getTime() < today.getTime();
+                                const isDueToday = targetFDate && targetFDate.getTime() === today.getTime();
 
-                                  const latestActivity = c.contactActivities?.[0] || null;
-                                  const latestEnq = c.enquiries?.[0] || null;
+                                const latestActivity = c.contactActivities?.[0] || null;
+                                const latestEnq = c.enquiries?.[0] || null;
 
-                                  return (
-                                    <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                                      {/* 1. Client & Company */}
-                                      <td className="p-3.5">
-                                        <div className="font-bold text-slate-900 text-sm">{c.clientName}</div>
-                                        <div className="text-xs text-indigo-600 font-semibold mt-0.5">
-                                          {c.businessName}
-                                        </div>
-                                      </td>
+                                return (
+                                  <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
+                                    {/* 1. Client & Company */}
+                                    <td className="p-3.5">
+                                      <div className="font-bold text-slate-900 text-sm">{c.clientName}</div>
+                                      <div className="text-xs text-indigo-600 font-semibold mt-0.5">
+                                        {c.businessName}
+                                      </div>
+                                    </td>
 
-                                      {/* 2. Business Category & Service */}
-                                      <td className="p-3.5">
-                                        <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-200 block w-max">
-                                          {c.businessCategory}
-                                        </span>
-                                        <span className="text-[10px] text-slate-500 font-medium block mt-1">
-                                          {c.requiredService?.replace(/_/g, ' ') || 'General'}
-                                        </span>
-                                      </td>
+                                    {/* 2. Business Category & Service */}
+                                    <td className="p-3.5">
+                                      <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-200 block w-max">
+                                        {c.businessCategory}
+                                      </span>
+                                      <span className="text-[10px] text-slate-500 font-medium block mt-1">
+                                        {c.requiredService?.replace(/_/g, ' ') || 'General'}
+                                      </span>
+                                    </td>
 
-                                      {/* 3. Mobile, Email & City */}
-                                      <td className="p-3.5">
-                                        <div className="text-slate-800 font-medium flex items-center gap-1.5">
-                                          <Phone className="w-3 h-3 text-slate-400" />
-                                          <span>{c.mobile}</span>
-                                        </div>
-                                        <div className="text-slate-500 text-[11px] flex items-center gap-1.5 mt-0.5">
-                                          <Mail className="w-3 h-3 text-slate-400" />
-                                          <span className="truncate max-w-[150px]">{c.email}</span>
-                                        </div>
-                                        <div className="text-slate-500 text-[11px] flex items-center gap-1 mt-0.5">
-                                          <MapPin className="w-3 h-3 text-slate-400" />
-                                          <span>{displayCity || '—'}</span>
-                                        </div>
-                                      </td>
+                                    {/* 3. Mobile, Email & City */}
+                                    <td className="p-3.5">
+                                      <div className="text-slate-800 font-medium flex items-center gap-1.5">
+                                        <Phone className="w-3 h-3 text-slate-400" />
+                                        <span>{c.mobile}</span>
+                                      </div>
+                                      <div className="text-slate-500 text-[11px] flex items-center gap-1.5 mt-0.5">
+                                        <Mail className="w-3 h-3 text-slate-400" />
+                                        <span className="truncate max-w-[150px]">{c.email}</span>
+                                      </div>
+                                      <div className="text-slate-500 text-[11px] flex items-center gap-1 mt-0.5">
+                                        <MapPin className="w-3 h-3 text-slate-400" />
+                                        <span>{displayCity || '—'}</span>
+                                      </div>
+                                    </td>
 
-                                      {/* 4. Client Status & Next Follow-Up */}
-                                      <td className="p-3.5">
-                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-[#119DA4] border border-[#119DA4]/20 block w-max">
-                                          {c.status || 'ACTIVE'}
-                                        </span>
-                                        {fDate ? (
-                                          <div
-                                            className={`text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded flex items-center gap-1 w-max ${
-                                              isOverdue
-                                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                                : isDueToday
-                                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                    {/* 4. Client Status & Next Follow-Up */}
+                                    <td className="p-3.5">
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-[#119DA4] border border-[#119DA4]/20 block w-max">
+                                        {c.status || 'ACTIVE'}
+                                      </span>
+                                      {fDate ? (
+                                        <div
+                                          className={`text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded flex items-center gap-1 w-max ${isOverdue
+                                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                            : isDueToday
+                                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                             }`}
-                                          >
-                                            <Calendar className="w-3 h-3" />
-                                            <span>
-                                              {isOverdue ? 'Overdue: ' : isDueToday ? 'Today: ' : 'Follow-up: '}
-                                              {fDate.toLocaleDateString('en-IN', {
-                                                day: '2-digit',
-                                                month: 'short',
-                                              })}
-                                            </span>
-                                          </div>
-                                        ) : (
-                                          <span className="text-[10px] text-slate-400 block mt-1">No follow-up set</span>
-                                        )}
-                                      </td>
-
-                                      {/* 5. Requests Count & Latest Activity */}
-                                      <td className="p-3.5">
-                                        <div className="flex items-center gap-1.5">
-                                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                            {c.enquiries?.length || 0} {(c.enquiries?.length || 0) === 1 ? 'Request' : 'Requests'}
-                                          </span>
-                                        </div>
-                                        {latestActivity ? (
-                                          <div className="text-[10px] text-slate-600 mt-1 truncate max-w-[170px]" title={latestActivity.discussionSummary}>
-                                            <span className="font-semibold">{latestActivity.contactMethod}:</span> {latestActivity.discussionSummary}
-                                          </div>
-                                        ) : latestEnq ? (
-                                          <div className="space-y-1">
-                                            <div className="text-[10px] text-slate-500">
-                                              Enquiry: <span className={latestEnq.status === 'REJECTED' ? 'font-bold text-red-600' : ''}>{latestEnq.status}</span>
-                                            </div>
-                                            {latestEnq.status === 'REJECTED' && (!latestEnq.discussionNotes || !latestEnq.discussionNotes.includes('Client Informed of Rejection')) && (
-                                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-300 animate-pulse flex items-center gap-1 w-fit">
-                                                <AlertCircle className="w-2.5 h-2.5 text-rose-600" />
-                                                Inform Client
-                                              </span>
-                                            )}
-                                            {latestEnq.status === 'REJECTED' && latestEnq.discussionNotes && latestEnq.discussionNotes.includes('Client Informed of Rejection') && (
-                                              <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1 w-fit">
-                                                <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                                                Client Informed
-                                              </span>
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <span className="text-[10px] text-slate-400 block mt-1">No activity yet</span>
-                                        )}
-                                      </td>
-
-                                      {/* 6. Registration Date */}
-                                      <td className="p-3.5 text-slate-600">
-                                        <div className="flex items-center gap-1 font-medium">
-                                          <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                                        >
+                                          <Calendar className="w-3 h-3" />
                                           <span>
-                                            {new Date(c.createdAt).toLocaleDateString('en-IN', {
+                                            {isOverdue ? 'Overdue: ' : isDueToday ? 'Today: ' : 'Follow-up: '}
+                                            {fDate.toLocaleDateString('en-IN', {
                                               day: '2-digit',
                                               month: 'short',
-                                              year: 'numeric',
                                             })}
                                           </span>
                                         </div>
-                                      </td>
+                                      ) : (
+                                        <span className="text-[10px] text-slate-400 block mt-1">No follow-up set</span>
+                                      )}
+                                    </td>
 
-                                      {/* 7. Actions */}
-                                      <td className="p-3.5 text-right">
-                                        <div className="flex items-center justify-end gap-1.5">
-                                          {latestEnq && latestEnq.status === 'REJECTED' && (!latestEnq.discussionNotes || !latestEnq.discussionNotes.includes('Client Informed of Rejection')) && (
-                                            <button
-                                              type="button"
-                                              onClick={() => handleOpenFollowUpModal(latestEnq, true)}
-                                              className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-sm animate-pulse"
-                                              title="Admin rejected enquiry - Inform client and record follow-up"
-                                            >
-                                              <Phone className="w-3.5 h-3.5" />
-                                              Inform Client
-                                            </button>
-                                          )}
-                                          {latestEnq && latestEnq.status === 'REJECTED' && latestEnq.discussionNotes && latestEnq.discussionNotes.includes('Client Informed of Rejection') && (
-                                            <button
-                                              type="button"
-                                              onClick={() => handleOpenFollowUpModal(latestEnq, true)}
-                                              className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                                              title="Client already informed - View or add follow-up"
-                                            >
-                                              <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-                                              Follow-up
-                                            </button>
-                                          )}
-                                          {latestEnq && latestEnq.status === 'CHANGES_REQUESTED' && (
-                                            <button
-                                              type="button"
-                                              onClick={() => handleOpenFollowUpModal(latestEnq, false)}
-                                              className="px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-sm animate-pulse"
-                                              title="Admin requested scope changes - Record client consultation"
-                                            >
-                                              <MessageSquare className="w-3.5 h-3.5" />
-                                              Follow-up
-                                            </button>
-                                          )}
-                                          <button
-                                            type="button"
-                                            onClick={() => handleOpenClientDetail(c.id)}
-                                            className="px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                                            title="Open Complete Client Workspace & Requests"
-                                          >
-                                            <Eye className="w-3.5 h-3.5" />
-                                            Workspace →
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => handleOpenEditClient(c)}
-                                            className="px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                                            title="Edit Client Details & Budget"
-                                          >
-                                            <Edit3 className="w-3.5 h-3.5" />
-                                            Edit
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              setNewEnquiryModal({ clientId: c.id, clientName: c.clientName })
-                                            }
-                                            className="px-2.5 py-1.5 rounded-lg bg-teal-50 text-[#119DA4] hover:bg-[#80DED9]/20 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                                            title="Submit New Request / Enquiry"
-                                          >
-                                            <Plus className="w-3.5 h-3.5" />
-                                            Request
-                                          </button>
+                                    {/* 5. Requests Count & Latest Activity */}
+                                    <td className="p-3.5">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                          {c.enquiries?.length || 0} {(c.enquiries?.length || 0) === 1 ? 'Request' : 'Requests'}
+                                        </span>
+                                      </div>
+                                      {latestActivity ? (
+                                        <div className="text-[10px] text-slate-600 mt-1 truncate max-w-[170px]" title={latestActivity.discussionSummary}>
+                                          <span className="font-semibold">{latestActivity.contactMethod}:</span> {latestActivity.discussionSummary}
                                         </div>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
+                                      ) : latestEnq ? (
+                                        <div className="space-y-1">
+                                          <div className="text-[10px] text-slate-500">
+                                            Enquiry: <span className={latestEnq.status === 'REJECTED' ? 'font-bold text-red-600' : ''}>{latestEnq.status}</span>
+                                          </div>
+                                          {latestEnq.status === 'REJECTED' && (!latestEnq.discussionNotes || !latestEnq.discussionNotes.includes('Client Informed of Rejection')) && (
+                                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-300 animate-pulse flex items-center gap-1 w-fit">
+                                              <AlertCircle className="w-2.5 h-2.5 text-rose-600" />
+                                              Inform Client
+                                            </span>
+                                          )}
+                                          {latestEnq.status === 'REJECTED' && latestEnq.discussionNotes && latestEnq.discussionNotes.includes('Client Informed of Rejection') && (
+                                            <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1 w-fit">
+                                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                                              Client Informed
+                                            </span>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <span className="text-[10px] text-slate-400 block mt-1">No activity yet</span>
+                                      )}
+                                    </td>
+
+                                    {/* 6. Registration Date */}
+                                    <td className="p-3.5 text-slate-600">
+                                      <div className="flex items-center gap-1 font-medium">
+                                        <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                                        <span>
+                                          {new Date(c.createdAt).toLocaleDateString('en-IN', {
+                                            day: '2-digit',
+                                            month: 'short',
+                                            year: 'numeric',
+                                          })}
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    {/* 7. Actions */}
+                                    <td className="p-3.5 text-right">
+                                      <div className="flex items-center justify-end gap-1.5">
+                                        {latestEnq && latestEnq.status === 'REJECTED' && (!latestEnq.discussionNotes || !latestEnq.discussionNotes.includes('Client Informed of Rejection')) && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenFollowUpModal(latestEnq, true)}
+                                            className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-sm animate-pulse"
+                                            title="Admin rejected enquiry - Inform client and record follow-up"
+                                          >
+                                            <Phone className="w-3.5 h-3.5" />
+                                            Inform Client
+                                          </button>
+                                        )}
+                                        {latestEnq && latestEnq.status === 'REJECTED' && latestEnq.discussionNotes && latestEnq.discussionNotes.includes('Client Informed of Rejection') && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenFollowUpModal(latestEnq, true)}
+                                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                            title="Client already informed - View or add follow-up"
+                                          >
+                                            <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                                            Follow-up
+                                          </button>
+                                        )}
+                                        {latestEnq && latestEnq.status === 'CHANGES_REQUESTED' && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenFollowUpModal(latestEnq, false)}
+                                            className="px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-sm animate-pulse"
+                                            title="Admin requested scope changes - Record client consultation"
+                                          >
+                                            <MessageSquare className="w-3.5 h-3.5" />
+                                            Follow-up
+                                          </button>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenClientDetail(c.id)}
+                                          className="px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                          title="Open Complete Client Workspace & Requests"
+                                        >
+                                          <Eye className="w-3.5 h-3.5" />
+                                          Workspace →
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenEditClient(c)}
+                                          className="px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                          title="Edit Client Details & Budget"
+                                        >
+                                          <Edit3 className="w-3.5 h-3.5" />
+                                          Edit
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setNewEnquiryModal({ clientId: c.id, clientName: c.clientName })
+                                          }
+                                          className="px-2.5 py-1.5 rounded-lg bg-teal-50 text-[#119DA4] hover:bg-[#80DED9]/20 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                          title="Submit New Request / Enquiry"
+                                        >
+                                          <Plus className="w-3.5 h-3.5" />
+                                          Request
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
                         </div>
-                      );
-                    })()}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -2919,7 +2916,7 @@ export const BgaPortal: React.FC = () => {
                             if (selectedClientDetails.location.startsWith('{')) {
                               addr = JSON.parse(selectedClientDetails.location);
                             }
-                          } catch {}
+                          } catch { }
                         }
                         const formattedFull =
                           addr.fullAddress ||
@@ -3159,90 +3156,90 @@ export const BgaPortal: React.FC = () => {
                     className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
                     onClick={(e) => e.stopPropagation()}
                   >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-cyan-500" />
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
-                              <Plus className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">
-                                Submit New Enquiry
-                              </h3>
-                              <p className="text-xs text-slate-500">
-                                Client: <strong className="text-slate-800">{newEnquiryModal.clientName}</strong>
-                              </p>
-                            </div>
+                    <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-cyan-500" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
+                            <Plus className="w-5 h-5" />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => !modalSubmitting && setNewEnquiryModal(null)}
-                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">
+                              Submit New Enquiry
+                            </h3>
+                            <p className="text-xs text-slate-500">
+                              Client: <strong className="text-slate-800">{newEnquiryModal.clientName}</strong>
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => !modalSubmitting && setNewEnquiryModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleCreateEnquiry} className="space-y-3.5 text-xs">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Service Category</label>
+                          <select
+                            value={enquiryForm.serviceCategory}
+                            onChange={(e) => setEnquiryForm({ ...enquiryForm, serviceCategory: e.target.value })}
+                            className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
                           >
-                            <X className="w-5 h-5" />
-                          </button>
+                            <option value="DIGITAL_MARKETING">Digital Marketing</option>
+                            <option value="WEBSITE_DEVELOPMENT">Website Development</option>
+                            <option value="MOBILE_APPLICATION_DEVELOPMENT">Mobile Application</option>
+                            <option value="SOFTWARE_DEVELOPMENT">Custom Software / ERP</option>
+                          </select>
                         </div>
 
-                        <form onSubmit={handleCreateEnquiry} className="space-y-3.5 text-xs">
-                          <div>
-                            <label className="block text-slate-700 font-semibold mb-1">Service Category</label>
-                            <select
-                              value={enquiryForm.serviceCategory}
-                              onChange={(e) => setEnquiryForm({ ...enquiryForm, serviceCategory: e.target.value })}
-                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
-                            >
-                              <option value="DIGITAL_MARKETING">Digital Marketing</option>
-                              <option value="WEBSITE_DEVELOPMENT">Website Development</option>
-                              <option value="MOBILE_APPLICATION_DEVELOPMENT">Mobile Application</option>
-                              <option value="SOFTWARE_DEVELOPMENT">Custom Software / ERP</option>
-                            </select>
-                          </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Expected Budget (₹)</label>
+                          <input
+                            type="number"
+                            value={enquiryForm.expectedBudget}
+                            onChange={(e) => setEnquiryForm({ ...enquiryForm, expectedBudget: e.target.value })}
+                            placeholder="e.g. 75000"
+                            className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                          />
+                        </div>
 
-                          <div>
-                            <label className="block text-slate-700 font-semibold mb-1">Expected Budget (₹)</label>
-                            <input
-                              type="number"
-                              value={enquiryForm.expectedBudget}
-                              onChange={(e) => setEnquiryForm({ ...enquiryForm, expectedBudget: e.target.value })}
-                              placeholder="e.g. 75000"
-                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
-                            />
-                          </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Detailed Requirements <span className="text-rose-500">*</span></label>
+                          <textarea
+                            rows={3}
+                            required
+                            value={enquiryForm.requirements}
+                            onChange={(e) => setEnquiryForm({ ...enquiryForm, requirements: e.target.value })}
+                            placeholder="Specify features, modules, deliverables..."
+                            className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none"
+                          />
+                        </div>
 
-                          <div>
-                            <label className="block text-slate-700 font-semibold mb-1">Detailed Requirements <span className="text-rose-500">*</span></label>
-                            <textarea
-                              rows={3}
-                              required
-                              value={enquiryForm.requirements}
-                              onChange={(e) => setEnquiryForm({ ...enquiryForm, requirements: e.target.value })}
-                              placeholder="Specify features, modules, deliverables..."
-                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none"
-                            />
-                          </div>
-
-                          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                            <button
-                              type="button"
-                              disabled={modalSubmitting}
-                              onClick={() => setNewEnquiryModal(null)}
-                              className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors disabled:opacity-50"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="submit"
-                              disabled={modalSubmitting}
-                              className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-                            >
-                              {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                              {modalSubmitting ? 'Submitting...' : 'Submit Enquiry'}
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    </motion.div>
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            disabled={modalSubmitting}
+                            onClick={() => setNewEnquiryModal(null)}
+                            className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={modalSubmitting}
+                            className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                          >
+                            {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                            {modalSubmitting ? 'Submitting...' : 'Submit Enquiry'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </motion.div>
                 )}
               </ModalPortal>
 
@@ -3260,136 +3257,136 @@ export const BgaPortal: React.FC = () => {
                     className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
                     onClick={(e) => e.stopPropagation()}
                   >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-[#119DA4] to-[#3066BE]" />
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2.5 bg-teal-50 rounded-xl border border-[#119DA4]/20">
-                              <Phone className="w-5 h-5 text-[#119DA4]" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">
-                                Log Contact & Follow-up
-                              </h3>
-                              <p className="text-xs text-slate-500">
-                                Client: <strong className="text-slate-800">{activityModal.clientName}</strong>
-                              </p>
-                            </div>
+                    <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-[#119DA4] to-[#3066BE]" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-teal-50 rounded-xl border border-[#119DA4]/20">
+                            <Phone className="w-5 h-5 text-[#119DA4]" />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => !activitySubmitting && setActivityModal(null)}
-                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">
+                              Log Contact & Follow-up
+                            </h3>
+                            <p className="text-xs text-slate-500">
+                              Client: <strong className="text-slate-800">{activityModal.clientName}</strong>
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => !activitySubmitting && setActivityModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleAddActivity} className="space-y-3.5 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Contact Method *</label>
+                            <select
+                              value={activityForm.contactMethod}
+                              onChange={(e) =>
+                                setActivityForm({ ...activityForm, contactMethod: e.target.value as any })
+                              }
+                              className="w-full p-2.5 border border-slate-200 rounded-xl bg-white font-medium focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                            >
+                              <option value="CALL">Phone Call</option>
+                              <option value="WHATSAPP">WhatsApp Chat</option>
+                              <option value="EMAIL">Email</option>
+                              <option value="MEETING">Meeting (In-person / Virtual)</option>
+                              <option value="OTHER">Other</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Outcome *</label>
+                            <select
+                              value={activityForm.outcome}
+                              onChange={(e) =>
+                                setActivityForm({ ...activityForm, outcome: e.target.value as any })
+                              }
+                              className="w-full p-2.5 border border-slate-200 rounded-xl bg-white font-medium focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                            >
+                              <option value="CONNECTED">Connected & Discussed</option>
+                              <option value="QUOTATION_REQUESTED">Requested Quotation</option>
+                              <option value="INTERESTED">Client Interested</option>
+                              <option value="SCHEDULED_CALLBACK">Scheduled Callback</option>
+                              <option value="BUSY_NO_ANSWER">Busy / No Answer</option>
+                              <option value="NOT_INTERESTED">Not Interested</option>
+                              <option value="CLOSED_WON">Closed Won (Deal Closed)</option>
+                              <option value="CLOSED_LOST">Closed Lost</option>
+                            </select>
+                          </div>
                         </div>
 
-                        <form onSubmit={handleAddActivity} className="space-y-3.5 text-xs">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-slate-700 font-semibold mb-1">Contact Method *</label>
-                              <select
-                                value={activityForm.contactMethod}
-                                onChange={(e) =>
-                                  setActivityForm({ ...activityForm, contactMethod: e.target.value as any })
-                                }
-                                className="w-full p-2.5 border border-slate-200 rounded-xl bg-white font-medium focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                              >
-                                <option value="CALL">Phone Call</option>
-                                <option value="WHATSAPP">WhatsApp Chat</option>
-                                <option value="EMAIL">Email</option>
-                                <option value="MEETING">Meeting (In-person / Virtual)</option>
-                                <option value="OTHER">Other</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="block text-slate-700 font-semibold mb-1">Outcome *</label>
-                              <select
-                                value={activityForm.outcome}
-                                onChange={(e) =>
-                                  setActivityForm({ ...activityForm, outcome: e.target.value as any })
-                                }
-                                className="w-full p-2.5 border border-slate-200 rounded-xl bg-white font-medium focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                              >
-                                <option value="CONNECTED">Connected & Discussed</option>
-                                <option value="QUOTATION_REQUESTED">Requested Quotation</option>
-                                <option value="INTERESTED">Client Interested</option>
-                                <option value="SCHEDULED_CALLBACK">Scheduled Callback</option>
-                                <option value="BUSY_NO_ANSWER">Busy / No Answer</option>
-                                <option value="NOT_INTERESTED">Not Interested</option>
-                                <option value="CLOSED_WON">Closed Won (Deal Closed)</option>
-                                <option value="CLOSED_LOST">Closed Lost</option>
-                              </select>
-                            </div>
-                          </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">
+                            Discussion Summary <span className="text-rose-500">*</span>
+                          </label>
+                          <textarea
+                            rows={3}
+                            required
+                            value={activityForm.discussionSummary}
+                            onChange={(e) =>
+                              setActivityForm({ ...activityForm, discussionSummary: e.target.value })
+                            }
+                            placeholder="Key discussion points, budget agreed, specific deliverables requested..."
+                            className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                          />
+                        </div>
 
-                          <div>
-                            <label className="block text-slate-700 font-semibold mb-1">
-                              Discussion Summary <span className="text-rose-500">*</span>
-                            </label>
-                            <textarea
-                              rows={3}
-                              required
-                              value={activityForm.discussionSummary}
-                              onChange={(e) =>
-                                setActivityForm({ ...activityForm, discussionSummary: e.target.value })
-                              }
-                              placeholder="Key discussion points, budget agreed, specific deliverables requested..."
-                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                            />
-                          </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Follow-up Notes</label>
+                          <input
+                            type="text"
+                            value={activityForm.followUpNotes}
+                            onChange={(e) =>
+                              setActivityForm({ ...activityForm, followUpNotes: e.target.value })
+                            }
+                            placeholder="Next steps, materials to send, action items..."
+                            className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                          />
+                        </div>
 
-                          <div>
-                            <label className="block text-slate-700 font-semibold mb-1">Follow-up Notes</label>
-                            <input
-                              type="text"
-                              value={activityForm.followUpNotes}
-                              onChange={(e) =>
-                                setActivityForm({ ...activityForm, followUpNotes: e.target.value })
-                              }
-                              placeholder="Next steps, materials to send, action items..."
-                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                            />
-                          </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Next Follow-Up Date</label>
+                          <input
+                            type="date"
+                            value={activityForm.nextFollowUpDate}
+                            onChange={(e) =>
+                              setActivityForm({ ...activityForm, nextFollowUpDate: e.target.value })
+                            }
+                            className="w-full p-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                          />
+                        </div>
 
-                          <div>
-                            <label className="block text-slate-700 font-semibold mb-1">Next Follow-Up Date</label>
-                            <input
-                              type="date"
-                              value={activityForm.nextFollowUpDate}
-                              onChange={(e) =>
-                                setActivityForm({ ...activityForm, nextFollowUpDate: e.target.value })
-                              }
-                              className="w-full p-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                            />
-                          </div>
-
-                          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                            <button
-                              type="button"
-                              disabled={activitySubmitting}
-                              onClick={() => setActivityModal(null)}
-                              className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors disabled:opacity-50"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="submit"
-                              disabled={activitySubmitting}
-                              className="px-5 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-                            >
-                              {activitySubmitting ? (
-                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <Save className="w-3.5 h-3.5" />
-                              )}
-                              {activitySubmitting ? 'Saving Activity...' : 'Save Activity'}
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    </motion.div>
+                        <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                          <button
+                            type="button"
+                            disabled={activitySubmitting}
+                            onClick={() => setActivityModal(null)}
+                            className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={activitySubmitting}
+                            className="px-5 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                          >
+                            {activitySubmitting ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Save className="w-3.5 h-3.5" />
+                            )}
+                            {activitySubmitting ? 'Saving Activity...' : 'Save Activity'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </motion.div>
                 )}
               </ModalPortal>
             </div>
@@ -3418,277 +3415,275 @@ export const BgaPortal: React.FC = () => {
                   </div>
                 ) : (
                   enquiries.map((enq) => {
-                  const hasActiveQuote = enq.quotations && enq.quotations.length > 0;
-                  return (
-                    <div key={enq.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
-                        <div>
-                          <span className="font-mono text-xs font-bold text-slate-500">{enq.id}</span>
-                          <h3 className="text-sm font-bold text-slate-900">{enq.client?.clientName}</h3>
-                          <span className="text-xs text-indigo-600 font-semibold">{enq.serviceCategory}</span>
-                        </div>
+                    const hasActiveQuote = enq.quotations && enq.quotations.length > 0;
+                    return (
+                      <div key={enq.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                          <div>
+                            <span className="font-mono text-xs font-bold text-slate-500">{enq.id}</span>
+                            <h3 className="text-sm font-bold text-slate-900">{enq.client?.clientName}</h3>
+                            <span className="text-xs text-indigo-600 font-semibold">{enq.serviceCategory}</span>
+                          </div>
 
-                        <div className="flex items-center gap-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            enq.status === 'APPROVED'
+                          <div className="flex items-center gap-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${enq.status === 'APPROVED'
                               ? 'bg-emerald-100 text-[#119DA4]'
                               : enq.status === 'CHANGES_REQUESTED'
-                              ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                              : enq.status === 'SUBMITTED'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            Management: {enq.status?.replace('_', ' ')}
-                          </span>
-                          <span className="text-xs font-bold text-slate-800">
-                            Budget: ₹{enq.expectedBudget?.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="py-3 text-xs text-slate-700 space-y-2">
-                        <div>
-                          <strong>Requirements:</strong>
-                          <p className="text-slate-600 mt-1 bg-slate-50 p-2.5 rounded-lg border border-slate-100 whitespace-pre-wrap">
-                            {enq.requirements}
-                          </p>
-                        </div>
-                        {enq.adminNotes && (
-                          <div className={`p-3 rounded-xl border text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${
-                            enq.status === 'REJECTED'
-                              ? 'bg-rose-50 border-rose-200 text-rose-900'
-                              : 'bg-amber-50 border-amber-200 text-amber-900'
-                          }`}>
-                            <div>
-                              <strong className="block font-bold">
-                                {enq.status === 'REJECTED' ? '⚠️ Management Rejection Reason:' : 'Admin Review Note:'}
-                              </strong>
-                              <span className="mt-0.5 block text-slate-800">{enq.adminNotes}</span>
-                            </div>
-                            {enq.status === 'CHANGES_REQUESTED' && (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenFollowUpModal(enq, false)}
-                                className="px-3 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white text-xs font-bold rounded-lg shrink-0 flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
-                              >
-                                <MessageSquare className="w-3.5 h-3.5" />
-                                Record Follow-up
-                              </button>
-                            )}
-                            {enq.status === 'REJECTED' && (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenFollowUpModal(enq, true)}
-                                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shrink-0 flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
-                              >
-                                <Phone className="w-3.5 h-3.5" />
-                                Inform Client & Log Follow-up
-                              </button>
-                            )}
+                                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                : enq.status === 'SUBMITTED'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                              Management: {enq.status?.replace('_', ' ')}
+                            </span>
+                            <span className="text-xs font-bold text-slate-800">
+                              Budget: ₹{enq.expectedBudget?.toLocaleString()}
+                            </span>
                           </div>
-                        )}
-                        {enq.discussionNotes && (
-                          <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs space-y-1">
-                            <div className="flex items-center justify-between font-bold text-emerald-900 border-b border-emerald-200/60 pb-1">
-                              <span className="flex items-center gap-1.5">
-                                <MessageSquare className="w-3.5 h-3.5 text-emerald-700" />
-                                Client Consultation & Follow-up History:
-                              </span>
-                              {enq.followUpDate && (
-                                <span className="text-[10px] font-mono font-normal text-emerald-800">
-                                  {new Date(enq.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                                </span>
-                              )}
-                            </div>
-                            <p className="whitespace-pre-wrap font-medium text-emerald-950 pl-5 leading-relaxed">
-                              {enq.discussionNotes}
+                        </div>
+
+                        <div className="py-3 text-xs text-slate-700 space-y-2">
+                          <div>
+                            <strong>Requirements:</strong>
+                            <p className="text-slate-600 mt-1 bg-slate-50 p-2.5 rounded-lg border border-slate-100 whitespace-pre-wrap">
+                              {enq.requirements}
                             </p>
                           </div>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 text-xs text-slate-400 pt-3 border-t border-slate-100">
-                        <span>Submitted on {new Date(enq.createdAt).toLocaleDateString()}</span>
-
-                        {(() => {
-                          const latestQuot = enq.quotations && enq.quotations.length > 0 ? enq.quotations[0] : null;
-
-                          if (latestQuot) {
-                            if (latestQuot.status === 'REQUESTED') {
-                              return (
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
-                                    <span>Quotation Requested • Pending Accounts Preparation ({latestQuot.quotationNumber})</span>
-                                  </span>
-                                  <button
-                                    onClick={() => setActiveTab('quotations')}
-                                    className="text-[11px] text-[#3066BE] hover:underline font-semibold"
-                                  >
-                                    Track in Quotes →
-                                  </button>
-                                </div>
-                              );
-                            }
-
-                            if (latestQuot.status === 'PREPARED' || latestQuot.status === 'PENDING_ADMIN_APPROVAL') {
-                              return (
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200 flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5 text-purple-600" />
-                                    <span>Quotation Drafted • Pending Admin Approval ({latestQuot.quotationNumber})</span>
-                                  </span>
-                                  <button
-                                    onClick={() => setActiveTab('quotations')}
-                                    className="text-[11px] text-[#3066BE] hover:underline font-semibold"
-                                  >
-                                    Track in Quotes →
-                                  </button>
-                                </div>
-                              );
-                            }
-
-                            if (latestQuot.status === 'REVISION_REQUESTED') {
-                              return (
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-1.5">
-                                    <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
-                                    <span>Admin Requested Revision ({latestQuot.quotationNumber})</span>
-                                  </span>
-                                  <button
-                                    onClick={() => setActiveTab('quotations')}
-                                    className="text-[11px] text-[#3066BE] hover:underline font-semibold"
-                                  >
-                                    Track in Quotes →
-                                  </button>
-                                </div>
-                              );
-                            }
-
-                            if (latestQuot.status === 'ADMIN_APPROVED' || latestQuot.status === 'SENT_TO_BGA') {
-                              return (
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-[#119DA4] border border-emerald-200 flex items-center gap-1.5">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-[#119DA4]" />
-                                    <span>Quotation Issued & Ready ({latestQuot.quotationNumber})</span>
-                                  </span>
-                                  <button
-                                    onClick={() => setActiveTab('quotations')}
-                                    className="px-2.5 py-1 bg-[#3066BE] text-white hover:bg-[#255299] rounded text-[11px] font-bold transition-colors"
-                                  >
-                                    Present to Client →
-                                  </button>
-                                </div>
-                              );
-                            }
-
-                            if (latestQuot.status === 'ACCEPTED') {
-                              return (
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1.5">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>Quotation Accepted ({latestQuot.quotationNumber})</span>
-                                  </span>
-                                  <button
-                                    onClick={() => setActiveTab('projects')}
-                                    className="text-[11px] text-[#3066BE] hover:underline font-semibold"
-                                  >
-                                    View Work Order →
-                                  </button>
-                                </div>
-                              );
-                            }
-
-                            if (latestQuot.status === 'REJECTED') {
-                              return (
-                                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-50 text-red-700 border border-red-200">
-                                  Quotation Declined ({latestQuot.quotationNumber})
-                                </span>
-                              );
-                            }
-
-                            return (
-                              <span className="text-slate-600 font-semibold text-xs">
-                                Quotation {latestQuot.status} ({latestQuot.quotationNumber})
-                              </span>
-                            );
-                          }
-
-                          // If no quotation requested yet
-                          if (enq.status === 'APPROVED') {
-                            return (
-                              <button
-                                onClick={() => handleRequestQuotation(enq.id)}
-                                className="px-3.5 py-1.5 bg-[#3066BE] text-white rounded-lg text-xs font-bold hover:bg-[#255299] flex items-center gap-1.5 shadow-sm transition-colors"
-                              >
-                                <Send className="w-3.5 h-3.5" /> Request Quotation from Accounts
-                              </button>
-                            );
-                          }
-
-                          if (enq.status === 'SUBMITTED') {
-                            return (
-                              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
-                                <Clock className="w-3 h-3 text-amber-600 animate-pulse" /> Awaiting Management Review
-                              </span>
-                            );
-                          }
-
-                          if (enq.status === 'CHANGES_REQUESTED') {
-                            return (
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                                  Scope Changes Requested by Admin
-                                </span>
+                          {enq.adminNotes && (
+                            <div className={`p-3 rounded-xl border text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${enq.status === 'REJECTED'
+                              ? 'bg-rose-50 border-rose-200 text-rose-900'
+                              : 'bg-amber-50 border-amber-200 text-amber-900'
+                              }`}>
+                              <div>
+                                <strong className="block font-bold">
+                                  {enq.status === 'REJECTED' ? '⚠️ Management Rejection Reason:' : 'Admin Review Note:'}
+                                </strong>
+                                <span className="mt-0.5 block text-slate-800">{enq.adminNotes}</span>
+                              </div>
+                              {enq.status === 'CHANGES_REQUESTED' && (
                                 <button
                                   type="button"
-                                  onClick={() => handleOpenFollowUpModal(enq)}
-                                  className="px-3.5 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                                  onClick={() => handleOpenFollowUpModal(enq, false)}
+                                  className="px-3 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white text-xs font-bold rounded-lg shrink-0 flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
                                 >
                                   <MessageSquare className="w-3.5 h-3.5" />
-                                  Consult Client & Record Follow-up
+                                  Record Follow-up
                                 </button>
-                              </div>
-                            );
-                          }
-
-                          if (enq.status === 'REJECTED') {
-                            const hasInformed = enq.discussionNotes && enq.discussionNotes.includes('Client Informed of Rejection');
-                            return (
-                              <div className="flex items-center gap-2 flex-wrap">
-                                {hasInformed ? (
-                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                    Client Informed of Rejection
-                                  </span>
-                                ) : (
-                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-1.5">
-                                    <AlertCircle className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
-                                    Awaiting Client Rejection Follow-up
-                                  </span>
-                                )}
+                              )}
+                              {enq.status === 'REJECTED' && (
                                 <button
                                   type="button"
                                   onClick={() => handleOpenFollowUpModal(enq, true)}
-                                  className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shrink-0 flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
                                 >
                                   <Phone className="w-3.5 h-3.5" />
-                                  {hasInformed ? 'Update Client Follow-up' : 'Inform Client & Record Follow-up'}
+                                  Inform Client & Log Follow-up
                                 </button>
+                              )}
+                            </div>
+                          )}
+                          {enq.discussionNotes && (
+                            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs space-y-1">
+                              <div className="flex items-center justify-between font-bold text-emerald-900 border-b border-emerald-200/60 pb-1">
+                                <span className="flex items-center gap-1.5">
+                                  <MessageSquare className="w-3.5 h-3.5 text-emerald-700" />
+                                  Client Consultation & Follow-up History:
+                                </span>
+                                {enq.followUpDate && (
+                                  <span className="text-[10px] font-mono font-normal text-emerald-800">
+                                    {new Date(enq.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                                  </span>
+                                )}
                               </div>
-                            );
-                          }
+                              <p className="whitespace-pre-wrap font-medium text-emerald-950 pl-5 leading-relaxed">
+                                {enq.discussionNotes}
+                              </p>
+                            </div>
+                          )}
+                        </div>
 
-                          return (
-                            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-50 text-red-700 border border-red-200">
-                              Enquiry Declined
-                            </span>
-                          );
-                        })()}
+                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 text-xs text-slate-400 pt-3 border-t border-slate-100">
+                          <span>Submitted on {new Date(enq.createdAt).toLocaleDateString()}</span>
+
+                          {(() => {
+                            const latestQuot = enq.quotations && enq.quotations.length > 0 ? enq.quotations[0] : null;
+
+                            if (latestQuot) {
+                              if (latestQuot.status === 'REQUESTED') {
+                                return (
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                                      <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                                      <span>Quotation Requested • Pending Accounts Preparation ({latestQuot.quotationNumber})</span>
+                                    </span>
+                                    <button
+                                      onClick={() => setActiveTab('quotations')}
+                                      className="text-[11px] text-[#3066BE] hover:underline font-semibold"
+                                    >
+                                      Track in Quotes →
+                                    </button>
+                                  </div>
+                                );
+                              }
+
+                              if (latestQuot.status === 'PREPARED' || latestQuot.status === 'PENDING_ADMIN_APPROVAL') {
+                                return (
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200 flex items-center gap-1.5">
+                                      <Clock className="w-3.5 h-3.5 text-purple-600" />
+                                      <span>Quotation Drafted • Pending Admin Approval ({latestQuot.quotationNumber})</span>
+                                    </span>
+                                    <button
+                                      onClick={() => setActiveTab('quotations')}
+                                      className="text-[11px] text-[#3066BE] hover:underline font-semibold"
+                                    >
+                                      Track in Quotes →
+                                    </button>
+                                  </div>
+                                );
+                              }
+
+                              if (latestQuot.status === 'REVISION_REQUESTED') {
+                                return (
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-1.5">
+                                      <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                                      <span>Admin Requested Revision ({latestQuot.quotationNumber})</span>
+                                    </span>
+                                    <button
+                                      onClick={() => setActiveTab('quotations')}
+                                      className="text-[11px] text-[#3066BE] hover:underline font-semibold"
+                                    >
+                                      Track in Quotes →
+                                    </button>
+                                  </div>
+                                );
+                              }
+
+                              if (latestQuot.status === 'ADMIN_APPROVED' || latestQuot.status === 'SENT_TO_BGA') {
+                                return (
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-[#119DA4] border border-emerald-200 flex items-center gap-1.5">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-[#119DA4]" />
+                                      <span>Quotation Issued & Ready ({latestQuot.quotationNumber})</span>
+                                    </span>
+                                    <button
+                                      onClick={() => setActiveTab('quotations')}
+                                      className="px-2.5 py-1 bg-[#3066BE] text-white hover:bg-[#255299] rounded text-[11px] font-bold transition-colors"
+                                    >
+                                      Present to Client →
+                                    </button>
+                                  </div>
+                                );
+                              }
+
+                              if (latestQuot.status === 'ACCEPTED') {
+                                return (
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1.5">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                      <span>Quotation Accepted ({latestQuot.quotationNumber})</span>
+                                    </span>
+                                    <button
+                                      onClick={() => setActiveTab('projects')}
+                                      className="text-[11px] text-[#3066BE] hover:underline font-semibold"
+                                    >
+                                      View Work Order →
+                                    </button>
+                                  </div>
+                                );
+                              }
+
+                              if (latestQuot.status === 'REJECTED') {
+                                return (
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-50 text-red-700 border border-red-200">
+                                    Quotation Declined ({latestQuot.quotationNumber})
+                                  </span>
+                                );
+                              }
+
+                              return (
+                                <span className="text-slate-600 font-semibold text-xs">
+                                  Quotation {latestQuot.status} ({latestQuot.quotationNumber})
+                                </span>
+                              );
+                            }
+
+                            // If no quotation requested yet
+                            if (enq.status === 'APPROVED') {
+                              return (
+                                <button
+                                  onClick={() => handleRequestQuotation(enq.id)}
+                                  className="px-3.5 py-1.5 bg-[#3066BE] text-white rounded-lg text-xs font-bold hover:bg-[#255299] flex items-center gap-1.5 shadow-sm transition-colors"
+                                >
+                                  <Send className="w-3.5 h-3.5" /> Request Quotation from Accounts
+                                </button>
+                              );
+                            }
+
+                            if (enq.status === 'SUBMITTED') {
+                              return (
+                                <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                                  <Clock className="w-3 h-3 text-amber-600 animate-pulse" /> Awaiting Management Review
+                                </span>
+                              );
+                            }
+
+                            if (enq.status === 'CHANGES_REQUESTED') {
+                              return (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                                    Scope Changes Requested by Admin
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenFollowUpModal(enq)}
+                                    className="px-3.5 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    Consult Client & Record Follow-up
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            if (enq.status === 'REJECTED') {
+                              const hasInformed = enq.discussionNotes && enq.discussionNotes.includes('Client Informed of Rejection');
+                              return (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {hasInformed ? (
+                                    <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                      Client Informed of Rejection
+                                    </span>
+                                  ) : (
+                                    <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-1.5">
+                                      <AlertCircle className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
+                                      Awaiting Client Rejection Follow-up
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenFollowUpModal(enq, true)}
+                                    className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                                  >
+                                    <Phone className="w-3.5 h-3.5" />
+                                    {hasInformed ? 'Update Client Follow-up' : 'Inform Client & Record Follow-up'}
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-50 text-red-700 border border-red-200">
+                                Enquiry Declined
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </div>
-                    </div>
-                  );
-                }))}
+                    );
+                  }))}
               </div>
             </div>
           )}
@@ -3724,159 +3719,158 @@ export const BgaPortal: React.FC = () => {
                   </div>
                 ) : (
                   quotations.map((q) => {
-                  const isApproved =
-                    q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA' || q.adminApprovalStatus === 'APPROVED';
-                  const isPendingAdmin =
-                    q.status === 'PENDING_ADMIN_APPROVAL' || (q.adminApprovalStatus === 'PENDING' && q.preparedById);
-                  const isUnderPrep = q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED';
+                    const isApproved =
+                      q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA' || q.adminApprovalStatus === 'APPROVED';
+                    const isPendingAdmin =
+                      q.status === 'PENDING_ADMIN_APPROVAL' || (q.adminApprovalStatus === 'PENDING' && q.preparedById);
+                    const isUnderPrep = q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED';
 
-                  return (
-                    <div key={q.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-mono text-sm font-bold text-slate-900">{q.quotationNumber}</span>
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                              v{q.version}
+                    return (
+                      <div key={q.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono text-sm font-bold text-slate-900">{q.quotationNumber}</span>
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                                v{q.version}
+                              </span>
+                              {q.reminderCount > 0 && (
+                                <span className="text-[10px] text-red-700 bg-red-50 px-2 py-0.5 rounded font-bold border border-red-200 flex items-center gap-1">
+                                  <Bell className="w-3 h-3 text-red-600" /> {q.reminderCount} Reminder(s) Sent
+                                </span>
+                              )}
+                            </div>
+                            <h3 className="text-xs text-slate-600 mt-0.5">
+                              Client: <strong>{q.client?.clientName}</strong> ({q.client?.businessName})
+                            </h3>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${q.status === 'ACCEPTED'
+                                ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
+                                : isApproved
+                                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                  : isPendingAdmin
+                                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                }`}
+                            >
+                              {isApproved
+                                ? 'APPROVED & AVAILABLE FOR CLIENT'
+                                : isPendingAdmin
+                                  ? 'QUOTATION PENDING ADMIN APPROVAL'
+                                  : q.status === 'REQUESTED'
+                                    ? 'AWAITING ACCOUNTS PREPARATION'
+                                    : q.status === 'REVISION_REQUESTED'
+                                      ? 'REVISION REQUESTED BY ADMIN'
+                                      : isUnderPrep
+                                        ? 'QUOTATION UNDER PREPARATION'
+                                        : q.status}
                             </span>
-                            {q.reminderCount > 0 && (
-                              <span className="text-[10px] text-red-700 bg-red-50 px-2 py-0.5 rounded font-bold border border-red-200 flex items-center gap-1">
-                                <Bell className="w-3 h-3 text-red-600" /> {q.reminderCount} Reminder(s) Sent
+                            {isApproved && (
+                              <a
+                                href={`/api/resources/quotations/${q.id}/pdf`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                              >
+                                <Download className="w-3.5 h-3.5" /> PDF
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Financial Breakdown (Visible only when approved or prepared) */}
+                        {isApproved ? (
+                          <div className="py-2 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                            <div>
+                              <span className="text-slate-400 block">Service Fee</span>
+                              <span className="font-bold text-slate-800">₹{q.serviceFee?.toLocaleString()}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 block">GST ({q.taxRate}%)</span>
+                              <span className="font-bold text-slate-800">₹{q.taxAmount?.toLocaleString()}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 block">Total Contract Value</span>
+                              <span className="font-bold text-indigo-700 text-sm">₹{q.totalAmount?.toLocaleString()}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 block">Required Advance ({q.advanceRequiredPercent}%)</span>
+                              <span className="font-bold text-[#119DA4]">₹{q.advanceRequiredAmount?.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-100 text-xs text-amber-900 flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                              <strong className="block font-semibold">Official Quotation Under Processing</strong>
+                              <p className="text-[11px] text-amber-800 mt-0.5">
+                                {isPendingAdmin
+                                  ? 'Accounts has finalized the quotation. It is currently under review by Admin before release.'
+                                  : 'Accounts Department is actively preparing your quotation. Use the button below to send a reminder if delayed.'}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {q.serviceScope && (
+                          <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                            <strong>Approved Scope:</strong> {q.serviceScope}
+                          </div>
+                        )}
+
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs pt-3 border-t border-slate-100">
+                          <span className="text-slate-400">
+                            Valid until {new Date(q.validityDate).toLocaleDateString()}
+                          </span>
+
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {/* Send Reminder button if Accounts has not finished or quote is pending */}
+                            {isUnderPrep && (
+                              <button
+                                onClick={() =>
+                                  setReminderModal({
+                                    quotationId: q.id,
+                                    quotationNumber: q.quotationNumber,
+                                    clientName: q.client?.clientName,
+                                  })
+                                }
+                                className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                              >
+                                <Bell className="w-3.5 h-3.5 text-amber-700" /> Send Reminder to Accounts
+                              </button>
+                            )}
+
+                            {isApproved && q.status !== 'ACCEPTED' && (
+                              <>
+                                <button
+                                  onClick={() => setRevisionModal({ quotationId: q.id, quotationNumber: q.quotationNumber })}
+                                  className="px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-bold transition-colors"
+                                >
+                                  Request Revision
+                                </button>
+                                <button
+                                  onClick={() => setAcceptanceModal({ quotationId: q.id, quotationNumber: q.quotationNumber })}
+                                  className="px-4 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm rounded-lg text-xs font-bold transition-colors shadow-sm"
+                                >
+                                  Record Client Acceptance ✓
+                                </button>
+                              </>
+                            )}
+
+                            {q.status === 'ACCEPTED' && (
+                              <span className="text-[#119DA4] font-bold flex items-center gap-1">
+                                <CheckCircle2 className="w-4 h-4 text-[#119DA4]" />
+                                Accepted on {new Date(q.acceptedAt).toLocaleDateString()}
                               </span>
                             )}
                           </div>
-                          <h3 className="text-xs text-slate-600 mt-0.5">
-                            Client: <strong>{q.client?.clientName}</strong> ({q.client?.businessName})
-                          </h3>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
-                              q.status === 'ACCEPTED'
-                                ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
-                                : isApproved
-                                ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                : isPendingAdmin
-                                ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                                : 'bg-amber-100 text-amber-800 border border-amber-200'
-                            }`}
-                          >
-                            {isApproved
-                              ? 'APPROVED & AVAILABLE FOR CLIENT'
-                              : isPendingAdmin
-                              ? 'QUOTATION PENDING ADMIN APPROVAL'
-                              : q.status === 'REQUESTED'
-                              ? 'AWAITING ACCOUNTS PREPARATION'
-                              : q.status === 'REVISION_REQUESTED'
-                              ? 'REVISION REQUESTED BY ADMIN'
-                              : isUnderPrep
-                              ? 'QUOTATION UNDER PREPARATION'
-                              : q.status}
-                          </span>
-                          {isApproved && (
-                            <a
-                              href={`/api/resources/quotations/${q.id}/pdf`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-3 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
-                            >
-                              <Download className="w-3.5 h-3.5" /> PDF
-                            </a>
-                          )}
                         </div>
                       </div>
-
-                      {/* Financial Breakdown (Visible only when approved or prepared) */}
-                      {isApproved ? (
-                        <div className="py-2 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                          <div>
-                            <span className="text-slate-400 block">Service Fee</span>
-                            <span className="font-bold text-slate-800">₹{q.serviceFee?.toLocaleString()}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400 block">GST ({q.taxRate}%)</span>
-                            <span className="font-bold text-slate-800">₹{q.taxAmount?.toLocaleString()}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400 block">Total Contract Value</span>
-                            <span className="font-bold text-indigo-700 text-sm">₹{q.totalAmount?.toLocaleString()}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400 block">Required Advance ({q.advanceRequiredPercent}%)</span>
-                            <span className="font-bold text-[#119DA4]">₹{q.advanceRequiredAmount?.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-100 text-xs text-amber-900 flex items-start gap-2">
-                          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                          <div>
-                            <strong className="block font-semibold">Official Quotation Under Processing</strong>
-                            <p className="text-[11px] text-amber-800 mt-0.5">
-                              {isPendingAdmin
-                                ? 'Accounts has finalized the quotation. It is currently under review by Admin before release.'
-                                : 'Accounts Department is actively preparing your quotation. Use the button below to send a reminder if delayed.'}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      {q.serviceScope && (
-                        <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                          <strong>Approved Scope:</strong> {q.serviceScope}
-                        </div>
-                      )}
-
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs pt-3 border-t border-slate-100">
-                        <span className="text-slate-400">
-                          Valid until {new Date(q.validityDate).toLocaleDateString()}
-                        </span>
-
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {/* Send Reminder button if Accounts has not finished or quote is pending */}
-                          {isUnderPrep && (
-                            <button
-                              onClick={() =>
-                                setReminderModal({
-                                  quotationId: q.id,
-                                  quotationNumber: q.quotationNumber,
-                                  clientName: q.client?.clientName,
-                                })
-                              }
-                              className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
-                            >
-                              <Bell className="w-3.5 h-3.5 text-amber-700" /> Send Reminder to Accounts
-                            </button>
-                          )}
-
-                          {isApproved && q.status !== 'ACCEPTED' && (
-                            <>
-                              <button
-                                onClick={() => setRevisionModal({ quotationId: q.id, quotationNumber: q.quotationNumber })}
-                                className="px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-bold transition-colors"
-                              >
-                                Request Revision
-                              </button>
-                              <button
-                                onClick={() => setAcceptanceModal({ quotationId: q.id, quotationNumber: q.quotationNumber })}
-                                className="px-4 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm rounded-lg text-xs font-bold transition-colors shadow-sm"
-                              >
-                                Record Client Acceptance ✓
-                              </button>
-                            </>
-                          )}
-
-                          {q.status === 'ACCEPTED' && (
-                            <span className="text-[#119DA4] font-bold flex items-center gap-1">
-                              <CheckCircle2 className="w-4 h-4 text-[#119DA4]" />
-                              Accepted on {new Date(q.acceptedAt).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }))}
+                    );
+                  }))}
               </div>
 
               {/* Quotation Reminder Modal */}
@@ -3898,82 +3892,82 @@ export const BgaPortal: React.FC = () => {
                     className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
                     onClick={(e) => e.stopPropagation()}
                   >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600" />
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200">
-                              <Bell className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">
-                                Send Quotation Reminder
-                              </h3>
-                              <p className="text-xs text-slate-500 font-mono">
-                                {reminderModal.quotationNumber}
-                              </p>
-                            </div>
+                    <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200">
+                            <Bell className="w-5 h-5" />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!modalSubmitting) {
-                                setReminderModal(null);
-                                setReminderMessage('');
-                              }
-                            }}
-                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">
+                              Send Quotation Reminder
+                            </h3>
+                            <p className="text-xs text-slate-500 font-mono">
+                              {reminderModal.quotationNumber}
+                            </p>
+                          </div>
                         </div>
-
-                        <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/60 text-xs text-amber-900">
-                          Dispatches an instant high-priority reminder to the Accounts Department and notifies Admin regarding pending quotation for{' '}
-                          <strong className="font-semibold">{reminderModal.clientName}</strong>.
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                            Optional Note to Accounts & Management
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={reminderMessage}
-                            onChange={(e) => setReminderMessage(e.target.value)}
-                            placeholder="e.g. Client requested urgent review as decision meeting is tomorrow morning..."
-                            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none transition-all"
-                          />
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            disabled={modalSubmitting}
-                            onClick={() => {
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!modalSubmitting) {
                               setReminderModal(null);
                               setReminderMessage('');
-                            }}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            disabled={modalSubmitting}
-                            onClick={handleSendReminder}
-                            className="px-5 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-                          >
-                            {modalSubmitting ? (
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Send className="w-3.5 h-3.5" />
-                            )}
-                            {modalSubmitting ? 'Dispatching...' : 'Dispatch Reminder'}
-                          </button>
-                        </div>
+                            }
+                          }}
+                          className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                    </motion.div>
+
+                      <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/60 text-xs text-amber-900">
+                        Dispatches an instant high-priority reminder to the Accounts Department and notifies Admin regarding pending quotation for{' '}
+                        <strong className="font-semibold">{reminderModal.clientName}</strong>.
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                          Optional Note to Accounts & Management
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={reminderMessage}
+                          onChange={(e) => setReminderMessage(e.target.value)}
+                          placeholder="e.g. Client requested urgent review as decision meeting is tomorrow morning..."
+                          className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none transition-all"
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button
+                          type="button"
+                          disabled={modalSubmitting}
+                          onClick={() => {
+                            setReminderModal(null);
+                            setReminderMessage('');
+                          }}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={modalSubmitting}
+                          onClick={handleSendReminder}
+                          className="px-5 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {modalSubmitting ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5" />
+                          )}
+                          {modalSubmitting ? 'Dispatching...' : 'Dispatch Reminder'}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
                 )}
               </ModalPortal>
 
@@ -3991,73 +3985,73 @@ export const BgaPortal: React.FC = () => {
                     className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
                     onClick={(e) => e.stopPropagation()}
                   >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600" />
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
-                              <Edit3 className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">
-                                Request Quotation Revision
-                              </h3>
-                              <p className="text-xs text-slate-500 font-mono">
-                                {revisionModal.quotationNumber}
-                              </p>
-                            </div>
+                    <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
+                            <Edit3 className="w-5 h-5" />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => !modalSubmitting && setRevisionModal(null)}
-                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">
+                              Request Quotation Revision
+                            </h3>
+                            <p className="text-xs text-slate-500 font-mono">
+                              {revisionModal.quotationNumber}
+                            </p>
+                          </div>
                         </div>
-
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                          Enter the requested scope modifications, commercial revisions, or client feedback. The Accounts Department will draft an updated quotation.
-                        </p>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                            Client Feedback / Revision Notes <span className="text-rose-500">*</span>
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={revisionNotes}
-                            onChange={(e) => setRevisionNotes(e.target.value)}
-                            placeholder="e.g. Client requested a 10% commercial discount and inclusion of 2 additional landing pages..."
-                            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none transition-all"
-                          />
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            disabled={modalSubmitting}
-                            onClick={() => setRevisionModal(null)}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            disabled={!revisionNotes.trim() || modalSubmitting}
-                            onClick={handleSubmitRevision}
-                            className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-                          >
-                            {modalSubmitting ? (
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Send className="w-3.5 h-3.5" />
-                            )}
-                            {modalSubmitting ? 'Sending...' : 'Send to Accounts'}
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => !modalSubmitting && setRevisionModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                    </motion.div>
+
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        Enter the requested scope modifications, commercial revisions, or client feedback. The Accounts Department will draft an updated quotation.
+                      </p>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                          Client Feedback / Revision Notes <span className="text-rose-500">*</span>
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={revisionNotes}
+                          onChange={(e) => setRevisionNotes(e.target.value)}
+                          placeholder="e.g. Client requested a 10% commercial discount and inclusion of 2 additional landing pages..."
+                          className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none transition-all"
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button
+                          type="button"
+                          disabled={modalSubmitting}
+                          onClick={() => setRevisionModal(null)}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!revisionNotes.trim() || modalSubmitting}
+                          onClick={handleSubmitRevision}
+                          className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {modalSubmitting ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5" />
+                          )}
+                          {modalSubmitting ? 'Sending...' : 'Send to Accounts'}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
                 )}
               </ModalPortal>
 
@@ -4075,73 +4069,73 @@ export const BgaPortal: React.FC = () => {
                     className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
                     onClick={(e) => e.stopPropagation()}
                   >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-600" />
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 border border-teal-200">
-                              <CheckCircle2 className="w-5 h-5 text-teal-600" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">
-                                Record Client Acceptance
-                              </h3>
-                              <p className="text-xs text-slate-500 font-mono">
-                                {acceptanceModal.quotationNumber}
-                              </p>
-                            </div>
+                    <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-600" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 border border-teal-200">
+                            <CheckCircle2 className="w-5 h-5 text-teal-600" />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => !modalSubmitting && setAcceptanceModal(null)}
-                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">
+                              Record Client Acceptance
+                            </h3>
+                            <p className="text-xs text-slate-500 font-mono">
+                              {acceptanceModal.quotationNumber}
+                            </p>
+                          </div>
                         </div>
-
-                        <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-200/70 text-xs text-teal-900 leading-relaxed">
-                          Recording client acceptance automatically generates an official <strong>Work Order</strong> and notifies Accounts to collect and verify the required advance payment.
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                            Acceptance Evidence / PO Reference Notes <span className="text-rose-500">*</span>
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={acceptanceNotes}
-                            onChange={(e) => setAcceptanceNotes(e.target.value)}
-                            placeholder="e.g. Approved via email confirmation from MD on 17 Nov 2026. PO Ref: APEX-2026-PO99"
-                            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 resize-none transition-all"
-                          />
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            disabled={modalSubmitting}
-                            onClick={() => setAcceptanceModal(null)}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            disabled={!acceptanceNotes.trim() || modalSubmitting}
-                            onClick={handleClientAcceptance}
-                            className="px-5 py-2 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-                          >
-                            {modalSubmitting ? (
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                            )}
-                            {modalSubmitting ? 'Confirming...' : 'Confirm Acceptance'}
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => !modalSubmitting && setAcceptanceModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                    </motion.div>
+
+                      <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-200/70 text-xs text-teal-900 leading-relaxed">
+                        Recording client acceptance automatically generates an official <strong>Work Order</strong> and notifies Accounts to collect and verify the required advance payment.
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                          Acceptance Evidence / PO Reference Notes <span className="text-rose-500">*</span>
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={acceptanceNotes}
+                          onChange={(e) => setAcceptanceNotes(e.target.value)}
+                          placeholder="e.g. Approved via email confirmation from MD on 17 Nov 2026. PO Ref: APEX-2026-PO99"
+                          className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 resize-none transition-all"
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button
+                          type="button"
+                          disabled={modalSubmitting}
+                          onClick={() => setAcceptanceModal(null)}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!acceptanceNotes.trim() || modalSubmitting}
+                          onClick={handleClientAcceptance}
+                          className="px-5 py-2 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {modalSubmitting ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          )}
+                          {modalSubmitting ? 'Confirming...' : 'Confirm Acceptance'}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
                 )}
               </ModalPortal>
             </div>
@@ -4150,23 +4144,14 @@ export const BgaPortal: React.FC = () => {
           {/* TAB 7: WORK ORDERS & PROJECTS */}
           {activeTab === 'projects' && (
             <div className="space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">My Client Projects & Deliverable Reviews</h2>
-                  <p className="text-xs text-slate-500">
-                    Track technical implementation progress, review & approve technical deliverables before sharing with clients, and manage client feedback threads.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => loadTabData('projects')}
-                  className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" /> Refresh Projects
-                </button>
+              <div className="bg-white p-4 rounded-xl border border-slate-200">
+                <h2 className="text-base font-bold text-slate-900">My Client Projects & Execution</h2>
+                <p className="text-xs text-slate-500">
+                  Track technical implementation progress and milestones for contracts accepted by your clients.
+                </p>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {!workOrdersLoaded || tabLoading ? (
                   <SkeletonTable rows={4} cols={5} />
                 ) : workOrders.length === 0 ? (
@@ -4181,211 +4166,50 @@ export const BgaPortal: React.FC = () => {
                   workOrders.map((wo) => {
                     const prj = wo.project;
                     return (
-                      <div key={wo.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                        {/* Project Header */}
+                      <div key={wo.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="font-mono text-xs font-bold text-slate-900">{wo.workOrderNumber}</span>
-                              {prj && (
-                                <span className="font-mono text-xs text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">
-                                  {prj.projectNumber}
-                                </span>
-                              )}
-                              <span className="text-xs font-semibold text-slate-600">
-                                • {wo.serviceCategory || prj?.serviceCategory || 'Service Delivery'}
-                              </span>
+                              {prj && <span className="font-mono text-xs text-indigo-600 font-bold">({prj.projectNumber})</span>}
                             </div>
-                            <h3 className="text-base font-bold text-slate-900 mt-0.5">{wo.client?.clientName}</h3>
+                            <h3 className="text-sm font-bold text-slate-900 mt-0.5">{wo.client?.clientName}</h3>
                           </div>
 
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                              wo.advanceVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                            }`}>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${wo.advanceVerified ? 'bg-emerald-100 text-[#119DA4]' : 'bg-amber-100 text-amber-800'
+                              }`}>
                               Advance: {wo.advanceVerified ? 'VERIFIED' : 'AWAITING VERIFICATION'}
                             </span>
-                            {prj && (
-                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 uppercase">
-                                Tech Status: {prj.status}
-                              </span>
-                            )}
-                            <span className="text-xs font-bold text-slate-800 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200">
-                              Contract: ₹{wo.totalValue?.toLocaleString()}
+                            <span className="text-xs font-bold text-slate-800">
+                              Value: ₹{wo.totalValue?.toLocaleString()}
                             </span>
                           </div>
                         </div>
 
                         {prj ? (
-                          <div className="space-y-4">
-                            {/* Technical Deliverables Section */}
-                            <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
-                              <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                                <div>
-                                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-                                    Technical Deliverables from Engineering
-                                  </h4>
-                                  <p className="text-[11px] text-slate-500">
-                                    Inspect build artifacts and demo links uploaded by Tech team to share with your client.
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="space-y-2.5">
-                                {(!prj.deliverables || prj.deliverables.length === 0) ? (
-                                  <div className="text-xs text-slate-400 py-3 text-center bg-slate-50 rounded-lg">
-                                    No deliverables uploaded by technical team yet. Deliverables will appear here as engineering progresses.
-                                  </div>
-                                ) : (
-                                  prj.deliverables.map((d: any) => {
-                                    const isApproved = d.status === 'SHARED_WITH_CLIENT' || d.isClientVisible;
-                                    const isRevision = d.status === 'REVISION_REQUIRED';
-
-                                    return (
-                                      <div
-                                        key={d.id}
-                                        className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-xs"
-                                      >
-                                        <div className="space-y-1">
-                                          <div className="flex items-center gap-2">
-                                            <span className="font-bold text-slate-900 text-sm">{d.title}</span>
-                                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">
-                                              v{d.version}
-                                            </span>
-                                          </div>
-                                          {d.description && <p className="text-slate-600 text-[11px]">{d.description}</p>}
-                                          <div className="flex items-center gap-3 text-slate-500 text-[11px]">
-                                            <a
-                                              href={d.fileUrl}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                              className="text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1 font-semibold"
-                                            >
-                                              <ExternalLink className="w-3 h-3" /> Inspect Artifact / Download
-                                            </a>
-                                            <span className="text-slate-400">
-                                              Uploaded {new Date(d.createdAt).toLocaleDateString()}
-                                            </span>
-                                          </div>
-                                        </div>
-
-                                        <div className="flex flex-col items-end gap-2 shrink-0">
-                                          {isApproved ? (
-                                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                                              <CheckCircle2 className="w-3 h-3" /> Handed Over to Client
-                                            </span>
-                                          ) : isRevision ? (
-                                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 flex items-center gap-1">
-                                              <AlertCircle className="w-3 h-3" /> Revision Requested from Tech
-                                            </span>
-                                          ) : (
-                                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
-                                              <Clock className="w-3 h-3" /> Ready for Client Handover
-                                            </span>
-                                          )}
-
-                                          {d.bgaReviewNotes && (
-                                            <span className="text-[10px] text-slate-600 italic max-w-xs text-right">
-                                              Your Note: {d.bgaReviewNotes}
-                                            </span>
-                                          )}
-
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setDeliverableReviewModal({ deliverable: d, project: prj });
-                                              setReviewAction(isApproved ? 'REQUEST_CHANGES' : 'APPROVE_AND_SHARE');
-                                              setReviewNotes(d.bgaReviewNotes || '');
-                                            }}
-                                            className="px-3 py-1 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                                          >
-                                            {isApproved ? 'Request Revision from Tech' : 'Confirm Handed Over to Client'}
-                                          </button>
-                                        </div>
-                                      </div>
-                                    );
-                                  })
-                                )}
-                              </div>
+                          <div className="mt-3">
+                            <div className="flex justify-between text-xs text-slate-600 mb-1">
+                              <span>Technical Execution: <strong>{prj.status}</strong></span>
+                              <span className="font-bold">{prj.progressPercentage}%</span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-2">
+                              <div
+                                className="bg-[#3066BE] h-2 rounded-full transition-all"
+                                style={{ width: `${prj.progressPercentage}%` }}
+                              />
                             </div>
 
-                            {/* Client Feedback & Technical Response Thread */}
-                            <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
-                              <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                                <div>
-                                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-                                    Client Feedback & Technical Team Responses
-                                  </h4>
-                                  <p className="text-[11px] text-slate-500">
-                                    Log feedback received from your client. Technical team answers and updates will appear here.
-                                  </p>
+                            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {prj.milestones?.map((m: any) => (
+                                <div key={m.id} className="p-2 rounded bg-slate-50 border border-slate-100 text-[11px]">
+                                  <span className="font-semibold text-slate-800 block truncate">{m.title}</span>
+                                  <span className={`text-[10px] font-bold ${m.status === 'COMPLETED' ? 'text-[#119DA4]' : 'text-slate-400'
+                                    }`}>
+                                    {m.status}
+                                  </span>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setBgaFeedbackModal({ project: prj });
-                                    setBgaFeedbackContent('');
-                                    setBgaFeedbackType('CLIENT_FEEDBACK');
-                                    setBgaFeedbackMilestoneId('');
-                                  }}
-                                  className="px-3 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
-                                >
-                                  <MessageSquare className="w-3.5 h-3.5" /> Log Client Feedback / Request
-                                </button>
-                              </div>
-
-                              <div className="space-y-2.5">
-                                {(!prj.feedback || prj.feedback.length === 0) ? (
-                                  <div className="text-xs text-slate-400 py-3 text-center bg-slate-50 rounded-lg">
-                                    No feedback logged yet. Click above to log feedback or changes requested by your client.
-                                  </div>
-                                ) : (
-                                  prj.feedback.map((f: any) => {
-                                    const isBga = f.authorRole === 'BGA' || f.authorRole === 'BGA_REPRESENTATIVE';
-
-                                    return (
-                                      <div
-                                        key={f.id}
-                                        className={`p-3 rounded-xl border text-xs ${
-                                          isBga
-                                            ? 'bg-blue-50/50 border-blue-200'
-                                            : 'bg-indigo-50/50 border-indigo-200'
-                                        }`}
-                                      >
-                                        <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5 pb-1.5 border-b border-slate-200/60">
-                                          <div className="flex items-center gap-2">
-                                            {isBga ? (
-                                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
-                                                🗣️ CLIENT FEEDBACK (Logged by You)
-                                              </span>
-                                            ) : (
-                                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">
-                                                🛠️ TECHNICAL TEAM RESPONSE ({f.authorName || 'Engineer'})
-                                              </span>
-                                            )}
-
-                                            {isBga && (
-                                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                                f.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                                              }`}>
-                                                {f.status}
-                                              </span>
-                                            )}
-                                          </div>
-
-                                          <span className="text-[10px] text-slate-400">
-                                            {new Date(f.createdAt).toLocaleString()}
-                                          </span>
-                                        </div>
-
-                                        <p className="text-slate-800 leading-relaxed whitespace-pre-wrap font-normal">
-                                          {f.content}
-                                        </p>
-                                      </div>
-                                    );
-                                  })
-                                )}
-                              </div>
+                              ))}
                             </div>
                           </div>
                         ) : (
@@ -4395,191 +4219,8 @@ export const BgaPortal: React.FC = () => {
                         )}
                       </div>
                     );
-                  })
-                )}
+                  }))}
               </div>
-
-              {/* Deliverable Review Modal */}
-              <ModalPortal
-                isOpen={!!deliverableReviewModal}
-                onClose={() => setDeliverableReviewModal(null)}
-              >
-                {deliverableReviewModal && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    transition={{ duration: 0.2 }}
-                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500" />
-                    <div className="p-6 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="text-base font-bold text-slate-900">Review Technical Deliverable</h3>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {deliverableReviewModal.deliverable.title} (v{deliverableReviewModal.deliverable.version})
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setDeliverableReviewModal(null)}
-                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-
-                      <form onSubmit={handleReviewDeliverable} className="space-y-4 text-xs">
-                        <div>
-                          <label className="block text-slate-700 font-semibold mb-1.5">Deliverable Action *</label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setReviewAction('APPROVE_AND_SHARE')}
-                              className={`p-3 rounded-xl border text-left font-semibold transition-all cursor-pointer ${
-                                reviewAction === 'APPROVE_AND_SHARE'
-                                  ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-sm'
-                                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                              }`}
-                            >
-                              <span className="block font-bold text-sm">✓ Delivered to Client</span>
-                              <span className="text-[10px] font-normal text-slate-500 mt-0.5 block">
-                                Confirm you handed this over to client
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setReviewAction('REQUEST_CHANGES')}
-                              className={`p-3 rounded-xl border text-left font-semibold transition-all cursor-pointer ${
-                                reviewAction === 'REQUEST_CHANGES'
-                                  ? 'border-rose-500 bg-rose-50 text-rose-900 shadow-sm'
-                                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                              }`}
-                            >
-                              <span className="block font-bold text-sm">✕ Request Revision</span>
-                              <span className="text-[10px] font-normal text-slate-500 mt-0.5 block">
-                                Send changes back to Technical team
-                              </span>
-                            </button>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-slate-700 font-semibold mb-1">
-                            {reviewAction === 'APPROVE_AND_SHARE' ? 'Handover Notes (Optional)' : 'Change Instructions for Technical Team *'}
-                          </label>
-                          <textarea
-                            rows={3}
-                            required={reviewAction === 'REQUEST_CHANGES'}
-                            value={reviewNotes}
-                            onChange={(e) => setReviewNotes(e.target.value)}
-                            placeholder={
-                              reviewAction === 'APPROVE_AND_SHARE'
-                                ? 'Add handover remarks or client presentation notes...'
-                                : 'Explain what issues need to be corrected before client acceptance...'
-                            }
-                            className="w-full p-2.5 border border-slate-300 rounded-lg text-slate-800"
-                          />
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            disabled={reviewSubmitting}
-                            onClick={() => setDeliverableReviewModal(null)}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            disabled={reviewSubmitting}
-                            className={`px-5 py-2 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer ${
-                              reviewAction === 'APPROVE_AND_SHARE'
-                                ? 'bg-emerald-600 hover:bg-emerald-700'
-                                : 'bg-rose-600 hover:bg-rose-700'
-                            }`}
-                          >
-                            {reviewSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                            {reviewAction === 'APPROVE_AND_SHARE' ? 'Confirm Handed Over' : 'Submit Revision Request'}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                  </motion.div>
-                )}
-              </ModalPortal>
-
-              {/* BGA Project Feedback Modal */}
-              <ModalPortal
-                isOpen={!!bgaFeedbackModal}
-                onClose={() => setBgaFeedbackModal(null)}
-              >
-                {bgaFeedbackModal && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    transition={{ duration: 0.2 }}
-                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500" />
-                    <div className="p-6 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="text-base font-bold text-slate-900">Log Client Feedback & Requirements</h3>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            Project: {bgaFeedbackModal.project.projectNumber} • {bgaFeedbackModal.project.client?.clientName || 'Client'}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setBgaFeedbackModal(null)}
-                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-
-                      <form onSubmit={handlePostBgaFeedback} className="space-y-4 text-xs">
-                        <div>
-                          <label className="block text-slate-700 font-semibold mb-1">Client Feedback / Correction Details *</label>
-                          <textarea
-                            rows={4}
-                            required
-                            value={bgaFeedbackContent}
-                            onChange={(e) => setBgaFeedbackContent(e.target.value)}
-                            placeholder="Enter the client's comments, defect corrections, or revision requirements from your phone call / discussion..."
-                            className="w-full p-2.5 border border-slate-300 rounded-lg text-slate-800"
-                          />
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            disabled={bgaFeedbackSubmitting}
-                            onClick={() => setBgaFeedbackModal(null)}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            disabled={bgaFeedbackSubmitting}
-                            className="px-5 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
-                          >
-                            {bgaFeedbackSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                            Submit to Technical Team
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                  </motion.div>
-                )}
-              </ModalPortal>
             </div>
           )}
 
@@ -5118,11 +4759,10 @@ export const BgaPortal: React.FC = () => {
                                     {/* Eligibility */}
                                     <td className="p-3.5">
                                       <span
-                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                          c.eligibilityStatus === 'ELIGIBLE'
-                                            ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
-                                            : 'bg-amber-100 text-amber-800 border border-amber-200'
-                                        }`}
+                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.eligibilityStatus === 'ELIGIBLE'
+                                          ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
+                                          : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                          }`}
                                       >
                                         {c.eligibilityStatus}
                                       </span>
@@ -5131,11 +4771,10 @@ export const BgaPortal: React.FC = () => {
                                     {/* Payout Status */}
                                     <td className="p-3.5">
                                       <span
-                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                          c.payoutStatus === 'PROCESSED'
-                                            ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                            : 'bg-slate-100 text-slate-700 border border-slate-200'
-                                        }`}
+                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.payoutStatus === 'PROCESSED'
+                                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                          : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                          }`}
                                       >
                                         {c.payoutStatus}
                                       </span>
@@ -5184,112 +4823,112 @@ export const BgaPortal: React.FC = () => {
                     className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
                     onClick={(e) => e.stopPropagation()}
                   >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-[#119DA4] to-[#3066BE]" />
-                      <div className="p-6 space-y-4 text-xs">
-                        <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2.5 bg-teal-50 rounded-xl border border-[#119DA4]/20">
-                              <Calculator className="w-5 h-5 text-[#119DA4]" />
+                    <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-[#119DA4] to-[#3066BE]" />
+                    <div className="p-6 space-y-4 text-xs">
+                      <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-teal-50 rounded-xl border border-[#119DA4]/20">
+                            <Calculator className="w-5 h-5 text-[#119DA4]" />
+                          </div>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">Commission Calculation Breakdown</h3>
+                            <p className="text-xs text-slate-500">
+                              Client: <strong className="text-slate-800">{calculationModal.client?.clientName}</strong>
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setCalculationModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      {/* Calculation Steps */}
+                      {(() => {
+                        const isDM = calculationModal.serviceCategory === 'DIGITAL_MARKETING';
+                        const ratePercent = isDM ? 15 : 12;
+                        const rawPayment = Number(calculationModal.payment?.amount || calculationModal.workOrder?.totalValue || 0);
+                        const adSpend = isDM ? Number(calculationModal.payment?.adBudgetAmount || 0) : 0;
+                        const commissionableBase = Math.max(0, rawPayment - adSpend);
+                        const calculatedCommission = Number(calculationModal.calculatedCommission || 0);
+
+                        return (
+                          <div className="space-y-3">
+                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+                              <div className="flex justify-between">
+                                <span className="text-slate-500">Service Category:</span>
+                                <strong className="text-slate-900">{calculationModal.serviceCategory?.replace(/_/g, ' ')}</strong>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-slate-500">Billing Model:</span>
+                                <span className="font-semibold text-slate-800">{calculationModal.billingType}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-slate-500">Work Order Ref:</span>
+                                <span className="font-mono text-slate-800 font-bold">{calculationModal.workOrder?.workOrderNumber || '—'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-slate-500">Payment Status:</span>
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  {calculationModal.payment?.status || 'VERIFIED'}
+                                </span>
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">Commission Calculation Breakdown</h3>
-                              <p className="text-xs text-slate-500">
-                                Client: <strong className="text-slate-800">{calculationModal.client?.clientName}</strong>
+
+                            <div className="p-4 rounded-xl bg-teal-50/50 border border-[#119DA4]/20 space-y-2">
+                              <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block">
+                                Step-by-Step Mathematical Computation
+                              </span>
+                              <div className="flex justify-between text-slate-700">
+                                <span>1. Base Payment Received:</span>
+                                <strong>₹{rawPayment.toLocaleString('en-IN')}</strong>
+                              </div>
+                              {isDM && (
+                                <div className="flex justify-between text-amber-700">
+                                  <span>2. Excluded Media Ad Spend:</span>
+                                  <strong>- ₹{adSpend.toLocaleString('en-IN')}</strong>
+                                </div>
+                              )}
+                              <div className="flex justify-between text-slate-900 font-semibold pt-1 border-t border-teal-200/50">
+                                <span>{isDM ? '3.' : '2.'} Net Commissionable Service Fee:</span>
+                                <strong>₹{commissionableBase.toLocaleString('en-IN')}</strong>
+                              </div>
+                              <div className="flex justify-between text-slate-700">
+                                <span>{isDM ? '4.' : '3.'} Applicable Commission Rate:</span>
+                                <strong className="text-[#119DA4]">{ratePercent}%</strong>
+                              </div>
+                              <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-teal-200">
+                                <span>Final Calculated Commission:</span>
+                                <span className="text-[#119DA4]">₹{calculatedCommission.toLocaleString('en-IN')}</span>
+                              </div>
+                            </div>
+
+                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 space-y-1">
+                              <strong>Eligibility Rule:</strong>
+                              <p>
+                                {isDM
+                                  ? 'Digital Marketing commissions unlock upon verification of monthly retainer payment (ad spend strictly excluded from commission base).'
+                                  : 'Website, Mobile & Software commissions unlock upon 100% technical project completion and full client payment clearance.'}
                               </p>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setCalculationModal(null)}
-                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
+                        );
+                      })()}
 
-                        {/* Calculation Steps */}
-                        {(() => {
-                          const isDM = calculationModal.serviceCategory === 'DIGITAL_MARKETING';
-                          const ratePercent = isDM ? 15 : 12;
-                          const rawPayment = Number(calculationModal.payment?.amount || calculationModal.workOrder?.totalValue || 0);
-                          const adSpend = isDM ? Number(calculationModal.payment?.adBudgetAmount || 0) : 0;
-                          const commissionableBase = Math.max(0, rawPayment - adSpend);
-                          const calculatedCommission = Number(calculationModal.calculatedCommission || 0);
-
-                          return (
-                            <div className="space-y-3">
-                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
-                                <div className="flex justify-between">
-                                  <span className="text-slate-500">Service Category:</span>
-                                  <strong className="text-slate-900">{calculationModal.serviceCategory?.replace(/_/g, ' ')}</strong>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-slate-500">Billing Model:</span>
-                                  <span className="font-semibold text-slate-800">{calculationModal.billingType}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-slate-500">Work Order Ref:</span>
-                                  <span className="font-mono text-slate-800 font-bold">{calculationModal.workOrder?.workOrderNumber || '—'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-slate-500">Payment Status:</span>
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    {calculationModal.payment?.status || 'VERIFIED'}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="p-4 rounded-xl bg-teal-50/50 border border-[#119DA4]/20 space-y-2">
-                                <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block">
-                                  Step-by-Step Mathematical Computation
-                                </span>
-                                <div className="flex justify-between text-slate-700">
-                                  <span>1. Base Payment Received:</span>
-                                  <strong>₹{rawPayment.toLocaleString('en-IN')}</strong>
-                                </div>
-                                {isDM && (
-                                  <div className="flex justify-between text-amber-700">
-                                    <span>2. Excluded Media Ad Spend:</span>
-                                    <strong>- ₹{adSpend.toLocaleString('en-IN')}</strong>
-                                  </div>
-                                )}
-                                <div className="flex justify-between text-slate-900 font-semibold pt-1 border-t border-teal-200/50">
-                                  <span>{isDM ? '3.' : '2.'} Net Commissionable Service Fee:</span>
-                                  <strong>₹{commissionableBase.toLocaleString('en-IN')}</strong>
-                                </div>
-                                <div className="flex justify-between text-slate-700">
-                                  <span>{isDM ? '4.' : '3.'} Applicable Commission Rate:</span>
-                                  <strong className="text-[#119DA4]">{ratePercent}%</strong>
-                                </div>
-                                <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-teal-200">
-                                  <span>Final Calculated Commission:</span>
-                                  <span className="text-[#119DA4]">₹{calculatedCommission.toLocaleString('en-IN')}</span>
-                                </div>
-                              </div>
-
-                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 space-y-1">
-                                <strong>Eligibility Rule:</strong>
-                                <p>
-                                  {isDM
-                                    ? 'Digital Marketing commissions unlock upon verification of monthly retainer payment (ad spend strictly excluded from commission base).'
-                                    : 'Website, Mobile & Software commissions unlock upon 100% technical project completion and full client payment clearance.'}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        <div className="flex justify-end pt-3 border-t border-slate-100">
-                          <button
-                            type="button"
-                            onClick={() => setCalculationModal(null)}
-                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer"
-                          >
-                            Close Breakdown
-                          </button>
-                        </div>
+                      <div className="flex justify-end pt-3 border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => setCalculationModal(null)}
+                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer"
+                        >
+                          Close Breakdown
+                        </button>
                       </div>
-                    </motion.div>
+                    </div>
+                  </motion.div>
                 )}
               </ModalPortal>
             </div>
@@ -5660,11 +5299,10 @@ export const BgaPortal: React.FC = () => {
                   <div className="flex justify-between items-start border-b border-slate-100 pb-4 mb-4">
                     <div>
                       <span
-                        className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${
-                          followUpForm.isRejection
-                            ? 'text-rose-700 bg-rose-50 border-rose-200'
-                            : 'text-amber-600 bg-amber-50 border-amber-200'
-                        }`}
+                        className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${followUpForm.isRejection
+                          ? 'text-rose-700 bg-rose-50 border-rose-200'
+                          : 'text-amber-600 bg-amber-50 border-amber-200'
+                          }`}
                       >
                         {followUpForm.isRejection ? '⚠️ Rejection Consultation & Alert' : 'Client Consultation Follow-up'}
                       </span>
@@ -5690,11 +5328,10 @@ export const BgaPortal: React.FC = () => {
 
                   {followUpModal.adminNotes && (
                     <div
-                      className={`mb-4 p-3 rounded-xl border text-xs ${
-                        followUpForm.isRejection
-                          ? 'bg-rose-50 border-rose-200 text-rose-950'
-                          : 'bg-amber-50 border-amber-200 text-amber-900'
-                      }`}
+                      className={`mb-4 p-3 rounded-xl border text-xs ${followUpForm.isRejection
+                        ? 'bg-rose-50 border-rose-200 text-rose-950'
+                        : 'bg-amber-50 border-amber-200 text-amber-900'
+                        }`}
                     >
                       <span className="font-bold block mb-0.5">
                         {followUpForm.isRejection ? 'Management Rejection Remarks:' : 'Admin Scope Change Note:'}
@@ -5873,11 +5510,10 @@ export const BgaPortal: React.FC = () => {
                       <button
                         type="submit"
                         disabled={submittingFollowUp}
-                        className={`px-5 py-2 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer ${
-                          followUpForm.isRejection
-                            ? 'bg-rose-600 hover:bg-rose-700'
-                            : 'bg-[#3066BE] hover:bg-[#255299]'
-                        }`}
+                        className={`px-5 py-2 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer ${followUpForm.isRejection
+                          ? 'bg-rose-600 hover:bg-rose-700'
+                          : 'bg-[#3066BE] hover:bg-[#255299]'
+                          }`}
                       >
                         {submittingFollowUp ? (
                           <>
