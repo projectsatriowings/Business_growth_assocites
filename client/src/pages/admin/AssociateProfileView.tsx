@@ -23,8 +23,11 @@ import {
   Mail,
   MapPin,
   ExternalLink,
+  X,
 } from 'lucide-react';
 import { apiRequest } from '../../utils/api';
+import { useToast } from '../../context/ToastContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface AssociateProfileViewProps {
   associateId: string;
@@ -37,6 +40,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
   onBack,
   onRefreshList,
 }) => {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [associate, setAssociate] = useState<any>(null);
   const [metrics, setMetrics] = useState<any>(null);
@@ -67,7 +71,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
       setAssociate(data.associate);
       setMetrics(data.metrics);
     } catch (e: any) {
-      alert(e.message || 'Failed to load associate profile');
+      toast.error(e.message || 'Failed to load associate profile');
     } finally {
       setLoading(false);
     }
@@ -97,12 +101,13 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         }),
       });
 
+      toast.success(`Associate account status changed: ${actionModal.type}`);
       setActionModal(null);
       setActionReason('');
       fetchProfile();
       onRefreshList();
     } catch (e: any) {
-      alert(e.message || 'Action failed');
+      toast.error(e.message || 'Action failed');
     } finally {
       setActionLoading(false);
     }
@@ -115,10 +120,11 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         method: 'POST',
         body: JSON.stringify({ [field]: value }),
       });
+      toast.success(`Verification status updated.`);
       fetchProfile();
       onRefreshList();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to update verification');
     }
   };
 
@@ -154,10 +160,11 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         method: 'POST',
         body: JSON.stringify({ bgaId: associateId, action, remarks }),
       });
+      toast.success(`Identity correction ${action === 'APPROVE' ? 'approved' : 'rejected'}.`);
       fetchProfile();
       onRefreshList();
     } catch (e: any) {
-      alert(e.message || 'Failed to review identity correction');
+      toast.error(e.message || 'Failed to review identity correction');
     }
   };
 
@@ -1246,7 +1253,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                 Close
               </button>
               <button
-                onClick={() => alert(`Initiating secure download of ${previewDoc.title}`)}
+                onClick={() => toast.info(`Initiating secure download of ${previewDoc.title}`)}
                 className="px-4 py-2 rounded-lg text-xs font-bold bg-[#3066BE] hover:bg-[#255299] text-white flex items-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5" /> Download Document

@@ -29,9 +29,11 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 export const BgaProfileView: React.FC = () => {
   const { user: authUser, refreshUser } = useAuth();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -307,6 +309,7 @@ export const BgaProfileView: React.FC = () => {
       });
 
       setSuccess(res.message || 'Document updated successfully');
+      toast.success(res.message || 'Document updated successfully');
       setUploadDocModal(null);
       setUploadDocUrl('');
       setUploadDocName('');
@@ -316,7 +319,7 @@ export const BgaProfileView: React.FC = () => {
       }
       setTimeout(() => setSuccess(null), 4000);
     } catch (err: any) {
-      alert(err.message || 'Failed to update document');
+      toast.error(err.message || 'Failed to update document');
     } finally {
       setSavingDoc(false);
     }
