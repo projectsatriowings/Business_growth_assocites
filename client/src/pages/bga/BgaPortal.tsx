@@ -57,6 +57,9 @@ import {
   Hash,
   ArrowUpDown,
   ChevronDown,
+  Copy,
+  Share2,
+  CheckSquare,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
@@ -1489,7 +1492,7 @@ export const BgaPortal: React.FC = () => {
                           className="px-4 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5" />
-                          + New Request
+                          New Request
                         </button>
                       </div>
                     )}
@@ -1802,7 +1805,7 @@ export const BgaPortal: React.FC = () => {
                             className="px-3.5 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
                           >
                             <Plus className="w-3.5 h-3.5" />
-                            + Add Service Request
+                            Add Service Request
                           </button>
                         </div>
 
@@ -1811,7 +1814,7 @@ export const BgaPortal: React.FC = () => {
                             <MessageSquare className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                             <p className="font-semibold text-slate-700">No enquiries submitted for this client yet.</p>
                             <p className="text-[11px] text-slate-400 mt-0.5">
-                              Click &quot;+ Add Service Request&quot; above to submit project requirements for Admin review.
+                              Click &quot;Add Service Request&quot; above to submit project requirements for Admin review.
                             </p>
                           </div>
                         ) : (
@@ -2318,7 +2321,7 @@ export const BgaPortal: React.FC = () => {
                       className="px-4 py-2 bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-all shrink-0 cursor-pointer"
                     >
                       <Plus className="w-4 h-4" />
-                      + Add New Client
+                      Add New Client
                     </button>
                   </div>
 
