@@ -4159,9 +4159,21 @@ export const BgaPortal: React.FC = () => {
 
                       {/* Ledger Table */}
                       {filteredCommissions.length === 0 ? (
-                        <div className="p-8 text-center rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500">
-                          <DollarSign className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                          <p className="font-semibold text-slate-700">No commission records match your filter criteria.</p>
+                        <div className="p-10 text-center rounded-xl bg-slate-50/70 border border-dashed border-slate-200 text-xs text-slate-500">
+                          <DollarSign className="w-10 h-10 text-slate-300 mx-auto mb-2.5" />
+                          {commissions.length === 0 ? (
+                            <div className="max-w-md mx-auto space-y-1">
+                              <p className="font-bold text-slate-700 text-sm">No Commissions Earned Yet</p>
+                              <p className="text-slate-500 text-xs leading-relaxed">
+                                Commission records are automatically generated when the Accounts department verifies an eligible client payment (monthly retainers for Digital Marketing, or final milestone payments upon project completion for Development projects).
+                              </p>
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="font-semibold text-slate-700">No commission records match your filter criteria.</p>
+                              <p className="text-slate-400 mt-1">Try resetting the search keywords, category, status, or date range.</p>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="overflow-x-auto rounded-xl border border-slate-200">
