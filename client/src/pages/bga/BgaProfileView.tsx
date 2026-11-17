@@ -325,7 +325,7 @@ export const BgaProfileView: React.FC = () => {
   if (loading && !profileData) {
     return (
       <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
-        <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin mx-auto mb-3" />
+        <RefreshCw className="w-8 h-8 text-[#119DA4] animate-spin mx-auto mb-3" />
         <p className="text-sm font-semibold text-slate-700">Loading your comprehensive profile & verification records...</p>
       </div>
     );
@@ -341,12 +341,12 @@ export const BgaProfileView: React.FC = () => {
     <div className="w-full space-y-6">
       {/* Notifications */}
       {success && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between shadow-sm animate-fadeIn">
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-[#119DA4] text-xs flex items-center justify-between shadow-sm animate-fadeIn">
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-[#119DA4] shrink-0" />
             <span className="font-semibold">{success}</span>
           </div>
-          <button onClick={() => setSuccess(null)} className="text-emerald-700 hover:text-emerald-900">
+          <button onClick={() => setSuccess(null)} className="text-[#119DA4] hover:text-[#119DA4]">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -368,13 +368,13 @@ export const BgaProfileView: React.FC = () => {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-extrabold text-2xl shadow-md shadow-emerald-100 shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#3066BE] to-[#119DA4] text-white flex items-center justify-center font-extrabold text-2xl shadow-md shadow-[#3066BE]/20 shrink-0">
               {user?.name ? user.name.slice(0, 2).toUpperCase() : 'BA'}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{user?.name}</h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#3066BE]/10 text-[#3066BE] border border-[#3066BE]/20 uppercase tracking-wider">
                   {user?.role || 'BGA'}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 uppercase tracking-wider">
@@ -389,7 +389,7 @@ export const BgaProfileView: React.FC = () => {
                     className="p-1 hover:text-indigo-600 transition-colors"
                     title="Copy Associate ID"
                   >
-                    {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedId ? <Check className="w-3.5 h-3.5 text-[#119DA4]" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </span>
                 <span>•</span>
@@ -408,7 +408,7 @@ export const BgaProfileView: React.FC = () => {
             </button>
             <button
               onClick={openBankModal}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+              className="px-3.5 py-2 rounded-xl bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
             >
               <CreditCard className="w-3.5 h-3.5" />
               <span>Update Bank Account</span>
@@ -425,7 +425,7 @@ export const BgaProfileView: React.FC = () => {
             </div>
             <span
               className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                user?.panVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                user?.panVerified ? 'bg-teal-50 text-[#119DA4] text-[#119DA4]' : 'bg-amber-100 text-amber-800'
               }`}
             >
               {user?.panVerified ? 'Verified ✓' : 'Pending Verification'}
@@ -439,7 +439,7 @@ export const BgaProfileView: React.FC = () => {
             </div>
             <span
               className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                user?.aadhaarVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                user?.aadhaarVerified ? 'bg-teal-50 text-[#119DA4] text-[#119DA4]' : 'bg-amber-100 text-amber-800'
               }`}
             >
               {user?.aadhaarVerified ? 'Verified ✓' : 'Submitted'}
@@ -455,7 +455,7 @@ export const BgaProfileView: React.FC = () => {
             </div>
             <span
               className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                user?.bankVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                user?.bankVerified ? 'bg-teal-50 text-[#119DA4] text-[#119DA4]' : 'bg-amber-100 text-amber-800'
               }`}
             >
               {user?.bankVerified ? 'Verified ✓' : 'Verification Pending'}
@@ -469,7 +469,7 @@ export const BgaProfileView: React.FC = () => {
         <button
           onClick={() => setProfileTab('personal')}
           className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-            profileTab === 'personal' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-100'
+            profileTab === 'personal' ? 'bg-[#3066BE] text-white shadow-sm shadow-[#3066BE]/20 font-bold' : 'hover:bg-slate-100 text-slate-600'
           }`}
         >
           <User className="w-3.5 h-3.5" />
@@ -478,7 +478,7 @@ export const BgaProfileView: React.FC = () => {
         <button
           onClick={() => setProfileTab('identity')}
           className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-            profileTab === 'identity' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-100'
+            profileTab === 'identity' ? 'bg-[#3066BE] text-white shadow-sm shadow-[#3066BE]/20 font-bold' : 'hover:bg-slate-100 text-slate-600'
           }`}
         >
           <ShieldCheck className="w-3.5 h-3.5" />
@@ -487,7 +487,7 @@ export const BgaProfileView: React.FC = () => {
         <button
           onClick={() => setProfileTab('bank')}
           className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-            profileTab === 'bank' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-100'
+            profileTab === 'bank' ? 'bg-[#3066BE] text-white shadow-sm shadow-[#3066BE]/20 font-bold' : 'hover:bg-slate-100 text-slate-600'
           }`}
         >
           <CreditCard className="w-3.5 h-3.5" />
@@ -496,7 +496,7 @@ export const BgaProfileView: React.FC = () => {
         <button
           onClick={() => setProfileTab('documents')}
           className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-            profileTab === 'documents' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-100'
+            profileTab === 'documents' ? 'bg-[#3066BE] text-white shadow-sm shadow-[#3066BE]/20 font-bold' : 'hover:bg-slate-100 text-slate-600'
           }`}
         >
           <FileText className="w-3.5 h-3.5" />
@@ -505,7 +505,7 @@ export const BgaProfileView: React.FC = () => {
         <button
           onClick={() => setProfileTab('account')}
           className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-            profileTab === 'account' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-100'
+            profileTab === 'account' ? 'bg-[#3066BE] text-white shadow-sm shadow-[#3066BE]/20 font-bold' : 'hover:bg-slate-100 text-slate-600'
           }`}
         >
           <Lock className="w-3.5 h-3.5" />
@@ -514,7 +514,7 @@ export const BgaProfileView: React.FC = () => {
         <button
           onClick={() => setProfileTab('agreements')}
           className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-            profileTab === 'agreements' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-100'
+            profileTab === 'agreements' ? 'bg-[#3066BE] text-white shadow-sm shadow-[#3066BE]/20 font-bold' : 'hover:bg-slate-100 text-slate-600'
           }`}
         >
           <FileCheck className="w-3.5 h-3.5" />
@@ -523,7 +523,7 @@ export const BgaProfileView: React.FC = () => {
         <button
           onClick={() => setProfileTab('history')}
           className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-            profileTab === 'history' ? 'bg-emerald-600 text-white shadow-sm' : 'hover:bg-slate-100'
+            profileTab === 'history' ? 'bg-[#3066BE] text-white shadow-sm shadow-[#3066BE]/20 font-bold' : 'hover:bg-slate-100 text-slate-600'
           }`}
         >
           <History className="w-3.5 h-3.5" />
@@ -574,7 +574,7 @@ export const BgaProfileView: React.FC = () => {
                 <Mail className="w-3.5 h-3.5 text-slate-400" /> Registered Email Address
               </span>
               <p className="font-bold text-slate-900 text-sm">{user?.email}</p>
-              <span className="text-[10px] text-emerald-600 font-semibold">Primary Login & Notification Channel</span>
+              <span className="text-[10px] text-[#119DA4] font-semibold">Primary Login & Notification Channel</span>
             </div>
 
             <div className="space-y-1">
@@ -582,7 +582,7 @@ export const BgaProfileView: React.FC = () => {
                 <Phone className="w-3.5 h-3.5 text-slate-400" /> Registered Mobile Phone
               </span>
               <p className="font-bold text-slate-900 text-sm">+91 {user?.mobile}</p>
-              <span className="text-[10px] text-emerald-600 font-semibold">Verified Phone Number</span>
+              <span className="text-[10px] text-[#119DA4] font-semibold">Verified Phone Number</span>
             </div>
 
             <div className="space-y-1">
@@ -694,7 +694,7 @@ export const BgaProfileView: React.FC = () => {
                 </div>
                 <span
                   className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                    user?.panVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                    user?.panVerified ? 'bg-teal-50 text-[#119DA4] text-[#119DA4]' : 'bg-amber-100 text-amber-800'
                   }`}
                 >
                   {user?.panVerified ? 'Verified ✓' : 'Pending Verification'}
@@ -717,7 +717,7 @@ export const BgaProfileView: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>TDS Compliance:</span>
-                  <span className="font-semibold text-emerald-700">Eligible for 5% Associate TDS</span>
+                  <span className="font-semibold text-[#119DA4]">Eligible for 5% Associate TDS</span>
                 </div>
               </div>
             </div>
@@ -736,7 +736,7 @@ export const BgaProfileView: React.FC = () => {
                 </div>
                 <span
                   className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                    user?.aadhaarVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                    user?.aadhaarVerified ? 'bg-teal-50 text-[#119DA4] text-[#119DA4]' : 'bg-amber-100 text-amber-800'
                   }`}
                 >
                   {user?.aadhaarVerified ? 'Verified ✓' : 'Consent Recorded'}
@@ -753,7 +753,7 @@ export const BgaProfileView: React.FC = () => {
               <div className="text-[11px] text-slate-500 space-y-1">
                 <div className="flex justify-between">
                   <span>Privacy Compliance:</span>
-                  <span className="font-medium text-emerald-700">Full 12-digit number never stored</span>
+                  <span className="font-medium text-[#119DA4]">Full 12-digit number never stored</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Verification Status:</span>
@@ -790,7 +790,7 @@ export const BgaProfileView: React.FC = () => {
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                             corr.status === 'APPROVED'
-                              ? 'bg-emerald-100 text-emerald-800'
+                              ? 'bg-teal-50 text-[#119DA4] text-[#119DA4]'
                               : corr.status === 'REJECTED'
                               ? 'bg-red-100 text-red-800'
                               : 'bg-amber-100 text-amber-800'
@@ -830,7 +830,7 @@ export const BgaProfileView: React.FC = () => {
             </div>
             <button
               onClick={openBankModal}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors self-start sm:self-auto shadow-sm"
+              className="px-3.5 py-2 rounded-xl bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm text-xs font-semibold flex items-center gap-1.5 transition-colors self-start sm:self-auto shadow-sm"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Update / Replace Bank Account</span>
@@ -841,7 +841,7 @@ export const BgaProfileView: React.FC = () => {
           <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#119DA4] text-[#119DA4] flex items-center justify-center font-bold">
                   <Building2 className="w-5 h-5" />
                 </div>
                 <div>
@@ -857,7 +857,7 @@ export const BgaProfileView: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                    user?.bankVerified ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'
+                    user?.bankVerified ? 'bg-teal-50 text-[#119DA4] text-[#119DA4] border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'
                   }`}
                 >
                   {user?.bankVerified ? 'Verified for Payouts ✓' : 'Verification Pending ⚠️'}
@@ -1018,7 +1018,7 @@ export const BgaProfileView: React.FC = () => {
                   {user?.bankName || 'Bank'} ({maskAccount(user?.bankAccountNumber)})
                 </span>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold border inline-block ${
-                  user?.bankVerified ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                  user?.bankVerified ? 'bg-emerald-50 text-[#119DA4] border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
                 }`}>
                   {user?.bankVerified ? 'Verified' : 'Pending Verification'}
                 </span>
@@ -1097,7 +1097,7 @@ export const BgaProfileView: React.FC = () => {
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
               <span className="text-slate-500 font-medium">System Role & Access</span>
-              <p className="font-bold text-emerald-700">{user?.role || 'BGA'} — Associate</p>
+              <p className="font-bold text-[#119DA4]">{user?.role || 'BGA'} — Associate</p>
               <span className="text-[10px] text-slate-400">Role-Based Access Control</span>
             </div>
 
@@ -1136,7 +1136,7 @@ export const BgaProfileView: React.FC = () => {
 
           <div className="space-y-4 text-xs">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-5 h-5 text-[#119DA4] shrink-0 mt-0.5" />
               <div>
                 <strong className="block text-slate-900 font-bold mb-0.5">
                   Business Growth Associate Agreement: ACCEPTED
@@ -1151,7 +1151,7 @@ export const BgaProfileView: React.FC = () => {
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-5 h-5 text-[#119DA4] shrink-0 mt-0.5" />
               <div>
                 <strong className="block text-slate-900 font-bold mb-0.5">
                   Exclusive Client Ownership Guarantee: ACTIVE
@@ -1163,7 +1163,7 @@ export const BgaProfileView: React.FC = () => {
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-5 h-5 text-[#119DA4] shrink-0 mt-0.5" />
               <div>
                 <strong className="block text-slate-900 font-bold mb-0.5">
                   Identity Verification Consent (Aadhaar & PAN): GIVEN
@@ -1209,13 +1209,13 @@ export const BgaProfileView: React.FC = () => {
                     <tr key={i} className="hover:bg-slate-50/60 transition-colors">
                       <td className="p-3 font-bold text-slate-900">{item.field}</td>
                       <td className="p-3 text-slate-500 font-mono text-[11px] max-w-xs truncate">{item.oldValue}</td>
-                      <td className="p-3 text-emerald-700 font-mono text-[11px] font-semibold max-w-xs truncate">{item.newValue}</td>
+                      <td className="p-3 text-[#119DA4] font-mono text-[11px] font-semibold max-w-xs truncate">{item.newValue}</td>
                       <td className="p-3 text-slate-500">{new Date(item.requestedAt).toLocaleDateString()}</td>
                       <td className="p-3">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                             item.status === 'APPROVED' || item.status === 'COMPLETED'
-                              ? 'bg-emerald-100 text-emerald-800'
+                              ? 'bg-teal-50 text-[#119DA4] text-[#119DA4]'
                               : item.status === 'PENDING_VERIFICATION' || item.status === 'PENDING_REVIEW'
                               ? 'bg-amber-100 text-amber-800'
                               : 'bg-slate-100 text-slate-700'
@@ -1264,7 +1264,7 @@ export const BgaProfileView: React.FC = () => {
                     value={personalForm.houseNumber}
                     onChange={(e) => setPersonalForm({ ...personalForm, houseNumber: e.target.value })}
                     placeholder="e.g. Flat 402, Sai Residency"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                   />
                 </div>
                 <div>
@@ -1274,7 +1274,7 @@ export const BgaProfileView: React.FC = () => {
                     value={personalForm.streetAddress}
                     onChange={(e) => setPersonalForm({ ...personalForm, streetAddress: e.target.value })}
                     placeholder="e.g. Road No. 12, Banjara Hills"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                   />
                 </div>
               </div>
@@ -1287,7 +1287,7 @@ export const BgaProfileView: React.FC = () => {
                     value={personalForm.locality}
                     onChange={(e) => setPersonalForm({ ...personalForm, locality: e.target.value })}
                     placeholder="e.g. Near HDFC Bank"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                   />
                 </div>
                 <div>
@@ -1298,7 +1298,7 @@ export const BgaProfileView: React.FC = () => {
                     value={personalForm.city}
                     onChange={(e) => setPersonalForm({ ...personalForm, city: e.target.value })}
                     placeholder="e.g. Hyderabad"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                   />
                 </div>
               </div>
@@ -1311,7 +1311,7 @@ export const BgaProfileView: React.FC = () => {
                     value={personalForm.district}
                     onChange={(e) => setPersonalForm({ ...personalForm, district: e.target.value })}
                     placeholder="e.g. Hyderabad"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                   />
                 </div>
                 <div>
@@ -1322,7 +1322,7 @@ export const BgaProfileView: React.FC = () => {
                     value={personalForm.state}
                     onChange={(e) => setPersonalForm({ ...personalForm, state: e.target.value })}
                     placeholder="e.g. Telangana"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                   />
                 </div>
                 <div>
@@ -1334,7 +1334,7 @@ export const BgaProfileView: React.FC = () => {
                     value={personalForm.pinCode}
                     onChange={(e) => setPersonalForm({ ...personalForm, pinCode: e.target.value })}
                     placeholder="e.g. 500081"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE] font-mono"
                   />
                 </div>
               </div>
@@ -1350,7 +1350,7 @@ export const BgaProfileView: React.FC = () => {
                 <button
                   type="submit"
                   disabled={savingPersonal}
-                  className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold disabled:opacity-50"
+                  className="px-5 py-2 rounded-lg bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm font-bold disabled:opacity-50"
                 >
                   {savingPersonal ? 'Saving...' : 'Save Address Changes'}
                 </button>
@@ -1400,7 +1400,7 @@ export const BgaProfileView: React.FC = () => {
                   value={bankForm.bankAccountHolder}
                   onChange={(e) => setBankForm({ ...bankForm, bankAccountHolder: e.target.value })}
                   placeholder="As per bank passbook / cheque"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                 />
               </div>
 
@@ -1412,7 +1412,7 @@ export const BgaProfileView: React.FC = () => {
                   value={bankForm.bankName}
                   onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })}
                   placeholder="e.g. HDFC Bank, State Bank of India"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                 />
               </div>
 
@@ -1425,7 +1425,7 @@ export const BgaProfileView: React.FC = () => {
                     value={bankForm.bankAccountNumber}
                     onChange={(e) => setBankForm({ ...bankForm, bankAccountNumber: e.target.value })}
                     placeholder="Enter account number"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE] font-mono"
                   />
                 </div>
                 <div>
@@ -1436,7 +1436,7 @@ export const BgaProfileView: React.FC = () => {
                     value={bankForm.confirmAccountNumber}
                     onChange={(e) => setBankForm({ ...bankForm, confirmAccountNumber: e.target.value })}
                     placeholder="Re-enter account number"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE] font-mono"
                   />
                 </div>
               </div>
@@ -1451,7 +1451,7 @@ export const BgaProfileView: React.FC = () => {
                     value={bankForm.bankIfsc}
                     onChange={(e) => setBankForm({ ...bankForm, bankIfsc: e.target.value.toUpperCase() })}
                     placeholder="e.g. HDFC0001234"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono uppercase"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE] font-mono uppercase"
                   />
                 </div>
                 <div>
@@ -1461,7 +1461,7 @@ export const BgaProfileView: React.FC = () => {
                     value={bankForm.branchName}
                     onChange={(e) => setBankForm({ ...bankForm, branchName: e.target.value })}
                     placeholder="e.g. Cyber City Branch"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                   />
                 </div>
               </div>
@@ -1477,7 +1477,7 @@ export const BgaProfileView: React.FC = () => {
                 <button
                   type="submit"
                   disabled={savingBank}
-                  className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold disabled:opacity-50"
+                  className="px-5 py-2 rounded-lg bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm font-bold disabled:opacity-50"
                 >
                   {savingBank ? 'Submitting Bank Details...' : 'Submit for Admin Verification'}
                 </button>
@@ -1658,7 +1658,7 @@ export const BgaProfileView: React.FC = () => {
                   value={uploadDocName}
                   onChange={(e) => setUploadDocName(e.target.value)}
                   placeholder="e.g. Updated Passbook 2026, Electricity Bill"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                 />
               </div>
 
@@ -1670,7 +1670,7 @@ export const BgaProfileView: React.FC = () => {
                   value={uploadDocUrl}
                   onChange={(e) => setUploadDocUrl(e.target.value)}
                   placeholder="e.g. /uploads/documents/proof-2026.pdf"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE] font-mono"
                 />
               </div>
 
@@ -1685,7 +1685,7 @@ export const BgaProfileView: React.FC = () => {
                 <button
                   type="submit"
                   disabled={savingDoc}
-                  className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold disabled:opacity-50"
+                  className="px-5 py-2 rounded-lg bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm font-bold disabled:opacity-50"
                 >
                   {savingDoc ? 'Uploading...' : 'Upload Document'}
                 </button>

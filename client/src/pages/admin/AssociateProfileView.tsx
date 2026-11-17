@@ -144,7 +144,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         const parsed = JSON.parse(addr);
         return parsed.fullAddress || [parsed.houseNumber, parsed.streetAddress, parsed.locality, parsed.city, parsed.district, parsed.state, parsed.pinCode].filter(Boolean).join(', ');
       }
-    } catch {}
+    } catch { }
     return addr;
   };
 
@@ -164,7 +164,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
   if (loading) {
     return (
       <div className="w-full flex items-center justify-center p-16">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3066BE]" />
       </div>
     );
   }
@@ -192,7 +192,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-purple-50 hover:text-purple-700 text-slate-600 transition-colors"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-600 transition-colors"
             title="Back to Associates Directory"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -206,22 +206,20 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
             </div>
             <div className="flex items-center gap-2 mt-1">
               <span
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                  associate.status === 'ACTIVE'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : associate.status === 'SUBMITTED'
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${associate.status === 'ACTIVE'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : associate.status === 'SUBMITTED'
                     ? 'bg-amber-100 text-amber-800'
                     : 'bg-red-100 text-red-800'
-                }`}
+                  }`}
               >
                 Status: {associate.status}
               </span>
               <span
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                  associate.panVerified && associate.bankVerified
-                    ? 'bg-purple-100 text-purple-800'
-                    : 'bg-slate-100 text-slate-600'
-                }`}
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${associate.panVerified && associate.bankVerified
+                  ? 'bg-[#3066BE]/10 text-[#3066BE] border border-[#3066BE]/25'
+                  : 'bg-slate-100 text-slate-600'
+                  }`}
               >
                 KYC: {associate.panVerified ? 'Verified' : 'Pending Verification'}
               </span>
@@ -276,7 +274,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
           {/* Avatar & Core Identity */}
           <div className="flex items-center gap-4 md:col-span-1 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 pr-0 md:pr-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-bold text-2xl flex items-center justify-center shadow-md shadow-purple-200 shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#3066BE] to-[#119DA4] text-white font-bold text-2xl flex items-center justify-center shadow-md shadow-[#3066BE]/25 shrink-0">
               {associate.name
                 .split(' ')
                 .map((n: string) => n[0])
@@ -317,9 +315,9 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
               <span className="text-[11px] text-slate-500 font-semibold block">Total Clients</span>
               <div className="text-xl font-extrabold text-slate-900 mt-0.5">{metrics?.totalClients || 0}</div>
             </div>
-            <div className="p-3 bg-purple-50 rounded-xl border border-purple-100">
-              <span className="text-[11px] text-purple-700 font-semibold block">Earned Commission</span>
-              <div className="text-xl font-extrabold text-purple-800 mt-0.5">
+            <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-100">
+              <span className="text-[11px] text-[#3066BE] font-semibold block">Earned Commission</span>
+              <div className="text-xl font-extrabold text-[#3066BE] mt-0.5">
                 ₹{(metrics?.commissions?.totalEarned || 0).toLocaleString()}
               </div>
             </div>
@@ -339,7 +337,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         <nav className="w-full lg:w-72 shrink-0 bg-white rounded-2xl border border-slate-200 p-3 shadow-sm">
           <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 mb-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Profile Sections</span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700">10 Modules</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#3066BE]/10 text-[#3066BE]">10 Modules</span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-1">
@@ -361,11 +359,10 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                 <button
                   key={t.id}
                   onClick={() => setActiveTab(t.id as any)}
-                  className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
-                    isSel
-                      ? 'bg-purple-600 text-white shadow-sm font-bold'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                  className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${isSel
+                    ? 'bg-[#3066BE] text-white shadow-md shadow-[#3066BE]/25 font-bold'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
                   <span className="truncate">{t.label}</span>
@@ -378,963 +375,803 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         {/* Tab Content Area */}
         <div className="flex-1 min-w-0 w-full space-y-6">
 
-      {/* TAB CONTENT AREAS */}
+          {/* TAB CONTENT AREAS */}
 
-      {/* 1. OVERVIEW */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6 w-full">
-          {/* Key Metrics Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full">
-            <div className="p-4 rounded-xl bg-white border border-slate-200">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase">Registered Clients</span>
-              <div className="text-2xl font-extrabold text-slate-900 mt-1">{metrics?.totalClients || 0}</div>
-              <span className="text-[10px] text-emerald-600">100% Owned by Associate</span>
-            </div>
+          {/* 1. OVERVIEW */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6 w-full">
+              {/* Key Metrics Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full">
+                <div className="p-4 rounded-xl bg-white border border-slate-200">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase">Registered Clients</span>
+                  <div className="text-2xl font-extrabold text-slate-900 mt-1">{metrics?.totalClients || 0}</div>
+                  <span className="text-[10px] text-emerald-600">100% Owned by Associate</span>
+                </div>
 
-            <div className="p-4 rounded-xl bg-white border border-slate-200">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase">Enquiries</span>
-              <div className="text-2xl font-extrabold text-indigo-600 mt-1">{metrics?.enquiries?.total || 0}</div>
-              <span className="text-[10px] text-slate-500">
-                {metrics?.enquiries?.approved || 0} Approved • {metrics?.enquiries?.pending || 0} Pending
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white border border-slate-200">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase">Active Projects</span>
-              <div className="text-2xl font-extrabold text-amber-600 mt-1">{metrics?.projects?.active || 0}</div>
-              <span className="text-[10px] text-slate-500">{metrics?.projects?.completed || 0} Completed</span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white border border-slate-200">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase">Total Earned</span>
-              <div className="text-2xl font-extrabold text-purple-700 mt-1">
-                ₹{(metrics?.commissions?.totalEarned || 0).toLocaleString()}
-              </div>
-              <span className="text-[10px] text-slate-400">Lifetime calculated</span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white border border-slate-200">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase">Pending Payout</span>
-              <div className="text-2xl font-extrabold text-amber-700 mt-1">
-                ₹{(metrics?.commissions?.pending || 0).toLocaleString()}
-              </div>
-              <span className="text-[10px] text-amber-600">Awaiting cycle/disbursement</span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white border border-slate-200">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase">Paid Out</span>
-              <div className="text-2xl font-extrabold text-emerald-700 mt-1">
-                ₹{(metrics?.commissions?.paid || 0).toLocaleString()}
-              </div>
-              <span className="text-[10px] text-emerald-600">Disbursed to bank</span>
-            </div>
-          </div>
-
-          {/* Two-column summary cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-            {/* Verification Status Card */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-              <h4 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-2">
-                Verification & Compliance Status
-              </h4>
-
-              <div className="space-y-3 text-xs">
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
-                  <div>
-                    <span className="font-semibold text-slate-800">PAN Verification</span>
-                    <p className="text-[11px] text-slate-500">{associate.panNumber ? maskPan(associate.panNumber) : 'Not provided'}</p>
-                  </div>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    associate.panVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    {associate.panVerified ? 'VERIFIED ✓' : 'PENDING'}
+                <div className="p-4 rounded-xl bg-white border border-slate-200">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase">Enquiries</span>
+                  <div className="text-2xl font-extrabold text-indigo-600 mt-1">{metrics?.enquiries?.total || 0}</div>
+                  <span className="text-[10px] text-slate-500">
+                    {metrics?.enquiries?.approved || 0} Approved • {metrics?.enquiries?.pending || 0} Pending
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
-                  <div>
-                    <span className="font-semibold text-slate-800">Aadhaar Identity (Masked)</span>
-                    <p className="text-[11px] text-slate-500">{associate.aadhaarMasked || 'Not provided'}</p>
+                <div className="p-4 rounded-xl bg-white border border-slate-200">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase">Active Projects</span>
+                  <div className="text-2xl font-extrabold text-amber-600 mt-1">{metrics?.projects?.active || 0}</div>
+                  <span className="text-[10px] text-slate-500">{metrics?.projects?.completed || 0} Completed</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white border border-slate-200">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase">Total Earned</span>
+                  <div className="text-2xl font-extrabold text-[#3066BE] mt-1">
+                    ₹{(metrics?.commissions?.totalEarned || 0).toLocaleString()}
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    associate.aadhaarVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    {associate.aadhaarVerified ? 'VERIFIED ✓' : 'NOT VERIFIED'}
+                  <span className="text-[10px] text-slate-400">Lifetime calculated</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white border border-slate-200">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase">Pending Payout</span>
+                  <div className="text-2xl font-extrabold text-amber-700 mt-1">
+                    ₹{(metrics?.commissions?.pending || 0).toLocaleString()}
+                  </div>
+                  <span className="text-[10px] text-amber-600">Awaiting cycle/disbursement</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white border border-slate-200">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase">Paid Out</span>
+                  <div className="text-2xl font-extrabold text-emerald-700 mt-1">
+                    ₹{(metrics?.commissions?.paid || 0).toLocaleString()}
+                  </div>
+                  <span className="text-[10px] text-emerald-600">Disbursed to bank</span>
+                </div>
+              </div>
+
+              {/* Two-column summary cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                {/* Verification Status Card */}
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                  <h4 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-2">
+                    Verification & Compliance Status
+                  </h4>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
+                      <div>
+                        <span className="font-semibold text-slate-800">PAN Verification</span>
+                        <p className="text-[11px] text-slate-500">{associate.panNumber ? maskPan(associate.panNumber) : 'Not provided'}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${associate.panVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                        {associate.panVerified ? 'VERIFIED ✓' : 'PENDING'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
+                      <div>
+                        <span className="font-semibold text-slate-800">Aadhaar Identity (Masked)</span>
+                        <p className="text-[11px] text-slate-500">{associate.aadhaarMasked || 'Not provided'}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${associate.aadhaarVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                        {associate.aadhaarVerified ? 'VERIFIED ✓' : 'NOT VERIFIED'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
+                      <div>
+                        <span className="font-semibold text-slate-800">Bank Account Verification</span>
+                        <p className="text-[11px] text-slate-500">{associate.bankName || 'Bank details'} ({maskAccount(associate.bankAccountNumber)})</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${associate.bankVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                        {associate.bankVerified ? 'VERIFIED ✓' : 'PENDING'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
+                      <div>
+                        <span className="font-semibold text-slate-800">Signed Associate Agreement</span>
+                        <p className="text-[11px] text-slate-500">
+                          {associate.agreementAccepted ? `Accepted on ${new Date(associate.agreementAcceptedAt || associate.createdAt).toLocaleDateString()}` : 'Not accepted'}
+                        </p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${associate.agreementAccepted ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                        {associate.agreementAccepted ? 'ACCEPTED ✓' : 'PENDING'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Clients Snapshot */}
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                  <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <h4 className="font-bold text-slate-900 text-sm">Assigned Clients Snapshot</h4>
+                    <button
+                      onClick={() => setActiveTab('clients')}
+                      className="text-xs font-bold text-[#3066BE] hover:text-purple-800"
+                    >
+                      View All ({associate.clients?.length || 0}) →
+                    </button>
+                  </div>
+
+                  {associate.clients?.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-slate-400">No clients registered yet by this associate.</div>
+                  ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {associate.clients.slice(0, 5).map((c: any) => (
+                        <div key={c.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex justify-between items-center text-xs">
+                          <div>
+                            <span className="font-bold text-slate-900">{c.clientName}</span>
+                            <div className="text-[11px] text-slate-500">{c.businessName} • {c.location}</div>
+                          </div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
+                            {c.enquiries?.length || 0} Enquiries
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 2. PERSONAL DETAILS */}
+          {activeTab === 'personal' && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-base font-bold text-slate-900">Personal & Contact Information</h3>
+                <p className="text-xs text-slate-500">Submitted during public registration and onboarding.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-xs">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Full Legal Name</span>
+                  <span className="text-slate-900 font-bold text-sm mt-0.5 block">{associate.name || 'Not provided'}</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Date of Birth</span>
+                  <span className="text-slate-900 font-bold text-sm mt-0.5 block">
+                    {associate.dob ? new Date(associate.dob).toLocaleDateString() : 'Not provided'}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
-                  <div>
-                    <span className="font-semibold text-slate-800">Bank Account Verification</span>
-                    <p className="text-[11px] text-slate-500">{associate.bankName || 'Bank details'} ({maskAccount(associate.bankAccountNumber)})</p>
-                  </div>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    associate.bankVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    {associate.bankVerified ? 'VERIFIED ✓' : 'PENDING'}
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Associate System ID</span>
+                  <span className="font-mono text-slate-900 font-bold text-sm mt-0.5 block">{associate.id}</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Mobile Number</span>
+                  <span className="text-slate-900 font-bold text-sm mt-0.5 block">{associate.mobile || 'Not provided'}</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Email Address</span>
+                  <span className="text-slate-900 font-bold text-sm mt-0.5 block">{associate.email || 'Not provided'}</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Registration Timestamp</span>
+                  <span className="text-slate-900 font-bold text-sm mt-0.5 block">
+                    {new Date(associate.createdAt).toLocaleString()}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
-                  <div>
-                    <span className="font-semibold text-slate-800">Signed Associate Agreement</span>
-                    <p className="text-[11px] text-slate-500">
-                      {associate.agreementAccepted ? `Accepted on ${new Date(associate.agreementAcceptedAt || associate.createdAt).toLocaleDateString()}` : 'Not accepted'}
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 md:col-span-2">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Residential Address</span>
+                  <span className="text-slate-900 font-semibold text-sm mt-0.5 block leading-relaxed">
+                    {formatAddress(associate.address)}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">City / State / PIN</span>
+                  <span className="text-slate-900 font-bold text-sm mt-0.5 block">
+                    {associate.city || associate.state ? `${associate.city || ''}, ${associate.state || ''} - ${associate.pinCode || ''}` : 'Not provided'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 3. KYC & IDENTITY */}
+          {activeTab === 'kyc' && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
+              <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Identity & Compliance Records</h3>
+                  <p className="text-xs text-slate-500">PAN, Aadhaar consent, and KYC approval history.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* PAN Verification Card */}
+                <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3 text-xs">
+                  <div className="flex justify-between items-start">
+                    <span className="font-bold text-slate-900 text-sm">Permanent Account Number (PAN)</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${associate.panVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                      {associate.panVerified ? 'VERIFIED' : 'PENDING'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-semibold">PAN NUMBER</span>
+                      <span className="font-mono text-base font-bold text-slate-900">
+                        {maskPan(associate.panNumber)}
+                      </span>
+                    </div>
+                    {associate.panNumber && (
+                      <button
+                        onClick={() => setRevealPan(!revealPan)}
+                        className="p-2 text-slate-500 hover:text-[#3066BE] rounded-lg hover:bg-slate-100"
+                        title={revealPan ? 'Mask PAN' : 'Reveal PAN'}
+                      >
+                        {revealPan ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-1 text-slate-600">
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span>Verification Date:</span>
+                      <span className="font-semibold text-slate-800">
+                        {associate.panVerifiedAt ? new Date(associate.panVerifiedAt).toLocaleDateString() : associate.panVerified ? 'Auto-verified' : 'Not verified'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-1">
+                      <span>KYC Submission Date:</span>
+                      <span className="font-semibold text-slate-800">
+                        {associate.kycSubmittedAt ? new Date(associate.kycSubmittedAt).toLocaleDateString() : new Date(associate.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      onClick={() => handleVerifyKyc('panVerified', !associate.panVerified)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${associate.panVerified
+                        ? 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        }`}
+                    >
+                      {associate.panVerified ? 'Revoke PAN Verification' : 'Mark PAN Verified ✓'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Aadhaar Verification Card */}
+                <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3 text-xs">
+                  <div className="flex justify-between items-start">
+                    <span className="font-bold text-slate-900 text-sm">Aadhaar Identification</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${associate.aadhaarVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+                      }`}>
+                      {associate.aadhaarVerified ? 'VERIFIED' : 'PENDING'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-200">
+                    <span className="text-[10px] text-slate-400 block font-semibold">MASKED AADHAAR NUMBER</span>
+                    <span className="font-mono text-base font-bold text-slate-900">
+                      {associate.aadhaarMasked || 'Not provided'}
+                    </span>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      🔒 Raw 12-digit Aadhaar numbers and OTPs are never stored for regulatory compliance.
                     </p>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    associate.agreementAccepted ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {associate.agreementAccepted ? 'ACCEPTED ✓' : 'PENDING'}
-                  </span>
+
+                  <div className="space-y-1 text-slate-600">
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span>Verification Date:</span>
+                      <span className="font-semibold text-slate-800">
+                        {associate.aadhaarVerifiedAt ? new Date(associate.aadhaarVerifiedAt).toLocaleDateString() : associate.aadhaarVerified ? 'Verified' : 'Pending'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-1">
+                      <span>Verification Provider:</span>
+                      <span className="font-semibold text-slate-800">Authorized UIDAI / KYC Gateway</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      onClick={() => handleVerifyKyc('aadhaarVerified', !associate.aadhaarVerified)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${associate.aadhaarVerified
+                        ? 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        }`}
+                    >
+                      {associate.aadhaarVerified ? 'Revoke Aadhaar' : 'Mark Aadhaar Verified ✓'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Quick Clients Snapshot */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-              <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                <h4 className="font-bold text-slate-900 text-sm">Assigned Clients Snapshot</h4>
-                <button
-                  onClick={() => setActiveTab('clients')}
-                  className="text-xs font-bold text-purple-600 hover:text-purple-800"
-                >
-                  View All ({associate.clients?.length || 0}) →
-                </button>
+          {/* 4. BANK ACCOUNT INFORMATION */}
+          {activeTab === 'bank' && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
+              <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Bank Account for Commission Payouts</h3>
+                  <p className="text-xs text-slate-500">Verified bank coordinates used for NEFT/IMPS disbursements.</p>
+                </div>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${associate.bankVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                  }`}>
+                  {associate.bankVerified ? 'Bank Account Verified ✓' : 'Verification Required'}
+                </span>
               </div>
 
-              {associate.clients?.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-400">No clients registered yet by this associate.</div>
-              ) : (
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {associate.clients.slice(0, 5).map((c: any) => (
-                    <div key={c.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex justify-between items-center text-xs">
-                      <div>
-                        <span className="font-bold text-slate-900">{c.clientName}</span>
-                        <div className="text-[11px] text-slate-500">{c.businessName} • {formatAddress(c.location)}</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Account Holder Name</span>
+                  <span className="text-slate-900 font-bold text-sm mt-0.5 block">
+                    {associate.bankAccountHolder || 'Not provided'}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Bank Name</span>
+                  <span className="text-slate-900 font-bold text-sm mt-0.5 block">
+                    {associate.bankName || 'Not specified'}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 font-semibold block uppercase text-[10px]">Account Number</span>
+                    {associate.bankAccountNumber && (
+                      <button
+                        onClick={() => setRevealBankAcc(!revealBankAcc)}
+                        className="text-[11px] text-[#3066BE] font-bold hover:underline"
+                      >
+                        {revealBankAcc ? 'Mask' : 'Reveal'}
+                      </button>
+                    )}
+                  </div>
+                  <span className="font-mono text-slate-900 font-bold text-sm mt-0.5 block">
+                    {maskAccount(associate.bankAccountNumber)}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">IFSC Code</span>
+                  <span className="font-mono text-slate-900 font-bold text-sm mt-0.5 block">
+                    {associate.bankIfsc || 'Not provided'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs">
+                <div>
+                  <span className="text-slate-500">Bank Verification Date:</span>{' '}
+                  <strong className="text-slate-800">
+                    {associate.bankVerifiedAt ? new Date(associate.bankVerifiedAt).toLocaleDateString() : associate.bankVerified ? 'Verified' : 'Pending verification'}
+                  </strong>
+                </div>
+
+                <button
+                  onClick={() => handleVerifyKyc('bankVerified', !associate.bankVerified)}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${associate.bankVerified
+                    ? 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    }`}
+                >
+                  {associate.bankVerified ? 'Revoke Bank Verification' : 'Verify Bank Account Details ✓'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 5. ACCOUNT & SECURITY */}
+          {activeTab === 'account' && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-base font-bold text-slate-900">Account Governance & Security</h3>
+                <p className="text-xs text-slate-500">Credential lifecycle, system timestamps, and audit history.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Login Email / Username</span>
+                  <span className="text-slate-900 font-bold text-sm mt-0.5 block">{associate.email}</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Assigned Role</span>
+                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-sm mt-0.5 inline-block">
+                    {associate.role}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Current Portal Status</span>
+                  <span className="font-bold text-slate-900 text-sm mt-0.5 block uppercase">{associate.status}</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Activation Date</span>
+                  <span className="text-slate-900 font-bold text-sm mt-0.5 block">
+                    {associate.approvedAt ? new Date(associate.approvedAt).toLocaleString() : 'Pending Activation'}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Last Login Session</span>
+                  <span className="text-slate-900 font-bold text-sm mt-0.5 block">
+                    {associate.lastLoginAt ? new Date(associate.lastLoginAt).toLocaleString() : 'No recorded login'}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">Last Profile Update</span>
+                  <span className="text-slate-900 font-bold text-sm mt-0.5 block">
+                    {new Date(associate.updatedAt).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-blue-50/70/50 border border-purple-100 flex items-start gap-3 text-xs">
+                <Lock className="w-5 h-5 text-[#3066BE] shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-purple-900 block font-bold">Cryptographic Credential Security & Governance</strong>
+                  <p className="text-purple-800/90 mt-1 leading-relaxed">
+                    Associate credentials, salted password hashes, and identity tokens are stored strictly within the secure database partition. In compliance with security policy, plaintext passwords and hashes are never exposed in the UI or transmitted across client interfaces. Standard account recovery is mediated via authenticated multi-factor recovery channels.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 6. DOCUMENTS & PROOFS */}
+          {activeTab === 'documents' && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-base font-bold text-slate-900">Submitted Documents & Signed Consent</h3>
+                <p className="text-xs text-slate-500">Access-controlled documentation for verification and legal compliance.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Agreement Document */}
+                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex justify-between items-center text-xs">
+                  <div>
+                    <span className="font-bold text-slate-900 text-sm block">Signed Associate Agreement</span>
+                    <span className="text-slate-500 text-[11px] block mt-0.5">
+                      Accepted on {new Date(associate.agreementAcceptedAt || associate.createdAt).toLocaleDateString()}
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-2 inline-block">
+                      Legally Binding Consent Verified ✓
+                    </span>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setPreviewDoc({
+                        title: 'BGA Associate Agreement & Consent Terms',
+                        url: associate.agreementDocumentUrl || '/sample-agreement.pdf',
+                        type: 'PDF Document',
+                      })
+                    }
+                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
+                  >
+                    <Eye className="w-4 h-4" /> Preview
+                  </button>
+                </div>
+
+                {/* PAN Card Proof */}
+                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex justify-between items-center text-xs">
+                  <div>
+                    <span className="font-bold text-slate-900 text-sm block">PAN Card Verification Record</span>
+                    <span className="text-slate-500 text-[11px] block mt-0.5">
+                      PAN: {maskPan(associate.panNumber)}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border mt-2 inline-block ${associate.panVerified ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                      }`}>
+                      {associate.panVerified ? 'Verified' : 'Pending Verification'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setPreviewDoc({
+                        title: 'PAN Card Verification Document',
+                        url: associate.panDocumentUrl || '/sample-pan.pdf',
+                        type: 'PDF',
+                      })
+                    }
+                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
+                  >
+                    <Eye className="w-4 h-4" /> Preview
+                  </button>
+                </div>
+
+                {/* Address Proof */}
+                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex justify-between items-center text-xs">
+                  <div>
+                    <span className="font-bold text-slate-900 text-sm block">Residential Address Proof</span>
+                    <span className="text-slate-500 text-[11px] block mt-0.5">
+                      {associate.city || associate.state ? `${associate.city}, ${associate.state}` : 'Submitted during KYC'}
+                    </span>
+                    <span className="text-[10px] font-bold text-[#3066BE] bg-blue-50/70 px-2 py-0.5 rounded border border-[#3066BE]/25 mt-2 inline-block">
+                      Verified Address Record
+                    </span>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setPreviewDoc({
+                        title: 'Residential Address Proof',
+                        url: associate.addressProofUrl || '/sample-address.pdf',
+                        type: 'PDF',
+                      })
+                    }
+                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
+                  >
+                    <Eye className="w-4 h-4" /> Preview
+                  </button>
+                </div>
+
+                {/* Bank Proof */}
+                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex justify-between items-center text-xs">
+                  <div>
+                    <span className="font-bold text-slate-900 text-sm block">Bank Proof (Cancelled Cheque / Passbook)</span>
+                    <span className="text-slate-500 text-[11px] block mt-0.5">
+                      {associate.bankName || 'Bank Account'} ({maskAccount(associate.bankAccountNumber)})
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border mt-2 inline-block ${associate.bankVerified ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                      }`}>
+                      {associate.bankVerified ? 'Verified' : 'Pending Verification'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setPreviewDoc({
+                        title: 'Bank Verification Document / Cheque',
+                        url: associate.bankProofUrl || '/sample-bank.pdf',
+                        type: 'PDF',
+                      })
+                    }
+                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
+                  >
+                    <Eye className="w-4 h-4" /> Preview
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 7. CLIENTS & ENQUIRIES */}
+          {activeTab === 'clients' && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
+              <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Associate Clients & Enquiries</h3>
+                  <p className="text-xs text-slate-500">Exclusively owned client accounts and requirements submitted.</p>
+                </div>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
+                  Total Clients: {associate.clients?.length || 0}
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="p-3.5">Client & Business</th>
+                      <th className="p-3.5">Contact Details</th>
+                      <th className="p-3.5">Enquiries</th>
+                      <th className="p-3.5">Quotations</th>
+                      <th className="p-3.5">Registered On</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {associate.clients?.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="p-8 text-center text-slate-400">
+                          No clients registered by this associate yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      associate.clients.map((c: any) => (
+                        <tr key={c.id} className="hover:bg-slate-50/50">
+                          <td className="p-3.5">
+                            <div className="font-bold text-slate-900">{c.clientName}</div>
+                            <div className="text-[11px] text-slate-500">{c.businessName} ({c.businessCategory})</div>
+                          </td>
+                          <td className="p-3.5">
+                            <div className="text-slate-800">{c.email}</div>
+                            <div className="text-[11px] text-slate-500">{c.mobile} • {c.location}</div>
+                          </td>
+                          <td className="p-3.5">
+                            <span className="font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
+                              {c.enquiries?.length || 0} Enquiries
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span className="font-semibold text-[#3066BE] bg-blue-50/70 px-2 py-0.5 rounded">
+                              {c.quotations?.length || 0} Quotes
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-slate-400">{new Date(c.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 8. PROJECTS & DELIVERY */}
+          {activeTab === 'projects' && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
+              <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Technical Projects Associated with Clients</h3>
+                  <p className="text-xs text-slate-500">Live technical progress for contracts signed with this associate's clients.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {associate.workOrders?.filter((w: any) => w.project).length === 0 ? (
+                  <div className="md:col-span-2 p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-xl">
+                    No active technical projects currently linked to this associate's client contracts.
+                  </div>
+                ) : (
+                  associate.workOrders
+                    .filter((w: any) => w.project)
+                    .map((w: any) => (
+                      <div key={w.id} className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm space-y-3 text-xs">
+                        <div className="flex justify-between items-start border-b border-slate-100 pb-2">
+                          <div>
+                            <span className="font-mono text-[11px] text-slate-400 font-bold">{w.project.projectNumber}</span>
+                            <h4 className="font-bold text-slate-900 text-sm mt-0.5">{w.client?.clientName}</h4>
+                          </div>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 uppercase">
+                            {w.project.status}
+                          </span>
+                        </div>
+
+                        <div>
+                          <div className="flex justify-between text-slate-600 mb-1">
+                            <span>Milestone Progress</span>
+                            <span className="font-bold">{w.project.progressPercentage}%</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-2">
+                            <div
+                              className="bg-[#3066BE] h-2 rounded-full transition-all"
+                              style={{ width: `${w.project.progressPercentage}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center text-[11px] text-slate-500 pt-1">
+                          <span>Contract Value: <strong>₹{w.totalValue?.toLocaleString()}</strong></span>
+                          <span className="text-emerald-700 font-semibold">Advance Verified ✓</span>
+                        </div>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
-                        {c.enquiries?.length || 0} Enquiries
+                    ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 9. COMMISSION HISTORY */}
+          {activeTab === 'commissions' && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
+              <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Associate Commission Ledger</h3>
+                  <p className="text-xs text-slate-500">
+                    Audited monthly DM recurring commissions and project completion payouts.
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-[11px] text-slate-400 block font-semibold">Total Commission</span>
+                  <span className="text-base font-extrabold text-[#3066BE]">
+                    ₹{(metrics?.commissions?.totalEarned || 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="p-3.5">Client & Service</th>
+                      <th className="p-3.5">Model</th>
+                      <th className="p-3.5">Commission Amount</th>
+                      <th className="p-3.5">Eligibility</th>
+                      <th className="p-3.5">Approval</th>
+                      <th className="p-3.5">Payout Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {associate.commissions?.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center text-slate-400">
+                          No commission records generated for this associate yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      associate.commissions.map((c: any) => (
+                        <tr key={c.id} className="hover:bg-slate-50/50">
+                          <td className="p-3.5">
+                            <div className="font-bold text-slate-900">{c.client?.clientName}</div>
+                            <div className="text-[11px] text-indigo-600">{c.serviceCategory}</div>
+                          </td>
+                          <td className="p-3.5 text-slate-600 font-semibold">{c.billingType}</td>
+                          <td className="p-3.5">
+                            <div className="font-bold text-emerald-700 text-sm">
+                              ₹{c.calculatedCommission?.toLocaleString()}
+                            </div>
+                            <div className="text-[10px] text-slate-400">
+                              Fee: ₹{c.commissionableAmount?.toLocaleString()} @ {c.commissionRate}%
+                            </div>
+                          </td>
+                          <td className="p-3.5">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${c.eligibilityStatus === 'ELIGIBLE' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                              }`}>
+                              {c.eligibilityStatus}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${c.approvalStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                              }`}>
+                              {c.approvalStatus}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${c.payoutStatus === 'PROCESSED' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
+                              }`}>
+                              {c.payoutStatus}
+                            </span>
+                            {c.payoutReference && (
+                              <div className="text-[10px] text-slate-400 font-mono mt-0.5">Ref: {c.payoutReference}</div>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 10. ACTIVITY & AUDIT HISTORY */}
+          {activeTab === 'audit' && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-base font-bold text-slate-900">Associate Activity & Audit Trail</h3>
+                <p className="text-xs text-slate-500">Immutable chronological record of logins, status changes, and transactions.</p>
+              </div>
+
+              {associate.auditLogs?.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-400">No audit events recorded for this associate.</div>
+              ) : (
+                <div className="divide-y divide-slate-100 text-xs">
+                  {associate.auditLogs.map((log: any) => (
+                    <div key={log.id} className="py-3 flex justify-between items-start">
+                      <div>
+                        <span className="font-bold text-slate-900">{log.action}</span>
+                        <span className="text-[11px] text-slate-400 ml-2">by {log.userRole || 'SYSTEM'} ({log.userEmail})</span>
+                        <p className="text-slate-600 font-mono text-[11px] mt-0.5 bg-slate-50 p-1.5 rounded border border-slate-100">
+                          {log.details}
+                        </p>
+                      </div>
+                      <span className="text-[10px] text-slate-400 shrink-0">
+                        {new Date(log.createdAt).toLocaleString()}
                       </span>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 2. PERSONAL DETAILS */}
-      {activeTab === 'personal' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
-          <div className="border-b border-slate-100 pb-3">
-            <h3 className="text-base font-bold text-slate-900">Personal & Contact Information</h3>
-            <p className="text-xs text-slate-500">Submitted during public registration and onboarding.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-xs">
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Full Legal Name</span>
-              <span className="text-slate-900 font-bold text-sm mt-0.5 block">{associate.name || 'Not provided'}</span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Date of Birth</span>
-              <span className="text-slate-900 font-bold text-sm mt-0.5 block">
-                {associate.dob ? new Date(associate.dob).toLocaleDateString() : 'Not provided'}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Associate System ID</span>
-              <span className="font-mono text-slate-900 font-bold text-sm mt-0.5 block">{associate.id}</span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Mobile Number</span>
-              <span className="text-slate-900 font-bold text-sm mt-0.5 block">{associate.mobile || 'Not provided'}</span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Email Address</span>
-              <span className="text-slate-900 font-bold text-sm mt-0.5 block">{associate.email || 'Not provided'}</span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Registration Timestamp</span>
-              <span className="text-slate-900 font-bold text-sm mt-0.5 block">
-                {new Date(associate.createdAt).toLocaleString()}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 md:col-span-2">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Residential Address</span>
-              <span className="text-slate-900 font-semibold text-sm mt-0.5 block leading-relaxed">
-                {formatAddress(associate.address)}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">City / State / PIN</span>
-              <span className="text-slate-900 font-bold text-sm mt-0.5 block">
-                {associate.city || associate.state ? `${associate.city || ''}, ${associate.state || ''} - ${associate.pinCode || ''}` : 'Not provided'}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 3. KYC & IDENTITY */}
-      {activeTab === 'kyc' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
-          <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Identity & Compliance Records</h3>
-              <p className="text-xs text-slate-500">PAN, Aadhaar consent, and KYC approval history.</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* PAN Verification Card */}
-            <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3 text-xs">
-              <div className="flex justify-between items-start">
-                <span className="font-bold text-slate-900 text-sm">Permanent Account Number (PAN)</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  associate.panVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                }`}>
-                  {associate.panVerified ? 'VERIFIED' : 'PENDING'}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200">
-                <div>
-                  <span className="text-[10px] text-slate-400 block font-semibold">PAN NUMBER</span>
-                  <span className="font-mono text-base font-bold text-slate-900">
-                    {maskPan(associate.panNumber)}
-                  </span>
-                </div>
-                {associate.panNumber && (
-                  <button
-                    onClick={() => setRevealPan(!revealPan)}
-                    className="p-2 text-slate-500 hover:text-purple-600 rounded-lg hover:bg-slate-100"
-                    title={revealPan ? 'Mask PAN' : 'Reveal PAN'}
-                  >
-                    {revealPan ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                )}
-              </div>
-
-              <div className="space-y-1 text-slate-600">
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span>Verification Date:</span>
-                  <span className="font-semibold text-slate-800">
-                    {associate.panVerifiedAt ? new Date(associate.panVerifiedAt).toLocaleDateString() : associate.panVerified ? 'Auto-verified' : 'Not verified'}
-                  </span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span>KYC Submission Date:</span>
-                  <span className="font-semibold text-slate-800">
-                    {associate.kycSubmittedAt ? new Date(associate.kycSubmittedAt).toLocaleDateString() : new Date(associate.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <button
-                  onClick={() => handleVerifyKyc('panVerified', !associate.panVerified)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                    associate.panVerified
-                      ? 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  }`}
-                >
-                  {associate.panVerified ? 'Revoke PAN Verification' : 'Mark PAN Verified ✓'}
-                </button>
-              </div>
-            </div>
-
-            {/* Aadhaar Verification Card */}
-            <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3 text-xs">
-              <div className="flex justify-between items-start">
-                <span className="font-bold text-slate-900 text-sm">Aadhaar Identification</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  associate.aadhaarVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
-                }`}>
-                  {associate.aadhaarVerified ? 'VERIFIED' : 'PENDING'}
-                </span>
-              </div>
-
-              <div className="p-3 bg-white rounded-xl border border-slate-200">
-                <span className="text-[10px] text-slate-400 block font-semibold">MASKED AADHAAR NUMBER</span>
-                <span className="font-mono text-base font-bold text-slate-900">
-                  {associate.aadhaarMasked || 'Not provided'}
-                </span>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  🔒 Raw 12-digit Aadhaar numbers and OTPs are never stored for regulatory compliance.
-                </p>
-              </div>
-
-              <div className="space-y-1 text-slate-600">
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span>Verification Date:</span>
-                  <span className="font-semibold text-slate-800">
-                    {associate.aadhaarVerifiedAt ? new Date(associate.aadhaarVerifiedAt).toLocaleDateString() : associate.aadhaarVerified ? 'Verified' : 'Pending'}
-                  </span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span>Verification Provider:</span>
-                  <span className="font-semibold text-slate-800">Authorized UIDAI / KYC Gateway</span>
-                </div>
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <button
-                  onClick={() => handleVerifyKyc('aadhaarVerified', !associate.aadhaarVerified)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                    associate.aadhaarVerified
-                      ? 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  }`}
-                >
-                  {associate.aadhaarVerified ? 'Revoke Aadhaar' : 'Mark Aadhaar Verified ✓'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Identity Correction Requests Review */}
-          {(() => {
-            const corrections = (associate.auditLogs || [])
-              .filter((l: any) => l.action.startsWith('IDENTITY_CORRECTION'))
-              .map((l: any) => {
-                let d: any = {};
-                try { d = JSON.parse(l.details); } catch {}
-                return {
-                  id: d.id || l.entityId || l.id,
-                  action: l.action,
-                  ...d,
-                  createdAt: l.createdAt,
-                };
-              });
-
-            if (corrections.length === 0) return null;
-
-            return (
-              <div className="pt-6 border-t border-slate-100 space-y-3">
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">Identity Correction Requests Submitted by Associate</h4>
-                  <p className="text-xs text-slate-500">Formal requests requiring authorized Admin compliance review.</p>
-                </div>
-
-                <div className="space-y-3">
-                  {corrections.map((corr: any, idx: number) => {
-                    const isPending = corr.status === 'PENDING_REVIEW' || corr.action === 'IDENTITY_CORRECTION_REQUEST';
-                    return (
-                      <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50 text-xs space-y-2">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 text-sm">{corr.correctionType} Correction</span>
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                corr.status === 'APPROVED'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : corr.status === 'REJECTED'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-amber-100 text-amber-800'
-                              }`}
-                            >
-                              {corr.status || 'PENDING_REVIEW'}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-slate-400">
-                            Requested: {new Date(corr.requestedAt || corr.createdAt).toLocaleString()}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 py-1.5 border-y border-slate-200/60">
-                          <div>
-                            <span className="text-slate-500 block">Current Value on Record:</span>
-                            <strong className="text-slate-800 font-mono">{corr.currentValue || '—'}</strong>
-                          </div>
-                          <div>
-                            <span className="text-slate-500 block">Proposed Correct Value:</span>
-                            <strong className="text-purple-700 font-mono">{corr.proposedValue}</strong>
-                          </div>
-                        </div>
-
-                        <div className="text-[11px] text-slate-600">
-                          <strong className="text-slate-700">Reason:</strong> {corr.reason}
-                        </div>
-
-                        {corr.documentUrl && (
-                          <div className="text-[11px]">
-                            <a
-                              href={corr.documentUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-purple-700 hover:underline flex items-center gap-1 font-semibold"
-                            >
-                              <ExternalLink className="w-3 h-3" /> View Supporting Compliance Document
-                            </a>
-                          </div>
-                        )}
-
-                        {isPending && (
-                          <div className="pt-2 flex justify-end gap-2 border-t border-slate-200/60">
-                            <button
-                              onClick={() => handleReviewCorrection(corr.id, 'REJECT', 'Document proof did not meet criteria')}
-                              className="px-3 py-1.5 rounded-lg border border-red-200 bg-white text-red-700 hover:bg-red-50 text-xs font-semibold"
-                            >
-                              Reject Request
-                            </button>
-                            <button
-                              onClick={() => handleReviewCorrection(corr.id, 'APPROVE', 'Verified and approved by Admin')}
-                              className="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-sm"
-                            >
-                              Approve & Update {corr.correctionType} ✓
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* 4. BANK ACCOUNT INFORMATION */}
-      {activeTab === 'bank' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
-          <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Bank Account for Commission Payouts</h3>
-              <p className="text-xs text-slate-500">Verified bank coordinates used for NEFT/IMPS disbursements.</p>
-            </div>
-            <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${
-              associate.bankVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-            }`}>
-              {associate.bankVerified ? 'Bank Account Verified ✓' : 'Verification Required'}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Account Holder Name</span>
-              <span className="text-slate-900 font-bold text-sm mt-0.5 block">
-                {associate.bankAccountHolder || 'Not provided'}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Bank Name</span>
-              <span className="text-slate-900 font-bold text-sm mt-0.5 block">
-                {associate.bankName || 'Not specified'}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400 font-semibold block uppercase text-[10px]">Account Number</span>
-                {associate.bankAccountNumber && (
-                  <button
-                    onClick={() => setRevealBankAcc(!revealBankAcc)}
-                    className="text-[11px] text-purple-600 font-bold hover:underline"
-                  >
-                    {revealBankAcc ? 'Mask' : 'Reveal'}
-                  </button>
-                )}
-              </div>
-              <span className="font-mono text-slate-900 font-bold text-sm mt-0.5 block">
-                {maskAccount(associate.bankAccountNumber)}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">IFSC Code</span>
-              <span className="font-mono text-slate-900 font-bold text-sm mt-0.5 block">
-                {associate.bankIfsc || 'Not provided'}
-              </span>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs">
-            <div>
-              <span className="text-slate-500">Bank Verification Date:</span>{' '}
-              <strong className="text-slate-800">
-                {associate.bankVerifiedAt ? new Date(associate.bankVerifiedAt).toLocaleDateString() : associate.bankVerified ? 'Verified' : 'Pending verification'}
-              </strong>
-            </div>
-
-            <button
-              onClick={() => handleVerifyKyc('bankVerified', !associate.bankVerified)}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
-                associate.bankVerified
-                  ? 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
-              }`}
-            >
-              {associate.bankVerified ? 'Revoke Bank Verification' : 'Verify Bank Account Details ✓'}
-            </button>
-          </div>
-
-          {/* Archived Bank Account History */}
-          {(() => {
-            const bankHistory = (associate.auditLogs || [])
-              .filter((l: any) => l.action === 'BANK_ACCOUNT_REPLACED')
-              .map((l: any) => {
-                let d: any = {};
-                try { d = JSON.parse(l.details); } catch {}
-                return {
-                  id: l.id,
-                  ...d.previousAccount,
-                  replacedAt: l.createdAt,
-                };
-              });
-
-            if (bankHistory.length === 0) return null;
-
-            return (
-              <div className="pt-6 border-t border-slate-100 space-y-3">
-                <h4 className="text-sm font-bold text-slate-900">Archived Bank Account History</h4>
-                <div className="space-y-2">
-                  {bankHistory.map((bh: any, idx: number) => (
-                    <div key={idx} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900">{bh.bankName}</span>
-                          <span className="font-mono text-slate-600">({bh.bankAccountNumberMasked})</span>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700 uppercase">
-                            Archived
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
-                          Holder: {bh.bankAccountHolder} • IFSC: {bh.bankIfsc}
-                        </p>
-                      </div>
-                      <span className="text-[10px] text-slate-400">
-                        Replaced: {new Date(bh.replacedAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* 5. ACCOUNT & SECURITY */}
-      {activeTab === 'account' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
-          <div className="border-b border-slate-100 pb-3">
-            <h3 className="text-base font-bold text-slate-900">Account Governance & Security</h3>
-            <p className="text-xs text-slate-500">Credential lifecycle, system timestamps, and audit history.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Login Email / Username</span>
-              <span className="text-slate-900 font-bold text-sm mt-0.5 block">{associate.email}</span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Assigned Role</span>
-              <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-sm mt-0.5 inline-block">
-                {associate.role}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Current Portal Status</span>
-              <span className="font-bold text-slate-900 text-sm mt-0.5 block uppercase">{associate.status}</span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Activation Date</span>
-              <span className="text-slate-900 font-bold text-sm mt-0.5 block">
-                {associate.approvedAt ? new Date(associate.approvedAt).toLocaleString() : 'Pending Activation'}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Last Login Session</span>
-              <span className="text-slate-900 font-bold text-sm mt-0.5 block">
-                {associate.lastLoginAt ? new Date(associate.lastLoginAt).toLocaleString() : 'No recorded login'}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-400 font-semibold block uppercase text-[10px]">Last Profile Update</span>
-              <span className="text-slate-900 font-bold text-sm mt-0.5 block">
-                {new Date(associate.updatedAt).toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl bg-purple-50/50 border border-purple-100 flex items-start gap-3 text-xs">
-            <Lock className="w-5 h-5 text-purple-700 shrink-0 mt-0.5" />
-            <div>
-              <strong className="text-purple-900 block font-bold">Cryptographic Credential Security & Governance</strong>
-              <p className="text-purple-800/90 mt-1 leading-relaxed">
-                Associate credentials, salted password hashes, and identity tokens are stored strictly within the secure database partition. In compliance with security policy, plaintext passwords and hashes are never exposed in the UI or transmitted across client interfaces. Standard account recovery is mediated via authenticated multi-factor recovery channels.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 6. DOCUMENTS & PROOFS */}
-      {activeTab === 'documents' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
-          <div className="border-b border-slate-100 pb-3">
-            <h3 className="text-base font-bold text-slate-900">Submitted Documents & Signed Consent</h3>
-            <p className="text-xs text-slate-500">Access-controlled documentation for verification and legal compliance.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Agreement Document */}
-            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex justify-between items-center text-xs">
-              <div>
-                <span className="font-bold text-slate-900 text-sm block">Signed Associate Agreement</span>
-                <span className="text-slate-500 text-[11px] block mt-0.5">
-                  Accepted on {new Date(associate.agreementAcceptedAt || associate.createdAt).toLocaleDateString()}
-                </span>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-2 inline-block">
-                  Legally Binding Consent Verified ✓
-                </span>
-              </div>
-              <button
-                onClick={() =>
-                  setPreviewDoc({
-                    title: 'BGA Associate Agreement & Consent Terms',
-                    url: associate.agreementDocumentUrl || '/sample-agreement.pdf',
-                    type: 'PDF Document',
-                  })
-                }
-                className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-purple-50 hover:text-purple-700 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
-              >
-                <Eye className="w-4 h-4" /> Preview
-              </button>
-            </div>
-
-            {/* PAN Card Proof */}
-            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex justify-between items-center text-xs">
-              <div>
-                <span className="font-bold text-slate-900 text-sm block">PAN Card Verification Record</span>
-                <span className="text-slate-500 text-[11px] block mt-0.5">
-                  PAN: {maskPan(associate.panNumber)}
-                </span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border mt-2 inline-block ${
-                  associate.panVerified ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-                }`}>
-                  {associate.panVerified ? 'Verified' : 'Pending Verification'}
-                </span>
-              </div>
-              <button
-                onClick={() =>
-                  setPreviewDoc({
-                    title: 'PAN Card Verification Document',
-                    url: associate.panDocumentUrl || '/sample-pan.pdf',
-                    type: 'PDF',
-                  })
-                }
-                className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-purple-50 hover:text-purple-700 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
-              >
-                <Eye className="w-4 h-4" /> Preview
-              </button>
-            </div>
-
-            {/* Address Proof */}
-            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex justify-between items-center text-xs">
-              <div>
-                <span className="font-bold text-slate-900 text-sm block">Residential Address Proof</span>
-                <span className="text-slate-500 text-[11px] block mt-0.5">
-                  {associate.city || associate.state ? `${associate.city}, ${associate.state}` : 'Submitted during KYC'}
-                </span>
-                <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 mt-2 inline-block">
-                  Verified Address Record
-                </span>
-              </div>
-              <button
-                onClick={() =>
-                  setPreviewDoc({
-                    title: 'Residential Address Proof',
-                    url: associate.addressProofUrl || '/sample-address.pdf',
-                    type: 'PDF',
-                  })
-                }
-                className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-purple-50 hover:text-purple-700 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
-              >
-                <Eye className="w-4 h-4" /> Preview
-              </button>
-            </div>
-
-            {/* Bank Proof */}
-            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex justify-between items-center text-xs">
-              <div>
-                <span className="font-bold text-slate-900 text-sm block">Bank Proof (Cancelled Cheque / Passbook)</span>
-                <span className="text-slate-500 text-[11px] block mt-0.5">
-                  {associate.bankName || 'Bank Account'} ({maskAccount(associate.bankAccountNumber)})
-                </span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border mt-2 inline-block ${
-                  associate.bankVerified ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-                }`}>
-                  {associate.bankVerified ? 'Verified' : 'Pending Verification'}
-                </span>
-              </div>
-              <button
-                onClick={() =>
-                  setPreviewDoc({
-                    title: 'Bank Verification Document / Cheque',
-                    url: associate.bankProofUrl || '/sample-bank.pdf',
-                    type: 'PDF',
-                  })
-                }
-                className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-purple-50 hover:text-purple-700 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
-              >
-                <Eye className="w-4 h-4" /> Preview
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 7. CLIENTS & ENQUIRIES */}
-      {activeTab === 'clients' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
-          <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Associate Clients & Enquiries</h3>
-              <p className="text-xs text-slate-500">Exclusively owned client accounts and requirements submitted.</p>
-            </div>
-            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
-              Total Clients: {associate.clients?.length || 0}
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                <tr>
-                  <th className="p-3.5">Client & Business</th>
-                  <th className="p-3.5">Contact Details</th>
-                  <th className="p-3.5">Enquiries</th>
-                  <th className="p-3.5">Quotations</th>
-                  <th className="p-3.5">Registered On</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {associate.clients?.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="p-8 text-center text-slate-400">
-                      No clients registered by this associate yet.
-                    </td>
-                  </tr>
-                ) : (
-                  associate.clients.map((c: any) => (
-                    <tr key={c.id} className="hover:bg-slate-50/50">
-                      <td className="p-3.5">
-                        <div className="font-bold text-slate-900">{c.clientName}</div>
-                        <div className="text-[11px] text-slate-500">{c.businessName} ({c.businessCategory})</div>
-                      </td>
-                      <td className="p-3.5">
-                        <div className="text-slate-800">{c.email}</div>
-                        <div className="text-[11px] text-slate-500">{c.mobile} • {formatAddress(c.location)}</div>
-                      </td>
-                      <td className="p-3.5">
-                        <span className="font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
-                          {c.enquiries?.length || 0} Enquiries
-                        </span>
-                      </td>
-                      <td className="p-3.5">
-                        <span className="font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
-                          {c.quotations?.length || 0} Quotes
-                        </span>
-                      </td>
-                      <td className="p-3.5 text-slate-400">{new Date(c.createdAt).toLocaleDateString()}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* 8. PROJECTS & DELIVERY */}
-      {activeTab === 'projects' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
-          <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Technical Projects Associated with Clients</h3>
-              <p className="text-xs text-slate-500">Live technical progress for contracts signed with this associate's clients.</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {associate.workOrders?.filter((w: any) => w.project).length === 0 ? (
-              <div className="md:col-span-2 p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-xl">
-                No active technical projects currently linked to this associate's client contracts.
-              </div>
-            ) : (
-              associate.workOrders
-                .filter((w: any) => w.project)
-                .map((w: any) => (
-                  <div key={w.id} className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm space-y-3 text-xs">
-                    <div className="flex justify-between items-start border-b border-slate-100 pb-2">
-                      <div>
-                        <span className="font-mono text-[11px] text-slate-400 font-bold">{w.project.projectNumber}</span>
-                        <h4 className="font-bold text-slate-900 text-sm mt-0.5">{w.client?.clientName}</h4>
-                      </div>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 uppercase">
-                        {w.project.status}
-                      </span>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-slate-600 mb-1">
-                        <span>Milestone Progress</span>
-                        <span className="font-bold">{w.project.progressPercentage}%</span>
-                      </div>
-                      <div className="w-full bg-slate-100 rounded-full h-2">
-                        <div
-                          className="bg-purple-600 h-2 rounded-full transition-all"
-                          style={{ width: `${w.project.progressPercentage}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center text-[11px] text-slate-500 pt-1">
-                      <span>Contract Value: <strong>₹{w.totalValue?.toLocaleString()}</strong></span>
-                      <span className="text-emerald-700 font-semibold">Advance Verified ✓</span>
-                    </div>
-                  </div>
-                ))
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 9. COMMISSION HISTORY */}
-      {activeTab === 'commissions' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
-          <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Associate Commission Ledger</h3>
-              <p className="text-xs text-slate-500">
-                Audited monthly DM recurring commissions and project completion payouts.
-              </p>
-            </div>
-            <div className="text-right">
-              <span className="text-[11px] text-slate-400 block font-semibold">Total Commission</span>
-              <span className="text-base font-extrabold text-purple-700">
-                ₹{(metrics?.commissions?.totalEarned || 0).toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                <tr>
-                  <th className="p-3.5">Client & Service</th>
-                  <th className="p-3.5">Model</th>
-                  <th className="p-3.5">Commission Amount</th>
-                  <th className="p-3.5">Eligibility</th>
-                  <th className="p-3.5">Approval</th>
-                  <th className="p-3.5">Payout Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {associate.commissions?.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center text-slate-400">
-                      No commission records generated for this associate yet.
-                    </td>
-                  </tr>
-                ) : (
-                  associate.commissions.map((c: any) => (
-                    <tr key={c.id} className="hover:bg-slate-50/50">
-                      <td className="p-3.5">
-                        <div className="font-bold text-slate-900">{c.client?.clientName}</div>
-                        <div className="text-[11px] text-indigo-600">{c.serviceCategory}</div>
-                      </td>
-                      <td className="p-3.5 text-slate-600 font-semibold">{c.billingType}</td>
-                      <td className="p-3.5">
-                        <div className="font-bold text-emerald-700 text-sm">
-                          ₹{c.calculatedCommission?.toLocaleString()}
-                        </div>
-                        <div className="text-[10px] text-slate-400">
-                          Fee: ₹{c.commissionableAmount?.toLocaleString()} @ {c.commissionRate}%
-                        </div>
-                      </td>
-                      <td className="p-3.5">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          c.eligibilityStatus === 'ELIGIBLE' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          {c.eligibilityStatus}
-                        </span>
-                      </td>
-                      <td className="p-3.5">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          c.approvalStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {c.approvalStatus}
-                        </span>
-                      </td>
-                      <td className="p-3.5">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          c.payoutStatus === 'PROCESSED' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          {c.payoutStatus}
-                        </span>
-                        {c.payoutReference && (
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">Ref: {c.payoutReference}</div>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* 10. ACTIVITY & AUDIT HISTORY */}
-      {activeTab === 'audit' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
-          <div className="border-b border-slate-100 pb-3">
-            <h3 className="text-base font-bold text-slate-900">Associate Activity & Audit Trail</h3>
-            <p className="text-xs text-slate-500">Immutable chronological record of logins, status changes, and transactions.</p>
-          </div>
-
-          {associate.auditLogs?.length === 0 ? (
-            <div className="p-8 text-center text-xs text-slate-400">No audit events recorded for this associate.</div>
-          ) : (
-            <div className="divide-y divide-slate-100 text-xs">
-              {associate.auditLogs.map((log: any) => (
-                <div key={log.id} className="py-3 flex justify-between items-start">
-                  <div>
-                    <span className="font-bold text-slate-900">{log.action}</span>
-                    <span className="text-[11px] text-slate-400 ml-2">by {log.userRole || 'SYSTEM'} ({log.userEmail})</span>
-                    <p className="text-slate-600 font-mono text-[11px] mt-0.5 bg-slate-50 p-1.5 rounded border border-slate-100">
-                      {log.details}
-                    </p>
-                  </div>
-                  <span className="text-[10px] text-slate-400 shrink-0">
-                    {new Date(log.createdAt).toLocaleString()}
-                  </span>
-                </div>
-              ))}
-            </div>
           )}
-        </div>
-      )}
         </div>
       </div>
 
@@ -1352,7 +1189,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                 value={actionReason}
                 onChange={(e) => setActionReason(e.target.value)}
                 placeholder="Enter reason for audit record..."
-                className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-purple-500"
+                className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#3066BE]"
               />
             </div>
 
@@ -1366,7 +1203,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
               <button
                 onClick={handleExecuteAction}
                 disabled={actionLoading}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-[#3066BE] hover:bg-[#255299] text-white disabled:opacity-50"
               >
                 {actionLoading ? 'Processing...' : 'Confirm Action'}
               </button>
@@ -1393,7 +1230,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
             </div>
 
             <div className="p-8 bg-slate-50 rounded-xl border border-slate-200 text-center space-y-3">
-              <FileText className="w-12 h-12 text-purple-600 mx-auto" />
+              <FileText className="w-12 h-12 text-[#3066BE] mx-auto" />
               <h4 className="font-bold text-slate-800 text-sm">{previewDoc.title}</h4>
               <p className="text-xs text-slate-500 font-mono">Document Path: {previewDoc.url}</p>
               <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200">
@@ -1410,7 +1247,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
               </button>
               <button
                 onClick={() => alert(`Initiating secure download of ${previewDoc.title}`)}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-1.5"
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-[#3066BE] hover:bg-[#255299] text-white flex items-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5" /> Download Document
               </button>

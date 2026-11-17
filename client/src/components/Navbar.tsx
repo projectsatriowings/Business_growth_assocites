@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Building2, ArrowRight, Briefcase, Menu, X } from 'lucide-react';
+import { ArrowRight, Briefcase, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Navbar: React.FC = () => {
@@ -10,10 +10,13 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
+    { label: 'About', target: 'about' },
     { label: 'Services', target: 'services' },
+    { label: 'Why Us', target: 'why-atriowings' },
     { label: 'How It Works', target: 'how-it-works' },
-    { label: 'Calculator', target: 'calculator' },
+    { label: 'Commissions', target: 'earning' },
     { label: 'Portfolio', target: 'portfolio' },
+    { label: 'Benefits', target: 'benefits' },
     { label: 'FAQ', target: 'faq' },
     { label: 'Contact', target: 'contact' },
   ];
@@ -34,10 +37,10 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs text-slate-900 transition-colors">
+    <nav className="sticky top-0 z-50 glass-nav border-b border-slate-200/80 transition-all duration-200 bg-white/95 backdrop-blur-md shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 sm:h-20">
-          {/* Logo */}
+        <div className="flex justify-between items-center h-20 sm:h-22">
+          {/* Official Company Logo (Clean presentation without duplicate labels) */}
           <Link
             to="/"
             onClick={() => {
@@ -45,29 +48,24 @@ export const Navbar: React.FC = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className="flex items-center space-x-3 shrink-0 group"
+            className="flex items-center shrink-0 group py-1.5"
+            title="Atriowings Technologies India Private Limited"
           >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-blue-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-all">
-              <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
-            </div>
-            <div>
-              <span className="text-base sm:text-lg font-extrabold tracking-tight block leading-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent">
-                BGA Enterprise
-              </span>
-              <span className="block text-[10px] tracking-wider text-indigo-600 font-bold uppercase">
-                Growth Network & IT Solutions
-              </span>
-            </div>
+            <img
+              src="/img/atriowings-official-logo.png"
+              alt="Atriowings Technologies India Private Limited"
+              className="h-11 sm:h-13 w-auto object-contain transition-transform duration-200 group-hover:scale-[1.02]"
+            />
           </Link>
 
           {/* Desktop Nav Links */}
-          <div className="hidden lg:flex items-center space-x-1 sm:space-x-2 text-xs xl:text-sm font-semibold text-slate-600">
+          <div className="hidden xl:flex items-center space-x-7 text-[13px] font-semibold text-slate-600">
             {navLinks.map((link) => (
               <a
                 key={link.target}
                 href={`#${link.target}`}
                 onClick={(e) => handleNavClick(e, link.target)}
-                className="px-3 py-1.5 rounded-lg hover:text-indigo-600 hover:bg-slate-50 transition-all"
+                className="relative py-1.5 hover:text-[#3066BE] transition-colors duration-150 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#3066BE] hover:after:w-full after:transition-all after:duration-200"
               >
                 {link.label}
               </a>
@@ -75,7 +73,7 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Desktop Action Buttons */}
-          <div className="hidden sm:flex items-center space-x-3">
+          <div className="hidden sm:flex items-center space-x-3.5">
             {user ? (
               <div className="flex items-center space-x-3">
                 <button
@@ -85,46 +83,46 @@ export const Navbar: React.FC = () => {
                     else if (user.role === 'ACCOUNTS') navigate('/accounts');
                     else if (user.role === 'TECHNICAL') navigate('/technical');
                   }}
-                  className="px-4 py-2 text-xs sm:text-sm font-bold rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200/80 transition-all flex items-center gap-2"
+                  className="px-4 py-2 text-xs font-bold rounded-xl bg-[#edf4fc] text-[#3066BE] hover:bg-[#dbe9fa] border border-[#6D96C5]/30 transition-all duration-150 flex items-center gap-2 shadow-sm"
                 >
-                  <Briefcase className="w-4 h-4" />
-                  My Dashboard ({user.role})
+                  <Briefcase className="w-3.5 h-3.5 text-[#119DA4]" />
+                  <span>My Portal ({user.role})</span>
                 </button>
                 <button
                   onClick={logout}
-                  className="text-xs font-semibold text-slate-500 hover:text-red-600 underline transition-colors"
+                  className="text-xs text-slate-500 hover:text-rose-600 underline font-semibold transition-colors"
                 >
-                  Logout
+                  Sign Out
                 </button>
               </div>
             ) : (
               <>
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-slate-700 hover:text-indigo-600 hover:bg-slate-50 border border-slate-200 transition-all"
+                  className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:text-[#3066BE] hover:bg-slate-50 rounded-xl transition-all duration-150 border border-slate-200 shadow-sm"
                 >
                   Portal Login
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 text-xs sm:text-sm font-bold rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-600 to-blue-600 text-white hover:from-indigo-700 hover:to-blue-700 shadow-md shadow-indigo-600/25 transition-all transform hover:-translate-y-0.5 flex items-center space-x-1.5"
+                  className="px-5 py-2.5 text-xs font-bold rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white shadow-md shadow-[#3066BE]/25 hover:shadow-lg hover:shadow-[#3066BE]/30 transition-all duration-200 flex items-center space-x-1.5 transform hover:-translate-y-0.5"
                 >
-                  <span>Become an Associate</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>Become a Growth Associate</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex items-center lg:hidden">
+          {/* Mobile Menu Toggle Button */}
+          <div className="flex items-center xl:hidden">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              className="p-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
               aria-label="Toggle navigation menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-6 h-6 text-[#3066BE]" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
@@ -132,21 +130,21 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile dropdown menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden px-4 pt-3 pb-6 space-y-3 bg-white border-t border-slate-200 shadow-xl">
-          <div className="space-y-1">
+        <div className="xl:hidden border-t border-slate-200 bg-white/98 backdrop-blur-xl px-5 pt-3 pb-6 space-y-4 shadow-xl animate-fadeIn">
+          <div className="grid grid-cols-2 gap-1.5">
             {navLinks.map((link) => (
               <a
                 key={link.target}
                 href={`#${link.target}`}
                 onClick={(e) => handleNavClick(e, link.target)}
-                className="block px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                className="block px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:bg-[#edf4fc] hover:text-[#3066BE] transition-colors"
               >
                 {link.label}
               </a>
             ))}
           </div>
 
-          <div className="pt-3 border-t border-slate-100 space-y-2">
+          <div className="pt-3 border-t border-slate-100 space-y-2.5">
             {user ? (
               <>
                 <button
@@ -157,19 +155,22 @@ export const Navbar: React.FC = () => {
                     else if (user.role === 'ACCOUNTS') navigate('/accounts');
                     else if (user.role === 'TECHNICAL') navigate('/technical');
                   }}
-                  className="w-full text-left px-3 py-2.5 text-sm font-bold rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-4 py-3 text-sm font-bold rounded-xl bg-[#edf4fc] text-[#3066BE] hover:bg-[#dbe9fa] transition-colors flex items-center justify-between"
                 >
-                  <Briefcase className="w-4 h-4" />
-                  My Dashboard ({user.role})
+                  <span className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-[#119DA4]" />
+                    My Portal ({user.role})
+                  </span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
                     logout();
                   }}
-                  className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 rounded-lg font-semibold"
+                  className="w-full text-left px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 rounded-xl font-bold"
                 >
-                  Logout
+                  Sign Out
                 </button>
               </>
             ) : (
@@ -177,14 +178,14 @@ export const Navbar: React.FC = () => {
                 <Link
                   to="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block w-full text-center px-4 py-2.5 text-sm font-bold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="block w-full text-center px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   Portal Login
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block w-full text-center px-4 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md shadow-indigo-600/25 hover:from-indigo-700 hover:to-blue-700"
+                  className="block w-full text-center px-4 py-3 text-xs font-bold rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] text-white shadow-md shadow-[#3066BE]/20 transition-all"
                 >
                   Become a Growth Associate
                 </Link>
@@ -196,3 +197,5 @@ export const Navbar: React.FC = () => {
     </nav>
   );
 };
+
+export default Navbar;

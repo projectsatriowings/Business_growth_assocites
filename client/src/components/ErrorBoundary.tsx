@@ -52,7 +52,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   this.setState({ hasError: false, error: null });
                   window.location.reload();
                 }}
-                className="px-4 py-2.5 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 flex items-center gap-1.5 transition-colors shadow-sm"
+                className="px-4 py-2.5 bg-[#3066BE] text-white rounded-xl text-xs font-bold hover:bg-[#25549e] flex items-center gap-1.5 transition-colors shadow-sm"
               >
                 <RefreshCw className="w-4 h-4" /> Reload Portal
               </button>

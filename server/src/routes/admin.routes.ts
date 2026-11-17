@@ -16,6 +16,7 @@ import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification, invalidateUserCache } from '../middleware/auth';
 import { appCache } from '../utils/cache';
 import { validateBankUtr } from '../utils/utrValidator';
+import { verifySmtpConnection, sendEmail, sendKycStatusEmail, ADMIN_ALERT_EMAIL } from '../utils/mailer';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -451,6 +452,14 @@ router.post('/bgas/:id/status', async (req: AuthRequest, res: Response): Promise
         'SUCCESS',
         '/bga/dashboard'
       );
+
+      // Send email notification to associate
+      sendKycStatusEmail({
+        name: bga.name,
+        email: bga.email,
+        status: 'APPROVED',
+        remarks: reason || 'Your KYC, identity, and profile documents have been officially approved.',
+      }).catch((err) => console.error('Failed to send KYC approval email:', err));
     } else if (action === 'REJECT') {
       updateData.status = BgaStatus.REJECTED;
       updateData.rejectionReason = reason || 'Documentation failed verification criteria.';
@@ -461,6 +470,14 @@ router.post('/bgas/:id/status', async (req: AuthRequest, res: Response): Promise
         `Your application was rejected. Reason: ${updateData.rejectionReason}`,
         'WARNING'
       );
+
+      // Send email notification to associate
+      sendKycStatusEmail({
+        name: bga.name,
+        email: bga.email,
+        status: 'REJECTED',
+        remarks: updateData.rejectionReason,
+      }).catch((err) => console.error('Failed to send KYC rejection email:', err));
     } else if (action === 'SUSPEND') {
       updateData.status = BgaStatus.SUSPENDED;
       updateData.statusNotes = reason || 'Suspended by admin.';
@@ -1539,6 +1556,47 @@ router.post('/identity-corrections/:corrId/review', async (req: AuthRequest, res
   } catch (error) {
     console.error('Failed to review identity correction:', error);
     res.status(500).json({ error: 'Failed to process identity correction review' });
+  }
+});
+
+// 15. SMTP Diagnostic & Testing Routes
+router.get('/smtp-status', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const status = await verifySmtpConnection();
+    res.json({
+      configured: true,
+      sender: ADMIN_ALERT_EMAIL,
+      ...status,
+    });
+  } catch (err: any) {
+    res.status(500).json({ configured: false, error: err?.message || 'SMTP check failed' });
+  }
+});
+
+router.post('/send-test-email', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const targetEmail = req.body.email || req.user?.email || ADMIN_ALERT_EMAIL;
+    const result = await sendEmail({
+      to: targetEmail,
+      subject: `[SMTP Test] Atriowings Enterprise Nodemailer Verification`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; color: #0f172a;">
+          <h2 style="color: #4f46e5;">SMTP Nodemailer Test Successful!</h2>
+          <p>This email confirms that the SMTP integration for <strong>${ADMIN_ALERT_EMAIL}</strong> using Nodemailer is working properly.</p>
+          <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+          <p><strong>Server:</strong> smtp.gmail.com</p>
+          <p><strong>Recipient:</strong> ${targetEmail}</p>
+        </div>
+      `,
+    });
+
+    if (result.success) {
+      res.json({ success: true, message: `Test email dispatched to ${targetEmail}`, messageId: result.messageId });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to dispatch test email' });
   }
 });
 
