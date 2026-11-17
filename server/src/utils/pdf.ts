@@ -445,14 +445,25 @@ export async function generateQuotationPdf(
   const fileName = `Quotation-${data.quotationNumber}-v${data.version}.pdf`;
   const storagePath = getQuotationStoragePath(data.quotationNumber, data.version);
 
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `${isDownload ? 'attachment' : 'inline'}; filename="${fileName}"`);
-
   // Check if already stored on disk to preserve document integrity
   if (fs.existsSync(storagePath)) {
-    const stream = fs.createReadStream(storagePath);
-    stream.pipe(res);
-    return;
+    try {
+      const stat = fs.statSync(storagePath);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Length', stat.size);
+      res.setHeader('Content-Disposition', `${isDownload ? 'attachment' : 'inline'}; filename="${fileName}"`);
+      const stream = fs.createReadStream(storagePath);
+      stream.on('error', (err) => {
+        console.error('[PDF Stream Error]:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Failed to read PDF stream' });
+        }
+      });
+      stream.pipe(res);
+      return;
+    } catch (readErr) {
+      console.warn('[PDF Storage Read Error], generating dynamically:', readErr);
+    }
   }
 
   // Generate, store securely, and stream
@@ -463,5 +474,8 @@ export async function generateQuotationPdf(
     console.warn('[PDF Storage] Could not persist to disk, serving dynamically:', err);
   }
 
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Length', pdfBuffer.length);
+  res.setHeader('Content-Disposition', `${isDownload ? 'attachment' : 'inline'}; filename="${fileName}"`);
   res.send(pdfBuffer);
 }

@@ -17,13 +17,14 @@ import {
   X,
   ShieldCheck,
   FileText,
+  Loader2,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
 import { SkeletonStatsRow, SkeletonTable, AccountsDashboardSkeleton } from '../../components/Skeleton';
 import { validateBankUtr, getUtrPlaceholderAndHint, UtrValidationResult } from '../../utils/utrValidator';
 import { useToast } from '../../context/ToastContext';
-import { getQuotationPdfUrl } from '../../utils/downloadPdf';
+import { getQuotationPdfUrl, downloadQuotationPdf } from '../../utils/downloadPdf';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const AccountsPortal: React.FC = () => {
@@ -38,6 +39,7 @@ export const AccountsPortal: React.FC = () => {
   const [workOrders, setWorkOrders] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
+  const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null);
 
   // Prepare Quotation Modal
   const [prepModal, setPrepModal] = useState<{ quotation: any } | null>(null);
@@ -435,14 +437,28 @@ export const AccountsPortal: React.FC = () => {
                         >
                           {q.status === 'PENDING_ADMIN_APPROVAL' ? 'PENDING ADMIN APPROVAL' : q.status}
                         </span>
-                        <a
-                          href={getQuotationPdfUrl(q.id)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 rounded text-xs font-bold flex items-center gap-1 transition-colors"
+                        <button
+                          type="button"
+                          disabled={downloadingPdfId === q.id}
+                          onClick={async () => {
+                            setDownloadingPdfId(q.id);
+                            try {
+                              await downloadQuotationPdf(q.id, q.quotationNumber);
+                            } catch (err: any) {
+                              toast.error(err.message || 'Failed to download quotation PDF');
+                            } finally {
+                              setDownloadingPdfId(null);
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 rounded text-xs font-bold flex items-center gap-1 transition-colors disabled:opacity-50"
                         >
-                          <Download className="w-3.5 h-3.5" /> PDF
-                        </a>
+                          {downloadingPdfId === q.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5" />
+                          )}
+                          PDF
+                        </button>
                       </div>
                     </div>
 
@@ -695,14 +711,31 @@ export const AccountsPortal: React.FC = () => {
                         </td>
                         <td className="p-3.5 text-right flex items-center justify-end gap-2">
                           {w.quotationId && (
-                            <a
-                              href={getQuotationPdfUrl(w.quotationId)}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold inline-flex items-center gap-1 transition-colors"
+                            <button
+                              type="button"
+                              disabled={downloadingPdfId === w.quotationId}
+                              onClick={async () => {
+                                setDownloadingPdfId(w.quotationId);
+                                try {
+                                  await downloadQuotationPdf(
+                                    w.quotationId,
+                                    w.quotation?.quotationNumber || w.quotationNumber
+                                  );
+                                } catch (err: any) {
+                                  toast.error(err.message || 'Failed to download quotation PDF');
+                                } finally {
+                                  setDownloadingPdfId(null);
+                                }
+                              }}
+                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold inline-flex items-center gap-1 transition-colors disabled:opacity-50"
                             >
-                              <Download className="w-3 h-3" /> Quotation PDF
-                            </a>
+                              {downloadingPdfId === w.quotationId ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Download className="w-3 h-3" />
+                              )}
+                              Quotation PDF
+                            </button>
                           )}
                           {!w.advanceVerified ? (
                             <button

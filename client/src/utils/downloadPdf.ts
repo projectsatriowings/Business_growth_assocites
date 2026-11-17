@@ -14,16 +14,53 @@ export function getQuotationPdfUrl(quotationId: string, download: boolean = fals
   if (token) queryParts.push(`token=${encodeURIComponent(token)}`);
   if (download) queryParts.push('download=true');
   const qs = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
-  return `/api/resources/quotations/${quotationId}/pdf${qs}`;
+  return `/api/resources/quotations/${encodeURIComponent(quotationId)}/pdf${qs}`;
 }
 
 /**
- * Clean helper to fetch and trigger download or view of quotation PDF using Bearer auth
+ * Robust helper to download a quotation PDF via authenticated fetch and blob.
+ * Avoids browser navigation/500 proxy crashes by handling response statuses gracefully.
+ */
+export async function downloadQuotationPdf(quotationId: string, quotationNumber?: string): Promise<void> {
+  const token = getAuthToken();
+  try {
+    const res = await fetch(`/api/resources/quotations/${encodeURIComponent(quotationId)}/pdf?download=true`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (!res.ok) {
+      let errMsg = `Failed to download PDF (HTTP ${res.status})`;
+      try {
+        const data = await res.json();
+        if (data.error) errMsg = data.error;
+      } catch {}
+      throw new Error(errMsg);
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const cleanNumber = quotationNumber ? quotationNumber.replace(/[^a-zA-Z0-9_-]/g, '_') : quotationId;
+    a.download = `Quotation-${cleanNumber}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  } catch (err: any) {
+    console.warn('[downloadQuotationPdf] Blob download fallback to direct URL:', err);
+    // If browser blocks fetch or network drops, direct link fallback
+    window.open(getQuotationPdfUrl(quotationId, true), '_blank');
+  }
+}
+
+/**
+ * Clean helper to fetch and trigger view of quotation PDF using Bearer auth in a new tab
  */
 export async function openQuotationPdf(quotationId: string) {
   const token = getAuthToken();
   try {
-    const res = await fetch(`/api/resources/quotations/${quotationId}/pdf`, {
+    const res = await fetch(`/api/resources/quotations/${encodeURIComponent(quotationId)}/pdf`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!res.ok) {
