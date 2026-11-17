@@ -38,9 +38,9 @@ export const Navbar: React.FC = () => {
 
   return (
     <nav className="sticky top-0 z-50 glass-nav border-b border-slate-200/80 transition-all duration-200 bg-white/95 backdrop-blur-md shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20 sm:h-22">
-          {/* Official Company Logo (Clean presentation without duplicate labels) */}
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
+        <div className="flex justify-between items-center h-20 gap-4">
+          {/* Official Company Logo (Guaranteed right margin so it never collides with nav links) */}
           <Link
             to="/"
             onClick={() => {
@@ -48,32 +48,32 @@ export const Navbar: React.FC = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className="flex items-center shrink-0 group py-1.5"
+            className="flex items-center shrink-0 group py-1.5 mr-2 lg:mr-4 xl:mr-6"
             title="Atriowings Technologies India Private Limited"
           >
             <img
               src="/img/atriowings-official-logo.png"
               alt="Atriowings Technologies India Private Limited"
-              className="h-11 sm:h-13 w-auto object-contain transition-transform duration-200 group-hover:scale-[1.02]"
+              className="h-10 sm:h-11 xl:h-12 w-auto object-contain transition-transform duration-200 group-hover:scale-[1.02]"
             />
           </Link>
 
-          {/* Desktop Nav Links */}
-          <div className="hidden xl:flex items-center space-x-7 text-[13px] font-semibold text-slate-600">
+          {/* Desktop Nav Links (Clean gap spacing and whitespace-nowrap to prevent text wrapping or overlapping) */}
+          <div className="hidden xl:flex items-center gap-x-4 2xl:gap-x-6 text-[13px] font-semibold text-slate-600 shrink-0">
             {navLinks.map((link) => (
               <a
                 key={link.target}
                 href={`#${link.target}`}
                 onClick={(e) => handleNavClick(e, link.target)}
-                className="relative py-1.5 hover:text-[#3066BE] transition-colors duration-150 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#3066BE] hover:after:w-full after:transition-all after:duration-200"
+                className="relative py-1.5 px-1 whitespace-nowrap hover:text-[#3066BE] transition-colors duration-150 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#3066BE] hover:after:w-full after:transition-all after:duration-200"
               >
                 {link.label}
               </a>
             ))}
           </div>
 
-          {/* Desktop Action Buttons */}
-          <div className="hidden sm:flex items-center space-x-3.5">
+          {/* Desktop Action Buttons (Guaranteed shrink-0 and whitespace-nowrap) */}
+          <div className="hidden sm:flex items-center space-x-3 shrink-0 ml-auto xl:ml-0">
             {user ? (
               <div className="flex items-center space-x-3">
                 <button
@@ -83,14 +83,14 @@ export const Navbar: React.FC = () => {
                     else if (user.role === 'ACCOUNTS') navigate('/accounts');
                     else if (user.role === 'TECHNICAL') navigate('/technical');
                   }}
-                  className="px-4 py-2 text-xs font-bold rounded-xl bg-[#edf4fc] text-[#3066BE] hover:bg-[#dbe9fa] border border-[#6D96C5]/30 transition-all duration-150 flex items-center gap-2 shadow-sm"
+                  className="px-4 py-2 text-xs font-bold rounded-xl bg-[#edf4fc] text-[#3066BE] hover:bg-[#dbe9fa] border border-[#6D96C5]/30 transition-all duration-150 flex items-center gap-2 shadow-sm whitespace-nowrap"
                 >
                   <Briefcase className="w-3.5 h-3.5 text-[#119DA4]" />
                   <span>My Portal ({user.role})</span>
                 </button>
                 <button
                   onClick={logout}
-                  className="text-xs text-slate-500 hover:text-rose-600 underline font-semibold transition-colors"
+                  className="text-xs text-slate-500 hover:text-rose-600 underline font-semibold transition-colors whitespace-nowrap"
                 >
                   Sign Out
                 </button>
@@ -99,16 +99,16 @@ export const Navbar: React.FC = () => {
               <>
                 <Link
                   to="/login"
-                  className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:text-[#3066BE] hover:bg-slate-50 rounded-xl transition-all duration-150 border border-slate-200 shadow-sm"
+                  className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:text-[#3066BE] hover:bg-slate-50 rounded-xl transition-all duration-150 border border-slate-200 shadow-sm whitespace-nowrap"
                 >
                   Portal Login
                 </Link>
                 <Link
                   to="/register"
-                  className="px-5 py-2.5 text-xs font-bold rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white shadow-md shadow-[#3066BE]/25 hover:shadow-lg hover:shadow-[#3066BE]/30 transition-all duration-200 flex items-center space-x-1.5 transform hover:-translate-y-0.5"
+                  className="px-4.5 py-2.5 text-xs font-bold rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white shadow-md shadow-[#3066BE]/25 hover:shadow-lg hover:shadow-[#3066BE]/30 transition-all duration-200 flex items-center space-x-1.5 transform hover:-translate-y-0.5 whitespace-nowrap"
                 >
                   <span>Become a Growth Associate</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 shrink-0" />
                 </Link>
               </>
             )}
