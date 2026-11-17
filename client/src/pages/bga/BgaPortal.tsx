@@ -32,6 +32,8 @@ import {
   Bell,
   Sparkles,
   RefreshCw,
+  Edit3,
+  Save,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
@@ -79,7 +81,8 @@ export const BgaPortal: React.FC = () => {
   const [commissionsLoaded, setCommissionsLoaded] = useState(false);
 
   // My Clients UI State
-  const [clientViewMode, setClientViewMode] = useState<'list' | 'add'>('list');
+  const [clientViewMode, setClientViewMode] = useState<'list' | 'add' | 'edit'>('list');
+  const [editingClient, setEditingClient] = useState<any | null>(null);
   const [selectedClientDetails, setSelectedClientDetails] = useState<any | null>(null);
   const [clientSearch, setClientSearch] = useState('');
   const [clientCategoryFilter, setClientCategoryFilter] = useState('ALL');
@@ -205,24 +208,170 @@ export const BgaPortal: React.FC = () => {
     loadTabData(activeTab);
   }, [activeTab]);
 
-  // Handle Client Registration
-  const handleRegisterClient = async (e: React.FormEvent) => {
+  // Reset Client Form State
+  const resetClientForm = () => {
+    setClientForm({
+      clientName: '',
+      businessName: '',
+      mobile: '',
+      email: '',
+      businessCategory: 'IT & Software',
+      otherCategory: '',
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      pinCode: '',
+      country: 'India',
+      requiredService: 'DIGITAL_MARKETING',
+      expectedBudget: '',
+      clientRequirements: '',
+      discussionNotes: '',
+      followUpDate: '',
+    });
+    setEditingClient(null);
+    setClientFormError(null);
+  };
+
+  // Open Registration Mode (Add)
+  const handleOpenAddClient = () => {
+    resetClientForm();
+    setClientFormSuccess(null);
+    setClientViewMode('add');
+  };
+
+  // Open Edit Mode (Prefill database values)
+  const handleOpenEditClient = (c: any) => {
+    let addr = c.address || {};
+    if (!addr.addressLine1 && c.location) {
+      try {
+        if (c.location.startsWith('{')) {
+          addr = JSON.parse(c.location);
+        }
+      } catch {}
+    }
+
+    const latestEnq = c.enquiries && c.enquiries.length > 0 ? c.enquiries[0] : null;
+    const isStandardCat = BUSINESS_CATEGORIES.includes(c.businessCategory);
+    const categoryVal = isStandardCat ? c.businessCategory : 'Other';
+    const otherCatVal = isStandardCat ? '' : (c.businessCategory || '');
+
+    let formattedDate = '';
+    if (latestEnq?.followUpDate) {
+      try {
+        formattedDate = new Date(latestEnq.followUpDate).toISOString().split('T')[0];
+      } catch {}
+    }
+
+    setEditingClient(c);
+    setClientForm({
+      clientName: c.clientName || '',
+      businessName: c.businessName || '',
+      mobile: c.mobile || '',
+      email: c.email || '',
+      businessCategory: categoryVal,
+      otherCategory: otherCatVal,
+      addressLine1: addr.addressLine1 || c.addressLine1 || '',
+      addressLine2: addr.addressLine2 || c.addressLine2 || '',
+      city: addr.city || c.city || '',
+      state: addr.state || c.state || '',
+      pinCode: addr.pinCode || c.pinCode || '',
+      country: addr.country || c.country || 'India',
+      requiredService: latestEnq?.serviceCategory || 'DIGITAL_MARKETING',
+      expectedBudget:
+        latestEnq?.expectedBudget !== undefined && latestEnq?.expectedBudget !== null
+          ? String(latestEnq.expectedBudget)
+          : '',
+      clientRequirements: latestEnq?.requirements || '',
+      discussionNotes: latestEnq?.discussionNotes || '',
+      followUpDate: formattedDate,
+    });
+    setClientFormError(null);
+    setClientFormSuccess(null);
+    setClientViewMode('edit');
+  };
+
+  // Controlled Enter-Key Navigation to prevent accidental submission
+  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Enter') {
+      const target = e.target as HTMLElement;
+
+      // 1. Textarea must insert a newline normally
+      if (target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // 2. Dropdown / Select must preserve normal selection behaviour
+      if (target.tagName === 'SELECT') {
+        return;
+      }
+
+      // 3. Do not intercept if target is a button
+      if (target.tagName === 'BUTTON') {
+        return;
+      }
+
+      // 4. Always block accidental implicit form submission on single-line inputs
+      e.preventDefault();
+
+      // 5. Move focus to the next enabled, visible, eligible input
+      const form = e.currentTarget;
+      const focusable = Array.from(
+        form.querySelectorAll<HTMLElement>(
+          'input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([disabled]):not([readonly]), select:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly])'
+        )
+      ).filter((el) => el.offsetParent !== null && !el.hasAttribute('aria-hidden'));
+
+      const currentIndex = focusable.indexOf(target as HTMLElement);
+      if (currentIndex !== -1 && currentIndex < focusable.length - 1) {
+        const nextElement = focusable[currentIndex + 1];
+        nextElement.focus();
+        if (nextElement instanceof HTMLInputElement && typeof nextElement.select === 'function') {
+          nextElement.select();
+        }
+      }
+      // If it is the last field, doing nothing prevents accidental client registration!
+    }
+  };
+
+  // Handle Client Form Submission (Register New Client or Edit Existing Client)
+  const handleSubmitClientForm = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingClient) return; // Prevent duplicate requests while processing
     setClientFormError(null);
     setClientFormSuccess(null);
 
-    // Business Category Validation
-    if (clientForm.businessCategory === 'Other' && !clientForm.otherCategory.trim()) {
-      setClientFormError('Please enter your custom business category.');
+    // Validation 1: Required Client Name & Business Name
+    if (!clientForm.clientName.trim()) {
+      setClientFormError('Client contact name is required.');
+      return;
+    }
+    if (!clientForm.businessName.trim()) {
+      setClientFormError('Business / Company name is required.');
       return;
     }
 
+    // Validation 2: Mobile Number (10 Digits)
     const cleanMobile = clientForm.mobile.replace(/\D/g, '').slice(-10);
     if (cleanMobile.length !== 10) {
       setClientFormError('Please enter a valid 10-digit mobile number.');
       return;
     }
 
+    // Validation 3: Email Format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(clientForm.email.trim())) {
+      setClientFormError('Please enter a valid email address.');
+      return;
+    }
+
+    // Validation 4: Business Category
+    if (clientForm.businessCategory === 'Other' && !clientForm.otherCategory.trim()) {
+      setClientFormError('Please enter your custom business category.');
+      return;
+    }
+
+    // Validation 5: Address Fields
     if (!clientForm.addressLine1.trim()) {
       setClientFormError('Address Line 1 is required.');
       return;
@@ -240,46 +389,54 @@ export const BgaPortal: React.FC = () => {
       return;
     }
 
+    // Validation 6: Expected Budget (valid non-negative number)
+    if (clientForm.expectedBudget && clientForm.expectedBudget.trim()) {
+      const parsedBudget = parseFloat(clientForm.expectedBudget);
+      if (isNaN(parsedBudget) || parsedBudget < 0) {
+        setClientFormError('Expected budget must be a valid non-negative number.');
+        return;
+      }
+    }
+
     setSubmittingClient(true);
     try {
       const payload = {
         ...clientForm,
+        clientName: clientForm.clientName.trim(),
+        businessName: clientForm.businessName.trim(),
         mobile: cleanMobile,
+        email: clientForm.email.trim().toLowerCase(),
         location: clientForm.city.trim(),
       };
 
-      const res = await apiRequest('/api/bga/clients', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      if (clientViewMode === 'edit' && editingClient) {
+        // Edit Mode: PUT /api/bga/clients/:id
+        const res = await apiRequest(`/api/bga/clients/${editingClient.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
 
-      setClientFormSuccess(
-        res.message || `Client '${clientForm.clientName}' registered successfully and assigned to your portfolio.`
-      );
-      setClientForm({
-        clientName: '',
-        businessName: '',
-        mobile: '',
-        email: '',
-        businessCategory: 'IT & Software',
-        otherCategory: '',
-        addressLine1: '',
-        addressLine2: '',
-        city: '',
-        state: '',
-        pinCode: '',
-        country: 'India',
-        requiredService: 'DIGITAL_MARKETING',
-        expectedBudget: '',
-        clientRequirements: '',
-        discussionNotes: '',
-        followUpDate: '',
-      });
-      await loadData();
+        setClientFormSuccess(
+          res.message || `Client '${payload.clientName}' updated successfully.`
+        );
+      } else {
+        // Register Mode: POST /api/bga/clients
+        const res = await apiRequest('/api/bga/clients', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+
+        setClientFormSuccess(
+          res.message || `Client '${payload.clientName}' registered successfully and assigned to your portfolio.`
+        );
+      }
+
+      resetClientForm();
+      await loadTabData('clients');
+      await loadStats(true);
       setClientViewMode('list');
     } catch (err: any) {
-      // Keep entered data in form so user does not lose inputs
-      setClientFormError(err.message || 'Failed to register client');
+      setClientFormError(err.message || 'Operation failed. Please verify your details.');
     } finally {
       setSubmittingClient(false);
     }
@@ -599,8 +756,8 @@ export const BgaPortal: React.FC = () => {
           {/* TAB 4: MY CLIENTS (Includes integrated client registration, directory, and full details) */}
           {(activeTab === 'clients' || activeTab === 'new-client') && (
             <div className="space-y-4">
-              {/* MODE 1: REGISTER NEW CLIENT (Directly inside My Clients module) */}
-              {clientViewMode === 'add' ? (
+              {/* MODE 1: REGISTER NEW CLIENT OR EDIT EXISTING CLIENT */}
+              {(clientViewMode === 'add' || clientViewMode === 'edit') ? (
                 <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
                   {/* Back to Client List */}
                   <div className="mb-6 flex items-center justify-between">
@@ -609,37 +766,68 @@ export const BgaPortal: React.FC = () => {
                       onClick={() => {
                         setClientViewMode('list');
                         setClientFormError(null);
+                        setEditingClient(null);
                       }}
-                      className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors"
+                      className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
                     >
                       <ArrowLeft className="w-4 h-4" />
                       Back to My Clients
                     </button>
-                    <span className="text-xs font-semibold text-slate-400">Step: Client Onboarding</span>
+                    <span className="text-xs font-semibold text-slate-400">
+                      {clientViewMode === 'edit' ? 'Mode: Client Record Modification' : 'Step: Client Onboarding'}
+                    </span>
                   </div>
 
                   <div className="border-b border-slate-100 pb-4 mb-6">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-teal-50 text-[#119DA4] border border-[#119DA4]/20 mb-2">
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#119DA4]" />
-                      Exclusive Ownership Guarantee
-                    </div>
-                    <h2 className="text-xl font-bold text-slate-900">Register a New Client</h2>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Once registered, this client is strictly assigned to your associate account. Our system automatically checks normalized phone and email to prevent duplicate claims across all associates.
-                    </p>
+                    {clientViewMode === 'edit' ? (
+                      <>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 mb-2">
+                          <Edit3 className="w-3.5 h-3.5 text-amber-600" />
+                          Edit Client Record • ID: {editingClient?.id}
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-900">
+                          Edit Client — {editingClient?.clientName}
+                        </h2>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Modify business details, address, expected budget, and client requirements. Client ownership is strictly locked to your portfolio.
+                        </p>
+                        <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-slate-600">
+                            Associate Owner: <strong className="text-slate-900">{user?.name} (You)</strong>
+                          </span>
+                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            Protected Client Lock
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-teal-50 text-[#119DA4] border border-[#119DA4]/20 mb-2">
+                          <ShieldCheck className="w-3.5 h-3.5 text-[#119DA4]" />
+                          Exclusive Ownership Guarantee
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-900">Register a New Client</h2>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Once registered, this client is strictly assigned to your associate account. Our system automatically checks normalized phone and email to prevent duplicate claims across all associates.
+                        </p>
+                      </>
+                    )}
                   </div>
 
                   {clientFormError && (
                     <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2.5">
                       <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                       <div>
-                        <strong className="block font-semibold">Registration Blocked:</strong>
+                        <strong className="block font-semibold">
+                          {clientViewMode === 'edit' ? 'Update Blocked:' : 'Registration Blocked:'}
+                        </strong>
                         <span>{clientFormError}</span>
                       </div>
                     </div>
                   )}
 
-                  <form onSubmit={handleRegisterClient} className="space-y-6 text-xs">
+                  <form onSubmit={handleSubmitClientForm} onKeyDown={handleFormKeyDown} className="space-y-6 text-xs">
                     {/* SECTION 1: Client & Company Information */}
                     <div>
                       <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -875,20 +1063,30 @@ export const BgaPortal: React.FC = () => {
                         onClick={() => {
                           setClientViewMode('list');
                           setClientFormError(null);
+                          setEditingClient(null);
                         }}
-                        className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                        className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={submittingClient}
-                        className="px-6 py-2.5 bg-[#3066BE] hover:bg-[#255299] disabled:opacity-50 text-white font-bold rounded-lg text-sm shadow-sm transition-colors flex items-center gap-2"
+                        className={`px-6 py-2.5 text-white font-bold rounded-lg text-sm shadow-sm transition-colors flex items-center gap-2 cursor-pointer ${
+                          clientViewMode === 'edit'
+                            ? 'bg-amber-600 hover:bg-amber-700 disabled:opacity-50'
+                            : 'bg-[#3066BE] hover:bg-[#255299] disabled:opacity-50'
+                        }`}
                       >
                         {submittingClient ? (
                           <>
                             <Clock className="w-4 h-4 animate-spin" />
-                            Registering Client...
+                            {clientViewMode === 'edit' ? 'Saving Changes...' : 'Registering Client...'}
+                          </>
+                        ) : clientViewMode === 'edit' ? (
+                          <>
+                            <Save className="w-4 h-4" />
+                            Save Changes
                           </>
                         ) : (
                           <>
@@ -924,12 +1122,8 @@ export const BgaPortal: React.FC = () => {
                       </p>
                     </div>
                     <button
-                      onClick={() => {
-                        setClientViewMode('add');
-                        setClientFormSuccess(null);
-                        setClientFormError(null);
-                      }}
-                      className="px-4 py-2 bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-all shrink-0"
+                      onClick={handleOpenAddClient}
+                      className="px-4 py-2 bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-all shrink-0 cursor-pointer"
                     >
                       <Plus className="w-4 h-4" />
                       + Add New Client
@@ -1006,11 +1200,8 @@ export const BgaPortal: React.FC = () => {
                         Start building your exclusive client portfolio. Clients registered under your ID remain strictly assigned to you.
                       </p>
                       <button
-                        onClick={() => {
-                          setClientViewMode('add');
-                          setClientFormSuccess(null);
-                        }}
-                        className="px-4 py-2 bg-[#3066BE] text-white rounded-lg text-xs font-bold hover:bg-[#255299] shadow-sm"
+                        onClick={handleOpenAddClient}
+                        className="px-4 py-2 bg-[#3066BE] text-white rounded-lg text-xs font-bold hover:bg-[#255299] shadow-sm cursor-pointer"
                       >
                         + Add Your First Client
                       </button>
@@ -1175,17 +1366,25 @@ export const BgaPortal: React.FC = () => {
                                       <div className="flex items-center justify-end gap-1.5">
                                         <button
                                           onClick={() => setSelectedClientDetails(c)}
-                                          className="px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold flex items-center gap-1 transition-colors"
+                                          className="px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
                                           title="View Client Details"
                                         >
                                           <Eye className="w-3.5 h-3.5" />
                                           Details
                                         </button>
                                         <button
+                                          onClick={() => handleOpenEditClient(c)}
+                                          className="px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                          title="Edit Client Details & Budget"
+                                        >
+                                          <Edit3 className="w-3.5 h-3.5" />
+                                          Edit
+                                        </button>
+                                        <button
                                           onClick={() =>
                                             setNewEnquiryModal({ clientId: c.id, clientName: c.clientName })
                                           }
-                                          className="px-2.5 py-1.5 rounded-lg bg-teal-50 text-[#119DA4] hover:bg-[#80DED9]/20 text-xs font-bold flex items-center gap-1 transition-colors"
+                                          className="px-2.5 py-1.5 rounded-lg bg-teal-50 text-[#119DA4] hover:bg-[#80DED9]/20 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
                                           title="Submit New Enquiry"
                                         >
                                           <Plus className="w-3.5 h-3.5" />
@@ -1221,12 +1420,28 @@ export const BgaPortal: React.FC = () => {
                           {selectedClientDetails.businessName} • {selectedClientDetails.businessCategory}
                         </span>
                       </div>
-                      <button
-                        onClick={() => setSelectedClientDetails(null)}
-                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const c = selectedClientDetails;
+                            setSelectedClientDetails(null);
+                            handleOpenEditClient(c);
+                          }}
+                          className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                          title="Edit Client Details & Budget"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          Edit Client
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedClientDetails(null)}
+                          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="p-6 space-y-6 text-xs">
@@ -1493,8 +1708,21 @@ export const BgaPortal: React.FC = () => {
 
                     <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50 rounded-b-2xl">
                       <button
+                        type="button"
+                        onClick={() => {
+                          const c = selectedClientDetails;
+                          setSelectedClientDetails(null);
+                          handleOpenEditClient(c);
+                        }}
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                        Edit Client & Budget
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setSelectedClientDetails(null)}
-                        className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-bold transition-colors"
+                        className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                       >
                         Close Details
                       </button>

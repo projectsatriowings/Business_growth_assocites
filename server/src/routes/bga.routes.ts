@@ -994,12 +994,85 @@ router.post('/clients', async (req: AuthRequest, res: Response): Promise<void> =
   }
 });
 
-// Update client discussions/followups
+// Fetch single client details with ownership validation
+router.get('/clients/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const client = await prisma.client.findFirst({
+      where: { id, bgaId: req.user!.id },
+      include: {
+        enquiries: {
+          select: {
+            id: true,
+            serviceCategory: true,
+            expectedBudget: true,
+            status: true,
+            requirements: true,
+            discussionNotes: true,
+            followUpDate: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        quotations: {
+          select: {
+            id: true,
+            quotationNumber: true,
+            version: true,
+            totalAmount: true,
+            status: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        workOrders: {
+          select: {
+            id: true,
+            workOrderNumber: true,
+            status: true,
+            totalValue: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: { select: { workOrders: true, enquiries: true, quotations: true } },
+      },
+    });
+
+    if (!client) {
+      res.status(404).json({ error: 'Client not found or not assigned to your account' });
+      return;
+    }
+
+    const addr = parseClientLocation(client.location);
+    res.json({
+      client: {
+        ...client,
+        address: addr,
+        addressLine1: addr.addressLine1,
+        addressLine2: addr.addressLine2,
+        city: addr.city,
+        state: addr.state,
+        pinCode: addr.pinCode,
+        country: addr.country,
+        fullAddress: addr.fullAddress,
+        displayLocation: addr.displayLocation,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch client details' });
+  }
+});
+
+// Update client information, address, and discussion/enquiry fields
 router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const {
+      clientName,
       businessName,
+      mobile,
+      email,
       location,
       addressLine1,
       addressLine2,
@@ -1009,73 +1082,318 @@ router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
       country,
       businessCategory,
       otherCategory,
+      requiredService,
+      expectedBudget,
+      clientRequirements,
+      discussionNotes,
+      followUpDate,
     } = req.body;
 
+    // Strict Ownership Enforcement: Must belong to authenticated BGA
     const client = await prisma.client.findFirst({
       where: { id, bgaId: req.user!.id },
+      include: {
+        enquiries: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
     });
 
     if (!client) {
-      res.status(404).json({ error: 'Client not found or not assigned to you' });
+      res.status(404).json({ error: 'Client not found or not assigned to your account' });
       return;
     }
 
-    let resolvedCategory = businessCategory?.trim() || client.businessCategory;
-    if (resolvedCategory === 'Other') {
-      if (otherCategory && otherCategory.trim()) {
+    // Validate clientName if passed
+    if (clientName !== undefined) {
+      if (!clientName || !clientName.trim()) {
+        res.status(400).json({ error: 'Client contact name cannot be empty' });
+        return;
+      }
+    }
+
+    // Validate businessName if passed
+    if (businessName !== undefined) {
+      if (!businessName || !businessName.trim()) {
+        res.status(400).json({ error: 'Business / Company name cannot be empty' });
+        return;
+      }
+    }
+
+    // Validate Mobile & Global Duplicate Check if passed
+    let normalizedMobile = client.mobile;
+    if (mobile !== undefined && mobile !== null && mobile !== '') {
+      const cleanMob = mobile.replace(/\D/g, '').slice(-10);
+      if (cleanMob.length !== 10) {
+        res.status(400).json({ error: 'Valid 10-digit mobile number is required' });
+        return;
+      }
+      normalizedMobile = cleanMob;
+
+      if (normalizedMobile !== client.mobile) {
+        const existingMob = await prisma.client.findFirst({
+          where: {
+            mobile: normalizedMobile,
+            id: { not: client.id },
+          },
+          select: { id: true },
+        });
+        if (existingMob) {
+          res.status(409).json({
+            error: 'Registration Conflict: A client with this mobile number or email address is already registered in the system. Duplicate client registrations are not permitted under company ownership policy.',
+          });
+          return;
+        }
+      }
+    }
+
+    // Validate Email & Global Duplicate Check if passed
+    let normalizedEmail = client.email;
+    if (email !== undefined && email !== null && email !== '') {
+      const cleanEmail = email.trim().toLowerCase();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cleanEmail)) {
+        res.status(400).json({ error: 'Please enter a valid email address' });
+        return;
+      }
+      normalizedEmail = cleanEmail;
+
+      if (normalizedEmail !== client.email) {
+        const existingEmail = await prisma.client.findFirst({
+          where: {
+            email: normalizedEmail,
+            id: { not: client.id },
+          },
+          select: { id: true },
+        });
+        if (existingEmail) {
+          res.status(409).json({
+            error: 'Registration Conflict: A client with this mobile number or email address is already registered in the system. Duplicate client registrations are not permitted under company ownership policy.',
+          });
+          return;
+        }
+      }
+    }
+
+    // Resolve Business Category
+    let resolvedCategory = client.businessCategory;
+    if (businessCategory !== undefined) {
+      resolvedCategory = businessCategory.trim();
+      if (!resolvedCategory || resolvedCategory === 'Other') {
+        if (!otherCategory || !otherCategory.trim()) {
+          res.status(400).json({ error: 'Please enter your custom business category' });
+          return;
+        }
         resolvedCategory = otherCategory.trim();
       }
     }
 
+    // Resolve Address
+    const existingAddr = parseClientLocation(client.location);
     let locationToSave = client.location;
-    if (addressLine1 || city || state || pinCode) {
-      const existingAddr = parseClientLocation(client.location);
+    if (
+      addressLine1 !== undefined ||
+      addressLine2 !== undefined ||
+      city !== undefined ||
+      state !== undefined ||
+      pinCode !== undefined ||
+      country !== undefined
+    ) {
+      const newLine1 = (addressLine1 !== undefined ? addressLine1 : existingAddr.addressLine1).trim();
+      const newLine2 = (addressLine2 !== undefined ? addressLine2 : existingAddr.addressLine2).trim();
+      const newCity = (city !== undefined ? city : existingAddr.city).trim();
+      const newState = (state !== undefined ? state : existingAddr.state).trim();
+      const newPin = (pinCode !== undefined ? pinCode : existingAddr.pinCode).trim();
+      const newCountry = (country !== undefined ? country : (existingAddr.country || 'India')).trim();
+
+      if (!newLine1) {
+        res.status(400).json({ error: 'Business Address Line 1 cannot be empty' });
+        return;
+      }
+      if (!newCity) {
+        res.status(400).json({ error: 'City cannot be empty' });
+        return;
+      }
+      if (!newState) {
+        res.status(400).json({ error: 'State cannot be empty' });
+        return;
+      }
+      if (!newPin) {
+        res.status(400).json({ error: 'PIN / Postal Code cannot be empty' });
+        return;
+      }
+
       const structuredAddress = {
-        addressLine1: (addressLine1 ?? existingAddr.addressLine1 ?? '').trim(),
-        addressLine2: (addressLine2 ?? existingAddr.addressLine2 ?? '').trim(),
-        city: (city ?? existingAddr.city ?? '').trim(),
-        state: (state ?? existingAddr.state ?? '').trim(),
-        pinCode: (pinCode ?? existingAddr.pinCode ?? '').trim(),
-        country: (country ?? existingAddr.country ?? 'India').trim(),
+        addressLine1: newLine1,
+        addressLine2: newLine2,
+        city: newCity,
+        state: newState,
+        pinCode: newPin,
+        country: newCountry,
         fullAddress: [
-          (addressLine1 ?? existingAddr.addressLine1 ?? '').trim(),
-          (addressLine2 ?? existingAddr.addressLine2 ?? '').trim(),
-          (city ?? existingAddr.city ?? '').trim(),
-          (state ?? existingAddr.state ?? '').trim(),
-          (pinCode ?? existingAddr.pinCode ?? '').trim() ? `PIN: ${(pinCode ?? existingAddr.pinCode ?? '').trim()}` : '',
-          (country ?? existingAddr.country ?? 'India').trim(),
+          newLine1,
+          newLine2,
+          newCity,
+          newState,
+          newPin ? `PIN: ${newPin}` : '',
+          newCountry,
         ].filter(Boolean).join(', '),
       };
       locationToSave = JSON.stringify(structuredAddress);
-    } else if (location) {
+    } else if (location !== undefined && location.trim()) {
       locationToSave = location.trim();
     }
 
-    const updated = await prisma.client.update({
+    // Validate expectedBudget if passed
+    let parsedBudget: number | undefined = undefined;
+    if (expectedBudget !== undefined && expectedBudget !== null && expectedBudget !== '') {
+      parsedBudget = parseFloat(expectedBudget);
+      if (isNaN(parsedBudget) || parsedBudget < 0) {
+        res.status(400).json({ error: 'Expected budget must be a valid non-negative amount' });
+        return;
+      }
+    } else if (expectedBudget === '') {
+      parsedBudget = 0;
+    }
+
+    // Update Client in DB (Strictly preserve bgaId)
+    const updatedClient = await prisma.client.update({
       where: { id },
       data: {
+        ...(clientName ? { clientName: clientName.trim() } : {}),
         ...(businessName ? { businessName: businessName.trim() } : {}),
+        mobile: normalizedMobile,
+        email: normalizedEmail,
         businessCategory: resolvedCategory,
         location: locationToSave,
       },
     });
 
-    const parsedAddr = parseClientLocation(updated.location);
-    res.json({
-      client: {
-        ...updated,
-        address: parsedAddr,
-        addressLine1: parsedAddr.addressLine1,
-        addressLine2: parsedAddr.addressLine2,
-        city: parsedAddr.city,
-        state: parsedAddr.state,
-        pinCode: parsedAddr.pinCode,
-        country: parsedAddr.country,
-        fullAddress: parsedAddr.fullAddress,
-        displayLocation: parsedAddr.displayLocation,
+    // Update or Create Enquiry record
+    const latestEnquiry = client.enquiries && client.enquiries.length > 0 ? client.enquiries[0] : null;
+    let updatedEnquiry = null;
+
+    if (
+      parsedBudget !== undefined ||
+      requiredService !== undefined ||
+      clientRequirements !== undefined ||
+      discussionNotes !== undefined ||
+      followUpDate !== undefined
+    ) {
+      if (latestEnquiry) {
+        updatedEnquiry = await prisma.enquiry.update({
+          where: { id: latestEnquiry.id },
+          data: {
+            ...(parsedBudget !== undefined ? { expectedBudget: parsedBudget } : {}),
+            ...(requiredService ? { serviceCategory: requiredService as ServiceCategoryType } : {}),
+            ...(clientRequirements !== undefined ? { requirements: clientRequirements.trim() } : {}),
+            ...(discussionNotes !== undefined ? { discussionNotes: discussionNotes ? discussionNotes.trim() : null } : {}),
+            ...(followUpDate !== undefined ? { followUpDate: followUpDate ? new Date(followUpDate) : null } : {}),
+          },
+        });
+      } else if (
+        (requiredService && clientRequirements?.trim()) ||
+        parsedBudget !== undefined
+      ) {
+        const enquiryId = generateId('ENQ');
+        updatedEnquiry = await prisma.enquiry.create({
+          data: {
+            id: enquiryId,
+            clientId: updatedClient.id,
+            bgaId: req.user!.id,
+            serviceCategory: (requiredService as ServiceCategoryType) || 'WEBSITE_DEVELOPMENT',
+            expectedBudget: parsedBudget || 0,
+            requirements: (clientRequirements && clientRequirements.trim()) || 'Initial client scope details.',
+            discussionNotes: discussionNotes ? discussionNotes.trim() : null,
+            followUpDate: followUpDate ? new Date(followUpDate) : null,
+            status: EnquiryStatus.SUBMITTED,
+          },
+        });
+      }
+    }
+
+    // Audit Logging
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'CLIENT_UPDATED',
+      'CLIENT',
+      updatedClient.id,
+      {
+        clientName: updatedClient.clientName,
+        businessName: updatedClient.businessName,
+        expectedBudget: parsedBudget,
+      },
+      req.ip
+    );
+
+    appCache.invalidatePrefix(`bga:${req.user!.id}:`);
+    appCache.invalidatePrefix('admin:');
+
+    // Fetch refreshed complete client object with all relations
+    const refreshedClient = await prisma.client.findUnique({
+      where: { id: updatedClient.id },
+      include: {
+        enquiries: {
+          select: {
+            id: true,
+            serviceCategory: true,
+            expectedBudget: true,
+            status: true,
+            requirements: true,
+            discussionNotes: true,
+            followUpDate: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        quotations: {
+          select: {
+            id: true,
+            quotationNumber: true,
+            version: true,
+            totalAmount: true,
+            status: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        workOrders: {
+          select: {
+            id: true,
+            workOrderNumber: true,
+            status: true,
+            totalValue: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: { select: { workOrders: true, enquiries: true, quotations: true } },
       },
     });
-  } catch (error) {
+
+    const parsedAddr = parseClientLocation(refreshedClient?.location || updatedClient.location);
+    const enriched = {
+      ...(refreshedClient || updatedClient),
+      address: parsedAddr,
+      addressLine1: parsedAddr.addressLine1,
+      addressLine2: parsedAddr.addressLine2,
+      city: parsedAddr.city,
+      state: parsedAddr.state,
+      pinCode: parsedAddr.pinCode,
+      country: parsedAddr.country,
+      fullAddress: parsedAddr.fullAddress,
+      displayLocation: parsedAddr.displayLocation,
+    };
+
+    res.json({
+      message: `Client '${updatedClient.clientName}' updated successfully.`,
+      client: enriched,
+      enquiry: updatedEnquiry,
+    });
+  } catch (error: any) {
+    console.error('Client update error:', error);
     res.status(500).json({ error: 'Failed to update client' });
   }
 });
