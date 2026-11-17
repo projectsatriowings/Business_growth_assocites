@@ -70,10 +70,20 @@ export const Navbar: React.FC = () => {
                 {link.label}
               </a>
             ))}
+
+            {/* Portal Login positioned right near Contact */}
+            {!user && (
+              <Link
+                to="/login"
+                className="ml-2 px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-[#3066BE] bg-slate-50 hover:bg-white rounded-lg transition-all duration-150 border border-slate-300 hover:border-[#3066BE]/40 shadow-sm whitespace-nowrap"
+              >
+                Portal Login
+              </Link>
+            )}
           </div>
 
           {/* Desktop Action Buttons (Guaranteed shrink-0 and whitespace-nowrap) */}
-          <div className="hidden sm:flex items-center space-x-3 shrink-0 ml-auto xl:ml-0">
+          <div className="hidden sm:flex items-center shrink-0 ml-auto xl:ml-0">
             {user ? (
               <div className="flex items-center space-x-3">
                 <button
@@ -96,21 +106,21 @@ export const Navbar: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <>
+              <div className="flex items-center space-x-3">
                 <Link
                   to="/login"
-                  className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:text-[#3066BE] hover:bg-slate-50 rounded-xl transition-all duration-150 border border-slate-200 shadow-sm whitespace-nowrap"
+                  className="xl:hidden px-4 py-2.5 text-xs font-bold text-slate-700 hover:text-[#3066BE] hover:bg-slate-50 rounded-xl transition-all duration-150 border border-slate-200 shadow-sm whitespace-nowrap"
                 >
                   Portal Login
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4.5 py-2.5 text-xs font-bold rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white shadow-md shadow-[#3066BE]/25 hover:shadow-lg hover:shadow-[#3066BE]/30 transition-all duration-200 flex items-center space-x-1.5 transform hover:-translate-y-0.5 whitespace-nowrap"
+                  className="px-6 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-[#1E40AF] via-[#2563EB] to-[#0D9488] hover:from-[#1E3A8A] hover:to-[#0F766E] text-white shadow-md shadow-blue-900/25 hover:shadow-lg hover:shadow-blue-900/35 transition-all duration-200 flex items-center space-x-2 whitespace-nowrap transform hover:-translate-y-0.5"
                 >
-                  <span>Become a Growth Associate</span>
-                  <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+                  <span className="text-white drop-shadow-sm font-bold tracking-wide">Become a Growth Associate</span>
+                  <ArrowRight className="w-4 h-4 shrink-0 text-white" />
                 </Link>
-              </>
+              </div>
             )}
           </div>
 
