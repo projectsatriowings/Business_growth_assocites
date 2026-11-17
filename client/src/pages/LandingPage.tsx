@@ -49,8 +49,6 @@ export const LandingPage: React.FC = () => {
   const location = useLocation();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [portfolioTab, setPortfolioTab] = useState<'all' | 'web' | 'specialized' | 'campaign'>('all');
-  const [portfolioViewMode, setPortfolioViewMode] = useState<'spotlight' | 'grid'>('spotlight');
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('universal-eng');
   const [lightboxProject, setLightboxProject] = useState<any | null>(null);
 
   // FAQ Chat State
@@ -483,34 +481,6 @@ export const LandingPage: React.FC = () => {
     if (portfolioTab === 'all') return true;
     return p.type === portfolioTab;
   });
-
-  const activeProject =
-    filteredProjects.find((p) => p.id === selectedProjectId) ||
-    filteredProjects[0] ||
-    portfolioProjects[0];
-
-  const currentProjectIndex = Math.max(
-    0,
-    filteredProjects.findIndex((p) => p.id === activeProject.id)
-  );
-
-  const handleNextProject = () => {
-    if (filteredProjects.length === 0) return;
-    const nextIdx = (currentProjectIndex + 1) % filteredProjects.length;
-    setSelectedProjectId(filteredProjects[nextIdx].id);
-  };
-
-  const handlePrevProject = () => {
-    if (filteredProjects.length === 0) return;
-    const prevIdx = (currentProjectIndex - 1 + filteredProjects.length) % filteredProjects.length;
-    setSelectedProjectId(filteredProjects[prevIdx].id);
-  };
-
-  useEffect(() => {
-    if (filteredProjects.length > 0 && !filteredProjects.some((p) => p.id === selectedProjectId)) {
-      setSelectedProjectId(filteredProjects[0].id);
-    }
-  }, [portfolioTab]);
 
   // Growth Associate Benefits
   const associateBenefits = [
