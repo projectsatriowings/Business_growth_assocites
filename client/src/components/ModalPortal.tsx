@@ -7,29 +7,48 @@ import { motion, AnimatePresence } from 'framer-motion';
 // ============================================================================
 
 let scrollLockCount = 0;
-let originalBodyOverflow = '';
-let originalHtmlOverflow = '';
-let originalPaddingRight = '';
-let savedScrollY = 0;
+let cleanupScrollListeners: (() => void) | null = null;
 
 export function lockScroll(): void {
   if (typeof window === 'undefined') return;
 
   if (scrollLockCount === 0) {
-    savedScrollY = window.scrollY || window.pageYOffset || 0;
-    originalBodyOverflow = document.body.style.overflow;
-    originalHtmlOverflow = document.documentElement.style.overflow;
-    originalPaddingRight = document.body.style.paddingRight;
+    // Intercept scroll events at window level without mutating documentElement/body overflow,
+    // which prevents breaking position:sticky on the sidebar and header.
+    const preventBackgroundScroll = (e: WheelEvent | TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      // Allow scrolling if event originated inside a scrollable modal container
+      if (target && target.closest('[data-modal-scrollable="true"]')) {
+        return;
+      }
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+    };
 
-    // Prevent layout shift by compensating for scrollbar width
-    const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const preventKeyScroll = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      if (target && target.closest('[data-modal-scrollable="true"]')) {
+        return;
+      }
+      const scrollKeys = ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '];
+      if (scrollKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+    };
 
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
+    window.addEventListener('wheel', preventBackgroundScroll, { passive: false });
+    window.addEventListener('touchmove', preventBackgroundScroll, { passive: false });
+    window.addEventListener('keydown', preventKeyScroll, { passive: false });
 
-    if (scrollBarWidth > 0) {
-      document.body.style.paddingRight = `${scrollBarWidth}px`;
-    }
+    cleanupScrollListeners = () => {
+      window.removeEventListener('wheel', preventBackgroundScroll);
+      window.removeEventListener('touchmove', preventBackgroundScroll);
+      window.removeEventListener('keydown', preventKeyScroll);
+    };
   }
 
   scrollLockCount++;
@@ -40,15 +59,9 @@ export function unlockScroll(): void {
 
   scrollLockCount = Math.max(0, scrollLockCount - 1);
 
-  if (scrollLockCount === 0) {
-    document.body.style.overflow = originalBodyOverflow;
-    document.documentElement.style.overflow = originalHtmlOverflow;
-    document.body.style.paddingRight = originalPaddingRight;
-
-    // Restore scroll position without jumping to top
-    if (savedScrollY > 0) {
-      window.scrollTo(0, savedScrollY);
-    }
+  if (scrollLockCount === 0 && cleanupScrollListeners) {
+    cleanupScrollListeners();
+    cleanupScrollListeners = null;
   }
 }
 
@@ -143,7 +156,9 @@ export const ModalPortal: React.FC<ModalPortalProps> = ({
           {/* Centered Modal Content Container (Stays above backdrop, scrollable when long) */}
           <div className="relative z-10 w-full flex items-center justify-center pointer-events-none my-auto">
             <div
+              data-modal-scrollable="true"
               className="pointer-events-auto w-full flex justify-center max-h-[92vh] overflow-y-auto"
+              style={{ overscrollBehavior: 'contain' }}
               onClick={(e) => e.stopPropagation()}
             >
               {children}

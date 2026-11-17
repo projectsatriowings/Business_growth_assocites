@@ -84,7 +84,7 @@ export async function apiRequest(endpoint: string, options: ApiRequestOptions = 
 
   // Regular non-cached or non-GET execution
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {}),
   };
 
@@ -104,4 +104,32 @@ export async function apiRequest(endpoint: string, options: ApiRequestOptions = 
   }
 
   return data;
+}
+
+export interface UploadedFileResponse {
+  url: string;
+  filename: string;
+  originalName: string;
+  mimetype: string;
+  size: number;
+  fileType: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'ARCHIVE' | 'OTHER';
+}
+
+/**
+ * Upload single media or document file to server
+ */
+export async function uploadFile(file: File): Promise<UploadedFileResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await apiRequest('/api/upload', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!res.file) {
+    throw new Error('Upload succeeded but no file info was returned');
+  }
+
+  return res.file;
 }

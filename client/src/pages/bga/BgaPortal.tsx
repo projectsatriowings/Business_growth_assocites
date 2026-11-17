@@ -392,16 +392,6 @@ export const BgaPortal: React.FC = () => {
     }
   };
 
-  // Copy Client Project Portal Direct Access Link
-  const handleCopyClientPortalLink = (token: string, clientName?: string) => {
-    const url = `${window.location.origin}/client/project/${token}`;
-    navigator.clipboard.writeText(url);
-    toast.success(
-      `Direct Client Portal link for ${clientName || 'client'} copied to clipboard! Send this link to the client to let them review deliverables and leave feedback.`,
-      'Client Link Copied'
-    );
-  };
-
   // Load BGA Dashboard Stats independently
   const loadStats = async (bypass = false) => {
     try {
@@ -4215,6 +4205,11 @@ export const BgaPortal: React.FC = () => {
                             }`}>
                               Advance: {wo.advanceVerified ? 'VERIFIED' : 'AWAITING VERIFICATION'}
                             </span>
+                            {prj && (
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 uppercase">
+                                Tech Status: {prj.status}
+                              </span>
+                            )}
                             <span className="text-xs font-bold text-slate-800 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200">
                               Contract: ₹{wo.totalValue?.toLocaleString()}
                             </span>
@@ -4223,58 +4218,6 @@ export const BgaPortal: React.FC = () => {
 
                         {prj ? (
                           <div className="space-y-4">
-                            {/* Execution Progress & Status */}
-                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                              <div className="flex justify-between items-center text-xs mb-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-slate-600 font-semibold">Technical Execution Status:</span>
-                                  <span className="font-bold text-blue-700 uppercase px-2 py-0.5 rounded bg-blue-50 border border-blue-200">
-                                    {prj.status}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500">Milestone-Derived Progress:</span>
-                                  <span className="font-mono font-bold text-slate-900 text-sm">
-                                    {prj.progressPercentage || 0}%
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
-                                <div
-                                  className="bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500 h-2.5 rounded-full transition-all duration-300"
-                                  style={{ width: `${Math.min(100, Math.max(0, prj.progressPercentage || 0))}%` }}
-                                />
-                              </div>
-
-                              {/* Milestones Road Map */}
-                              <div className="mt-3">
-                                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-2">
-                                  Milestone Delivery Roadmap
-                                </span>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                                  {prj.milestones?.map((m: any) => (
-                                    <div key={m.id} className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs">
-                                      <div className="flex justify-between items-start gap-1">
-                                        <span className="font-semibold text-slate-800 truncate">{m.title}</span>
-                                        <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase shrink-0 ${
-                                          m.status === 'COMPLETED'
-                                            ? 'bg-emerald-100 text-emerald-800'
-                                            : m.status === 'IN_PROGRESS'
-                                            ? 'bg-amber-100 text-amber-800'
-                                            : 'bg-slate-100 text-slate-600'
-                                        }`}>
-                                          {m.status}
-                                        </span>
-                                      </div>
-                                      {m.description && (
-                                        <p className="text-[10px] text-slate-500 mt-1 line-clamp-1">{m.description}</p>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-
                             {/* Technical Deliverables Section */}
                             <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
                               <div className="flex justify-between items-center border-b border-slate-100 pb-2">
@@ -4291,11 +4234,10 @@ export const BgaPortal: React.FC = () => {
                               <div className="space-y-2.5">
                                 {(!prj.deliverables || prj.deliverables.length === 0) ? (
                                   <div className="text-xs text-slate-400 py-3 text-center bg-slate-50 rounded-lg">
-                                    No deliverables uploaded by technical team yet. Deliverables will appear here as engineering milestones progress.
+                                    No deliverables uploaded by technical team yet. Deliverables will appear here as engineering progresses.
                                   </div>
                                 ) : (
                                   prj.deliverables.map((d: any) => {
-                                    const linkedMilestone = d.milestone || prj.milestones?.find((m: any) => m.id === d.milestoneId);
                                     const isApproved = d.status === 'SHARED_WITH_CLIENT' || d.isClientVisible;
                                     const isRevision = d.status === 'REVISION_REQUIRED';
 
@@ -4310,11 +4252,6 @@ export const BgaPortal: React.FC = () => {
                                             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">
                                               v{d.version}
                                             </span>
-                                            {linkedMilestone && (
-                                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
-                                                Milestone: {linkedMilestone.title}
-                                              </span>
-                                            )}
                                           </div>
                                           {d.description && <p className="text-slate-600 text-[11px]">{d.description}</p>}
                                           <div className="flex items-center gap-3 text-slate-500 text-[11px]">
@@ -4427,11 +4364,13 @@ export const BgaPortal: React.FC = () => {
                                               </span>
                                             )}
 
-                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                              f.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
-                                            }`}>
-                                              {f.status}
-                                            </span>
+                                            {isBga && (
+                                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                                f.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                              }`}>
+                                                {f.status}
+                                              </span>
+                                            )}
                                           </div>
 
                                           <span className="text-[10px] text-slate-400">
@@ -4606,22 +4545,6 @@ export const BgaPortal: React.FC = () => {
                       </div>
 
                       <form onSubmit={handlePostBgaFeedback} className="space-y-4 text-xs">
-                        <div>
-                          <label className="block text-slate-700 font-semibold mb-1">Related Milestone (Optional)</label>
-                          <select
-                            value={bgaFeedbackMilestoneId}
-                            onChange={(e) => setBgaFeedbackMilestoneId(e.target.value)}
-                            className="w-full p-2 border border-slate-300 rounded-lg bg-white text-slate-800"
-                          >
-                            <option value="">-- General Project Feedback --</option>
-                            {bgaFeedbackModal.project.milestones?.map((m: any) => (
-                              <option key={m.id} value={m.id}>
-                                {m.title}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
                         <div>
                           <label className="block text-slate-700 font-semibold mb-1">Client Feedback / Correction Details *</label>
                           <textarea

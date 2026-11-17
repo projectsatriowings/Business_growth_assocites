@@ -1180,6 +1180,60 @@ router.post('/clients/:id/activities', async (req: AuthRequest, res: Response): 
   }
 });
 
+// Upload and attach client media (Documents, Screenshots/Images, Audio, Video, Archives)
+router.post('/clients/:id/media', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { title, fileUrl, fileType, fileSize, notes, category } = req.body;
+
+    if (!title || !title.trim() || !fileUrl) {
+      res.status(400).json({ error: 'Title and file URL are required' });
+      return;
+    }
+
+    const client = await prisma.client.findFirst({
+      where: { id, bgaId: req.user!.id },
+    });
+
+    if (!client) {
+      res.status(404).json({ error: 'Client not found or not owned by you' });
+      return;
+    }
+
+    const mediaMetadata = JSON.stringify({
+      title: title.trim(),
+      fileUrl,
+      fileType: fileType || 'DOCUMENT',
+      fileSize: fileSize || null,
+      category: category || 'CLIENT_ASSET',
+      uploadedBy: req.user!.name,
+      uploadedAt: new Date().toISOString(),
+    });
+
+    const activity = await prisma.contactActivity.create({
+      data: {
+        clientId: id,
+        bgaId: req.user!.id,
+        contactMethod: 'CLIENT_MEDIA',
+        discussionSummary: `Client Media Upload: ${title.trim()} (${fileType || 'DOCUMENT'})`,
+        followUpNotes: notes ? `${notes.trim()}\n\n[ASSET_METADATA]:${mediaMetadata}` : `[ASSET_METADATA]:${mediaMetadata}`,
+        outcome: 'DOCUMENT_RECEIVED',
+        createdBy: req.user!.name,
+      },
+    });
+
+    await logAudit(req.user!.id, req.user!.email, req.user!.role, 'UPLOAD_CLIENT_MEDIA', 'CLIENT', id, {
+      title,
+      fileUrl,
+      fileType,
+    });
+
+    res.status(201).json({ activity, message: 'Client media uploaded and recorded successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to record client media' });
+  }
+});
+
 // Get Contact Activities for a Client
 router.get('/clients/:id/activities', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -1581,7 +1635,7 @@ router.get('/enquiries', async (req: AuthRequest, res: Response): Promise<void> 
 
 router.post('/enquiries', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { clientId, serviceCategory, subCategory, expectedBudget, requirements, discussionNotes, followUpDate } =
+    const { clientId, serviceCategory, subCategory, expectedBudget, requirements, discussionNotes, followUpDate, attachmentUrl } =
       req.body;
 
     // Verify client belongs to this BGA
@@ -1606,6 +1660,7 @@ router.post('/enquiries', async (req: AuthRequest, res: Response): Promise<void>
         requirements: requirements.trim(),
         discussionNotes,
         followUpDate: followUpDate ? new Date(followUpDate) : null,
+        attachmentUrl: attachmentUrl || null,
         status: EnquiryStatus.SUBMITTED,
       },
     });
