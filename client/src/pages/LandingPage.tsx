@@ -49,6 +49,8 @@ export const LandingPage: React.FC = () => {
   const location = useLocation();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [portfolioTab, setPortfolioTab] = useState<'all' | 'web' | 'specialized' | 'campaign'>('all');
+  const [portfolioViewMode, setPortfolioViewMode] = useState<'spotlight' | 'grid'>('spotlight');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('universal-eng');
   const [lightboxProject, setLightboxProject] = useState<any | null>(null);
 
   // FAQ Chat State
@@ -481,6 +483,34 @@ export const LandingPage: React.FC = () => {
     if (portfolioTab === 'all') return true;
     return p.type === portfolioTab;
   });
+
+  const activeProject =
+    filteredProjects.find((p) => p.id === selectedProjectId) ||
+    filteredProjects[0] ||
+    portfolioProjects[0];
+
+  const currentProjectIndex = Math.max(
+    0,
+    filteredProjects.findIndex((p) => p.id === activeProject.id)
+  );
+
+  const handleNextProject = () => {
+    if (filteredProjects.length === 0) return;
+    const nextIdx = (currentProjectIndex + 1) % filteredProjects.length;
+    setSelectedProjectId(filteredProjects[nextIdx].id);
+  };
+
+  const handlePrevProject = () => {
+    if (filteredProjects.length === 0) return;
+    const prevIdx = (currentProjectIndex - 1 + filteredProjects.length) % filteredProjects.length;
+    setSelectedProjectId(filteredProjects[prevIdx].id);
+  };
+
+  useEffect(() => {
+    if (filteredProjects.length > 0 && !filteredProjects.some((p) => p.id === selectedProjectId)) {
+      setSelectedProjectId(filteredProjects[0].id);
+    }
+  }, [portfolioTab]);
 
   // Growth Associate Benefits
   const associateBenefits = [
@@ -1219,7 +1249,7 @@ export const LandingPage: React.FC = () => {
                 Live Partner Network • {clientLogos.length} Verified Brands
               </span>
             </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/80 text-xs font-bold text-[#3066BE]">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/80 text-xs font-bold text-[#3066BE] shadow-2xs">
               <Play className="w-3.5 h-3.5 fill-[#3066BE] text-[#3066BE]" />
               <span>Dynamic Stream</span>
             </div>
@@ -1342,34 +1372,6 @@ export const LandingPage: React.FC = () => {
                       </button>
                     );
                   })}
-                </div>
-
-                {/* View Switcher: Spotlight Device Canvas vs Compact Bento Grid */}
-                <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
-                  <button
-                    type="button"
-                    onClick={() => setPortfolioViewMode('spotlight')}
-                    title="MotionSites Interactive Spotlight Device"
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${portfolioViewMode === 'spotlight'
-                      ? 'bg-white text-[#3066BE] shadow-sm font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                  >
-                    <Laptop className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Spotlight</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPortfolioViewMode('grid')}
-                    title="Compact Visual Grid"
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${portfolioViewMode === 'grid'
-                      ? 'bg-white text-[#3066BE] shadow-sm font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                  >
-                    <LayoutGrid className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Compact Grid</span>
-                  </button>
                 </div>
               </div>
             </div>
