@@ -41,6 +41,9 @@ import { AssociateProfileView } from './AssociateProfileView';
 import { apiRequest } from '../../utils/api';
 import { SkeletonCard, SkeletonStatsRow, SkeletonTable, AdminDashboardSkeleton } from '../../components/Skeleton';
 import { validateBankUtr } from '../../utils/utrValidator';
+import { useToast } from '../../context/ToastContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
 
 // Generic Reusable Empty State Component
 const EmptyState: React.FC<{
@@ -127,7 +130,10 @@ export const AdminPortal: React.FC = () => {
   const [auditLogSearch, setAuditLogSearch] = useState('');
   const [auditLogRoleFilter, setAuditLogRoleFilter] = useState('ALL');
 
+  const { toast } = useToast();
+
   // Modals & Action States
+  const [deleteResourceModal, setDeleteResourceModal] = useState<{ id: string; title: string } | null>(null);
   const [transferModal, setTransferModal] = useState<{ client: any } | null>(null);
   const [targetBgaId, setTargetBgaId] = useState('');
   const [transferReason, setTransferReason] = useState('');
@@ -265,9 +271,10 @@ export const AdminPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ action, reason }),
       });
+      toast.success('BGA account status updated successfully.');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to update BGA status');
     }
   };
 
@@ -282,11 +289,12 @@ export const AdminPortal: React.FC = () => {
           notes: enquiryReviewNotes,
         }),
       });
+      toast.success(`Enquiry ${enquiryReviewModal.action.toLowerCase()} recorded successfully.`);
       setEnquiryReviewModal(null);
       setEnquiryReviewNotes('');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to review enquiry');
     }
   };
 
@@ -301,11 +309,12 @@ export const AdminPortal: React.FC = () => {
           notes: quotationReviewNotes,
         }),
       });
+      toast.success(`Quotation ${quotationReviewModal.action.toLowerCase()} action processed.`);
       setQuotationReviewModal(null);
       setQuotationReviewNotes('');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to review quotation');
     }
   };
 
@@ -320,11 +329,12 @@ export const AdminPortal: React.FC = () => {
           notes: handoverReviewNotes,
         }),
       });
+      toast.success(`Technical handover ${handoverReviewModal.action.toLowerCase()} recorded.`);
       setHandoverReviewModal(null);
       setHandoverReviewNotes('');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to process handover review');
     }
   };
 
@@ -335,9 +345,10 @@ export const AdminPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ action }),
       });
+      toast.success(`Commission ${action.toLowerCase()} processed successfully.`);
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to update commission');
     }
   };
 
@@ -346,7 +357,7 @@ export const AdminPortal: React.FC = () => {
     if (!payoutModal) return;
     const validation = validateBankUtr(payoutReferenceInput, 'BANK_TRANSFER');
     if (!validation.isValid) {
-      alert(`Invalid Bank Transaction / UTR:\n\n${validation.error}${validation.hint ? '\n\n' + validation.hint : ''}`);
+      toast.warning(`Invalid Bank Transaction / UTR: ${validation.error}${validation.hint ? ' (' + validation.hint + ')' : ''}`);
       return;
     }
     try {
@@ -354,11 +365,12 @@ export const AdminPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ payoutReference: validation.formattedUtr }),
       });
+      toast.success(`Disbursement of ₹${payoutModal.amount?.toLocaleString()} recorded with UTR: ${validation.formattedUtr}`);
       setPayoutModal(null);
       setPayoutReferenceInput('');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to record payout disbursement');
     }
   };
 
@@ -370,12 +382,13 @@ export const AdminPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ newBgaId: targetBgaId, reason: transferReason }),
       });
+      toast.success('Client ownership transferred successfully.');
       setTransferModal(null);
       setTransferReason('');
       setTargetBgaId('');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to transfer client ownership');
     }
   };
 
@@ -386,9 +399,10 @@ export const AdminPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ settings: [{ key, value }] }),
       });
+      toast.success('System setting updated successfully.');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to save setting');
     }
   };
 
@@ -400,6 +414,7 @@ export const AdminPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify(newResource),
       });
+      toast.success('Resource created and published successfully.');
       setShowResourceForm(false);
       setNewResource({
         title: '',
@@ -413,7 +428,7 @@ export const AdminPortal: React.FC = () => {
       });
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to create resource');
     }
   };
 
@@ -424,20 +439,23 @@ export const AdminPortal: React.FC = () => {
         method: 'PUT',
         body: JSON.stringify({ isPublished: !current }),
       });
+      toast.success(`Resource ${!current ? 'published' : 'unpublished'}.`);
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to toggle resource status');
     }
   };
 
-  // Delete Resource
-  const handleDeleteResource = async (id: string) => {
-    if (!confirm('Are you sure you want to permanently delete this resource?')) return;
+  // Delete Resource Execution
+  const confirmDeleteResource = async () => {
+    if (!deleteResourceModal) return;
     try {
-      await apiRequest(`/api/admin/resources/${id}`, { method: 'DELETE' });
+      await apiRequest(`/api/admin/resources/${deleteResourceModal.id}`, { method: 'DELETE' });
+      toast.success('Resource deleted permanently.');
+      setDeleteResourceModal(null);
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to delete resource');
     }
   };
 
