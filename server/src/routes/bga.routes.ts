@@ -1001,41 +1001,91 @@ router.get('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
     const client = await prisma.client.findFirst({
       where: { id, bgaId: req.user!.id },
       include: {
+        contactActivities: {
+          orderBy: { createdAt: 'desc' },
+        },
         enquiries: {
-          select: {
-            id: true,
-            serviceCategory: true,
-            expectedBudget: true,
-            status: true,
-            requirements: true,
-            discussionNotes: true,
-            followUpDate: true,
-            createdAt: true,
+          include: {
+            quotations: {
+              include: {
+                workOrder: {
+                  include: {
+                    project: {
+                      select: {
+                        id: true,
+                        projectNumber: true,
+                        status: true,
+                        progressPercentage: true,
+                      },
+                    },
+                  },
+                },
+              },
+              orderBy: { createdAt: 'desc' },
+            },
           },
           orderBy: { createdAt: 'desc' },
         },
         quotations: {
-          select: {
-            id: true,
-            quotationNumber: true,
-            version: true,
-            totalAmount: true,
-            status: true,
-            createdAt: true,
+          include: {
+            workOrder: {
+              include: {
+                project: {
+                  select: {
+                    id: true,
+                    projectNumber: true,
+                    status: true,
+                    progressPercentage: true,
+                  },
+                },
+              },
+            },
           },
           orderBy: { createdAt: 'desc' },
         },
         workOrders: {
-          select: {
-            id: true,
-            workOrderNumber: true,
-            status: true,
-            totalValue: true,
-            createdAt: true,
+          include: {
+            payments: {
+              orderBy: { createdAt: 'desc' },
+            },
+            project: {
+              include: {
+                milestones: {
+                  orderBy: { createdAt: 'asc' },
+                },
+                deliverables: {
+                  orderBy: { createdAt: 'desc' },
+                },
+              },
+            },
           },
           orderBy: { createdAt: 'desc' },
         },
-        _count: { select: { workOrders: true, enquiries: true, quotations: true } },
+        commissions: {
+          include: {
+            workOrder: {
+              select: {
+                workOrderNumber: true,
+                totalValue: true,
+              },
+            },
+            payment: {
+              select: {
+                amount: true,
+                transactionReference: true,
+                paymentDate: true,
+              },
+            },
+            project: {
+              select: {
+                projectNumber: true,
+                status: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: { select: { workOrders: true, enquiries: true, quotations: true, contactActivities: true } },
       },
     });
 
@@ -1061,6 +1111,94 @@ router.get('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch client details' });
+  }
+});
+
+// Add Contact / Follow-up Activity under a Client
+router.post('/clients/:id/activities', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { contactMethod, discussionSummary, followUpNotes, nextFollowUpDate, outcome } = req.body;
+
+    if (!discussionSummary || !discussionSummary.trim()) {
+      res.status(400).json({ error: 'Discussion summary is required' });
+      return;
+    }
+
+    // Verify client belongs to logged-in BGA
+    const client = await prisma.client.findFirst({
+      where: { id, bgaId: req.user!.id },
+    });
+
+    if (!client) {
+      res.status(404).json({ error: 'Client not found or not owned by you' });
+      return;
+    }
+
+    const activity = await prisma.contactActivity.create({
+      data: {
+        clientId: id,
+        bgaId: req.user!.id,
+        contactMethod: contactMethod || 'CALL',
+        discussionSummary: discussionSummary.trim(),
+        followUpNotes: followUpNotes ? followUpNotes.trim() : null,
+        nextFollowUpDate: nextFollowUpDate ? new Date(nextFollowUpDate) : null,
+        outcome: outcome || 'CONNECTED',
+        createdBy: req.user!.name,
+      },
+    });
+
+    // If next follow-up date was supplied, also update the latest enquiry's followUpDate for consistency
+    if (nextFollowUpDate) {
+      const latestEnq = await prisma.enquiry.findFirst({
+        where: { clientId: id, bgaId: req.user!.id },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (latestEnq) {
+        await prisma.enquiry.update({
+          where: { id: latestEnq.id },
+          data: {
+            followUpDate: new Date(nextFollowUpDate),
+            ...(discussionSummary ? { discussionNotes: discussionSummary.trim() } : {}),
+          },
+        });
+      }
+    }
+
+    await logAudit(req.user!.id, req.user!.email, req.user!.role, 'CREATE_CONTACT_ACTIVITY', 'CLIENT', id, {
+      activityId: activity.id,
+      contactMethod: activity.contactMethod,
+      outcome: activity.outcome,
+    });
+
+    res.status(201).json({ activity, message: 'Contact activity logged successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to record contact activity' });
+  }
+});
+
+// Get Contact Activities for a Client
+router.get('/clients/:id/activities', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const client = await prisma.client.findFirst({
+      where: { id, bgaId: req.user!.id },
+    });
+
+    if (!client) {
+      res.status(404).json({ error: 'Client not found or not owned by you' });
+      return;
+    }
+
+    const activities = await prisma.contactActivity.findMany({
+      where: { clientId: id, bgaId: req.user!.id },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ activities });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch contact activities' });
   }
 });
 
@@ -2047,7 +2185,209 @@ router.get('/work-orders', async (req: AuthRequest, res: Response): Promise<void
   }
 });
 
-// 8. Commissions & My Earnings
+// 8. Commissions & Complete My Earnings Performance Dashboard
+router.get('/earnings-dashboard', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const bgaId = req.user!.id;
+
+    // 1. Overall Performance Summary (11 core metrics)
+    const [
+      totalClients,
+      activeClients,
+      totalServiceRequests,
+      approvedRequests,
+      quotationsPrepared,
+      quotationsAccepted,
+      workOrdersCount,
+      advanceVerifiedOrders,
+      projectsReleased,
+      projectsInProgress,
+      projectsCompleted,
+      verifiedPayments,
+      commissions,
+    ] = await Promise.all([
+      prisma.client.count({ where: { bgaId } }),
+      prisma.client.count({ where: { bgaId, status: 'ACTIVE' } }),
+      prisma.enquiry.count({ where: { bgaId } }),
+      prisma.enquiry.count({ where: { bgaId, status: 'APPROVED' } }),
+      prisma.quotation.count({
+        where: {
+          bgaId,
+          status: { in: ['PREPARED', 'PENDING_ADMIN_APPROVAL', 'ADMIN_APPROVED', 'SENT_TO_BGA', 'ACCEPTED', 'REVISION_REQUESTED'] },
+        },
+      }),
+      prisma.quotation.count({ where: { bgaId, status: QuotationStatus.ACCEPTED } }),
+      prisma.workOrder.count({ where: { bgaId } }),
+      prisma.workOrder.count({ where: { bgaId, advanceVerified: true } }),
+      prisma.technicalProject.count({ where: { workOrder: { bgaId } } }),
+      prisma.technicalProject.count({
+        where: {
+          workOrder: { bgaId },
+          status: { in: ['READY_TO_START', 'IN_PROGRESS', 'UNDER_REVIEW', 'CORRECTION_REQUIRED'] },
+        },
+      }),
+      prisma.technicalProject.count({
+        where: {
+          workOrder: { bgaId },
+          status: 'COMPLETED',
+        },
+      }),
+      prisma.payment.findMany({
+        where: {
+          workOrder: { bgaId },
+          status: 'VERIFIED',
+        },
+        select: {
+          amount: true,
+          adBudgetAmount: true,
+          netServiceFee: true,
+          workOrder: { select: { serviceCategory: true } },
+        },
+      }),
+      prisma.commission.findMany({
+        where: { bgaId },
+        include: {
+          client: { select: { id: true, clientName: true, businessName: true, email: true } },
+          workOrder: { select: { id: true, workOrderNumber: true, totalValue: true, serviceCategory: true } },
+          project: { select: { id: true, projectNumber: true, status: true, progressPercentage: true, completedAt: true } },
+          payment: { select: { id: true, amount: true, transactionReference: true, paymentDate: true, paymentMethod: true, status: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    // Financial calculations strictly from verified payments & commissions
+    const totalEligibleRevenue = verifiedPayments.reduce(
+      (acc, p) => acc + (p.netServiceFee || Math.max(0, p.amount - (p.adBudgetAmount || 0))),
+      0
+    );
+
+    let totalCommissionEarned = 0;
+    let pendingCommission = 0;
+    let commissionPaid = 0;
+    let commissionPipeline = 0;
+
+    for (const c of commissions) {
+      if (c.eligibilityStatus === 'ELIGIBLE') {
+        totalCommissionEarned += c.calculatedCommission;
+        if (c.payoutStatus === 'UNPAID') {
+          pendingCommission += c.calculatedCommission;
+        } else if (c.payoutStatus === 'PROCESSED') {
+          commissionPaid += c.calculatedCommission;
+        }
+      } else if (c.eligibilityStatus === 'PENDING_CRITERIA') {
+        commissionPipeline += c.calculatedCommission;
+      }
+    }
+
+    // 2. Service-Wise Business Performance
+    const categories: ServiceCategoryType[] = [
+      'DIGITAL_MARKETING',
+      'WEBSITE_DEVELOPMENT',
+      'MOBILE_APPLICATION_DEVELOPMENT',
+      'SOFTWARE_DEVELOPMENT',
+    ];
+
+    const allEnquiries = await prisma.enquiry.findMany({
+      where: { bgaId },
+      select: { clientId: true, serviceCategory: true, status: true },
+    });
+
+    const allQuotations = await prisma.quotation.findMany({
+      where: { bgaId },
+      select: { serviceCategory: true, status: true },
+    });
+
+    const allProjects = await prisma.technicalProject.findMany({
+      where: { workOrder: { bgaId } },
+      select: { serviceCategory: true, status: true },
+    });
+
+    const servicePerformance = categories.map((cat) => {
+      const catEnquiries = allEnquiries.filter((e) => e.serviceCategory === cat);
+      const catClients = new Set(catEnquiries.map((e) => e.clientId)).size;
+      const catRequests = catEnquiries.length;
+      const catApproved = catEnquiries.filter((e) => e.status === 'APPROVED').length;
+      const catQuotations = allQuotations.filter((q) => q.serviceCategory === cat);
+      const catAccepted = catQuotations.filter((q) => q.status === 'ACCEPTED').length;
+      const catProjects = allProjects.filter((p) => p.serviceCategory === cat);
+      const catActiveProjects = catProjects.filter((p) => p.status !== 'COMPLETED').length;
+      const catCompletedProjects = catProjects.filter((p) => p.status === 'COMPLETED').length;
+
+      const catPayments = verifiedPayments.filter((p) => p.workOrder?.serviceCategory === cat);
+      const catEligibleRev = catPayments.reduce(
+        (acc, p) => acc + (p.netServiceFee || Math.max(0, p.amount - (p.adBudgetAmount || 0))),
+        0
+      );
+
+      const catCommissions = commissions.filter((c) => c.serviceCategory === cat);
+      const catCommEarned = catCommissions
+        .filter((c) => c.eligibilityStatus === 'ELIGIBLE')
+        .reduce((acc, c) => acc + c.calculatedCommission, 0);
+      const catCommPending = catCommissions
+        .filter((c) => c.eligibilityStatus === 'ELIGIBLE' && c.payoutStatus === 'UNPAID')
+        .reduce((acc, c) => acc + c.calculatedCommission, 0);
+
+      return {
+        category: cat,
+        clientCount: catClients,
+        requestCount: catRequests,
+        approvedRequests: catApproved,
+        acceptedQuotations: catAccepted,
+        activeProjects: catActiveProjects,
+        completedProjects: catCompletedProjects,
+        eligibleRevenue: catEligibleRev,
+        commissionEarned: catCommEarned,
+        pendingCommission: catCommPending,
+      };
+    });
+
+    // 3. Business Conversion Funnel (11 stages)
+    const funnel = [
+      { step: 1, key: 'clientsAcquired', label: 'Clients Acquired', count: totalClients },
+      { step: 2, key: 'requestsSubmitted', label: 'Service Requests Submitted', count: totalServiceRequests },
+      { step: 3, key: 'requestsApproved', label: 'Admin Requests Approved', count: approvedRequests },
+      { step: 4, key: 'quotationsPrepared', label: 'Official Quotations Prepared', count: quotationsPrepared },
+      { step: 5, key: 'quotationsAccepted', label: 'Quotations Accepted', count: quotationsAccepted },
+      { step: 6, key: 'workOrdersCreated', label: 'Work Orders Created', count: workOrdersCount },
+      { step: 7, key: 'advancePaymentsVerified', label: 'Advance Payments Verified', count: advanceVerifiedOrders },
+      { step: 8, key: 'projectsReleased', label: 'Technical Projects Released', count: projectsReleased },
+      { step: 9, key: 'projectsCompleted', label: 'Projects Completed', count: projectsCompleted },
+      { step: 10, key: 'eligiblePaymentsReceived', label: 'Eligible Payments Received', count: verifiedPayments.length },
+      { step: 11, key: 'commissionsEligible', label: 'Commissions Eligible', count: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE').length },
+    ];
+
+    res.json({
+      summary: {
+        totalClients,
+        activeClients,
+        totalServiceRequests,
+        approvedRequests,
+        quotationsAccepted,
+        projectsInProgress,
+        projectsCompleted,
+        totalEligibleRevenue,
+        totalCommissionEarned,
+        pendingCommission,
+        commissionPaid,
+        commissionPipeline,
+      },
+      breakdown: {
+        earned: totalCommissionEarned,
+        pending: pendingCommission,
+        paid: commissionPaid,
+        pipeline: commissionPipeline,
+      },
+      servicePerformance,
+      funnel,
+      commissions,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate earnings dashboard metrics' });
+  }
+});
+
+// 8b. Commissions & My Earnings
 router.get('/commissions', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const commissions = await prisma.commission.findMany({

@@ -42,6 +42,7 @@ import { apiRequest } from '../../utils/api';
 import { SkeletonCard, SkeletonStatsRow, SkeletonTable, AdminDashboardSkeleton } from '../../components/Skeleton';
 import { validateBankUtr } from '../../utils/utrValidator';
 import { useToast } from '../../context/ToastContext';
+import { getQuotationPdfUrl } from '../../utils/downloadPdf';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
@@ -2205,7 +2206,7 @@ export const AdminPortal: React.FC = () => {
                                   Scope
                                 </button>
                                 <a
-                                  href={`/api/resources/quotations/${q.id}/pdf`}
+                                  href={getQuotationPdfUrl(q.id)}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-xs font-semibold inline-block hover:bg-slate-800"
@@ -2447,34 +2448,47 @@ export const AdminPortal: React.FC = () => {
                               </span>
                             </td>
                             <td className="p-3.5 text-right">
-                              {isPendingHandover ? (
-                                <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                                  <button
-                                    onClick={() => setHandoverReviewModal({ workOrder: w, action: 'APPROVE' })}
-                                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                              <div className="flex items-center justify-end gap-2">
+                                {w.quotationId && (
+                                  <a
+                                    href={getQuotationPdfUrl(w.quotationId)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold inline-flex items-center gap-1"
+                                    title="View Quotation PDF"
                                   >
-                                    Authorize Handover
-                                  </button>
-                                  <button
-                                    onClick={() => setHandoverReviewModal({ workOrder: w, action: 'HOLD' })}
-                                    className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-colors"
-                                  >
-                                    Hold
-                                  </button>
-                                  <button
-                                    onClick={() => setHandoverReviewModal({ workOrder: w, action: 'REQUEST_CLARIFICATION' })}
-                                    className="px-2.5 py-1 bg-slate-200 text-slate-800 hover:bg-slate-300 rounded-lg text-xs font-bold transition-colors"
-                                  >
-                                    Clarify
-                                  </button>
-                                </div>
-                              ) : w.handoverApproved ? (
-                                <span className="text-xs text-emerald-700 font-bold flex items-center justify-end gap-1">
-                                  <CheckCircle2 className="w-3.5 h-3.5" /> Project Active
-                                </span>
-                              ) : (
-                                <span className="text-xs text-slate-400">Awaiting Advance</span>
-                              )}
+                                    <Download className="w-3.5 h-3.5" /> Quote PDF
+                                  </a>
+                                )}
+                                {isPendingHandover ? (
+                                  <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                    <button
+                                      onClick={() => setHandoverReviewModal({ workOrder: w, action: 'APPROVE' })}
+                                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                                    >
+                                      Authorize Handover
+                                    </button>
+                                    <button
+                                      onClick={() => setHandoverReviewModal({ workOrder: w, action: 'HOLD' })}
+                                      className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-colors"
+                                    >
+                                      Hold
+                                    </button>
+                                    <button
+                                      onClick={() => setHandoverReviewModal({ workOrder: w, action: 'REQUEST_CLARIFICATION' })}
+                                      className="px-2.5 py-1 bg-slate-200 text-slate-800 hover:bg-slate-300 rounded-lg text-xs font-bold transition-colors"
+                                    >
+                                      Clarify
+                                    </button>
+                                  </div>
+                                ) : w.handoverApproved ? (
+                                  <span className="text-xs text-emerald-700 font-bold flex items-center justify-end gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5" /> Project Active
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-slate-400">Awaiting Advance</span>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );

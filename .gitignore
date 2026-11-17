@@ -6,4 +6,8 @@ uploads/*
 .DS_Store
 *.log
 *.tsbuildinfo
+server/storage/
+server/assets/test-*.pdf
+server/assets/sample-*.pdf
+server/assets/sample-*.png
 

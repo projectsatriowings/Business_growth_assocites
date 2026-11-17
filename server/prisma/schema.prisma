@@ -220,6 +220,7 @@ model Client {
   workOrders       WorkOrder[]
   commissions      Commission[]
   technicalProjects TechnicalProject[]
+  contactActivities ContactActivity[]
 
   @@unique([mobile])
   @@unique([email])
@@ -526,4 +527,23 @@ model QuotationReminder {
   @@index([quotationId])
   @@index([bgaId])
 }
+
+model ContactActivity {
+  id                String    @id @default(cuid())
+  clientId          String
+  client            Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  bgaId             String
+  contactMethod     String    // CALL, WHATSAPP, EMAIL, MEETING, OTHER
+  discussionSummary String
+  followUpNotes     String?
+  nextFollowUpDate  DateTime?
+  outcome           String?   // CONNECTED, BUSY, INTERESTED, FOLLOW_UP_SCHEDULED, NOT_INTERESTED, CONVERTED
+  createdBy         String?
+  createdAt         DateTime  @default(now())
+
+  @@index([clientId])
+  @@index([bgaId])
+  @@index([createdAt])
+}
+
 

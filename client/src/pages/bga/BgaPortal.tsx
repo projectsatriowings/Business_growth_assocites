@@ -63,6 +63,7 @@ import { apiRequest } from '../../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SkeletonStatsRow, SkeletonTable, BgaDashboardSkeleton } from '../../components/Skeleton';
 import { BgaProfileView } from './BgaProfileView';
+import { getQuotationPdfUrl } from '../../utils/downloadPdf';
 import { BUSINESS_CATEGORIES } from '../../constants/categories';
 
 export const BgaPortal: React.FC = () => {
@@ -2930,6 +2931,158 @@ export const BgaPortal: React.FC = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Log Contact Activity Modal */}
+              <AnimatePresence>
+                {activityModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                    onClick={() => !activitySubmitting && setActivityModal(null)}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-[#119DA4] to-[#3066BE]" />
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-teal-50 rounded-xl border border-[#119DA4]/20">
+                              <Phone className="w-5 h-5 text-[#119DA4]" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">
+                                Log Contact & Follow-up
+                              </h3>
+                              <p className="text-xs text-slate-500">
+                                Client: <strong className="text-slate-800">{activityModal.clientName}</strong>
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => !activitySubmitting && setActivityModal(null)}
+                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        <form onSubmit={handleAddActivity} className="space-y-3.5 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-slate-700 font-semibold mb-1">Contact Method *</label>
+                              <select
+                                value={activityForm.contactMethod}
+                                onChange={(e) =>
+                                  setActivityForm({ ...activityForm, contactMethod: e.target.value as any })
+                                }
+                                className="w-full p-2.5 border border-slate-200 rounded-xl bg-white font-medium focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                              >
+                                <option value="CALL">Phone Call</option>
+                                <option value="WHATSAPP">WhatsApp Chat</option>
+                                <option value="EMAIL">Email</option>
+                                <option value="MEETING">Meeting (In-person / Virtual)</option>
+                                <option value="OTHER">Other</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-slate-700 font-semibold mb-1">Outcome *</label>
+                              <select
+                                value={activityForm.outcome}
+                                onChange={(e) =>
+                                  setActivityForm({ ...activityForm, outcome: e.target.value as any })
+                                }
+                                className="w-full p-2.5 border border-slate-200 rounded-xl bg-white font-medium focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                              >
+                                <option value="CONNECTED">Connected & Discussed</option>
+                                <option value="QUOTATION_REQUESTED">Requested Quotation</option>
+                                <option value="INTERESTED">Client Interested</option>
+                                <option value="SCHEDULED_CALLBACK">Scheduled Callback</option>
+                                <option value="BUSY_NO_ANSWER">Busy / No Answer</option>
+                                <option value="NOT_INTERESTED">Not Interested</option>
+                                <option value="CLOSED_WON">Closed Won (Deal Closed)</option>
+                                <option value="CLOSED_LOST">Closed Lost</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">
+                              Discussion Summary <span className="text-rose-500">*</span>
+                            </label>
+                            <textarea
+                              rows={3}
+                              required
+                              value={activityForm.discussionSummary}
+                              onChange={(e) =>
+                                setActivityForm({ ...activityForm, discussionSummary: e.target.value })
+                              }
+                              placeholder="Key discussion points, budget agreed, specific deliverables requested..."
+                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Follow-up Notes</label>
+                            <input
+                              type="text"
+                              value={activityForm.followUpNotes}
+                              onChange={(e) =>
+                                setActivityForm({ ...activityForm, followUpNotes: e.target.value })
+                              }
+                              placeholder="Next steps, materials to send, action items..."
+                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Next Follow-Up Date</label>
+                            <input
+                              type="date"
+                              value={activityForm.nextFollowUpDate}
+                              onChange={(e) =>
+                                setActivityForm({ ...activityForm, nextFollowUpDate: e.target.value })
+                              }
+                              className="w-full p-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                            />
+                          </div>
+
+                          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                            <button
+                              type="button"
+                              disabled={activitySubmitting}
+                              onClick={() => setActivityModal(null)}
+                              className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={activitySubmitting}
+                              className="px-5 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                            >
+                              {activitySubmitting ? (
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Save className="w-3.5 h-3.5" />
+                              )}
+                              {activitySubmitting ? 'Saving Activity...' : 'Save Activity'}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
@@ -3014,175 +3167,6 @@ export const BgaPortal: React.FC = () => {
                   );
                 }))}
               </div>
-            </div>
-          )}
-
-          {/* TAB: MY CLIENT REQUESTS - COMPLETE WORKFLOW PIPELINE TRACKING (MODULE 1.2) */}
-          {activeTab === 'requests' && (
-            <div className="space-y-4">
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <FileCheck className="w-5 h-5 text-[#119DA4]" />
-                    My Client Requests & End-to-End Workflow Pipeline
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Track complete progress across Admin Enquiry Approval, Accounts Quotation, Client Decision, Payment Clearance, and Technical Delivery.
-                  </p>
-                </div>
-                <button
-                  onClick={() => loadTabData('requests')}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                >
-                  <Clock className="w-3.5 h-3.5" /> Refresh Pipeline
-                </button>
-              </div>
-
-              {tabLoading ? (
-                <SkeletonTable rows={5} cols={8} />
-              ) : clientRequests.length === 0 ? (
-                <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm">
-                  <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <h3 className="text-sm font-bold text-slate-800">No client requests in pipeline yet</h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-                    When you register a new client or submit an enquiry, it will appear here with live stage-by-stage progression tracking.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setActiveTab('clients');
-                      setClientViewMode('add');
-                    }}
-                    className="mt-4 px-4 py-2 bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm rounded-xl text-xs font-bold transition-colors"
-                  >
-                    + Register New Client
-                  </button>
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto shadow-sm">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                      <tr>
-                        <th className="p-3.5">Client & ID</th>
-                        <th className="p-3.5">Enquiry ID</th>
-                        <th className="p-3.5">Service Requested</th>
-                        <th className="p-3.5">Submission Date</th>
-                        <th className="p-3.5">Admin Approval</th>
-                        <th className="p-3.5">Quotation Status</th>
-                        <th className="p-3.5">Client Response</th>
-                        <th className="p-3.5">Payment Status</th>
-                        <th className="p-3.5">Project Status</th>
-                        <th className="p-3.5 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {clientRequests.map((r, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50">
-                          <td className="p-3.5">
-                            <div className="font-bold text-slate-900 text-sm">{r.clientName}</div>
-                            <div className="text-[11px] text-slate-500">{r.businessName}</div>
-                            <span className="font-mono text-[10px] text-slate-400 block mt-0.5">
-                              ID: {r.clientId.slice(0, 10)}...
-                            </span>
-                          </td>
-                          <td className="p-3.5 font-mono text-slate-700 font-semibold">
-                            {r.enquiryId}
-                          </td>
-                          <td className="p-3.5">
-                            <span className="font-bold text-slate-800">{r.serviceCategory}</span>
-                            <span className="text-slate-400 text-[10px] block">{r.subCategory}</span>
-                          </td>
-                          <td className="p-3.5 text-slate-600">
-                            {new Date(r.submissionDate).toLocaleDateString()}
-                          </td>
-                          <td className="p-3.5">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                r.adminApprovalStatus === 'APPROVED'
-                                  ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
-                                  : r.adminApprovalStatus === 'REJECTED'
-                                  ? 'bg-red-100 text-red-800 border border-red-200'
-                                  : r.adminApprovalStatus === 'CHANGES_REQUESTED'
-                                  ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                  : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
-                              }`}
-                            >
-                              {r.adminApprovalStatus === 'SUBMITTED' ? 'PENDING_APPROVAL' : r.adminApprovalStatus}
-                            </span>
-                          </td>
-                          <td className="p-3.5">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                r.quotationStatus === 'QUOTATION_APPROVED'
-                                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                  : r.quotationStatus === 'QUOTATION_ACCEPTED'
-                                  ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
-                                  : r.quotationStatus === 'QUOTATION_PENDING_ADMIN_APPROVAL'
-                                  ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                                  : 'bg-slate-100 text-slate-700'
-                              }`}
-                            >
-                              {r.quotationStatus}
-                            </span>
-                          </td>
-                          <td className="p-3.5">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                r.clientResponse === 'ACCEPTED'
-                                  ? 'bg-emerald-100 text-[#119DA4]'
-                                  : r.clientResponse === 'REJECTED'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-slate-100 text-slate-600'
-                              }`}
-                            >
-                              {r.clientResponse}
-                            </span>
-                          </td>
-                          <td className="p-3.5">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                r.paymentStatus === 'VERIFIED'
-                                  ? 'bg-emerald-100 text-[#119DA4]'
-                                  : r.paymentStatus === 'PAYMENT_SUBMITTED'
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : 'bg-slate-100 text-slate-500'
-                              }`}
-                            >
-                              {r.paymentStatus}
-                            </span>
-                          </td>
-                          <td className="p-3.5">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                r.projectStatus === 'COMPLETED'
-                                  ? 'bg-emerald-100 text-[#119DA4]'
-                                  : r.projectStatus === 'IN_PROGRESS'
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : r.projectStatus === 'READY_TO_START'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-slate-100 text-slate-500'
-                              }`}
-                            >
-                              {r.projectStatus}
-                            </span>
-                          </td>
-                          <td className="p-3.5 text-right">
-                            {r.quotation ? (
-                              <button
-                                onClick={() => setActiveTab('quotations')}
-                                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded text-[11px] font-semibold"
-                              >
-                                View Quote →
-                              </button>
-                            ) : (
-                              <span className="text-[10px] text-slate-400">Processing</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
             </div>
           )}
 
@@ -3731,68 +3715,744 @@ export const BgaPortal: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 8: MY EARNINGS & COMMISSIONS */}
+          {/* TAB 8: MY EARNINGS & COMMISSIONS — COMPREHENSIVE PERFORMANCE DASHBOARD */}
           {activeTab === 'earnings' && (
-            <div className="space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200">
-                <h2 className="text-base font-bold text-slate-900">My Commission Ledger</h2>
-                <p className="text-xs text-slate-500">
-                  Detailed ledger of all eligible, approved, and disbursed commissions across your clients.
-                </p>
+            <div className="space-y-6">
+              {/* Dashboard Header Bar */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-[#119DA4]" />
+                    My Earnings & Business Performance Dashboard
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Real-time commission tracking, business conversion funnel, service performance breakdown, and verified ledger.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => loadTabData('earnings')}
+                  className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Refresh Dashboard
+                </button>
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                    <tr>
-                      <th className="p-3.5">Client & Service</th>
-                      <th className="p-3.5">Model</th>
-                      <th className="p-3.5">Commission Amount</th>
-                      <th className="p-3.5">Eligibility</th>
-                      <th className="p-3.5">Admin Approval</th>
-                      <th className="p-3.5">Payout Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {commissions.map((c) => (
-                      <tr key={c.id}>
-                        <td className="p-3.5">
-                          <div className="font-bold text-slate-900">{c.client?.clientName}</div>
-                          <div className="text-[10px] text-slate-400">{c.serviceCategory}</div>
-                        </td>
-                        <td className="p-3.5 font-semibold text-slate-600">{c.billingType}</td>
-                        <td className="p-3.5 font-bold text-[#119DA4] text-sm">
-                          ₹{c.calculatedCommission?.toLocaleString()}
-                        </td>
-                        <td className="p-3.5">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            c.eligibilityStatus === 'ELIGIBLE' ? 'bg-emerald-100 text-[#119DA4]' : 'bg-slate-100 text-slate-600'
-                          }`}>
-                            {c.eligibilityStatus}
-                          </span>
-                        </td>
-                        <td className="p-3.5">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            c.approvalStatus === 'APPROVED' ? 'bg-emerald-100 text-[#119DA4]' : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {c.approvalStatus}
-                          </span>
-                        </td>
-                        <td className="p-3.5">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            c.payoutStatus === 'PROCESSED' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
-                          }`}>
-                            {c.payoutStatus}
-                          </span>
-                          {c.payoutReference && (
-                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">Ref: {c.payoutReference}</div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {!earningsData && tabLoading ? (
+                <div className="space-y-4">
+                  <SkeletonStatsRow />
+                  <SkeletonTable rows={5} cols={6} />
+                </div>
+              ) : (() => {
+                const summary = earningsData?.summary || {
+                  totalClients: clients.length,
+                  activeClients: clients.filter((c) => c.status === 'ACTIVE').length,
+                  totalServiceRequests: clientRequests.length,
+                  approvedRequests: clientRequests.filter((r) => r.adminApprovalStatus === 'APPROVED').length,
+                  quotationsAccepted: quotations.filter((q) => q.status === 'ACCEPTED').length,
+                  projectsInProgress: workOrders.filter((w) => w.project && w.project.status !== 'COMPLETED').length,
+                  projectsCompleted: workOrders.filter((w) => w.project && w.project.status === 'COMPLETED').length,
+                  totalEligibleRevenue: 0,
+                  totalCommissionEarned: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
+                  pendingCommission: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE' && c.payoutStatus === 'UNPAID').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
+                  commissionPaid: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE' && c.payoutStatus === 'PROCESSED').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
+                  commissionPipeline: commissions.filter((c) => c.eligibilityStatus === 'PENDING_CRITERIA').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
+                };
+
+                const breakdown = earningsData?.breakdown || {
+                  earned: summary.totalCommissionEarned,
+                  pending: summary.pendingCommission,
+                  paid: summary.commissionPaid,
+                  pipeline: summary.commissionPipeline || 0,
+                };
+
+                const servicePerf: any[] = earningsData?.servicePerformance || [];
+                const funnelList: any[] = earningsData?.funnel || [];
+
+                // Filter commissions list
+                const filteredCommissions = commissions.filter((c) => {
+                  const q = earningsSearch.toLowerCase().trim();
+                  const matchesSearch =
+                    !q ||
+                    c.client?.clientName?.toLowerCase().includes(q) ||
+                    c.client?.businessName?.toLowerCase().includes(q) ||
+                    c.workOrder?.workOrderNumber?.toLowerCase().includes(q) ||
+                    c.payment?.transactionReference?.toLowerCase().includes(q);
+
+                  const matchesCat =
+                    earningsCategoryFilter === 'ALL' || c.serviceCategory === earningsCategoryFilter;
+
+                  const matchesStatus =
+                    earningsStatusFilter === 'ALL' ||
+                    c.eligibilityStatus === earningsStatusFilter ||
+                    c.payoutStatus === earningsStatusFilter;
+
+                  let matchesDate = true;
+                  if (earningsDateFilter === 'THIS_MONTH') {
+                    const cDate = new Date(c.createdAt);
+                    const now = new Date();
+                    matchesDate =
+                      cDate.getMonth() === now.getMonth() && cDate.getFullYear() === now.getFullYear();
+                  } else if (earningsDateFilter === 'LAST_90_DAYS') {
+                    const diffDays =
+                      (Date.now() - new Date(c.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+                    matchesDate = diffDays <= 90;
+                  } else if (earningsDateFilter === 'THIS_YEAR') {
+                    matchesDate = new Date(c.createdAt).getFullYear() === new Date().getFullYear();
+                  }
+
+                  return matchesSearch && matchesCat && matchesStatus && matchesDate;
+                });
+
+                return (
+                  <div className="space-y-6">
+                    {/* 1. 11 PERFORMANCE SUMMARY CARDS */}
+                    <div>
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                        Performance Summary (11 Core Metrics)
+                      </h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                        {/* 1. Total Clients */}
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total Clients</span>
+                          <div className="text-lg font-extrabold text-slate-900 mt-0.5">{summary.totalClients}</div>
+                          <span className="text-[10px] text-slate-500">Registered portfolio</span>
+                        </div>
+
+                        {/* 2. Active Clients */}
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Active Clients</span>
+                          <div className="text-lg font-extrabold text-teal-600 mt-0.5">{summary.activeClients}</div>
+                          <span className="text-[10px] text-slate-500">In engagement</span>
+                        </div>
+
+                        {/* 3. Total Requests */}
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total Requests</span>
+                          <div className="text-lg font-extrabold text-indigo-600 mt-0.5">{summary.totalServiceRequests}</div>
+                          <span className="text-[10px] text-slate-500">Enquiries logged</span>
+                        </div>
+
+                        {/* 4. Approved Requests */}
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Approved Requests</span>
+                          <div className="text-lg font-extrabold text-emerald-600 mt-0.5">{summary.approvedRequests}</div>
+                          <span className="text-[10px] text-slate-500">Admin validated</span>
+                        </div>
+
+                        {/* 5. Quotations Accepted */}
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Quotes Accepted</span>
+                          <div className="text-lg font-extrabold text-[#3066BE] mt-0.5">{summary.quotationsAccepted}</div>
+                          <span className="text-[10px] text-slate-500">Client approvals</span>
+                        </div>
+
+                        {/* 6. Projects In Progress */}
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">In Progress</span>
+                          <div className="text-lg font-extrabold text-amber-600 mt-0.5">{summary.projectsInProgress}</div>
+                          <span className="text-[10px] text-slate-500">Active tech delivery</span>
+                        </div>
+
+                        {/* 7. Projects Completed */}
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Completed</span>
+                          <div className="text-lg font-extrabold text-teal-600 mt-0.5">{summary.projectsCompleted}</div>
+                          <span className="text-[10px] text-slate-500">Delivered projects</span>
+                        </div>
+
+                        {/* 8. Total Eligible Revenue */}
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Eligible Revenue</span>
+                          <div className="text-lg font-extrabold text-emerald-700 mt-0.5">
+                            ₹{Number(summary.totalEligibleRevenue || 0).toLocaleString('en-IN')}
+                          </div>
+                          <span className="text-[10px] text-slate-500">Verified receipts</span>
+                        </div>
+
+                        {/* 9. Total Commission Earned */}
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Commission Earned</span>
+                          <div className="text-lg font-extrabold text-[#119DA4] mt-0.5">
+                            ₹{Number(summary.totalCommissionEarned || 0).toLocaleString('en-IN')}
+                          </div>
+                          <span className="text-[10px] text-slate-500">Total unlocked</span>
+                        </div>
+
+                        {/* 10. Pending Commission */}
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Pending Payout</span>
+                          <div className="text-lg font-extrabold text-amber-600 mt-0.5">
+                            ₹{Number(summary.pendingCommission || 0).toLocaleString('en-IN')}
+                          </div>
+                          <span className="text-[10px] text-slate-500">Awaiting cycle</span>
+                        </div>
+
+                        {/* 11. Commission Paid */}
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Commission Paid</span>
+                          <div className="text-lg font-extrabold text-[#3066BE] mt-0.5">
+                            ₹{Number(summary.commissionPaid || 0).toLocaleString('en-IN')}
+                          </div>
+                          <span className="text-[10px] text-slate-500">Disbursed to bank</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. 4 KEY FINANCIAL EARNINGS BREAKDOWN CARDS */}
+                    <div>
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                        Financial Status Breakdown
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* Card 1: Commission Earned */}
+                        <div className="p-5 rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50/50 border border-teal-200/80 shadow-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-teal-800 uppercase tracking-wider">
+                              Commission Earned
+                            </span>
+                            <Award className="w-5 h-5 text-[#119DA4]" />
+                          </div>
+                          <div className="text-2xl font-black text-teal-900 mt-2">
+                            ₹{Number(breakdown.earned || 0).toLocaleString('en-IN')}
+                          </div>
+                          <p className="text-[11px] text-teal-700 mt-1">
+                            Total eligible commissions unlocked from verified client payments & completed deliverables.
+                          </p>
+                        </div>
+
+                        {/* Card 2: Commission Pending */}
+                        <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50/50 border border-amber-200/80 shadow-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
+                              Commission Pending
+                            </span>
+                            <Clock className="w-5 h-5 text-amber-600" />
+                          </div>
+                          <div className="text-2xl font-black text-amber-900 mt-2">
+                            ₹{Number(breakdown.pending || 0).toLocaleString('en-IN')}
+                          </div>
+                          <p className="text-[11px] text-amber-700 mt-1">
+                            Approved commissions awaiting scheduled disbursement to your registered bank account.
+                          </p>
+                        </div>
+
+                        {/* Card 3: Commission Paid */}
+                        <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/50 border border-blue-200/80 shadow-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">
+                              Commission Paid
+                            </span>
+                            <CheckCircle2 className="w-5 h-5 text-[#3066BE]" />
+                          </div>
+                          <div className="text-2xl font-black text-blue-900 mt-2">
+                            ₹{Number(breakdown.paid || 0).toLocaleString('en-IN')}
+                          </div>
+                          <p className="text-[11px] text-blue-700 mt-1">
+                            Disbursed payouts successfully transferred and cleared in your bank account.
+                          </p>
+                        </div>
+
+                        {/* Card 4: Commission Pipeline */}
+                        <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 shadow-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                              Commission in Pipeline
+                            </span>
+                            <TrendingUp className="w-5 h-5 text-slate-500" />
+                          </div>
+                          <div className="text-2xl font-black text-slate-800 mt-2">
+                            ₹{Number(breakdown.pipeline || 0).toLocaleString('en-IN')}
+                          </div>
+                          <p className="text-[11px] text-slate-600 mt-1">
+                            Potential commissions awaiting project milestone completion or client payment verification.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 3. SERVICE-WISE BUSINESS PERFORMANCE (4 CORE CATEGORIES) */}
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                      <div className="border-b border-slate-100 pb-3">
+                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                          <BarChart3 className="w-4 h-4 text-[#119DA4]" />
+                          Service-Wise Business Performance & Commission Rules
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Side-by-side performance breakdown across Digital Marketing, Website Dev, Mobile App Dev, and Custom Software.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                          {
+                            key: 'DIGITAL_MARKETING',
+                            name: 'Digital Marketing',
+                            rate: '15% Commission',
+                            model: 'Monthly Subscription (excl. ad spend)',
+                            icon: TrendingUp,
+                            accent: 'border-teal-200 bg-teal-50/30',
+                          },
+                          {
+                            key: 'WEBSITE_DEVELOPMENT',
+                            name: 'Website Development',
+                            rate: '12% Commission',
+                            model: 'Project-based on delivery completion',
+                            icon: Globe,
+                            accent: 'border-blue-200 bg-blue-50/30',
+                          },
+                          {
+                            key: 'MOBILE_APPLICATION_DEVELOPMENT',
+                            name: 'Mobile Application',
+                            rate: '12% Commission',
+                            model: 'Milestone / Full completion delivery',
+                            icon: Smartphone,
+                            accent: 'border-indigo-200 bg-indigo-50/30',
+                          },
+                          {
+                            key: 'SOFTWARE_DEVELOPMENT',
+                            name: 'Custom Software / ERP',
+                            rate: '12% Commission',
+                            model: 'Enterprise milestones upon delivery',
+                            icon: Code2,
+                            accent: 'border-purple-200 bg-purple-50/30',
+                          },
+                        ].map((cat) => {
+                          const stat = servicePerf.find((s) => s.category === cat.key) || {
+                            clientCount: 0,
+                            requestCount: 0,
+                            approvedRequests: 0,
+                            acceptedQuotations: 0,
+                            activeProjects: 0,
+                            completedProjects: 0,
+                            eligibleRevenue: 0,
+                            commissionEarned: 0,
+                            pendingCommission: 0,
+                          };
+
+                          const IconComponent = cat.icon;
+
+                          return (
+                            <div
+                              key={cat.key}
+                              className={`p-4 rounded-xl border ${cat.accent} space-y-3 text-xs`}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <strong className="text-sm text-slate-900 block">{cat.name}</strong>
+                                  <span className="text-[10px] text-slate-500 block mt-0.5">{cat.model}</span>
+                                </div>
+                                <span className="p-2 bg-white rounded-xl shadow-xs border border-slate-200">
+                                  <IconComponent className="w-4 h-4 text-[#3066BE]" />
+                                </span>
+                              </div>
+
+                              <div className="bg-white/80 p-2 rounded-lg border border-slate-200/60 flex items-center justify-between">
+                                <span className="text-[11px] text-slate-500">Commission Rate</span>
+                                <span className="font-bold text-[#119DA4]">{cat.rate}</span>
+                              </div>
+
+                              <div className="space-y-1.5 pt-1">
+                                <div className="flex justify-between text-slate-600">
+                                  <span>Clients Acquired:</span>
+                                  <strong className="text-slate-900">{stat.clientCount}</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-600">
+                                  <span>Requests (Approved):</span>
+                                  <strong className="text-slate-900">
+                                    {stat.requestCount} ({stat.approvedRequests})
+                                  </strong>
+                                </div>
+                                <div className="flex justify-between text-slate-600">
+                                  <span>Quotations Accepted:</span>
+                                  <strong className="text-slate-900">{stat.acceptedQuotations}</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-600">
+                                  <span>Active / Completed:</span>
+                                  <strong className="text-slate-900">
+                                    {stat.activeProjects} / {stat.completedProjects}
+                                  </strong>
+                                </div>
+                                <div className="flex justify-between text-slate-600 pt-1 border-t border-slate-200/60">
+                                  <span>Eligible Revenue:</span>
+                                  <strong className="text-slate-900">₹{Number(stat.eligibleRevenue || 0).toLocaleString('en-IN')}</strong>
+                                </div>
+                                <div className="flex justify-between text-[#119DA4] font-bold">
+                                  <span>Commission Earned:</span>
+                                  <span>₹{Number(stat.commissionEarned || 0).toLocaleString('en-IN')}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 4. 11-STAGE BUSINESS CONVERSION FUNNEL */}
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                      <div className="border-b border-slate-100 pb-3">
+                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-[#119DA4]" />
+                          11-Stage Business Conversion Funnel
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Progressive client pipeline tracking from initial onboarding through verified payment and commission disbursement.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11 gap-2 text-center text-xs">
+                        {funnelList.map((step) => {
+                          const isActive = step.count > 0;
+                          return (
+                            <div
+                              key={step.step}
+                              className={`p-3 rounded-xl border flex flex-col justify-between transition-all ${
+                                isActive
+                                  ? 'bg-gradient-to-b from-teal-50/60 to-white border-teal-200 shadow-xs'
+                                  : 'bg-slate-50/70 border-slate-200/70 opacity-60'
+                              }`}
+                            >
+                              <div className="text-[10px] font-bold text-slate-400">Step {step.step}</div>
+                              <div className="text-lg font-extrabold text-slate-900 my-1">{step.count}</div>
+                              <div className="text-[10px] font-semibold text-slate-700 leading-tight">
+                                {step.label}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 5. INTERACTIVE EARNINGS HISTORY TABLE WITH LIVE FILTERS */}
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-5">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <Layers className="w-4 h-4 text-[#119DA4]" />
+                            Official Commission Ledger & Calculation History
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Filter transactions, inspect calculation steps, and audit payment clearance.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Filter Bar */}
+                      <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
+                        {/* Search */}
+                        <div className="relative w-full lg:w-72">
+                          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                          <input
+                            type="text"
+                            placeholder="Search client, work order #, transaction ref..."
+                            value={earningsSearch}
+                            onChange={(e) => setEarningsSearch(e.target.value)}
+                            className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                          />
+                        </div>
+
+                        {/* Filters */}
+                        <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto text-xs">
+                          {/* Category Filter */}
+                          <select
+                            value={earningsCategoryFilter}
+                            onChange={(e) => setEarningsCategoryFilter(e.target.value)}
+                            className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                          >
+                            <option value="ALL">All Categories</option>
+                            <option value="DIGITAL_MARKETING">Digital Marketing</option>
+                            <option value="WEBSITE_DEVELOPMENT">Website Dev</option>
+                            <option value="MOBILE_APPLICATION_DEVELOPMENT">Mobile App Dev</option>
+                            <option value="SOFTWARE_DEVELOPMENT">Custom Software</option>
+                          </select>
+
+                          {/* Status Filter */}
+                          <select
+                            value={earningsStatusFilter}
+                            onChange={(e) => setEarningsStatusFilter(e.target.value)}
+                            className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                          >
+                            <option value="ALL">All Statuses</option>
+                            <option value="ELIGIBLE">Eligible</option>
+                            <option value="PENDING_CRITERIA">Pending Criteria</option>
+                            <option value="UNPAID">Pending Payout</option>
+                            <option value="PROCESSED">Paid / Disbursed</option>
+                          </select>
+
+                          {/* Date Filter */}
+                          <select
+                            value={earningsDateFilter}
+                            onChange={(e) => setEarningsDateFilter(e.target.value)}
+                            className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                          >
+                            <option value="ALL">All Time</option>
+                            <option value="THIS_MONTH">This Month</option>
+                            <option value="LAST_90_DAYS">Last 90 Days</option>
+                            <option value="THIS_YEAR">This Year</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Ledger Table */}
+                      {filteredCommissions.length === 0 ? (
+                        <div className="p-8 text-center rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500">
+                          <DollarSign className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                          <p className="font-semibold text-slate-700">No commission records match your filter criteria.</p>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto rounded-xl border border-slate-200">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                              <tr>
+                                <th className="p-3.5">Client & Business</th>
+                                <th className="p-3.5">Service & Billing</th>
+                                <th className="p-3.5">Work Order & Project</th>
+                                <th className="p-3.5">Payment Base</th>
+                                <th className="p-3.5">Commission Amount</th>
+                                <th className="p-3.5">Eligibility</th>
+                                <th className="p-3.5">Payout Status</th>
+                                <th className="p-3.5 text-right">Action</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {filteredCommissions.map((c) => {
+                                const ratePct =
+                                  c.serviceCategory === 'DIGITAL_MARKETING' ? '15%' : '12%';
+
+                                return (
+                                  <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
+                                    {/* Client & Business */}
+                                    <td className="p-3.5">
+                                      <div className="font-bold text-slate-900">{c.client?.clientName}</div>
+                                      <div className="text-[11px] text-indigo-600 font-medium">
+                                        {c.client?.businessName}
+                                      </div>
+                                    </td>
+
+                                    {/* Service & Billing */}
+                                    <td className="p-3.5">
+                                      <span className="font-bold text-slate-800">
+                                        {c.serviceCategory?.replace(/_/g, ' ')}
+                                      </span>
+                                      <span className="text-[10px] text-slate-400 block">{c.billingType}</span>
+                                    </td>
+
+                                    {/* Work Order & Project */}
+                                    <td className="p-3.5 font-mono text-[11px]">
+                                      <div className="text-slate-800 font-bold">
+                                        {c.workOrder?.workOrderNumber || '—'}
+                                      </div>
+                                      {c.project && (
+                                        <div className="text-[10px] text-slate-500 font-sans">
+                                          Proj: {c.project.projectNumber} ({c.project.status})
+                                        </div>
+                                      )}
+                                    </td>
+
+                                    {/* Payment Base */}
+                                    <td className="p-3.5">
+                                      <div className="font-bold text-slate-900">
+                                        ₹{Number(c.payment?.amount || c.workOrder?.totalValue || 0).toLocaleString('en-IN')}
+                                      </div>
+                                      {c.payment?.transactionReference && (
+                                        <span className="text-[10px] text-slate-400 font-mono block">
+                                          Ref: {c.payment.transactionReference}
+                                        </span>
+                                      )}
+                                    </td>
+
+                                    {/* Commission Amount */}
+                                    <td className="p-3.5">
+                                      <div className="text-sm font-black text-[#119DA4]">
+                                        ₹{Number(c.calculatedCommission || 0).toLocaleString('en-IN')}
+                                      </div>
+                                      <span className="text-[10px] text-slate-400 font-semibold block">
+                                        Rate: {ratePct}
+                                      </span>
+                                    </td>
+
+                                    {/* Eligibility */}
+                                    <td className="p-3.5">
+                                      <span
+                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                          c.eligibilityStatus === 'ELIGIBLE'
+                                            ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
+                                            : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                        }`}
+                                      >
+                                        {c.eligibilityStatus}
+                                      </span>
+                                    </td>
+
+                                    {/* Payout Status */}
+                                    <td className="p-3.5">
+                                      <span
+                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                          c.payoutStatus === 'PROCESSED'
+                                            ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                            : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                        }`}
+                                      >
+                                        {c.payoutStatus}
+                                      </span>
+                                      {c.payoutReference && (
+                                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                          Ref: {c.payoutReference}
+                                        </div>
+                                      )}
+                                    </td>
+
+                                    {/* Action */}
+                                    <td className="p-3.5 text-right">
+                                      <button
+                                        type="button"
+                                        onClick={() => setCalculationModal(c)}
+                                        className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                                        title="View Commission Calculation Breakdown"
+                                      >
+                                        <Calculator className="w-3.5 h-3.5" />
+                                        Breakdown
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* CALCULATION BREAKDOWN MODAL */}
+              <AnimatePresence>
+                {calculationModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                    onClick={() => setCalculationModal(null)}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-[#119DA4] to-[#3066BE]" />
+                      <div className="p-6 space-y-4 text-xs">
+                        <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-teal-50 rounded-xl border border-[#119DA4]/20">
+                              <Calculator className="w-5 h-5 text-[#119DA4]" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">Commission Calculation Breakdown</h3>
+                              <p className="text-xs text-slate-500">
+                                Client: <strong className="text-slate-800">{calculationModal.client?.clientName}</strong>
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setCalculationModal(null)}
+                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        {/* Calculation Steps */}
+                        {(() => {
+                          const isDM = calculationModal.serviceCategory === 'DIGITAL_MARKETING';
+                          const ratePercent = isDM ? 15 : 12;
+                          const rawPayment = Number(calculationModal.payment?.amount || calculationModal.workOrder?.totalValue || 0);
+                          const adSpend = isDM ? Number(calculationModal.payment?.adBudgetAmount || 0) : 0;
+                          const commissionableBase = Math.max(0, rawPayment - adSpend);
+                          const calculatedCommission = Number(calculationModal.calculatedCommission || 0);
+
+                          return (
+                            <div className="space-y-3">
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500">Service Category:</span>
+                                  <strong className="text-slate-900">{calculationModal.serviceCategory?.replace(/_/g, ' ')}</strong>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500">Billing Model:</span>
+                                  <span className="font-semibold text-slate-800">{calculationModal.billingType}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500">Work Order Ref:</span>
+                                  <span className="font-mono text-slate-800 font-bold">{calculationModal.workOrder?.workOrderNumber || '—'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500">Payment Status:</span>
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    {calculationModal.payment?.status || 'VERIFIED'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="p-4 rounded-xl bg-teal-50/50 border border-[#119DA4]/20 space-y-2">
+                                <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block">
+                                  Step-by-Step Mathematical Computation
+                                </span>
+                                <div className="flex justify-between text-slate-700">
+                                  <span>1. Base Payment Received:</span>
+                                  <strong>₹{rawPayment.toLocaleString('en-IN')}</strong>
+                                </div>
+                                {isDM && (
+                                  <div className="flex justify-between text-amber-700">
+                                    <span>2. Excluded Media Ad Spend:</span>
+                                    <strong>- ₹{adSpend.toLocaleString('en-IN')}</strong>
+                                  </div>
+                                )}
+                                <div className="flex justify-between text-slate-900 font-semibold pt-1 border-t border-teal-200/50">
+                                  <span>{isDM ? '3.' : '2.'} Net Commissionable Service Fee:</span>
+                                  <strong>₹{commissionableBase.toLocaleString('en-IN')}</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-700">
+                                  <span>{isDM ? '4.' : '3.'} Applicable Commission Rate:</span>
+                                  <strong className="text-[#119DA4]">{ratePercent}%</strong>
+                                </div>
+                                <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-teal-200">
+                                  <span>Final Calculated Commission:</span>
+                                  <span className="text-[#119DA4]">₹{calculatedCommission.toLocaleString('en-IN')}</span>
+                                </div>
+                              </div>
+
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 space-y-1">
+                                <strong>Eligibility Rule:</strong>
+                                <p>
+                                  {isDM
+                                    ? 'Digital Marketing commissions unlock upon verification of monthly retainer payment (ad spend strictly excluded from commission base).'
+                                    : 'Website, Mobile & Software commissions unlock upon 100% technical project completion and full client payment clearance.'}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        <div className="flex justify-end pt-3 border-t border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => setCalculationModal(null)}
+                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer"
+                          >
+                            Close Breakdown
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
