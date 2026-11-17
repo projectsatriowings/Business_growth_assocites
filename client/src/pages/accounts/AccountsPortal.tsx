@@ -14,22 +14,32 @@ import {
   Eye,
   Plus,
   RefreshCw,
+  X,
+  ShieldCheck,
+  FileText,
+  Loader2,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
 import { SkeletonStatsRow, SkeletonTable, AccountsDashboardSkeleton } from '../../components/Skeleton';
 import { validateBankUtr, getUtrPlaceholderAndHint, UtrValidationResult } from '../../utils/utrValidator';
+import { useToast } from '../../context/ToastContext';
+import { getQuotationPdfUrl, downloadQuotationPdf } from '../../utils/downloadPdf';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const AccountsPortal: React.FC = () => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'quotation-requests' | 'work-orders' | 'payments' | 'commissions'>('dashboard');
 
   const [loading, setLoading] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
+  const [modalSubmitting, setModalSubmitting] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [quotationRequests, setQuotationRequests] = useState<any[]>([]);
   const [workOrders, setWorkOrders] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
+  const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null);
 
   // Prepare Quotation Modal
   const [prepModal, setPrepModal] = useState<{ quotation: any } | null>(null);
@@ -50,10 +60,21 @@ export const AccountsPortal: React.FC = () => {
     paymentType: 'ADVANCE',
     amount: '',
     adBudgetAmount: '0',
-    paymentMethod: 'BANK_TRANSFER',
+    paymentMethod: 'UPI',
     transactionReference: '',
     paymentDate: new Date().toISOString().slice(0, 10),
   });
+
+  // Verify / Audit Payment Modal (replaces browser prompt)
+  const [verifyModal, setVerifyModal] = useState<{
+    paymentId: string;
+    action: 'VERIFY' | 'REJECT';
+    clientName?: string;
+    workOrderNumber?: string;
+    amount?: number;
+    transactionReference?: string;
+  } | null>(null);
+  const [verifyNotes, setVerifyNotes] = useState('Bank statement checked & verified');
 
   const loadStats = async (bypass = false) => {
     try {
@@ -127,6 +148,7 @@ export const AccountsPortal: React.FC = () => {
   const handlePrepareQuotation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prepModal) return;
+    setModalSubmitting(true);
 
     try {
       await apiRequest(`/api/accounts/quotations/${prepModal.quotation.id}/prepare`, {
@@ -134,11 +156,13 @@ export const AccountsPortal: React.FC = () => {
         body: JSON.stringify(quoteForm),
       });
 
-      alert('Official quotation prepared and dispatched to the BGA.');
+      toast.success('Official quotation prepared and dispatched to the BGA successfully.');
       setPrepModal(null);
       loadData();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Failed to prepare quotation');
+    } finally {
+      setModalSubmitting(false);
     }
   };
 
@@ -158,10 +182,11 @@ export const AccountsPortal: React.FC = () => {
 
     const validation = validateBankUtr(paymentForm.transactionReference, paymentForm.paymentMethod);
     if (!validation.isValid) {
-      alert(`Invalid Bank Transaction / UTR:\n\n${validation.error}${validation.hint ? '\n\n' + validation.hint : ''}`);
+      toast.warning(`Invalid Bank Transaction / UTR: ${validation.error}${validation.hint ? ' (' + validation.hint + ')' : ''}`);
       return;
     }
 
+    setModalSubmitting(true);
     try {
       await apiRequest(`/api/accounts/work-orders/${paymentModal.workOrder.id}/payments`, {
         method: 'POST',
@@ -171,7 +196,7 @@ export const AccountsPortal: React.FC = () => {
         }),
       });
 
-      alert(`Payment recorded successfully with verified UTR: ${validation.formattedUtr}. Now pending Accounts bank receipt verification.`);
+      toast.success(`Payment recorded with UTR: ${validation.formattedUtr}. Awaiting Accounts verification.`);
       setPaymentModal(null);
       setPaymentForm({
         paymentType: 'ADVANCE',
@@ -183,22 +208,44 @@ export const AccountsPortal: React.FC = () => {
       });
       loadData();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Failed to record payment');
+    } finally {
+      setModalSubmitting(false);
     }
   };
 
-  // Handle Verify Payment (CRITICAL HANDOVER TRIGGER)
-  const handleVerifyPayment = async (paymentId: string, action: 'VERIFY' | 'REJECT') => {
-    const notes = prompt(`Enter verification audit notes for this ${action}:`) || 'Bank statement checked & verified';
+  // Open Verify Payment Modal (Clean custom UI instead of prompt)
+  const openVerifyModal = (payment: any, action: 'VERIFY' | 'REJECT') => {
+    setVerifyModal({
+      paymentId: payment.id,
+      action,
+      clientName: payment.workOrder?.client?.clientName,
+      workOrderNumber: payment.workOrder?.workOrderNumber,
+      amount: payment.amount,
+      transactionReference: payment.transactionReference,
+    });
+    setVerifyNotes(action === 'VERIFY' ? 'Bank statement checked & verified' : 'Payment discrepancy detected in bank records');
+  };
+
+  // Execute Verify / Reject Payment
+  const confirmVerifyPayment = async () => {
+    if (!verifyModal) return;
+    setModalSubmitting(true);
     try {
-      const res = await apiRequest(`/api/accounts/payments/${paymentId}/verify`, {
+      const res = await apiRequest(`/api/accounts/payments/${verifyModal.paymentId}/verify`, {
         method: 'POST',
-        body: JSON.stringify({ action, verificationNotes: notes }),
+        body: JSON.stringify({
+          action: verifyModal.action,
+          verificationNotes: verifyNotes.trim() || 'Bank statement checked & verified',
+        }),
       });
-      alert(res.message);
+      toast.success(res.message || `Payment ${verifyModal.action === 'VERIFY' ? 'verified' : 'rejected'} successfully.`);
+      setVerifyModal(null);
       loadData();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Failed to update payment status');
+    } finally {
+      setModalSubmitting(false);
     }
   };
 
@@ -390,14 +437,28 @@ export const AccountsPortal: React.FC = () => {
                         >
                           {q.status === 'PENDING_ADMIN_APPROVAL' ? 'PENDING ADMIN APPROVAL' : q.status}
                         </span>
-                        <a
-                          href={`/api/resources/quotations/${q.id}/pdf`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 rounded text-xs font-bold flex items-center gap-1 transition-colors"
+                        <button
+                          type="button"
+                          disabled={downloadingPdfId === q.id}
+                          onClick={async () => {
+                            setDownloadingPdfId(q.id);
+                            try {
+                              await downloadQuotationPdf(q.id, q.quotationNumber);
+                            } catch (err: any) {
+                              toast.error(err.message || 'Failed to download quotation PDF');
+                            } finally {
+                              setDownloadingPdfId(null);
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 rounded text-xs font-bold flex items-center gap-1 transition-colors disabled:opacity-50"
                         >
-                          <Download className="w-3.5 h-3.5" /> PDF
-                        </a>
+                          {downloadingPdfId === q.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5" />
+                          )}
+                          PDF
+                        </button>
                       </div>
                     </div>
 
@@ -448,122 +509,164 @@ export const AccountsPortal: React.FC = () => {
               </div>
 
               {/* Prepare Quotation Modal */}
-              {prepModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto space-y-4">
-                    <div className="border-b border-slate-100 pb-3">
-                      <span className="font-mono text-xs font-bold text-[#3066BE]">{prepModal.quotation.quotationNumber}</span>
-                      <h3 className="text-base font-bold text-slate-900">
-                        Official Quotation Builder
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Client: <strong>{prepModal.quotation.client?.clientName}</strong> • Category: <strong>{prepModal.quotation.serviceCategory}</strong>
-                      </p>
-                    </div>
-
-                    {/* Company Policy Notice */}
-                    <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900">
-                      <strong>Workflow Policy Notice:</strong> Submitted official quotations are routed to the Admin Department for review. Official quotes are automatically released to the BGA immediately upon Admin approval.
-                    </div>
-
-                    <form onSubmit={handlePrepareQuotation} className="space-y-3 text-xs">
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Approved Service Scope Description *</label>
-                        <textarea
-                          rows={3}
-                          required
-                          value={quoteForm.serviceScope}
-                          onChange={(e) => setQuoteForm({ ...quoteForm, serviceScope: e.target.value })}
-                          className="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#3066BE]"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-slate-700 font-semibold mb-1">Service Fee (₹) *</label>
-                          <input
-                            type="number"
-                            required
-                            value={quoteForm.serviceFee}
-                            onChange={(e) => setQuoteForm({ ...quoteForm, serviceFee: e.target.value })}
-                            className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold"
-                          />
+              <AnimatePresence>
+                {prepModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                    onClick={() => !modalSubmitting && setPrepModal(null)}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden relative max-h-[92vh] flex flex-col"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 shrink-0" />
+                      
+                      <div className="p-6 border-b border-slate-100 flex items-start justify-between shrink-0">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-200">
+                            <FileText className="w-5 h-5 text-[#3066BE]" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-base font-bold text-slate-900">Official Quotation Builder</h3>
+                              <span className="font-mono text-xs font-bold text-[#3066BE] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                {prepModal.quotation.quotationNumber}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Client: <strong className="text-slate-800">{prepModal.quotation.client?.clientName}</strong> • Category: <strong className="text-slate-800">{prepModal.quotation.serviceCategory}</strong>
+                            </p>
+                          </div>
                         </div>
-
-                        <div>
-                          <label className="block text-slate-700 font-semibold mb-1">
-                            Ad Budget (₹) {prepModal.quotation.serviceCategory === 'DIGITAL_MARKETING' ? '(Excluded from comm.)' : ''}
-                          </label>
-                          <input
-                            type="number"
-                            value={quoteForm.adBudget}
-                            onChange={(e) => setQuoteForm({ ...quoteForm, adBudget: e.target.value })}
-                            className="w-full p-2.5 border border-slate-300 rounded-xl"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
-                          <label className="block text-slate-700 font-semibold mb-1">Discount (₹)</label>
-                          <input
-                            type="number"
-                            value={quoteForm.discount}
-                            onChange={(e) => setQuoteForm({ ...quoteForm, discount: e.target.value })}
-                            className="w-full p-2.5 border border-slate-300 rounded-xl"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-slate-700 font-semibold mb-1">GST Rate (%)</label>
-                          <input
-                            type="number"
-                            value={quoteForm.taxRate}
-                            onChange={(e) => setQuoteForm({ ...quoteForm, taxRate: e.target.value })}
-                            className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-slate-700 font-semibold mb-1">Advance Required (%)</label>
-                          <input
-                            type="number"
-                            value={quoteForm.advanceRequiredPercent}
-                            onChange={(e) => setQuoteForm({ ...quoteForm, advanceRequiredPercent: e.target.value })}
-                            className="w-full p-2.5 border border-slate-300 rounded-xl font-semibold text-emerald-700"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Commercial Payment Terms</label>
-                        <textarea
-                          rows={2}
-                          value={quoteForm.paymentTerms}
-                          onChange={(e) => setQuoteForm({ ...quoteForm, paymentTerms: e.target.value })}
-                          className="w-full p-2.5 border border-slate-300 rounded-xl"
-                        />
-                      </div>
-
-                      <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
                         <button
                           type="button"
-                          onClick={() => setPrepModal(null)}
-                          className="px-3.5 py-2 rounded-xl text-slate-600 font-semibold hover:bg-slate-100"
+                          onClick={() => !modalSubmitting && setPrepModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
                         >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-5 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-xl font-bold transition-colors shadow-sm"
-                        >
-                          Submit for Admin Approval →
+                          <X className="w-5 h-5" />
                         </button>
                       </div>
-                    </form>
-                  </div>
-                </div>
-              )}
+
+                      <div className="p-6 overflow-y-auto space-y-4">
+                        {/* Company Policy Notice */}
+                        <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-xl text-xs text-blue-900 flex items-start gap-2">
+                          <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                          <div>
+                            <strong>Workflow Policy Notice:</strong> Submitted official quotations are routed to Admin review. Official quotes are automatically released to the BGA immediately upon Admin approval.
+                          </div>
+                        </div>
+
+                        <form onSubmit={handlePrepareQuotation} className="space-y-3.5 text-xs">
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Approved Service Scope Description <span className="text-rose-500">*</span></label>
+                            <textarea
+                              rows={3}
+                              required
+                              value={quoteForm.serviceScope}
+                              onChange={(e) => setQuoteForm({ ...quoteForm, serviceScope: e.target.value })}
+                              className="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all resize-none"
+                              placeholder="Detail scope of deliverables..."
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-slate-700 font-semibold mb-1">Service Fee (₹) <span className="text-rose-500">*</span></label>
+                              <input
+                                type="number"
+                                required
+                                value={quoteForm.serviceFee}
+                                onChange={(e) => setQuoteForm({ ...quoteForm, serviceFee: e.target.value })}
+                                className="w-full p-2.5 border border-slate-200 rounded-xl font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-slate-700 font-semibold mb-1">
+                                Ad Budget (₹) {prepModal.quotation.serviceCategory === 'DIGITAL_MARKETING' ? '(Excluded from comm.)' : ''}
+                              </label>
+                              <input
+                                type="number"
+                                value={quoteForm.adBudget}
+                                onChange={(e) => setQuoteForm({ ...quoteForm, adBudget: e.target.value })}
+                                className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <label className="block text-slate-700 font-semibold mb-1">Discount (₹)</label>
+                              <input
+                                type="number"
+                                value={quoteForm.discount}
+                                onChange={(e) => setQuoteForm({ ...quoteForm, discount: e.target.value })}
+                                className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-slate-700 font-semibold mb-1">GST Rate (%)</label>
+                              <input
+                                type="number"
+                                value={quoteForm.taxRate}
+                                onChange={(e) => setQuoteForm({ ...quoteForm, taxRate: e.target.value })}
+                                className="w-full p-2.5 border border-slate-200 rounded-xl font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-slate-700 font-semibold mb-1">Advance Required (%)</label>
+                              <input
+                                type="number"
+                                value={quoteForm.advanceRequiredPercent}
+                                onChange={(e) => setQuoteForm({ ...quoteForm, advanceRequiredPercent: e.target.value })}
+                                className="w-full p-2.5 border border-slate-200 rounded-xl font-semibold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Commercial Payment Terms</label>
+                            <textarea
+                              rows={2}
+                              value={quoteForm.paymentTerms}
+                              onChange={(e) => setQuoteForm({ ...quoteForm, paymentTerms: e.target.value })}
+                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 resize-none"
+                            />
+                          </div>
+
+                          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
+                            <button
+                              type="button"
+                              disabled={modalSubmitting}
+                              onClick={() => setPrepModal(null)}
+                              className="px-4 py-2 rounded-xl text-slate-600 font-semibold hover:bg-slate-100 transition-colors disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={modalSubmitting}
+                              className="px-5 py-2 bg-gradient-to-r from-[#3066BE] to-[#255299] hover:from-[#255299] hover:to-[#1b3d73] text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                            >
+                              {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                              {modalSubmitting ? 'Submitting...' : 'Submit for Admin Approval →'}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
@@ -606,23 +709,56 @@ export const AccountsPortal: React.FC = () => {
                             {w.advanceVerified ? 'VERIFIED ✓' : 'PENDING'}
                           </span>
                         </td>
-                        <td className="p-3.5 text-right">
-                          <button
-                            onClick={() => {
-                              setPaymentModal({ workOrder: w });
-                              setPaymentForm({
-                                paymentType: w.advanceVerified ? 'FINAL' : 'ADVANCE',
-                                amount: String(w.advanceRequired),
-                                adBudgetAmount: '0',
-                                paymentMethod: 'BANK_TRANSFER',
-                                transactionReference: '',
-                                paymentDate: new Date().toISOString().slice(0, 10),
-                              });
-                            }}
-                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold"
-                          >
-                            + Record Payment
-                          </button>
+                        <td className="p-3.5 text-right flex items-center justify-end gap-2">
+                          {w.quotationId && (
+                            <button
+                              type="button"
+                              disabled={downloadingPdfId === w.quotationId}
+                              onClick={async () => {
+                                setDownloadingPdfId(w.quotationId);
+                                try {
+                                  await downloadQuotationPdf(
+                                    w.quotationId,
+                                    w.quotation?.quotationNumber || w.quotationNumber
+                                  );
+                                } catch (err: any) {
+                                  toast.error(err.message || 'Failed to download quotation PDF');
+                                } finally {
+                                  setDownloadingPdfId(null);
+                                }
+                              }}
+                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold inline-flex items-center gap-1 transition-colors disabled:opacity-50"
+                            >
+                              {downloadingPdfId === w.quotationId ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Download className="w-3 h-3" />
+                              )}
+                              Quotation PDF
+                            </button>
+                          )}
+                          {!w.advanceVerified ? (
+                            <button
+                              onClick={() => {
+                                setPaymentModal({ workOrder: w });
+                                setPaymentForm({
+                                  paymentType: 'ADVANCE',
+                                  amount: String(w.advanceRequired),
+                                  adBudgetAmount: '0',
+                                  paymentMethod: 'BANK_TRANSFER',
+                                  transactionReference: '',
+                                  paymentDate: new Date().toISOString().slice(0, 10),
+                                });
+                              }}
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold shadow-2xs transition-colors"
+                            >
+                              + Record Payment
+                            </button>
+                          ) : (
+                            <span className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded text-[11px] font-bold inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Advance Cleared
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -631,160 +767,200 @@ export const AccountsPortal: React.FC = () => {
               </div>
 
               {/* Record Payment Modal */}
-              {paymentModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-                    <h3 className="text-base font-bold text-slate-900">
-                      Record Client Payment ({paymentModal.workOrder.workOrderNumber})
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Client: {paymentModal.workOrder.client?.clientName}
-                    </p>
-
-                    <form onSubmit={handleRecordPayment} className="mt-4 space-y-3 text-xs">
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Payment Type</label>
-                        <select
-                          value={paymentForm.paymentType}
-                          onChange={(e) => setPaymentForm({ ...paymentForm, paymentType: e.target.value })}
-                          className="w-full p-2 border border-slate-300 rounded"
-                        >
-                          <option value="ADVANCE">Advance Payment</option>
-                          <option value="INTERIM">Interim Milestone</option>
-                          <option value="FINAL">Final Settlement</option>
-                          <option value="MONTHLY_RECURRING">Monthly Subscription (DM)</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Gross Payment Amount Received (₹) *</label>
-                        <input
-                          type="number"
-                          required
-                          value={paymentForm.amount}
-                          onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                          className="w-full p-2 border border-slate-300 rounded font-semibold text-sm"
-                        />
-                      </div>
-
-                      {paymentForm.paymentType === 'MONTHLY_RECURRING' && (
-                        <div>
-                          <label className="block text-slate-700 font-semibold mb-1">
-                            Media Advertisement Spend Amount (₹) - Excluded from commission
-                          </label>
-                          <input
-                            type="number"
-                            value={paymentForm.adBudgetAmount}
-                            onChange={(e) => setPaymentForm({ ...paymentForm, adBudgetAmount: e.target.value })}
-                            className="w-full p-2 border border-slate-300 rounded"
-                          />
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Payment Method *</label>
-                        <select
-                          value={paymentForm.paymentMethod}
-                          onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}
-                          className="w-full p-2 border border-slate-300 rounded font-medium text-sm"
-                        >
-                          <option value="UPI">UPI / QR Code</option>
-                          <option value="NEFT">NEFT Bank Transfer</option>
-                          <option value="RTGS">RTGS Bank Transfer</option>
-                          <option value="IMPS">IMPS Immediate Transfer</option>
-                          <option value="CHEQUE">Cheque Clearance</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between items-center mb-1">
-                          <label className="block text-slate-700 font-semibold text-xs">
-                            Bank Transaction / UTR Reference *
-                          </label>
-                          <span className={`text-[11px] font-mono ${
-                            paymentForm.transactionReference.length === 0
-                              ? 'text-slate-400'
-                              : utrCheck.isValid
-                              ? 'text-emerald-600 font-bold'
-                              : 'text-amber-600 font-semibold'
-                          }`}>
-                            {paymentForm.transactionReference.length} chars • Req: {utrConfig.expectedLength}
-                          </span>
-                        </div>
-
-                        <div className="relative">
-                          <input
-                            type="text"
-                            required
-                            value={paymentForm.transactionReference}
-                            onChange={(e) => {
-                              const val = e.target.value.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
-                              setPaymentForm({ ...paymentForm, transactionReference: val });
-                            }}
-                            placeholder={utrConfig.placeholder}
-                            className={`w-full p-2.5 pr-9 border rounded-lg font-mono text-sm uppercase tracking-wide transition-all ${
-                              !paymentForm.transactionReference
-                                ? 'border-slate-300 focus:ring-2 focus:ring-blue-500'
-                                : utrCheck.isValid
-                                ? 'border-emerald-500 bg-emerald-50/20 text-emerald-900 focus:ring-2 focus:ring-emerald-500'
-                                : 'border-red-400 bg-red-50/20 text-red-900 focus:ring-2 focus:ring-red-500'
-                            }`}
-                          />
-                          <div className="absolute right-2.5 top-3">
-                            {paymentForm.transactionReference && (
-                              utrCheck.isValid ? (
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                              ) : (
-                                <AlertCircle className="w-4 h-4 text-red-500" />
-                              )
-                            )}
+              <AnimatePresence>
+                {paymentModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                    onClick={() => !modalSubmitting && setPaymentModal(null)}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative max-h-[92vh] flex flex-col"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 shrink-0" />
+                      
+                      <div className="p-6 border-b border-slate-100 flex items-start justify-between shrink-0">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200">
+                            <CreditCard className="w-5 h-5 text-emerald-600" />
                           </div>
-                        </div>
-
-                        {/* Helper and Error feedback banner */}
-                        {paymentForm.transactionReference && !utrCheck.isValid ? (
-                          <div className="mt-1.5 p-2 bg-red-50 border border-red-200 rounded-lg text-[11px] text-red-700 space-y-0.5">
-                            <div className="flex items-center gap-1.5 font-bold">
-                              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600" />
-                              <span>{utrCheck.error}</span>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-base font-bold text-slate-900">Record Client Payment</h3>
+                              <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                                {paymentModal.workOrder.workOrderNumber}
+                              </span>
                             </div>
-                            {utrCheck.hint && (
-                              <p className="text-slate-600 pl-5">{utrCheck.hint}</p>
-                            )}
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Client: <strong className="text-slate-800">{paymentModal.workOrder.client?.clientName}</strong>
+                            </p>
                           </div>
-                        ) : paymentForm.transactionReference && utrCheck.isValid ? (
-                          <div className="mt-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] text-emerald-800 flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <span className="font-semibold">{utrCheck.hint || `Valid ${paymentForm.paymentMethod} transaction reference.`}</span>
-                          </div>
-                        ) : (
-                          <p className="mt-1 text-[11px] text-slate-500">
-                            {utrConfig.helper}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="pt-3 flex justify-end gap-2">
+                        </div>
                         <button
                           type="button"
-                          onClick={() => setPaymentModal(null)}
-                          className="px-3 py-1.5 rounded text-slate-600 font-semibold hover:bg-slate-100 text-xs"
+                          onClick={() => !modalSubmitting && setPaymentModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
                         >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={!paymentForm.transactionReference || !utrCheck.isValid}
-                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg font-bold text-xs shadow-sm transition-all flex items-center gap-1.5"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Save Payment Record</span>
+                          <X className="w-5 h-5" />
                         </button>
                       </div>
-                    </form>
-                  </div>
-                </div>
-              )}
+
+                      <div className="p-6 overflow-y-auto space-y-4">
+                        <form onSubmit={handleRecordPayment} className="space-y-3.5 text-xs">
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Payment Type</label>
+                            <select
+                              value={paymentForm.paymentType}
+                              onChange={(e) => setPaymentForm({ ...paymentForm, paymentType: e.target.value })}
+                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                            >
+                              <option value="ADVANCE">Advance Payment</option>
+                              <option value="INTERIM">Interim Milestone</option>
+                              <option value="FINAL">Final Settlement</option>
+                              <option value="MONTHLY_RECURRING">Monthly Subscription (DM)</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Gross Payment Amount Received (₹) <span className="text-rose-500">*</span></label>
+                            <input
+                              type="number"
+                              required
+                              value={paymentForm.amount}
+                              onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                              placeholder="e.g. 50000"
+                              className="w-full p-2.5 border border-slate-200 rounded-xl font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                            />
+                          </div>
+
+                          {paymentForm.paymentType === 'MONTHLY_RECURRING' && (
+                            <div>
+                              <label className="block text-slate-700 font-semibold mb-1">
+                                Media Advertisement Spend Amount (₹) - Excluded from commission
+                              </label>
+                              <input
+                                type="number"
+                                value={paymentForm.adBudgetAmount}
+                                onChange={(e) => setPaymentForm({ ...paymentForm, adBudgetAmount: e.target.value })}
+                                className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                              />
+                            </div>
+                          )}
+
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">Payment Method <span className="text-rose-500">*</span></label>
+                            <select
+                              value={paymentForm.paymentMethod}
+                              onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}
+                              className="w-full p-2.5 border border-slate-200 rounded-xl font-medium text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                            >
+                              <option value="UPI">UPI / QR Code</option>
+                              <option value="NEFT">NEFT Bank Transfer</option>
+                              <option value="RTGS">RTGS Bank Transfer</option>
+                              <option value="IMPS">IMPS Immediate Transfer</option>
+                              <option value="CHEQUE">Cheque Clearance</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <label className="block text-slate-700 font-semibold text-xs">
+                                Bank Transaction / UTR Reference <span className="text-rose-500">*</span>
+                              </label>
+                              <span className={`text-[11px] font-mono ${
+                                paymentForm.transactionReference.length === 0
+                                  ? 'text-slate-400'
+                                  : utrCheck.isValid
+                                  ? 'text-emerald-600 font-bold'
+                                  : 'text-amber-600 font-semibold'
+                              }`}>
+                                {paymentForm.transactionReference.length} chars • Req: {utrConfig.expectedLength}
+                              </span>
+                            </div>
+
+                            <div className="relative">
+                              <input
+                                type="text"
+                                required
+                                value={paymentForm.transactionReference}
+                                onChange={(e) => {
+                                  const val = e.target.value.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
+                                  setPaymentForm({ ...paymentForm, transactionReference: val });
+                                }}
+                                placeholder={utrConfig.placeholder}
+                                className={`w-full p-2.5 pr-9 border rounded-xl font-mono text-sm uppercase tracking-wide transition-all ${
+                                  !paymentForm.transactionReference
+                                    ? 'border-slate-300 focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500'
+                                    : utrCheck.isValid
+                                    ? 'border-emerald-500 bg-emerald-50/20 text-emerald-900 focus:ring-2 focus:ring-emerald-500'
+                                    : 'border-red-400 bg-red-50/20 text-red-900 focus:ring-2 focus:ring-red-500'
+                                }`}
+                              />
+                              <div className="absolute right-3 top-3">
+                                {paymentForm.transactionReference && (
+                                  utrCheck.isValid ? (
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                  ) : (
+                                    <AlertCircle className="w-4 h-4 text-red-500" />
+                                  )
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Helper and Error feedback banner */}
+                            {paymentForm.transactionReference && !utrCheck.isValid ? (
+                              <div className="mt-1.5 p-2 bg-red-50 border border-red-200 rounded-xl text-[11px] text-red-700 space-y-0.5">
+                                <div className="flex items-center gap-1.5 font-bold">
+                                  <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600" />
+                                  <span>{utrCheck.error}</span>
+                                </div>
+                                {utrCheck.hint && (
+                                  <p className="text-slate-600 pl-5">{utrCheck.hint}</p>
+                                )}
+                              </div>
+                            ) : paymentForm.transactionReference && utrCheck.isValid ? (
+                              <div className="mt-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-800 flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <span className="font-semibold">{utrCheck.hint || `Valid ${paymentForm.paymentMethod} transaction reference.`}</span>
+                              </div>
+                            ) : (
+                              <p className="mt-1 text-[11px] text-slate-500">
+                                {utrConfig.helper}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
+                            <button
+                              type="button"
+                              disabled={modalSubmitting}
+                              onClick={() => setPaymentModal(null)}
+                              className="px-4 py-2 rounded-xl text-slate-600 font-semibold hover:bg-slate-100 transition-colors disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={!paymentForm.transactionReference || !utrCheck.isValid || modalSubmitting}
+                              className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                            >
+                              {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                              <span>{modalSubmitting ? 'Saving...' : 'Save Payment Record'}</span>
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
@@ -844,7 +1020,7 @@ export const AccountsPortal: React.FC = () => {
                         <td className="p-3.5 text-right whitespace-nowrap">
                           {p.status === 'PENDING_VERIFICATION' ? (
                             <button
-                              onClick={() => handleVerifyPayment(p.id, 'VERIFY')}
+                              onClick={() => openVerifyModal(p, 'VERIFY')}
                               className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold shadow-sm"
                             >
                               Verify Bank Credit ✓
@@ -858,6 +1034,105 @@ export const AccountsPortal: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Payment Verification Modal */}
+              <AnimatePresence>
+                {verifyModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                    onClick={() => !modalSubmitting && setVerifyModal(null)}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className={`h-1.5 w-full ${verifyModal.action === 'VERIFY' ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 'bg-gradient-to-r from-rose-500 to-red-600'}`} />
+                      
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                              verifyModal.action === 'VERIFY' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-600 border-rose-200'
+                            }`}>
+                              {verifyModal.action === 'VERIFY' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">
+                                {verifyModal.action === 'VERIFY' ? 'Verify Bank Credit' : 'Reject Payment Record'}
+                              </h3>
+                              <p className="text-xs text-slate-500 font-mono">
+                                UTR: {verifyModal.transactionReference}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => !modalSubmitting && setVerifyModal(null)}
+                            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-xs space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Client:</span>
+                            <span className="font-semibold text-slate-800">{verifyModal.clientName}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Amount Received:</span>
+                            <span className="font-bold text-emerald-700">₹{verifyModal.amount?.toLocaleString()}</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                            Bank Statement Audit / Verification Notes <span className="text-rose-500">*</span>
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={verifyNotes}
+                            onChange={(e) => setVerifyNotes(e.target.value)}
+                            placeholder="Enter bank statement audit notes..."
+                            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-none transition-all"
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            disabled={modalSubmitting}
+                            onClick={() => setVerifyModal(null)}
+                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            disabled={modalSubmitting}
+                            onClick={confirmVerifyPayment}
+                            className={`px-5 py-2 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50 ${
+                              verifyModal.action === 'VERIFY'
+                                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700'
+                                : 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700'
+                            }`}
+                          >
+                            {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                            {modalSubmitting ? 'Processing...' : `Confirm ${verifyModal.action === 'VERIFY' ? 'Verification' : 'Rejection'}`}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 

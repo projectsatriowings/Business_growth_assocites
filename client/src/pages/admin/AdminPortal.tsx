@@ -41,6 +41,10 @@ import { AssociateProfileView } from './AssociateProfileView';
 import { apiRequest } from '../../utils/api';
 import { SkeletonCard, SkeletonStatsRow, SkeletonTable, AdminDashboardSkeleton } from '../../components/Skeleton';
 import { validateBankUtr } from '../../utils/utrValidator';
+import { useToast } from '../../context/ToastContext';
+import { getQuotationPdfUrl } from '../../utils/downloadPdf';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
 
 // Generic Reusable Empty State Component
 const EmptyState: React.FC<{
@@ -127,7 +131,10 @@ export const AdminPortal: React.FC = () => {
   const [auditLogSearch, setAuditLogSearch] = useState('');
   const [auditLogRoleFilter, setAuditLogRoleFilter] = useState('ALL');
 
+  const { toast } = useToast();
+
   // Modals & Action States
+  const [deleteResourceModal, setDeleteResourceModal] = useState<{ id: string; title: string } | null>(null);
   const [transferModal, setTransferModal] = useState<{ client: any } | null>(null);
   const [targetBgaId, setTargetBgaId] = useState('');
   const [transferReason, setTransferReason] = useState('');
@@ -265,9 +272,10 @@ export const AdminPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ action, reason }),
       });
+      toast.success('BGA account status updated successfully.');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to update BGA status');
     }
   };
 
@@ -282,11 +290,12 @@ export const AdminPortal: React.FC = () => {
           notes: enquiryReviewNotes,
         }),
       });
+      toast.success(`Enquiry ${enquiryReviewModal.action.toLowerCase()} recorded successfully.`);
       setEnquiryReviewModal(null);
       setEnquiryReviewNotes('');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to review enquiry');
     }
   };
 
@@ -301,11 +310,12 @@ export const AdminPortal: React.FC = () => {
           notes: quotationReviewNotes,
         }),
       });
+      toast.success(`Quotation ${quotationReviewModal.action.toLowerCase()} action processed.`);
       setQuotationReviewModal(null);
       setQuotationReviewNotes('');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to review quotation');
     }
   };
 
@@ -320,11 +330,12 @@ export const AdminPortal: React.FC = () => {
           notes: handoverReviewNotes,
         }),
       });
+      toast.success(`Technical handover ${handoverReviewModal.action.toLowerCase()} recorded.`);
       setHandoverReviewModal(null);
       setHandoverReviewNotes('');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to process handover review');
     }
   };
 
@@ -335,9 +346,10 @@ export const AdminPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ action }),
       });
+      toast.success(`Commission ${action.toLowerCase()} processed successfully.`);
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to update commission');
     }
   };
 
@@ -346,7 +358,7 @@ export const AdminPortal: React.FC = () => {
     if (!payoutModal) return;
     const validation = validateBankUtr(payoutReferenceInput, 'BANK_TRANSFER');
     if (!validation.isValid) {
-      alert(`Invalid Bank Transaction / UTR:\n\n${validation.error}${validation.hint ? '\n\n' + validation.hint : ''}`);
+      toast.warning(`Invalid Bank Transaction / UTR: ${validation.error}${validation.hint ? ' (' + validation.hint + ')' : ''}`);
       return;
     }
     try {
@@ -354,11 +366,12 @@ export const AdminPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ payoutReference: validation.formattedUtr }),
       });
+      toast.success(`Disbursement of ₹${payoutModal.amount?.toLocaleString()} recorded with UTR: ${validation.formattedUtr}`);
       setPayoutModal(null);
       setPayoutReferenceInput('');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to record payout disbursement');
     }
   };
 
@@ -370,12 +383,13 @@ export const AdminPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ newBgaId: targetBgaId, reason: transferReason }),
       });
+      toast.success('Client ownership transferred successfully.');
       setTransferModal(null);
       setTransferReason('');
       setTargetBgaId('');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to transfer client ownership');
     }
   };
 
@@ -386,9 +400,10 @@ export const AdminPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ settings: [{ key, value }] }),
       });
+      toast.success('System setting updated successfully.');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to save setting');
     }
   };
 
@@ -400,6 +415,7 @@ export const AdminPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify(newResource),
       });
+      toast.success('Resource created and published successfully.');
       setShowResourceForm(false);
       setNewResource({
         title: '',
@@ -413,7 +429,7 @@ export const AdminPortal: React.FC = () => {
       });
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to create resource');
     }
   };
 
@@ -424,20 +440,23 @@ export const AdminPortal: React.FC = () => {
         method: 'PUT',
         body: JSON.stringify({ isPublished: !current }),
       });
+      toast.success(`Resource ${!current ? 'published' : 'unpublished'}.`);
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to toggle resource status');
     }
   };
 
-  // Delete Resource
-  const handleDeleteResource = async (id: string) => {
-    if (!confirm('Are you sure you want to permanently delete this resource?')) return;
+  // Delete Resource Execution
+  const confirmDeleteResource = async () => {
+    if (!deleteResourceModal) return;
     try {
-      await apiRequest(`/api/admin/resources/${id}`, { method: 'DELETE' });
+      await apiRequest(`/api/admin/resources/${deleteResourceModal.id}`, { method: 'DELETE' });
+      toast.success('Resource deleted permanently.');
+      setDeleteResourceModal(null);
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to delete resource');
     }
   };
 
@@ -1951,7 +1970,7 @@ export const AdminPortal: React.FC = () => {
                               {r.isPublished ? 'Unpublish' : 'Publish'}
                             </button>
                             <button
-                              onClick={() => handleDeleteResource(r.id)}
+                              onClick={() => setDeleteResourceModal({ id: r.id, title: r.title })}
                               className="px-2.5 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold"
                             >
                               Delete
@@ -1963,6 +1982,71 @@ export const AdminPortal: React.FC = () => {
                   </table>
                 </div>
               )}
+
+              {/* Delete Resource Confirmation Modal */}
+              <AnimatePresence>
+                {deleteResourceModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                    onClick={() => setDeleteResourceModal(null)}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="h-1.5 w-full bg-gradient-to-r from-rose-500 to-red-600" />
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
+                              <Trash2 className="w-5 h-5 text-rose-600" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">Delete Marketing Resource</h3>
+                              <p className="text-xs text-slate-500">This action cannot be undone.</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteResourceModal(null)}
+                            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          Are you sure you want to permanently delete <strong className="text-slate-900">{deleteResourceModal.title}</strong>? It will no longer be visible or downloadable by BGA associates.
+                        </p>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => setDeleteResourceModal(null)}
+                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={confirmDeleteResource}
+                            className="px-5 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-1.5"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Permanently Delete
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
@@ -2122,7 +2206,7 @@ export const AdminPortal: React.FC = () => {
                                   Scope
                                 </button>
                                 <a
-                                  href={`/api/resources/quotations/${q.id}/pdf`}
+                                  href={getQuotationPdfUrl(q.id)}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-xs font-semibold inline-block hover:bg-slate-800"
@@ -2364,34 +2448,47 @@ export const AdminPortal: React.FC = () => {
                               </span>
                             </td>
                             <td className="p-3.5 text-right">
-                              {isPendingHandover ? (
-                                <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                                  <button
-                                    onClick={() => setHandoverReviewModal({ workOrder: w, action: 'APPROVE' })}
-                                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                              <div className="flex items-center justify-end gap-2">
+                                {w.quotationId && (
+                                  <a
+                                    href={getQuotationPdfUrl(w.quotationId)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold inline-flex items-center gap-1"
+                                    title="View Quotation PDF"
                                   >
-                                    Authorize Handover
-                                  </button>
-                                  <button
-                                    onClick={() => setHandoverReviewModal({ workOrder: w, action: 'HOLD' })}
-                                    className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-colors"
-                                  >
-                                    Hold
-                                  </button>
-                                  <button
-                                    onClick={() => setHandoverReviewModal({ workOrder: w, action: 'REQUEST_CLARIFICATION' })}
-                                    className="px-2.5 py-1 bg-slate-200 text-slate-800 hover:bg-slate-300 rounded-lg text-xs font-bold transition-colors"
-                                  >
-                                    Clarify
-                                  </button>
-                                </div>
-                              ) : w.handoverApproved ? (
-                                <span className="text-xs text-emerald-700 font-bold flex items-center justify-end gap-1">
-                                  <CheckCircle2 className="w-3.5 h-3.5" /> Project Active
-                                </span>
-                              ) : (
-                                <span className="text-xs text-slate-400">Awaiting Advance</span>
-                              )}
+                                    <Download className="w-3.5 h-3.5" /> Quote PDF
+                                  </a>
+                                )}
+                                {isPendingHandover ? (
+                                  <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                    <button
+                                      onClick={() => setHandoverReviewModal({ workOrder: w, action: 'APPROVE' })}
+                                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                                    >
+                                      Authorize Handover
+                                    </button>
+                                    <button
+                                      onClick={() => setHandoverReviewModal({ workOrder: w, action: 'HOLD' })}
+                                      className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-colors"
+                                    >
+                                      Hold
+                                    </button>
+                                    <button
+                                      onClick={() => setHandoverReviewModal({ workOrder: w, action: 'REQUEST_CLARIFICATION' })}
+                                      className="px-2.5 py-1 bg-slate-200 text-slate-800 hover:bg-slate-300 rounded-lg text-xs font-bold transition-colors"
+                                    >
+                                      Clarify
+                                    </button>
+                                  </div>
+                                ) : w.handoverApproved ? (
+                                  <span className="text-xs text-emerald-700 font-bold flex items-center justify-end gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5" /> Project Active
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-slate-400">Awaiting Advance</span>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );

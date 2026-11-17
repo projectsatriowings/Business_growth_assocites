@@ -12,18 +12,27 @@ import {
   Play,
   CheckSquare,
   Plus,
+  X,
+  RefreshCw,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
 import { SkeletonStatsRow, SkeletonTable, TechnicalDashboardSkeleton } from '../../components/Skeleton';
+import { useToast } from '../../context/ToastContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const TechnicalPortal: React.FC = () => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects'>('dashboard');
   const [loading, setLoading] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
+
+  // Progress Update Modal
+  const [progressModal, setProgressModal] = useState<{ projectId: string; current: number } | null>(null);
+  const [progressInput, setProgressInput] = useState<number>(0);
 
   // New Milestone Modal
   const [milestoneModal, setMilestoneModal] = useState<boolean>(false);
@@ -86,10 +95,10 @@ export const TechnicalPortal: React.FC = () => {
         method: 'PUT',
         body: JSON.stringify({ status: newStatus, progressPercentage: progress }),
       });
-      alert(res.message);
+      toast.success(res.message || 'Project status updated successfully.');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to update project status');
     }
   };
 
@@ -103,12 +112,13 @@ export const TechnicalPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ title: milestoneTitle, description: milestoneDesc }),
       });
+      toast.success('Milestone added successfully.');
       setMilestoneModal(false);
       setMilestoneTitle('');
       setMilestoneDesc('');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to add milestone');
     }
   };
 
@@ -119,9 +129,10 @@ export const TechnicalPortal: React.FC = () => {
         method: 'PUT',
         body: JSON.stringify({ status }),
       });
+      toast.success(`Milestone marked as ${status.toLowerCase()}.`);
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to update milestone status');
     }
   };
 
@@ -139,12 +150,13 @@ export const TechnicalPortal: React.FC = () => {
           version: deliverableVersion,
         }),
       });
+      toast.success('Deliverable deployed and linked to project.');
       setDeliverableModal(false);
       setDeliverableTitle('');
       setDeliverableUrl('');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to add deliverable');
     }
   };
 
@@ -161,11 +173,12 @@ export const TechnicalPortal: React.FC = () => {
           content: feedbackContent,
         }),
       });
+      toast.success('Engineering feedback submitted successfully.');
       setFeedbackModal(false);
       setFeedbackContent('');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to submit feedback');
     }
   };
 
@@ -175,9 +188,10 @@ export const TechnicalPortal: React.FC = () => {
       await apiRequest(`/api/technical/feedback/${feedbackId}/resolve`, {
         method: 'PUT',
       });
+      toast.success('Feedback resolved successfully.');
       loadData();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to resolve feedback');
     }
   };
 
@@ -392,10 +406,10 @@ export const TechnicalPortal: React.FC = () => {
                           <>
                             <button
                               onClick={() => {
-                                const prog = prompt('Enter new progress percentage (0-100):', String(selectedProject.progressPercentage));
-                                if (prog) handleUpdateStatus(selectedProject.id, 'IN_PROGRESS', parseInt(prog));
+                                setProgressModal({ projectId: selectedProject.id, current: selectedProject.progressPercentage || 0 });
+                                setProgressInput(selectedProject.progressPercentage || 0);
                               }}
-                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold"
+                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition-colors"
                             >
                               Update Progress %
                             </button>
@@ -734,6 +748,83 @@ export const TechnicalPortal: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* Progress Percentage Modal */}
+              <AnimatePresence>
+                {progressModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                    onClick={() => setProgressModal(null)}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 to-indigo-600" />
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <h3 className="text-base font-bold text-slate-900">Update Execution Progress</h3>
+                          <button
+                            type="button"
+                            onClick={() => setProgressModal(null)}
+                            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs font-semibold text-slate-700">Completion Level:</span>
+                            <span className="text-lg font-bold text-[#3066BE] font-mono">{progressInput}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="5"
+                            value={progressInput}
+                            onChange={(e) => setProgressInput(parseInt(e.target.value))}
+                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#3066BE]"
+                          />
+                          <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+                            <span>0%</span>
+                            <span>50%</span>
+                            <span>100%</span>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => setProgressModal(null)}
+                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleUpdateStatus(progressModal.projectId, 'IN_PROGRESS', progressInput);
+                              setProgressModal(null);
+                            }}
+                            className="px-5 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg"
+                          >
+                            Save Progress
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </main>

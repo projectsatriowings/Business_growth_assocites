@@ -35,12 +35,18 @@ export const invalidateUserCache = (userId?: string) => {
 
 export const authenticateJWT = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  let token: string | undefined = undefined;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.query.token && typeof req.query.token === 'string') {
+    token = req.query.token;
+  }
+
+  if (!token) {
     res.status(401).json({ error: 'Authorization token required' });
     return;
   }
-
-  const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as AuthenticatedUser;
     const now = Date.now();

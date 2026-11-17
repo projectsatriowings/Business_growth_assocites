@@ -994,12 +994,223 @@ router.post('/clients', async (req: AuthRequest, res: Response): Promise<void> =
   }
 });
 
-// Update client discussions/followups
+// Fetch single client details with ownership validation
+router.get('/clients/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const client = await prisma.client.findFirst({
+      where: { id, bgaId: req.user!.id },
+      include: {
+        contactActivities: {
+          orderBy: { createdAt: 'desc' },
+        },
+        enquiries: {
+          include: {
+            quotations: {
+              include: {
+                workOrder: {
+                  include: {
+                    project: {
+                      select: {
+                        id: true,
+                        projectNumber: true,
+                        status: true,
+                        progressPercentage: true,
+                      },
+                    },
+                  },
+                },
+              },
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        quotations: {
+          include: {
+            workOrder: {
+              include: {
+                project: {
+                  select: {
+                    id: true,
+                    projectNumber: true,
+                    status: true,
+                    progressPercentage: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        workOrders: {
+          include: {
+            payments: {
+              orderBy: { createdAt: 'desc' },
+            },
+            project: {
+              include: {
+                milestones: {
+                  orderBy: { createdAt: 'asc' },
+                },
+                deliverables: {
+                  orderBy: { createdAt: 'desc' },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        commissions: {
+          include: {
+            workOrder: {
+              select: {
+                workOrderNumber: true,
+                totalValue: true,
+              },
+            },
+            payment: {
+              select: {
+                amount: true,
+                transactionReference: true,
+                paymentDate: true,
+              },
+            },
+            project: {
+              select: {
+                projectNumber: true,
+                status: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: { select: { workOrders: true, enquiries: true, quotations: true, contactActivities: true } },
+      },
+    });
+
+    if (!client) {
+      res.status(404).json({ error: 'Client not found or not assigned to your account' });
+      return;
+    }
+
+    const addr = parseClientLocation(client.location);
+    res.json({
+      client: {
+        ...client,
+        address: addr,
+        addressLine1: addr.addressLine1,
+        addressLine2: addr.addressLine2,
+        city: addr.city,
+        state: addr.state,
+        pinCode: addr.pinCode,
+        country: addr.country,
+        fullAddress: addr.fullAddress,
+        displayLocation: addr.displayLocation,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch client details' });
+  }
+});
+
+// Add Contact / Follow-up Activity under a Client
+router.post('/clients/:id/activities', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { contactMethod, discussionSummary, followUpNotes, nextFollowUpDate, outcome } = req.body;
+
+    if (!discussionSummary || !discussionSummary.trim()) {
+      res.status(400).json({ error: 'Discussion summary is required' });
+      return;
+    }
+
+    // Verify client belongs to logged-in BGA
+    const client = await prisma.client.findFirst({
+      where: { id, bgaId: req.user!.id },
+    });
+
+    if (!client) {
+      res.status(404).json({ error: 'Client not found or not owned by you' });
+      return;
+    }
+
+    const activity = await prisma.contactActivity.create({
+      data: {
+        clientId: id,
+        bgaId: req.user!.id,
+        contactMethod: contactMethod || 'CALL',
+        discussionSummary: discussionSummary.trim(),
+        followUpNotes: followUpNotes ? followUpNotes.trim() : null,
+        nextFollowUpDate: nextFollowUpDate ? new Date(nextFollowUpDate) : null,
+        outcome: outcome || 'CONNECTED',
+        createdBy: req.user!.name,
+      },
+    });
+
+    // If next follow-up date was supplied, also update the latest enquiry's followUpDate for consistency
+    if (nextFollowUpDate) {
+      const latestEnq = await prisma.enquiry.findFirst({
+        where: { clientId: id, bgaId: req.user!.id },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (latestEnq) {
+        await prisma.enquiry.update({
+          where: { id: latestEnq.id },
+          data: {
+            followUpDate: new Date(nextFollowUpDate),
+            ...(discussionSummary ? { discussionNotes: discussionSummary.trim() } : {}),
+          },
+        });
+      }
+    }
+
+    await logAudit(req.user!.id, req.user!.email, req.user!.role, 'CREATE_CONTACT_ACTIVITY', 'CLIENT', id, {
+      activityId: activity.id,
+      contactMethod: activity.contactMethod,
+      outcome: activity.outcome,
+    });
+
+    res.status(201).json({ activity, message: 'Contact activity logged successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to record contact activity' });
+  }
+});
+
+// Get Contact Activities for a Client
+router.get('/clients/:id/activities', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const client = await prisma.client.findFirst({
+      where: { id, bgaId: req.user!.id },
+    });
+
+    if (!client) {
+      res.status(404).json({ error: 'Client not found or not owned by you' });
+      return;
+    }
+
+    const activities = await prisma.contactActivity.findMany({
+      where: { clientId: id, bgaId: req.user!.id },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ activities });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch contact activities' });
+  }
+});
+
+// Update client information, address, and discussion/enquiry fields
 router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const {
+      clientName,
       businessName,
+      mobile,
+      email,
       location,
       addressLine1,
       addressLine2,
@@ -1009,73 +1220,318 @@ router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
       country,
       businessCategory,
       otherCategory,
+      requiredService,
+      expectedBudget,
+      clientRequirements,
+      discussionNotes,
+      followUpDate,
     } = req.body;
 
+    // Strict Ownership Enforcement: Must belong to authenticated BGA
     const client = await prisma.client.findFirst({
       where: { id, bgaId: req.user!.id },
+      include: {
+        enquiries: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
     });
 
     if (!client) {
-      res.status(404).json({ error: 'Client not found or not assigned to you' });
+      res.status(404).json({ error: 'Client not found or not assigned to your account' });
       return;
     }
 
-    let resolvedCategory = businessCategory?.trim() || client.businessCategory;
-    if (resolvedCategory === 'Other') {
-      if (otherCategory && otherCategory.trim()) {
+    // Validate clientName if passed
+    if (clientName !== undefined) {
+      if (!clientName || !clientName.trim()) {
+        res.status(400).json({ error: 'Client contact name cannot be empty' });
+        return;
+      }
+    }
+
+    // Validate businessName if passed
+    if (businessName !== undefined) {
+      if (!businessName || !businessName.trim()) {
+        res.status(400).json({ error: 'Business / Company name cannot be empty' });
+        return;
+      }
+    }
+
+    // Validate Mobile & Global Duplicate Check if passed
+    let normalizedMobile = client.mobile;
+    if (mobile !== undefined && mobile !== null && mobile !== '') {
+      const cleanMob = mobile.replace(/\D/g, '').slice(-10);
+      if (cleanMob.length !== 10) {
+        res.status(400).json({ error: 'Valid 10-digit mobile number is required' });
+        return;
+      }
+      normalizedMobile = cleanMob;
+
+      if (normalizedMobile !== client.mobile) {
+        const existingMob = await prisma.client.findFirst({
+          where: {
+            mobile: normalizedMobile,
+            id: { not: client.id },
+          },
+          select: { id: true },
+        });
+        if (existingMob) {
+          res.status(409).json({
+            error: 'Registration Conflict: A client with this mobile number or email address is already registered in the system. Duplicate client registrations are not permitted under company ownership policy.',
+          });
+          return;
+        }
+      }
+    }
+
+    // Validate Email & Global Duplicate Check if passed
+    let normalizedEmail = client.email;
+    if (email !== undefined && email !== null && email !== '') {
+      const cleanEmail = email.trim().toLowerCase();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cleanEmail)) {
+        res.status(400).json({ error: 'Please enter a valid email address' });
+        return;
+      }
+      normalizedEmail = cleanEmail;
+
+      if (normalizedEmail !== client.email) {
+        const existingEmail = await prisma.client.findFirst({
+          where: {
+            email: normalizedEmail,
+            id: { not: client.id },
+          },
+          select: { id: true },
+        });
+        if (existingEmail) {
+          res.status(409).json({
+            error: 'Registration Conflict: A client with this mobile number or email address is already registered in the system. Duplicate client registrations are not permitted under company ownership policy.',
+          });
+          return;
+        }
+      }
+    }
+
+    // Resolve Business Category
+    let resolvedCategory = client.businessCategory;
+    if (businessCategory !== undefined) {
+      resolvedCategory = businessCategory.trim();
+      if (!resolvedCategory || resolvedCategory === 'Other') {
+        if (!otherCategory || !otherCategory.trim()) {
+          res.status(400).json({ error: 'Please enter your custom business category' });
+          return;
+        }
         resolvedCategory = otherCategory.trim();
       }
     }
 
+    // Resolve Address
+    const existingAddr = parseClientLocation(client.location);
     let locationToSave = client.location;
-    if (addressLine1 || city || state || pinCode) {
-      const existingAddr = parseClientLocation(client.location);
+    if (
+      addressLine1 !== undefined ||
+      addressLine2 !== undefined ||
+      city !== undefined ||
+      state !== undefined ||
+      pinCode !== undefined ||
+      country !== undefined
+    ) {
+      const newLine1 = (addressLine1 !== undefined ? addressLine1 : existingAddr.addressLine1).trim();
+      const newLine2 = (addressLine2 !== undefined ? addressLine2 : existingAddr.addressLine2).trim();
+      const newCity = (city !== undefined ? city : existingAddr.city).trim();
+      const newState = (state !== undefined ? state : existingAddr.state).trim();
+      const newPin = (pinCode !== undefined ? pinCode : existingAddr.pinCode).trim();
+      const newCountry = (country !== undefined ? country : (existingAddr.country || 'India')).trim();
+
+      if (!newLine1) {
+        res.status(400).json({ error: 'Business Address Line 1 cannot be empty' });
+        return;
+      }
+      if (!newCity) {
+        res.status(400).json({ error: 'City cannot be empty' });
+        return;
+      }
+      if (!newState) {
+        res.status(400).json({ error: 'State cannot be empty' });
+        return;
+      }
+      if (!newPin) {
+        res.status(400).json({ error: 'PIN / Postal Code cannot be empty' });
+        return;
+      }
+
       const structuredAddress = {
-        addressLine1: (addressLine1 ?? existingAddr.addressLine1 ?? '').trim(),
-        addressLine2: (addressLine2 ?? existingAddr.addressLine2 ?? '').trim(),
-        city: (city ?? existingAddr.city ?? '').trim(),
-        state: (state ?? existingAddr.state ?? '').trim(),
-        pinCode: (pinCode ?? existingAddr.pinCode ?? '').trim(),
-        country: (country ?? existingAddr.country ?? 'India').trim(),
+        addressLine1: newLine1,
+        addressLine2: newLine2,
+        city: newCity,
+        state: newState,
+        pinCode: newPin,
+        country: newCountry,
         fullAddress: [
-          (addressLine1 ?? existingAddr.addressLine1 ?? '').trim(),
-          (addressLine2 ?? existingAddr.addressLine2 ?? '').trim(),
-          (city ?? existingAddr.city ?? '').trim(),
-          (state ?? existingAddr.state ?? '').trim(),
-          (pinCode ?? existingAddr.pinCode ?? '').trim() ? `PIN: ${(pinCode ?? existingAddr.pinCode ?? '').trim()}` : '',
-          (country ?? existingAddr.country ?? 'India').trim(),
+          newLine1,
+          newLine2,
+          newCity,
+          newState,
+          newPin ? `PIN: ${newPin}` : '',
+          newCountry,
         ].filter(Boolean).join(', '),
       };
       locationToSave = JSON.stringify(structuredAddress);
-    } else if (location) {
+    } else if (location !== undefined && location.trim()) {
       locationToSave = location.trim();
     }
 
-    const updated = await prisma.client.update({
+    // Validate expectedBudget if passed
+    let parsedBudget: number | undefined = undefined;
+    if (expectedBudget !== undefined && expectedBudget !== null && expectedBudget !== '') {
+      parsedBudget = parseFloat(expectedBudget);
+      if (isNaN(parsedBudget) || parsedBudget < 0) {
+        res.status(400).json({ error: 'Expected budget must be a valid non-negative amount' });
+        return;
+      }
+    } else if (expectedBudget === '') {
+      parsedBudget = 0;
+    }
+
+    // Update Client in DB (Strictly preserve bgaId)
+    const updatedClient = await prisma.client.update({
       where: { id },
       data: {
+        ...(clientName ? { clientName: clientName.trim() } : {}),
         ...(businessName ? { businessName: businessName.trim() } : {}),
+        mobile: normalizedMobile,
+        email: normalizedEmail,
         businessCategory: resolvedCategory,
         location: locationToSave,
       },
     });
 
-    const parsedAddr = parseClientLocation(updated.location);
-    res.json({
-      client: {
-        ...updated,
-        address: parsedAddr,
-        addressLine1: parsedAddr.addressLine1,
-        addressLine2: parsedAddr.addressLine2,
-        city: parsedAddr.city,
-        state: parsedAddr.state,
-        pinCode: parsedAddr.pinCode,
-        country: parsedAddr.country,
-        fullAddress: parsedAddr.fullAddress,
-        displayLocation: parsedAddr.displayLocation,
+    // Update or Create Enquiry record
+    const latestEnquiry = client.enquiries && client.enquiries.length > 0 ? client.enquiries[0] : null;
+    let updatedEnquiry = null;
+
+    if (
+      parsedBudget !== undefined ||
+      requiredService !== undefined ||
+      clientRequirements !== undefined ||
+      discussionNotes !== undefined ||
+      followUpDate !== undefined
+    ) {
+      if (latestEnquiry) {
+        updatedEnquiry = await prisma.enquiry.update({
+          where: { id: latestEnquiry.id },
+          data: {
+            ...(parsedBudget !== undefined ? { expectedBudget: parsedBudget } : {}),
+            ...(requiredService ? { serviceCategory: requiredService as ServiceCategoryType } : {}),
+            ...(clientRequirements !== undefined ? { requirements: clientRequirements.trim() } : {}),
+            ...(discussionNotes !== undefined ? { discussionNotes: discussionNotes ? discussionNotes.trim() : null } : {}),
+            ...(followUpDate !== undefined ? { followUpDate: followUpDate ? new Date(followUpDate) : null } : {}),
+          },
+        });
+      } else if (
+        (requiredService && clientRequirements?.trim()) ||
+        parsedBudget !== undefined
+      ) {
+        const enquiryId = generateId('ENQ');
+        updatedEnquiry = await prisma.enquiry.create({
+          data: {
+            id: enquiryId,
+            clientId: updatedClient.id,
+            bgaId: req.user!.id,
+            serviceCategory: (requiredService as ServiceCategoryType) || 'WEBSITE_DEVELOPMENT',
+            expectedBudget: parsedBudget || 0,
+            requirements: (clientRequirements && clientRequirements.trim()) || 'Initial client scope details.',
+            discussionNotes: discussionNotes ? discussionNotes.trim() : null,
+            followUpDate: followUpDate ? new Date(followUpDate) : null,
+            status: EnquiryStatus.SUBMITTED,
+          },
+        });
+      }
+    }
+
+    // Audit Logging
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'CLIENT_UPDATED',
+      'CLIENT',
+      updatedClient.id,
+      {
+        clientName: updatedClient.clientName,
+        businessName: updatedClient.businessName,
+        expectedBudget: parsedBudget,
+      },
+      req.ip
+    );
+
+    appCache.invalidatePrefix(`bga:${req.user!.id}:`);
+    appCache.invalidatePrefix('admin:');
+
+    // Fetch refreshed complete client object with all relations
+    const refreshedClient = await prisma.client.findUnique({
+      where: { id: updatedClient.id },
+      include: {
+        enquiries: {
+          select: {
+            id: true,
+            serviceCategory: true,
+            expectedBudget: true,
+            status: true,
+            requirements: true,
+            discussionNotes: true,
+            followUpDate: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        quotations: {
+          select: {
+            id: true,
+            quotationNumber: true,
+            version: true,
+            totalAmount: true,
+            status: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        workOrders: {
+          select: {
+            id: true,
+            workOrderNumber: true,
+            status: true,
+            totalValue: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: { select: { workOrders: true, enquiries: true, quotations: true } },
       },
     });
-  } catch (error) {
+
+    const parsedAddr = parseClientLocation(refreshedClient?.location || updatedClient.location);
+    const enriched = {
+      ...(refreshedClient || updatedClient),
+      address: parsedAddr,
+      addressLine1: parsedAddr.addressLine1,
+      addressLine2: parsedAddr.addressLine2,
+      city: parsedAddr.city,
+      state: parsedAddr.state,
+      pinCode: parsedAddr.pinCode,
+      country: parsedAddr.country,
+      fullAddress: parsedAddr.fullAddress,
+      displayLocation: parsedAddr.displayLocation,
+    };
+
+    res.json({
+      message: `Client '${updatedClient.clientName}' updated successfully.`,
+      client: enriched,
+      enquiry: updatedEnquiry,
+    });
+  } catch (error: any) {
+    console.error('Client update error:', error);
     res.status(500).json({ error: 'Failed to update client' });
   }
 });
@@ -1730,7 +2186,209 @@ router.get('/work-orders', async (req: AuthRequest, res: Response): Promise<void
   }
 });
 
-// 8. Commissions & My Earnings
+// 8. Commissions & Complete My Earnings Performance Dashboard
+router.get('/earnings-dashboard', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const bgaId = req.user!.id;
+
+    // 1. Overall Performance Summary (11 core metrics)
+    const [
+      totalClients,
+      activeClients,
+      totalServiceRequests,
+      approvedRequests,
+      quotationsPrepared,
+      quotationsAccepted,
+      workOrdersCount,
+      advanceVerifiedOrders,
+      projectsReleased,
+      projectsInProgress,
+      projectsCompleted,
+      verifiedPayments,
+      commissions,
+    ] = await Promise.all([
+      prisma.client.count({ where: { bgaId } }),
+      prisma.client.count({ where: { bgaId, status: 'ACTIVE' } }),
+      prisma.enquiry.count({ where: { bgaId } }),
+      prisma.enquiry.count({ where: { bgaId, status: 'APPROVED' } }),
+      prisma.quotation.count({
+        where: {
+          bgaId,
+          status: { in: ['PREPARED', 'PENDING_ADMIN_APPROVAL', 'ADMIN_APPROVED', 'SENT_TO_BGA', 'ACCEPTED', 'REVISION_REQUESTED'] },
+        },
+      }),
+      prisma.quotation.count({ where: { bgaId, status: QuotationStatus.ACCEPTED } }),
+      prisma.workOrder.count({ where: { bgaId } }),
+      prisma.workOrder.count({ where: { bgaId, advanceVerified: true } }),
+      prisma.technicalProject.count({ where: { workOrder: { bgaId } } }),
+      prisma.technicalProject.count({
+        where: {
+          workOrder: { bgaId },
+          status: { in: ['READY_TO_START', 'IN_PROGRESS', 'UNDER_REVIEW', 'CORRECTION_REQUIRED'] },
+        },
+      }),
+      prisma.technicalProject.count({
+        where: {
+          workOrder: { bgaId },
+          status: 'COMPLETED',
+        },
+      }),
+      prisma.payment.findMany({
+        where: {
+          workOrder: { bgaId },
+          status: 'VERIFIED',
+        },
+        select: {
+          amount: true,
+          adBudgetAmount: true,
+          netServiceFee: true,
+          workOrder: { select: { serviceCategory: true } },
+        },
+      }),
+      prisma.commission.findMany({
+        where: { bgaId },
+        include: {
+          client: { select: { id: true, clientName: true, businessName: true, email: true } },
+          workOrder: { select: { id: true, workOrderNumber: true, totalValue: true, serviceCategory: true } },
+          project: { select: { id: true, projectNumber: true, status: true, progressPercentage: true, completedAt: true } },
+          payment: { select: { id: true, amount: true, transactionReference: true, paymentDate: true, paymentMethod: true, status: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    // Financial calculations strictly from verified payments & commissions
+    const totalEligibleRevenue = verifiedPayments.reduce(
+      (acc, p) => acc + (p.netServiceFee || Math.max(0, p.amount - (p.adBudgetAmount || 0))),
+      0
+    );
+
+    let totalCommissionEarned = 0;
+    let pendingCommission = 0;
+    let commissionPaid = 0;
+    let commissionPipeline = 0;
+
+    for (const c of commissions) {
+      if (c.eligibilityStatus === 'ELIGIBLE') {
+        totalCommissionEarned += c.calculatedCommission;
+        if (c.payoutStatus === 'UNPAID') {
+          pendingCommission += c.calculatedCommission;
+        } else if (c.payoutStatus === 'PROCESSED') {
+          commissionPaid += c.calculatedCommission;
+        }
+      } else if (c.eligibilityStatus === 'PENDING_CRITERIA') {
+        commissionPipeline += c.calculatedCommission;
+      }
+    }
+
+    // 2. Service-Wise Business Performance
+    const categories: ServiceCategoryType[] = [
+      'DIGITAL_MARKETING',
+      'WEBSITE_DEVELOPMENT',
+      'MOBILE_APPLICATION_DEVELOPMENT',
+      'SOFTWARE_DEVELOPMENT',
+    ];
+
+    const allEnquiries = await prisma.enquiry.findMany({
+      where: { bgaId },
+      select: { clientId: true, serviceCategory: true, status: true },
+    });
+
+    const allQuotations = await prisma.quotation.findMany({
+      where: { bgaId },
+      select: { serviceCategory: true, status: true },
+    });
+
+    const allProjects = await prisma.technicalProject.findMany({
+      where: { workOrder: { bgaId } },
+      select: { serviceCategory: true, status: true },
+    });
+
+    const servicePerformance = categories.map((cat) => {
+      const catEnquiries = allEnquiries.filter((e) => e.serviceCategory === cat);
+      const catClients = new Set(catEnquiries.map((e) => e.clientId)).size;
+      const catRequests = catEnquiries.length;
+      const catApproved = catEnquiries.filter((e) => e.status === 'APPROVED').length;
+      const catQuotations = allQuotations.filter((q) => q.serviceCategory === cat);
+      const catAccepted = catQuotations.filter((q) => q.status === 'ACCEPTED').length;
+      const catProjects = allProjects.filter((p) => p.serviceCategory === cat);
+      const catActiveProjects = catProjects.filter((p) => p.status !== 'COMPLETED').length;
+      const catCompletedProjects = catProjects.filter((p) => p.status === 'COMPLETED').length;
+
+      const catPayments = verifiedPayments.filter((p) => p.workOrder?.serviceCategory === cat);
+      const catEligibleRev = catPayments.reduce(
+        (acc, p) => acc + (p.netServiceFee || Math.max(0, p.amount - (p.adBudgetAmount || 0))),
+        0
+      );
+
+      const catCommissions = commissions.filter((c) => c.serviceCategory === cat);
+      const catCommEarned = catCommissions
+        .filter((c) => c.eligibilityStatus === 'ELIGIBLE')
+        .reduce((acc, c) => acc + c.calculatedCommission, 0);
+      const catCommPending = catCommissions
+        .filter((c) => c.eligibilityStatus === 'ELIGIBLE' && c.payoutStatus === 'UNPAID')
+        .reduce((acc, c) => acc + c.calculatedCommission, 0);
+
+      return {
+        category: cat,
+        clientCount: catClients,
+        requestCount: catRequests,
+        approvedRequests: catApproved,
+        acceptedQuotations: catAccepted,
+        activeProjects: catActiveProjects,
+        completedProjects: catCompletedProjects,
+        eligibleRevenue: catEligibleRev,
+        commissionEarned: catCommEarned,
+        pendingCommission: catCommPending,
+      };
+    });
+
+    // 3. Business Conversion Funnel (11 stages)
+    const funnel = [
+      { step: 1, key: 'clientsAcquired', label: 'Clients Acquired', count: totalClients },
+      { step: 2, key: 'requestsSubmitted', label: 'Service Requests Submitted', count: totalServiceRequests },
+      { step: 3, key: 'requestsApproved', label: 'Admin Requests Approved', count: approvedRequests },
+      { step: 4, key: 'quotationsPrepared', label: 'Official Quotations Prepared', count: quotationsPrepared },
+      { step: 5, key: 'quotationsAccepted', label: 'Quotations Accepted', count: quotationsAccepted },
+      { step: 6, key: 'workOrdersCreated', label: 'Work Orders Created', count: workOrdersCount },
+      { step: 7, key: 'advancePaymentsVerified', label: 'Advance Payments Verified', count: advanceVerifiedOrders },
+      { step: 8, key: 'projectsReleased', label: 'Technical Projects Released', count: projectsReleased },
+      { step: 9, key: 'projectsCompleted', label: 'Projects Completed', count: projectsCompleted },
+      { step: 10, key: 'eligiblePaymentsReceived', label: 'Eligible Payments Received', count: verifiedPayments.length },
+      { step: 11, key: 'commissionsEligible', label: 'Commissions Eligible', count: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE').length },
+    ];
+
+    res.json({
+      summary: {
+        totalClients,
+        activeClients,
+        totalServiceRequests,
+        approvedRequests,
+        quotationsAccepted,
+        projectsInProgress,
+        projectsCompleted,
+        totalEligibleRevenue,
+        totalCommissionEarned,
+        pendingCommission,
+        commissionPaid,
+        commissionPipeline,
+      },
+      breakdown: {
+        earned: totalCommissionEarned,
+        pending: pendingCommission,
+        paid: commissionPaid,
+        pipeline: commissionPipeline,
+      },
+      servicePerformance,
+      funnel,
+      commissions,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate earnings dashboard metrics' });
+  }
+});
+
+// 8b. Commissions & My Earnings
 router.get('/commissions', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const commissions = await prisma.commission.findMany({

@@ -13,8 +13,14 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
     const { id } = req.params;
     const user = req.user!;
 
-    const quotation = await prisma.quotation.findUnique({
-      where: { id },
+    // Find by either database primary ID or unique quotationNumber for backwards compatibility
+    const quotation = await prisma.quotation.findFirst({
+      where: {
+        OR: [
+          { id },
+          { quotationNumber: id },
+        ],
+      },
       include: {
         client: true,
         bga: { select: { id: true, name: true, email: true, mobile: true } },
@@ -46,11 +52,11 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
     });
     const settingsMap = new Map(allSettings.map((s) => [s.key, s.value]));
 
-    const companyName = settingsMap.get('company_name') || 'BGA Solutions';
-    const companyEmail = settingsMap.get('company_email') || 'billing@bga.com';
-    const companyPhone = settingsMap.get('company_phone') || '+91 98765 43210';
-    const companyAddress = settingsMap.get('company_address') || 'Cyber Valley, Hyderabad';
-    const companyGstin = settingsMap.get('company_gstin') || '36AAACB1234F1Z5';
+    const companyName = settingsMap.get('company_name') || 'Atriowings Technologies India Private Limited';
+    const companyEmail = settingsMap.get('company_email') || 'info@atriowings.in';
+    const companyPhone = settingsMap.get('company_phone') || '+91 8825948859';
+    const companyAddress = settingsMap.get('company_address') || 'No. 1, Gurudev Complex, 57th St, Venkat Raman Nagar, Korattur, Chennai - 600080';
+    const companyGstin = settingsMap.get('company_gstin') || '33AASCA7189D1ZD';
 
     let preparedByName = 'Accounts Department';
     if (quotation.preparedById) {
@@ -58,53 +64,86 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
       if (prepUser) preparedByName = prepUser.name;
     }
 
-    let formattedClientLocation = quotation.client.location;
+    let formattedClientLocation = quotation.client?.location || 'Tamil Nadu, India';
     try {
-      if (quotation.client.location && quotation.client.location.startsWith('{')) {
+      if (quotation.client?.location && quotation.client.location.startsWith('{')) {
         const parsed = JSON.parse(quotation.client.location);
         formattedClientLocation = parsed.city ? `${parsed.city}${parsed.state ? ', ' + parsed.state : ''}` : (parsed.fullAddress || quotation.client.location);
       }
     } catch {}
 
-    generateQuotationPdf(
+    // When requested via browser tab, default to inline rendering so PDF viewer renders immediately
+    const isDownload = req.query.download === 'true';
+
+    // Safe fallbacks for older quotation records
+    const clientName = quotation.client?.clientName || 'Valued Client';
+    const businessName = quotation.client?.businessName || clientName;
+    const clientMobile = quotation.client?.mobile || 'N/A';
+    const clientEmail = quotation.client?.email || 'N/A';
+    const bgaName = quotation.bga?.name || 'Growth Associate';
+    const bgaEmail = quotation.bga?.email || 'info@atriowings.in';
+    const bgaMobile = quotation.bga?.mobile || '+91 8825948859';
+
+    const validityDateStr = quotation.validityDate
+      ? quotation.validityDate.toISOString().slice(0, 10)
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const dateStr = quotation.createdAt
+      ? quotation.createdAt.toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
+
+    const serviceFee = quotation.serviceFee || 0;
+    const adBudget = quotation.adBudget || 0;
+    const discount = quotation.discount || 0;
+    const taxRate = quotation.taxRate || 18;
+    const taxAmount = quotation.taxAmount || 0;
+    const totalAmount = quotation.totalAmount || (serviceFee + adBudget - discount + taxAmount);
+    const advancePercent = quotation.advanceRequiredPercent || 50;
+    const advanceAmount = quotation.advanceRequiredAmount || Math.round(totalAmount * (advancePercent / 100));
+
+    await generateQuotationPdf(
       {
         quotationNumber: quotation.quotationNumber,
-        version: quotation.version,
-        date: quotation.createdAt.toISOString().slice(0, 10),
-        validityDate: quotation.validityDate.toISOString().slice(0, 10),
+        version: quotation.version || 1,
+        date: dateStr,
+        validityDate: validityDateStr,
         client: {
-          clientName: quotation.client.clientName,
-          businessName: quotation.client.businessName,
-          mobile: quotation.client.mobile,
-          email: quotation.client.email,
+          clientName,
+          businessName,
+          mobile: clientMobile,
+          email: clientEmail,
           location: formattedClientLocation,
         },
         bga: {
-          name: quotation.bga.name,
-          email: quotation.bga.email,
-          mobile: quotation.bga.mobile,
+          name: bgaName,
+          email: bgaEmail,
+          mobile: bgaMobile,
         },
         preparedBy: preparedByName,
-        serviceCategory: quotation.serviceCategory,
-        serviceScope: quotation.serviceScope,
-        serviceFee: quotation.serviceFee,
-        adBudget: quotation.adBudget,
-        discount: quotation.discount,
-        taxRate: quotation.taxRate,
-        taxAmount: quotation.taxAmount,
-        totalAmount: quotation.totalAmount,
-        advanceRequiredPercent: quotation.advanceRequiredPercent,
-        advanceRequiredAmount: quotation.advanceRequiredAmount,
-        paymentTerms: quotation.paymentTerms,
+        serviceCategory: quotation.serviceCategory || 'WEBSITE_DEVELOPMENT',
+        serviceScope: quotation.serviceScope || 'Standard commercial and engineering scope as agreed upon with Atriowings Technologies.',
+        serviceFee,
+        adBudget,
+        discount,
+        taxRate,
+        taxAmount,
+        totalAmount,
+        advanceRequiredPercent: advancePercent,
+        advanceRequiredAmount: advanceAmount,
+        paymentTerms: quotation.paymentTerms || '50% advance on project sign-off, remaining balance upon verified milestone delivery.',
         company: {
           name: companyName,
           email: companyEmail,
           phone: companyPhone,
           address: companyAddress,
+          headOffice: 'No.45 , 2nd Floor , 3rd Avenue , Anna Nagar East , Chennai - 600102 Tamil Nadu, INDIA',
           gstin: companyGstin,
+          pan: 'AASCA7189D',
+          cin: 'U72900TN20190TC131558',
+          website: 'https://atriowings.in',
         },
       },
-      res
+      res,
+      { download: isDownload }
     );
   } catch (error) {
     console.error('PDF error:', error);

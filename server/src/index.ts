@@ -15,7 +15,7 @@ import contactRoutes from './routes/contact.routes';
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
@@ -79,8 +79,11 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Process Exception (Kept alive):', err);
+process.on('uncaughtException', (err: any) => {
+  console.error('Uncaught Process Exception:', err);
+  if (err?.code === 'EADDRINUSE') {
+    process.exit(1);
+  }
 });
 
 process.on('unhandledRejection', (reason) => {
@@ -89,22 +92,32 @@ process.on('unhandledRejection', (reason) => {
 
 import { verifySmtpConnection } from './utils/mailer';
 
-app.listen(PORT, async () => {
-  console.log(`=======================================================`);
-  console.log(`🚀 BGA Management System running on http://localhost:${PORT}`);
-  console.log(`📡 Database: Neon Cloud PostgreSQL Connected`);
-  console.log(`🛡️  Role Portals Active: Admin | BGA | Accounts | Technical`);
-  console.log(`📧 SMTP Email Active: info@atriowings.in (Nodemailer Gateway)`);
-  console.log(`=======================================================`);
+if (process.env.NODE_ENV !== 'test') {
+  const server = app.listen(PORT, async () => {
+    console.log(`=======================================================`);
+    console.log(`🚀 BGA Management System running on http://localhost:${PORT}`);
+    console.log(`📡 Database: Neon Cloud PostgreSQL Connected`);
+    console.log(`🛡️  Role Portals Active: Admin | BGA | Accounts | Technical`);
+    console.log(`📧 SMTP Email Active: info@atriowings.in (Nodemailer Gateway)`);
+    console.log(`=======================================================`);
 
-  // Non-blocking SMTP connection verification
-  verifySmtpConnection().then((res) => {
-    if (res.success) {
-      console.log(`✅ [SMTP] ${res.message}`);
-    } else {
-      console.warn(`⚠️ [SMTP Notice] ${res.message} (Emails will queue or retry)`);
-    }
-  }).catch((err) => {
-    console.warn(`⚠️ [SMTP Notice] Initial check:`, err.message);
+    // Non-blocking SMTP connection verification
+    verifySmtpConnection().then((res) => {
+      if (res.success) {
+        console.log(`✅ [SMTP] ${res.message}`);
+      } else {
+        console.warn(`⚠️ [SMTP Notice] ${res.message} (Emails will queue or retry)`);
+      }
+    }).catch((err) => {
+      console.warn(`⚠️ [SMTP Notice] Initial check:`, err.message);
+    });
   });
-});
+
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use by another running process.`);
+      console.error(`💡 Run: Stop-Process -Id (Get-NetTCPConnection -LocalPort ${PORT}).OwningProcess -Force`);
+      process.exit(1);
+    }
+  });
+}
