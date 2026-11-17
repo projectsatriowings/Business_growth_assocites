@@ -31,11 +31,12 @@ import {
   FileCheck,
   Bell,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
-import { SkeletonStatsRow, SkeletonTable } from '../../components/Skeleton';
+import { SkeletonStatsRow, SkeletonTable, BgaDashboardSkeleton } from '../../components/Skeleton';
 import { BgaProfileView } from './BgaProfileView';
 
 export const BUSINESS_CATEGORIES = [
@@ -71,6 +72,11 @@ export const BgaPortal: React.FC = () => {
   const [resources, setResources] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [clientRequests, setClientRequests] = useState<any[]>([]);
+  const [clientsLoaded, setClientsLoaded] = useState(false);
+  const [enquiriesLoaded, setEnquiriesLoaded] = useState(false);
+  const [quotationsLoaded, setQuotationsLoaded] = useState(false);
+  const [workOrdersLoaded, setWorkOrdersLoaded] = useState(false);
+  const [commissionsLoaded, setCommissionsLoaded] = useState(false);
 
   // My Clients UI State
   const [clientViewMode, setClientViewMode] = useState<'list' | 'add'>('list');
@@ -141,21 +147,26 @@ export const BgaPortal: React.FC = () => {
       if (tab === 'clients') {
         const c = await apiRequest('/api/bga/clients');
         setClients(c.clients || []);
+        setClientsLoaded(true);
       } else if (tab === 'requests') {
         const r = await apiRequest('/api/bga/client-requests');
         setClientRequests(r.requests || []);
       } else if (tab === 'enquiries') {
         const e = await apiRequest('/api/bga/enquiries');
         setEnquiries(e.enquiries || []);
+        setEnquiriesLoaded(true);
       } else if (tab === 'quotations') {
         const q = await apiRequest('/api/bga/quotations');
         setQuotations(q.quotations || []);
+        setQuotationsLoaded(true);
       } else if (tab === 'projects') {
         const w = await apiRequest('/api/bga/work-orders');
         setWorkOrders(w.workOrders || []);
+        setWorkOrdersLoaded(true);
       } else if (tab === 'earnings') {
         const comm = await apiRequest('/api/bga/commissions');
         setCommissions(comm.commissions || []);
+        setCommissionsLoaded(true);
       } else if (tab === 'resources') {
         const r = await apiRequest('/api/bga/resources');
         setResources(r.resources || []);
@@ -507,7 +518,7 @@ export const BgaPortal: React.FC = () => {
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
             !stats ? (
-              <SkeletonStatsRow count={4} />
+              <BgaDashboardSkeleton />
             ) : (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -897,9 +908,16 @@ export const BgaPortal: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="text-base font-bold text-slate-900">My Client Portfolio</h2>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-[#119DA4]">
-                          {clients.length} Registered
-                        </span>
+                        {!clientsLoaded || tabLoading ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-[#119DA4] border border-emerald-200 flex items-center gap-1.5 animate-shimmer">
+                            <RefreshCw className="w-3 h-3 animate-spin text-[#119DA4]" />
+                            <span>Loading Portfolio...</span>
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-[#119DA4]">
+                            {clients.length} Registered
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">
                         Clients exclusively tied to your associate account. Other associates cannot view or access your clients.
@@ -954,7 +972,9 @@ export const BgaPortal: React.FC = () => {
                         onChange={(e) => setClientCategoryFilter(e.target.value)}
                         className="w-full sm:w-auto text-xs p-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#3066BE] font-medium text-slate-700"
                       >
-                        <option value="ALL">All Categories ({clients.length})</option>
+                        <option value="ALL">
+                          All Categories {!clientsLoaded || tabLoading ? '' : `(${clients.length})`}
+                        </option>
                         {BUSINESS_CATEGORIES.map((cat) => (
                           <option key={cat} value={cat}>
                             {cat}
@@ -965,7 +985,20 @@ export const BgaPortal: React.FC = () => {
                   </div>
 
                   {/* Clients Listing Table */}
-                  {clients.length === 0 ? (
+                  {!clientsLoaded || tabLoading ? (
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs text-slate-500 animate-shimmer">
+                        <div className="flex items-center gap-2">
+                          <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
+                          <span className="font-semibold text-slate-700">Loading your exclusive client records...</span>
+                        </div>
+                        <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                          100% Protected
+                        </span>
+                      </div>
+                      <SkeletonTable rows={4} cols={6} />
+                    </div>
+                  ) : clients.length === 0 ? (
                     <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center shadow-sm">
                       <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                       <h3 className="text-base font-bold text-slate-800">No Clients Registered Yet</h3>
@@ -1548,7 +1581,18 @@ export const BgaPortal: React.FC = () => {
               </div>
 
               <div className="space-y-3">
-                {enquiries.map((enq) => {
+                {!enquiriesLoaded || tabLoading ? (
+                  <SkeletonTable rows={4} cols={5} />
+                ) : enquiries.length === 0 ? (
+                  <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm">
+                    <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <h3 className="text-sm font-bold text-slate-800">No enquiries submitted yet</h3>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                      Register a client and submit their project requirements to request management review and quotation drafting.
+                    </p>
+                  </div>
+                ) : (
+                  enquiries.map((enq) => {
                   const hasActiveQuote = enq.quotations && enq.quotations.length > 0;
                   return (
                     <div key={enq.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
@@ -1605,7 +1649,7 @@ export const BgaPortal: React.FC = () => {
                       </div>
                     </div>
                   );
-                })}
+                }))}
               </div>
             </div>
           )}
@@ -1798,7 +1842,18 @@ export const BgaPortal: React.FC = () => {
               </div>
 
               <div className="space-y-4">
-                {quotations.map((q) => {
+                {!quotationsLoaded || tabLoading ? (
+                  <SkeletonTable rows={4} cols={5} />
+                ) : quotations.length === 0 ? (
+                  <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm">
+                    <CreditCard className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <h3 className="text-sm font-bold text-slate-800">No official quotations yet</h3>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                      Approved quotations generated by Accounts will appear here once requested for your approved enquiries.
+                    </p>
+                  </div>
+                ) : (
+                  quotations.map((q) => {
                   const isApproved =
                     q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA' || q.adminApprovalStatus === 'APPROVED';
                   const isPendingAdmin =
@@ -1947,7 +2002,7 @@ export const BgaPortal: React.FC = () => {
                       </div>
                     </div>
                   );
-                })}
+                }))}
               </div>
 
               {/* Quotation Reminder Modal */}
@@ -2090,7 +2145,18 @@ export const BgaPortal: React.FC = () => {
               </div>
 
               <div className="space-y-4">
-                {workOrders.map((wo) => {
+                {!workOrdersLoaded || tabLoading ? (
+                  <SkeletonTable rows={4} cols={5} />
+                ) : workOrders.length === 0 ? (
+                  <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm">
+                    <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <h3 className="text-sm font-bold text-slate-800">No active projects yet</h3>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                      Projects will appear here once your clients accept commercial quotations and technical execution kicks off.
+                    </p>
+                  </div>
+                ) : (
+                  workOrders.map((wo) => {
                   const prj = wo.project;
                   return (
                     <div key={wo.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
@@ -2148,7 +2214,7 @@ export const BgaPortal: React.FC = () => {
                       )}
                     </div>
                   );
-                })}
+                }))}
               </div>
             </div>
           )}

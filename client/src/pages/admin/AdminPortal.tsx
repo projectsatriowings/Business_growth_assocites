@@ -39,7 +39,8 @@ import {
 import { PortalHeader } from '../../components/PortalHeader';
 import { AssociateProfileView } from './AssociateProfileView';
 import { apiRequest } from '../../utils/api';
-import { SkeletonCard, SkeletonStatsRow, SkeletonTable } from '../../components/Skeleton';
+import { SkeletonCard, SkeletonStatsRow, SkeletonTable, AdminDashboardSkeleton } from '../../components/Skeleton';
+import { validateBankUtr } from '../../utils/utrValidator';
 
 // Generic Reusable Empty State Component
 const EmptyState: React.FC<{
@@ -75,7 +76,14 @@ export const AdminPortal: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
+  const [loadedTabs, setLoadedTabs] = useState<Record<string, boolean>>({});
   const [stats, setStats] = useState<any>(null);
+
+  const switchTab = (tab: typeof activeTab) => {
+    if (activeTab === tab) return;
+    setTabLoading(true);
+    setActiveTab(tab);
+  };
   const [bgas, setBgas] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
@@ -214,6 +222,7 @@ export const AdminPortal: React.FC = () => {
         setSettings(sRes.settings || []);
         setAuditLogs(logsRes.logs || []);
       }
+      setLoadedTabs((prev) => ({ ...prev, [tab]: true }));
     } catch (e) {
       console.error('Failed to load portal data:', e);
     } finally {
@@ -334,14 +343,16 @@ export const AdminPortal: React.FC = () => {
 
   // Handle Payout Disbursed
   const executePayout = async () => {
-    if (!payoutModal || !payoutReferenceInput.trim()) {
-      alert('Please enter a valid bank transaction or UTR reference.');
+    if (!payoutModal) return;
+    const validation = validateBankUtr(payoutReferenceInput, 'BANK_TRANSFER');
+    if (!validation.isValid) {
+      alert(`Invalid Bank Transaction / UTR:\n\n${validation.error}${validation.hint ? '\n\n' + validation.hint : ''}`);
       return;
     }
     try {
       await apiRequest(`/api/admin/commissions/${payoutModal.commissionId}/payout`, {
         method: 'POST',
-        body: JSON.stringify({ payoutReference: payoutReferenceInput.trim() }),
+        body: JSON.stringify({ payoutReference: validation.formattedUtr }),
       });
       setPayoutModal(null);
       setPayoutReferenceInput('');
@@ -575,7 +586,7 @@ export const AdminPortal: React.FC = () => {
             </div>
 
             <button
-              onClick={() => setActiveTab('dashboard')}
+              onClick={() => switchTab('dashboard')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'dashboard' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
@@ -587,7 +598,7 @@ export const AdminPortal: React.FC = () => {
             <button
               onClick={() => {
                 setSelectedAssociateId(null);
-                setActiveTab('bgas');
+                switchTab('bgas');
               }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'bgas' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
@@ -605,7 +616,7 @@ export const AdminPortal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('enquiries')}
+              onClick={() => switchTab('enquiries')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'enquiries' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
@@ -622,7 +633,7 @@ export const AdminPortal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('clients')}
+              onClick={() => switchTab('clients')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'clients' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
@@ -632,7 +643,7 @@ export const AdminPortal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('services')}
+              onClick={() => switchTab('services')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'services' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
@@ -642,7 +653,7 @@ export const AdminPortal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('resources')}
+              onClick={() => switchTab('resources')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'resources' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
@@ -652,7 +663,7 @@ export const AdminPortal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('quotations')}
+              onClick={() => switchTab('quotations')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'quotations' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
@@ -662,7 +673,7 @@ export const AdminPortal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('workorders')}
+              onClick={() => switchTab('workorders')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'workorders' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
@@ -672,7 +683,7 @@ export const AdminPortal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('technical')}
+              onClick={() => switchTab('technical')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'technical' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
@@ -682,7 +693,7 @@ export const AdminPortal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('commissions')}
+              onClick={() => switchTab('commissions')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'commissions' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
@@ -692,7 +703,7 @@ export const AdminPortal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('settings')}
+              onClick={() => switchTab('settings')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'settings' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
@@ -711,20 +722,8 @@ export const AdminPortal: React.FC = () => {
         <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
           {/* TAB 1: DASHBOARD & ANALYTICS */}
           {activeTab === 'dashboard' && (
-            loading && !stats ? (
-              <SkeletonStatsRow count={4} />
-            ) : !stats ? (
-              <div className="w-full p-12 text-center bg-white rounded-2xl border border-slate-200">
-                <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-2" />
-                <h3 className="text-base font-bold text-slate-800">Analytics Synchronizing</h3>
-                <p className="text-xs text-slate-500 mt-1">Connecting to database metrics feed...</p>
-                <button
-                  onClick={loadData}
-                  className="mt-4 px-4 py-2 bg-[#3066BE] text-white shadow-sm rounded-xl text-xs font-semibold"
-                >
-                  Load Analytics Feed
-                </button>
-              </div>
+            !stats ? (
+              <AdminDashboardSkeleton />
             ) : (
             <div className="space-y-6 w-full">
               {/* Executive Overview Header */}
@@ -746,7 +745,7 @@ export const AdminPortal: React.FC = () => {
               {/* Core Metric Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div
-                  onClick={() => setActiveTab('bgas')}
+                  onClick={() => switchTab('bgas')}
                   className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
                 >
                   <span className="text-xs text-slate-500 font-semibold uppercase block">Total Associates</span>
@@ -760,7 +759,7 @@ export const AdminPortal: React.FC = () => {
                 </div>
 
                 <div
-                  onClick={() => setActiveTab('enquiries')}
+                  onClick={() => switchTab('enquiries')}
                   className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
                 >
                   <span className="text-xs text-slate-500 font-semibold uppercase block">Total Enquiries</span>
@@ -774,20 +773,20 @@ export const AdminPortal: React.FC = () => {
                 </div>
 
                 <div
-                  onClick={() => setActiveTab('clients')}
+                  onClick={() => switchTab('clients')}
                   className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
                 >
                   <span className="text-xs text-slate-500 font-semibold uppercase block">Registered Clients</span>
                   <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-[#3066BE] transition-colors">
                     {stats?.clients?.total || 0}
                   </div>
-                  <span className="text-xs text-indigo-600 font-medium block mt-2">
+                  <span className="text-xs text-[#3066BE] font-medium block mt-2">
                     100% Associate Ownership Guaranteed
                   </span>
                 </div>
 
                 <div
-                  onClick={() => setActiveTab('workorders')}
+                  onClick={() => switchTab('workorders')}
                   className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
                 >
                   <span className="text-xs text-slate-500 font-semibold uppercase block">Verified Revenue</span>
@@ -821,7 +820,7 @@ export const AdminPortal: React.FC = () => {
                   {/* Stage 1 */}
                   <div
                     onClick={() => {
-                      setActiveTab('enquiries');
+                      switchTab('enquiries');
                       setEnquiryStatusFilter('SUBMITTED');
                     }}
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
@@ -839,7 +838,7 @@ export const AdminPortal: React.FC = () => {
                   {/* Stage 2 */}
                   <div
                     onClick={() => {
-                      setActiveTab('enquiries');
+                      switchTab('enquiries');
                       setEnquiryStatusFilter('APPROVED');
                     }}
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
@@ -857,7 +856,7 @@ export const AdminPortal: React.FC = () => {
                   {/* Stage 3 */}
                   <div
                     onClick={() => {
-                      setActiveTab('quotations');
+                      switchTab('quotations');
                       setQuotationStatusFilter('REQUESTED');
                     }}
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
@@ -875,7 +874,7 @@ export const AdminPortal: React.FC = () => {
                   {/* Stage 4 */}
                   <div
                     onClick={() => {
-                      setActiveTab('quotations');
+                      switchTab('quotations');
                       setQuotationStatusFilter('DELAYED');
                     }}
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-red-400 hover:shadow-md transition-all cursor-pointer group"
@@ -893,7 +892,7 @@ export const AdminPortal: React.FC = () => {
                   {/* Stage 5 */}
                   <div
                     onClick={() => {
-                      setActiveTab('quotations');
+                      switchTab('quotations');
                       setQuotationStatusFilter('PENDING_ADMIN_APPROVAL');
                     }}
                     className="p-4 rounded-xl bg-white border border-[#3066BE]/25 bg-blue-50/70/30 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
@@ -911,7 +910,7 @@ export const AdminPortal: React.FC = () => {
                   {/* Stage 6 */}
                   <div
                     onClick={() => {
-                      setActiveTab('quotations');
+                      switchTab('quotations');
                       setQuotationStatusFilter('ACCEPTED');
                     }}
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
@@ -929,7 +928,7 @@ export const AdminPortal: React.FC = () => {
                   {/* Stage 7 */}
                   <div
                     onClick={() => {
-                      setActiveTab('workorders');
+                      switchTab('workorders');
                       setWorkOrderStatusFilter('PENDING_ADVANCE');
                     }}
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
@@ -947,7 +946,7 @@ export const AdminPortal: React.FC = () => {
                   {/* Stage 8 */}
                   <div
                     onClick={() => {
-                      setActiveTab('workorders');
+                      switchTab('workorders');
                       setWorkOrderStatusFilter('ADVANCE_VERIFIED');
                     }}
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
@@ -965,7 +964,7 @@ export const AdminPortal: React.FC = () => {
                   {/* Stage 9 */}
                   <div
                     onClick={() => {
-                      setActiveTab('workorders');
+                      switchTab('workorders');
                       setWorkOrderStatusFilter('PENDING_HANDOVER');
                     }}
                     className="p-4 rounded-xl bg-white border border-indigo-200 bg-indigo-50/30 hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer group"
@@ -982,7 +981,7 @@ export const AdminPortal: React.FC = () => {
 
                   {/* Stage 10 */}
                   <div
-                    onClick={() => setActiveTab('technical')}
+                    onClick={() => switchTab('technical')}
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
                   >
                     <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 10</span>
@@ -1000,7 +999,7 @@ export const AdminPortal: React.FC = () => {
               {/* Commission & Technical Performance Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div
-                  onClick={() => setActiveTab('commissions')}
+                  onClick={() => switchTab('commissions')}
                   className="p-6 rounded-2xl bg-gradient-to-tr from-[#152544] to-[#3066BE] text-white shadow-md cursor-pointer hover:shadow-xl transition-all"
                 >
                   <span className="text-xs text-purple-200 uppercase tracking-wider font-semibold">Total Commissions</span>
@@ -1013,7 +1012,7 @@ export const AdminPortal: React.FC = () => {
                 </div>
 
                 <div
-                  onClick={() => setActiveTab('commissions')}
+                  onClick={() => switchTab('commissions')}
                   className="p-6 rounded-2xl bg-gradient-to-tr from-emerald-900 to-teal-900 text-white shadow-md cursor-pointer hover:shadow-xl transition-all"
                 >
                   <span className="text-xs text-emerald-200 uppercase tracking-wider font-semibold">Commissions Disbursed</span>
@@ -1030,7 +1029,7 @@ export const AdminPortal: React.FC = () => {
                 </div>
 
                 <div
-                  onClick={() => setActiveTab('technical')}
+                  onClick={() => switchTab('technical')}
                   className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm cursor-pointer hover:border-[#3066BE]/35 transition-all flex flex-col justify-between"
                 >
                   <div>
@@ -1071,8 +1070,8 @@ export const AdminPortal: React.FC = () => {
                     return (
                       <button
                         key={m.tab}
-                        onClick={() => setActiveTab(m.tab as any)}
-                        className="p-3.5 rounded-xl border border-slate-200 hover:border-[#3066BE]/35 hover:bg-[#AEECEF]/20/40 text-left transition-all group"
+                        onClick={() => switchTab(m.tab as any)}
+                        className="p-3.5 rounded-xl border border-slate-200 hover:border-[#3066BE]/35 hover:bg-[#AEECEF]/20 text-left transition-all group"
                       >
                         <Icon className="w-5 h-5 text-[#3066BE] group-hover:scale-110 transition-transform mb-2" />
                         <span className="font-bold text-xs text-slate-900 block">{m.label}</span>
@@ -1138,7 +1137,7 @@ export const AdminPortal: React.FC = () => {
                   </div>
                 </div>
 
-                {tabLoading ? (
+                {tabLoading || !loadedTabs['bgas'] ? (
                   <SkeletonTable rows={5} cols={5} />
                 ) : bgas.length === 0 ? (
                   <EmptyState
@@ -1291,7 +1290,9 @@ export const AdminPortal: React.FC = () => {
                 </div>
               </div>
 
-              {filteredClients.length === 0 ? (
+              {!loadedTabs['clients'] || (tabLoading && clients.length === 0) ? (
+                <SkeletonTable rows={5} cols={5} />
+              ) : filteredClients.length === 0 ? (
                 <EmptyState
                   icon={UserCheck}
                   title="No clients registered yet"
@@ -1456,7 +1457,48 @@ export const AdminPortal: React.FC = () => {
                 </div>
               </div>
 
-              {filteredEnquiries.length === 0 ? (
+              {!loadedTabs['enquiries'] || (tabLoading && enquiries.length === 0) ? (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-purple-50/70 border border-purple-200/80 flex items-center justify-between text-xs text-purple-900 animate-shimmer">
+                    <div className="flex items-center gap-2.5">
+                      <RefreshCw className="w-4 h-4 animate-spin text-purple-600" />
+                      <span className="font-bold text-slate-800">Loading incoming BGA enquiries & scope reviews...</span>
+                    </div>
+                    <span className="text-[11px] text-purple-700 font-extrabold bg-white px-2.5 py-1 rounded-lg border border-purple-200 shadow-xs">
+                      Enquiry Feed Active
+                    </span>
+                  </div>
+
+                  {[1, 2, 3].map((idx) => (
+                    <div key={idx} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3 animate-shimmer">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                        <div className="space-y-1.5 w-1/3">
+                          <div className="h-3.5 bg-slate-200 rounded-md w-28" />
+                          <div className="h-5 bg-slate-200 rounded-md w-44" />
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-6 bg-slate-200 rounded-full w-20" />
+                          <div className="h-7 bg-slate-200 rounded-lg w-36" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="h-3 bg-slate-200 rounded-md w-40" />
+                        <div className="h-14 bg-slate-100 rounded-xl w-full" />
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-3 border-t border-slate-100 gap-3">
+                        <div className="h-3.5 bg-slate-200 rounded-md w-56" />
+                        <div className="flex items-center gap-2">
+                          <div className="h-7 bg-slate-200 rounded-lg w-24" />
+                          <div className="h-7 bg-slate-200 rounded-lg w-28" />
+                          <div className="h-7 bg-slate-200 rounded-lg w-20" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : filteredEnquiries.length === 0 ? (
                 <EmptyState
                   icon={CheckSquare}
                   title="No enquiries submitted yet"
@@ -1695,7 +1737,13 @@ export const AdminPortal: React.FC = () => {
                 </div>
               </div>
 
-              {filteredServices.length === 0 ? (
+              {!loadedTabs['services'] || (tabLoading && services.length === 0) ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <SkeletonCard key={i} />
+                  ))}
+                </div>
+              ) : filteredServices.length === 0 ? (
                 <EmptyState
                   icon={Layers}
                   title="No services configured yet"
@@ -1845,7 +1893,9 @@ export const AdminPortal: React.FC = () => {
                 </div>
               )}
 
-              {filteredResources.length === 0 ? (
+              {!loadedTabs['resources'] || (tabLoading && resources.length === 0) ? (
+                <SkeletonTable rows={4} cols={4} />
+              ) : filteredResources.length === 0 ? (
                 <EmptyState
                   icon={FileText}
                   title="No company resources published yet"
@@ -1957,7 +2007,9 @@ export const AdminPortal: React.FC = () => {
                 </div>
               </div>
 
-              {filteredQuotations.length === 0 ? (
+              {!loadedTabs['quotations'] || (tabLoading && quotations.length === 0) ? (
+                <SkeletonTable rows={5} cols={6} />
+              ) : filteredQuotations.length === 0 ? (
                 <EmptyState
                   icon={CreditCard}
                   title="No quotation requests available yet"
@@ -2235,7 +2287,9 @@ export const AdminPortal: React.FC = () => {
                 </div>
               </div>
 
-              {filteredWorkOrders.length === 0 ? (
+              {!loadedTabs['workorders'] || (tabLoading && workOrders.length === 0) ? (
+                <SkeletonTable rows={5} cols={6} />
+              ) : filteredWorkOrders.length === 0 ? (
                 <EmptyState
                   icon={Briefcase}
                   title="No work orders generated yet"
@@ -2444,7 +2498,13 @@ export const AdminPortal: React.FC = () => {
                 </div>
               </div>
 
-              {filteredProjects.length === 0 ? (
+              {!loadedTabs['technical'] || (tabLoading && projects.length === 0) ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <SkeletonCard key={i} />
+                  ))}
+                </div>
+              ) : filteredProjects.length === 0 ? (
                 <EmptyState
                   icon={Layers}
                   title="No projects have been released to the Technical team yet"
@@ -2608,7 +2668,9 @@ export const AdminPortal: React.FC = () => {
                 </div>
               </div>
 
-              {filteredCommissions.length === 0 ? (
+              {!loadedTabs['commissions'] || (tabLoading && commissions.length === 0) ? (
+                <SkeletonTable rows={5} cols={5} />
+              ) : filteredCommissions.length === 0 ? (
                 <EmptyState
                   icon={DollarSign}
                   title="No commission records available yet"
@@ -2719,17 +2781,36 @@ export const AdminPortal: React.FC = () => {
                     </p>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Bank Transaction / UTR Reference *
-                      </label>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-xs font-semibold text-slate-700">
+                          Bank Transaction / UTR Reference *
+                        </label>
+                        <span className="text-[10px] font-mono text-slate-500">
+                          {payoutReferenceInput.length} chars (8-24 req)
+                        </span>
+                      </div>
                       <input
                         type="text"
                         required
                         value={payoutReferenceInput}
-                        onChange={(e) => setPayoutReferenceInput(e.target.value)}
-                        placeholder="e.g. UTR1234567890 / NEFT-2026-X"
-                        className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#3066BE] font-mono"
+                        onChange={(e) => setPayoutReferenceInput(e.target.value.toUpperCase().replace(/[^A-Z0-9\-]/g, ''))}
+                        placeholder="e.g. AXISP26123456789 / NEFT-2026-X"
+                        className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#3066BE] font-mono uppercase"
                       />
+                      {payoutReferenceInput && (
+                        (() => {
+                          const v = validateBankUtr(payoutReferenceInput, 'BANK_TRANSFER');
+                          return v.isValid ? (
+                            <p className="mt-1 text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Valid transaction reference format
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-[11px] text-red-600 flex items-center gap-1">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {v.error}
+                            </p>
+                          );
+                        })()
+                      )}
                     </div>
 
                     <div className="flex justify-end gap-2 pt-2">
@@ -2744,7 +2825,8 @@ export const AdminPortal: React.FC = () => {
                       </button>
                       <button
                         onClick={executePayout}
-                        className="px-4 py-2 rounded-lg text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                        disabled={!payoutReferenceInput || !validateBankUtr(payoutReferenceInput, 'BANK_TRANSFER').isValid}
+                        className="px-4 py-2 rounded-lg text-xs font-bold bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white hover:bg-blue-700 shadow-sm"
                       >
                         Confirm Disbursement
                       </button>
@@ -2836,7 +2918,13 @@ export const AdminPortal: React.FC = () => {
                   </div>
                 </div>
 
-                {filteredAuditLogs.length === 0 ? (
+                {!loadedTabs['settings'] || (tabLoading && auditLogs.length === 0) ? (
+                  <div className="space-y-3 p-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="h-10 bg-slate-200/80 rounded-lg animate-shimmer" />
+                    ))}
+                  </div>
+                ) : filteredAuditLogs.length === 0 ? (
                   <EmptyState
                     icon={Clock}
                     title="No system audit events recorded yet"
