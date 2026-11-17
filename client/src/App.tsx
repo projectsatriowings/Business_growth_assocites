@@ -47,7 +47,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           </p>
           <a
             href="/"
-            className="mt-6 inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700"
+            className="mt-6 inline-block px-5 py-2.5 bg-[#3066BE] text-white rounded-xl text-xs font-bold hover:bg-[#25549e] shadow-md transition-all"
           >
             Return to Authorized Portal
           </a>

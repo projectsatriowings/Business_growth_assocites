@@ -164,7 +164,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
   if (loading) {
     return (
       <div className="w-full flex items-center justify-center p-16">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3066BE]" />
       </div>
     );
   }
@@ -192,7 +192,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-purple-50 hover:text-purple-700 text-slate-600 transition-colors"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-600 transition-colors"
             title="Back to Associates Directory"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -217,7 +217,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
               </span>
               <span
                 className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${associate.panVerified && associate.bankVerified
-                  ? 'bg-purple-100 text-purple-800'
+                  ? 'bg-[#3066BE]/10 text-[#3066BE] border border-[#3066BE]/25'
                   : 'bg-slate-100 text-slate-600'
                   }`}
               >
@@ -274,7 +274,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
           {/* Avatar & Core Identity */}
           <div className="flex items-center gap-4 md:col-span-1 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 pr-0 md:pr-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-bold text-2xl flex items-center justify-center shadow-md shadow-purple-200 shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#3066BE] to-[#119DA4] text-white font-bold text-2xl flex items-center justify-center shadow-md shadow-[#3066BE]/25 shrink-0">
               {associate.name
                 .split(' ')
                 .map((n: string) => n[0])
@@ -315,9 +315,9 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
               <span className="text-[11px] text-slate-500 font-semibold block">Total Clients</span>
               <div className="text-xl font-extrabold text-slate-900 mt-0.5">{metrics?.totalClients || 0}</div>
             </div>
-            <div className="p-3 bg-purple-50 rounded-xl border border-purple-100">
-              <span className="text-[11px] text-purple-700 font-semibold block">Earned Commission</span>
-              <div className="text-xl font-extrabold text-purple-800 mt-0.5">
+            <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-100">
+              <span className="text-[11px] text-[#3066BE] font-semibold block">Earned Commission</span>
+              <div className="text-xl font-extrabold text-[#3066BE] mt-0.5">
                 ₹{(metrics?.commissions?.totalEarned || 0).toLocaleString()}
               </div>
             </div>
@@ -337,7 +337,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         <nav className="w-full lg:w-72 shrink-0 bg-white rounded-2xl border border-slate-200 p-3 shadow-sm">
           <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 mb-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Profile Sections</span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700">10 Modules</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#3066BE]/10 text-[#3066BE]">10 Modules</span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-1">
@@ -360,7 +360,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                   key={t.id}
                   onClick={() => setActiveTab(t.id as any)}
                   className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${isSel
-                    ? 'bg-purple-600 text-white shadow-sm font-bold'
+                    ? 'bg-[#3066BE] text-white shadow-md shadow-[#3066BE]/25 font-bold'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                 >
@@ -404,7 +404,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
 
                 <div className="p-4 rounded-xl bg-white border border-slate-200">
                   <span className="text-[11px] font-semibold text-slate-500 uppercase">Total Earned</span>
-                  <div className="text-2xl font-extrabold text-purple-700 mt-1">
+                  <div className="text-2xl font-extrabold text-[#3066BE] mt-1">
                     ₹{(metrics?.commissions?.totalEarned || 0).toLocaleString()}
                   </div>
                   <span className="text-[10px] text-slate-400">Lifetime calculated</span>
@@ -490,7 +490,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                     <h4 className="font-bold text-slate-900 text-sm">Assigned Clients Snapshot</h4>
                     <button
                       onClick={() => setActiveTab('clients')}
-                      className="text-xs font-bold text-purple-600 hover:text-purple-800"
+                      className="text-xs font-bold text-[#3066BE] hover:text-purple-800"
                     >
                       View All ({associate.clients?.length || 0}) →
                     </button>
@@ -609,7 +609,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                     {associate.panNumber && (
                       <button
                         onClick={() => setRevealPan(!revealPan)}
-                        className="p-2 text-slate-500 hover:text-purple-600 rounded-lg hover:bg-slate-100"
+                        className="p-2 text-slate-500 hover:text-[#3066BE] rounded-lg hover:bg-slate-100"
                         title={revealPan ? 'Mask PAN' : 'Reveal PAN'}
                       >
                         {revealPan ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -729,7 +729,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                     {associate.bankAccountNumber && (
                       <button
                         onClick={() => setRevealBankAcc(!revealBankAcc)}
-                        className="text-[11px] text-purple-600 font-bold hover:underline"
+                        className="text-[11px] text-[#3066BE] font-bold hover:underline"
                       >
                         {revealBankAcc ? 'Mask' : 'Reveal'}
                       </button>
@@ -817,8 +817,8 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-purple-50/50 border border-purple-100 flex items-start gap-3 text-xs">
-                <Lock className="w-5 h-5 text-purple-700 shrink-0 mt-0.5" />
+              <div className="p-4 rounded-xl bg-blue-50/70/50 border border-purple-100 flex items-start gap-3 text-xs">
+                <Lock className="w-5 h-5 text-[#3066BE] shrink-0 mt-0.5" />
                 <div>
                   <strong className="text-purple-900 block font-bold">Cryptographic Credential Security & Governance</strong>
                   <p className="text-purple-800/90 mt-1 leading-relaxed">
@@ -857,7 +857,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                         type: 'PDF Document',
                       })
                     }
-                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-purple-50 hover:text-purple-700 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
+                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
                   >
                     <Eye className="w-4 h-4" /> Preview
                   </button>
@@ -883,7 +883,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                         type: 'PDF',
                       })
                     }
-                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-purple-50 hover:text-purple-700 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
+                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
                   >
                     <Eye className="w-4 h-4" /> Preview
                   </button>
@@ -896,7 +896,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                     <span className="text-slate-500 text-[11px] block mt-0.5">
                       {associate.city || associate.state ? `${associate.city}, ${associate.state}` : 'Submitted during KYC'}
                     </span>
-                    <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 mt-2 inline-block">
+                    <span className="text-[10px] font-bold text-[#3066BE] bg-blue-50/70 px-2 py-0.5 rounded border border-[#3066BE]/25 mt-2 inline-block">
                       Verified Address Record
                     </span>
                   </div>
@@ -908,7 +908,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                         type: 'PDF',
                       })
                     }
-                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-purple-50 hover:text-purple-700 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
+                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
                   >
                     <Eye className="w-4 h-4" /> Preview
                   </button>
@@ -934,7 +934,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                         type: 'PDF',
                       })
                     }
-                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-purple-50 hover:text-purple-700 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
+                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
                   >
                     <Eye className="w-4 h-4" /> Preview
                   </button>
@@ -991,7 +991,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                             </span>
                           </td>
                           <td className="p-3.5">
-                            <span className="font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
+                            <span className="font-semibold text-[#3066BE] bg-blue-50/70 px-2 py-0.5 rounded">
                               {c.quotations?.length || 0} Quotes
                             </span>
                           </td>
@@ -1042,7 +1042,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                           </div>
                           <div className="w-full bg-slate-100 rounded-full h-2">
                             <div
-                              className="bg-purple-600 h-2 rounded-full transition-all"
+                              className="bg-[#3066BE] h-2 rounded-full transition-all"
                               style={{ width: `${w.project.progressPercentage}%` }}
                             />
                           </div>
@@ -1071,7 +1071,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                 </div>
                 <div className="text-right">
                   <span className="text-[11px] text-slate-400 block font-semibold">Total Commission</span>
-                  <span className="text-base font-extrabold text-purple-700">
+                  <span className="text-base font-extrabold text-[#3066BE]">
                     ₹{(metrics?.commissions?.totalEarned || 0).toLocaleString()}
                   </span>
                 </div>
@@ -1189,7 +1189,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                 value={actionReason}
                 onChange={(e) => setActionReason(e.target.value)}
                 placeholder="Enter reason for audit record..."
-                className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-purple-500"
+                className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#3066BE]"
               />
             </div>
 
@@ -1203,7 +1203,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
               <button
                 onClick={handleExecuteAction}
                 disabled={actionLoading}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-[#3066BE] hover:bg-[#255299] text-white disabled:opacity-50"
               >
                 {actionLoading ? 'Processing...' : 'Confirm Action'}
               </button>
@@ -1230,7 +1230,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
             </div>
 
             <div className="p-8 bg-slate-50 rounded-xl border border-slate-200 text-center space-y-3">
-              <FileText className="w-12 h-12 text-purple-600 mx-auto" />
+              <FileText className="w-12 h-12 text-[#3066BE] mx-auto" />
               <h4 className="font-bold text-slate-800 text-sm">{previewDoc.title}</h4>
               <p className="text-xs text-slate-500 font-mono">Document Path: {previewDoc.url}</p>
               <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200">
@@ -1247,7 +1247,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
               </button>
               <button
                 onClick={() => alert(`Initiating secure download of ${previewDoc.title}`)}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-1.5"
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-[#3066BE] hover:bg-[#255299] text-white flex items-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5" /> Download Document
               </button>

@@ -196,21 +196,21 @@ export const TechnicalPortal: React.FC = () => {
             <button
               onClick={() => { setActiveTab('dashboard'); setSelectedProject(null); }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'dashboard' ? 'bg-amber-600 text-white' : 'hover:bg-slate-800'
+                activeTab === 'dashboard' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <LayoutDashboard className="w-4 h-4" />
+              <LayoutDashboard className="w-4 h-4 text-[#80DED9]" />
               <span>Dashboard</span>
             </button>
 
             <button
               onClick={() => setActiveTab('projects')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'projects' ? 'bg-amber-600 text-white' : 'hover:bg-slate-800'
+                activeTab === 'projects' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <Layers className="w-4 h-4" />
+                <Layers className="w-4 h-4 text-[#80DED9]" />
                 <span>Assigned Projects</span>
               </div>
               <span className="px-1.5 py-0.5 rounded-full bg-slate-700 text-white text-[10px] font-bold">
@@ -220,7 +220,7 @@ export const TechnicalPortal: React.FC = () => {
           </div>
 
           <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500">
-            Privacy Scope: <span className="text-amber-400 font-bold">FINANCIAL DATA ISOLATED</span>
+            Privacy Scope: <span className="text-[#80DED9] font-bold">FINANCIAL DATA ISOLATED</span>
           </div>
         </aside>
 
@@ -276,7 +276,7 @@ export const TechnicalPortal: React.FC = () => {
               <div className="flex justify-end">
                 <button
                   onClick={() => setActiveTab('projects')}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-colors"
+                  className="px-4 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold transition-colors"
                 >
                   View Active Projects →
                 </button>
@@ -382,7 +382,7 @@ export const TechnicalPortal: React.FC = () => {
                         {selectedProject.status === 'READY_TO_START' && (
                           <button
                             onClick={() => handleUpdateStatus(selectedProject.id, 'IN_PROGRESS', 15)}
-                            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm"
+                            className="px-4 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm"
                           >
                             <Play className="w-4 h-4" /> Start Project Execution
                           </button>
@@ -401,7 +401,7 @@ export const TechnicalPortal: React.FC = () => {
                             </button>
                             <button
                               onClick={() => handleUpdateStatus(selectedProject.id, 'UNDER_REVIEW', 90)}
-                              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold"
+                              className="px-3 py-1.5 bg-[#119DA4] hover:bg-[#0e8389] text-white rounded-lg text-xs font-bold"
                             >
                               Submit for Client Review
                             </button>
@@ -420,7 +420,7 @@ export const TechnicalPortal: React.FC = () => {
                         {selectedProject.status === 'CORRECTION_REQUIRED' && (
                           <button
                             onClick={() => handleUpdateStatus(selectedProject.id, 'UNDER_REVIEW', 95)}
-                            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold"
+                            className="px-4 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold"
                           >
                             Re-submit After Corrections
                           </button>
@@ -632,7 +632,7 @@ export const TechnicalPortal: React.FC = () => {
                         </button>
                         <button
                           type="submit"
-                          className="px-4 py-1.5 bg-amber-600 text-white rounded font-bold hover:bg-amber-700"
+                          className="px-4 py-1.5 bg-[#3066BE] text-white shadow-sm rounded font-bold hover:bg-amber-700"
                         >
                           Add Milestone
                         </button>

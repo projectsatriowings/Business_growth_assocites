@@ -384,21 +384,21 @@ export const BgaPortal: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'dashboard' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'dashboard' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <LayoutDashboard className="w-4 h-4" />
+              <LayoutDashboard className="w-4 h-4 text-[#80DED9]" />
               <span>Dashboard</span>
             </button>
 
             <button
               onClick={() => setActiveTab('profile')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'profile' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'profile' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <UserCheck className="w-4 h-4" />
+              <UserCheck className="w-4 h-4 text-[#80DED9]" />
               <span>My Profile & KYC</span>
             </button>
 
@@ -407,103 +407,98 @@ export const BgaPortal: React.FC = () => {
                 setActiveTab('clients');
                 setClientViewMode('list');
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'clients' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'clients' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <Users className="w-4 h-4" />
+              <Users className="w-4 h-4 text-[#80DED9]" />
               <span>My Clients</span>
             </button>
 
             <button
               onClick={() => setActiveTab('requests')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'requests' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'requests' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <FileCheck className="w-4 h-4" />
-                <span>My Client Requests</span>
-              </div>
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-1.5 py-0.5 rounded border border-emerald-500/30">
-                Workflow
-              </span>
+              <FileCheck className="w-4 h-4 text-[#80DED9]" />
+              <span>My Client Requests</span>
             </button>
 
             <button
               onClick={() => setActiveTab('enquiries')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'enquiries' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'enquiries' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-4 h-4 text-[#80DED9]" />
               <span>Enquiries & Quotation Req.</span>
             </button>
 
             <button
               onClick={() => setActiveTab('quotations')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'quotations' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'quotations' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <CreditCard className="w-4 h-4" />
+              <CreditCard className="w-4 h-4 text-[#80DED9]" />
               <span>My Quotations</span>
             </button>
 
             <button
               onClick={() => setActiveTab('projects')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'projects' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'projects' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <Briefcase className="w-4 h-4" />
+              <Briefcase className="w-4 h-4 text-[#80DED9]" />
               <span>Work Orders & Projects</span>
             </button>
 
             <button
               onClick={() => setActiveTab('earnings')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'earnings' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'earnings' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <DollarSign className="w-4 h-4" />
+              <DollarSign className="w-4 h-4 text-[#80DED9]" />
               <span>My Earnings & Commissions</span>
             </button>
 
             <button
               onClick={() => setActiveTab('services')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'services' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'services' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <Building2 className="w-4 h-4" />
+              <Building2 className="w-4 h-4 text-[#80DED9]" />
               <span>Company Services</span>
             </button>
 
             <button
               onClick={() => setActiveTab('resources')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'resources' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'resources' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <FileText className="w-4 h-4" />
+              <FileText className="w-4 h-4 text-[#80DED9]" />
               <span>Pitch Decks & Resources</span>
             </button>
 
             <button
               onClick={() => setActiveTab('support')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'support' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-800'
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'support' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <HelpCircle className="w-4 h-4" />
+              <HelpCircle className="w-4 h-4 text-[#80DED9]" />
               <span>Associate Support</span>
             </button>
           </div>
 
           <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500">
             Account Status:{' '}
-            <span className="text-emerald-400 font-bold uppercase">{user?.status}</span>
+            <span className="text-[#80DED9] font-bold uppercase">{user?.status}</span>
           </div>
         </aside>
 
@@ -519,7 +514,7 @@ export const BgaPortal: React.FC = () => {
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <span className="text-xs text-slate-500 font-semibold uppercase">My Registered Clients</span>
                   <div className="text-2xl font-bold text-slate-900 mt-1">{stats.clients}</div>
-                  <span className="text-xs text-emerald-600 font-medium">100% Exclusive Ownership</span>
+                  <span className="text-xs text-[#119DA4] font-medium">100% Exclusive Ownership</span>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
@@ -543,31 +538,31 @@ export const BgaPortal: React.FC = () => {
 
               {/* Commission Earnings Banner */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-6 rounded-2xl bg-gradient-to-tr from-emerald-900 to-teal-800 text-white shadow-sm flex flex-col justify-between">
+                <div className="p-6 rounded-2xl bg-gradient-to-tr from-[#3066BE] to-[#119DA4] text-white shadow-sm flex flex-col justify-between">
                   <div>
-                    <span className="text-xs text-emerald-200 uppercase tracking-wider font-semibold">
+                    <span className="text-xs text-[#80DED9] uppercase tracking-wider font-semibold">
                       Commissions Received (Paid Out)
                     </span>
                     <div className="text-3xl font-extrabold mt-2">₹{stats.earnings.paid.toLocaleString()}</div>
-                    <p className="text-xs text-emerald-100/80 mt-1">
+                    <p className="text-xs text-blue-100/90 mt-1">
                       Directly disbursed to your verified bank account via NEFT/IMPS.
                     </p>
                   </div>
                   <button
                     onClick={() => setActiveTab('earnings')}
-                    className="mt-4 px-4 py-2 bg-white text-emerald-900 rounded-lg text-xs font-bold hover:bg-emerald-50 transition-colors w-fit"
+                    className="mt-4 px-4 py-2 bg-white text-[#152544] rounded-lg text-xs font-bold hover:bg-[#AEECEF]/20 transition-colors w-fit"
                   >
                     View Commission Ledger →
                   </button>
                 </div>
 
-                <div className="p-6 rounded-2xl bg-gradient-to-tr from-indigo-900 to-blue-900 text-white shadow-sm flex flex-col justify-between">
+                <div className="p-6 rounded-2xl bg-gradient-to-tr from-[#152544] to-[#3066BE] text-white shadow-sm flex flex-col justify-between">
                   <div>
-                    <span className="text-xs text-indigo-200 uppercase tracking-wider font-semibold">
+                    <span className="text-xs text-[#AEECEF] uppercase tracking-wider font-semibold">
                       Commissions in Processing
                     </span>
                     <div className="text-3xl font-extrabold mt-2">₹{stats.earnings.pending.toLocaleString()}</div>
-                    <p className="text-xs text-indigo-100/80 mt-1">
+                    <p className="text-xs text-blue-100/90 mt-1">
                       Awaiting monthly cycle or technical project milestone completion.
                     </p>
                   </div>
@@ -613,8 +608,8 @@ export const BgaPortal: React.FC = () => {
                   </div>
 
                   <div className="border-b border-slate-100 pb-4 mb-6">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-2">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-teal-50 text-[#119DA4] border border-[#119DA4]/20 mb-2">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#119DA4]" />
                       Exclusive Ownership Guarantee
                     </div>
                     <h2 className="text-xl font-bold text-slate-900">Register a New Client</h2>
@@ -637,7 +632,7 @@ export const BgaPortal: React.FC = () => {
                     {/* SECTION 1: Client & Company Information */}
                     <div>
                       <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                        <Users className="w-4 h-4 text-emerald-600" />
+                        <Users className="w-4 h-4 text-[#119DA4]" />
                         1. Client & Company Information
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -649,7 +644,7 @@ export const BgaPortal: React.FC = () => {
                             value={clientForm.clientName}
                             onChange={(e) => setClientForm({ ...clientForm, clientName: e.target.value })}
                             placeholder="e.g. Anand Mahindra"
-                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE]"
                           />
                         </div>
                         <div>
@@ -660,7 +655,7 @@ export const BgaPortal: React.FC = () => {
                             value={clientForm.businessName}
                             onChange={(e) => setClientForm({ ...clientForm, businessName: e.target.value })}
                             placeholder="e.g. Apex Global Logistics Pvt Ltd"
-                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE]"
                           />
                         </div>
                         <div>
@@ -672,7 +667,7 @@ export const BgaPortal: React.FC = () => {
                             value={clientForm.mobile}
                             onChange={(e) => setClientForm({ ...clientForm, mobile: e.target.value.replace(/\D/g, '') })}
                             placeholder="9876543210"
-                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE] font-mono"
                           />
                         </div>
                         <div>
@@ -683,7 +678,7 @@ export const BgaPortal: React.FC = () => {
                             value={clientForm.email}
                             onChange={(e) => setClientForm({ ...clientForm, email: e.target.value })}
                             placeholder="client@company.com"
-                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE]"
                           />
                         </div>
                         <div className={clientForm.businessCategory === 'Other' ? 'sm:col-span-1' : 'sm:col-span-2'}>
@@ -692,7 +687,7 @@ export const BgaPortal: React.FC = () => {
                             required
                             value={clientForm.businessCategory}
                             onChange={(e) => setClientForm({ ...clientForm, businessCategory: e.target.value })}
-                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE] bg-white"
                           >
                             {BUSINESS_CATEGORIES.map((cat) => (
                               <option key={cat} value={cat}>
@@ -712,7 +707,7 @@ export const BgaPortal: React.FC = () => {
                               value={clientForm.otherCategory}
                               onChange={(e) => setClientForm({ ...clientForm, otherCategory: e.target.value })}
                               placeholder="e.g. Agriculture, Energy, Legal..."
-                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE]"
                             />
                           </div>
                         )}
@@ -722,7 +717,7 @@ export const BgaPortal: React.FC = () => {
                     {/* SECTION 2: Complete Business Address */}
                     <div className="pt-4 border-t border-slate-100">
                       <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-emerald-600" />
+                        <MapPin className="w-4 h-4 text-[#119DA4]" />
                         2. Business Address
                       </h3>
                       <div className="space-y-4">
@@ -734,7 +729,7 @@ export const BgaPortal: React.FC = () => {
                             value={clientForm.addressLine1}
                             onChange={(e) => setClientForm({ ...clientForm, addressLine1: e.target.value })}
                             placeholder="Building, Suite, Floor or Street Address"
-                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE]"
                           />
                         </div>
                         <div>
@@ -746,7 +741,7 @@ export const BgaPortal: React.FC = () => {
                             value={clientForm.addressLine2}
                             onChange={(e) => setClientForm({ ...clientForm, addressLine2: e.target.value })}
                             placeholder="Area, Landmark or Additional Details"
-                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE]"
                           />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -758,7 +753,7 @@ export const BgaPortal: React.FC = () => {
                               value={clientForm.city}
                               onChange={(e) => setClientForm({ ...clientForm, city: e.target.value })}
                               placeholder="e.g. Mumbai"
-                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE]"
                             />
                           </div>
                           <div>
@@ -769,7 +764,7 @@ export const BgaPortal: React.FC = () => {
                               value={clientForm.state}
                               onChange={(e) => setClientForm({ ...clientForm, state: e.target.value })}
                               placeholder="e.g. Maharashtra"
-                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE]"
                             />
                           </div>
                           <div>
@@ -780,7 +775,7 @@ export const BgaPortal: React.FC = () => {
                               value={clientForm.pinCode}
                               onChange={(e) => setClientForm({ ...clientForm, pinCode: e.target.value })}
                               placeholder="e.g. 400001"
-                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono"
+                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE] font-mono"
                             />
                           </div>
                           <div>
@@ -791,7 +786,7 @@ export const BgaPortal: React.FC = () => {
                               value={clientForm.country}
                               onChange={(e) => setClientForm({ ...clientForm, country: e.target.value })}
                               placeholder="India"
-                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE]"
                             />
                           </div>
                         </div>
@@ -801,7 +796,7 @@ export const BgaPortal: React.FC = () => {
                     {/* SECTION 3: Initial Enquiry Details (Optional) */}
                     <div className="pt-4 border-t border-slate-100">
                       <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4 text-emerald-600" />
+                        <MessageSquare className="w-4 h-4 text-[#119DA4]" />
                         3. Initial Enquiry Details <span className="text-slate-400 font-normal lowercase">(optional)</span>
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
@@ -877,7 +872,7 @@ export const BgaPortal: React.FC = () => {
                       <button
                         type="submit"
                         disabled={submittingClient}
-                        className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-lg text-sm shadow-sm transition-colors flex items-center gap-2"
+                        className="px-6 py-2.5 bg-[#3066BE] hover:bg-[#255299] disabled:opacity-50 text-white font-bold rounded-lg text-sm shadow-sm transition-colors flex items-center gap-2"
                       >
                         {submittingClient ? (
                           <>
@@ -902,7 +897,7 @@ export const BgaPortal: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="text-base font-bold text-slate-900">My Client Portfolio</h2>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-[#119DA4]">
                           {clients.length} Registered
                         </span>
                       </div>
@@ -916,7 +911,7 @@ export const BgaPortal: React.FC = () => {
                         setClientFormSuccess(null);
                         setClientFormError(null);
                       }}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-all shrink-0"
+                      className="px-4 py-2 bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-all shrink-0"
                     >
                       <Plus className="w-4 h-4" />
                       + Add New Client
@@ -925,14 +920,14 @@ export const BgaPortal: React.FC = () => {
 
                   {/* Success Alert Banner (Displayed right after successful client registration) */}
                   {clientFormSuccess && (
-                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between gap-2 shadow-sm">
+                    <div className="p-4 rounded-xl bg-teal-50 border border-[#119DA4]/20 text-[#119DA4] text-xs flex items-center justify-between gap-2 shadow-sm">
                       <div className="flex items-center gap-2.5">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                        <CheckCircle2 className="w-5 h-5 text-[#119DA4] shrink-0" />
                         <span className="font-semibold">{clientFormSuccess}</span>
                       </div>
                       <button
                         onClick={() => setClientFormSuccess(null)}
-                        className="p-1 hover:bg-emerald-100 rounded text-emerald-600"
+                        className="p-1 hover:bg-[#80DED9]/20 rounded text-[#119DA4]"
                         title="Dismiss"
                       >
                         <X className="w-4 h-4" />
@@ -949,7 +944,7 @@ export const BgaPortal: React.FC = () => {
                         placeholder="Search by client, business, category, phone, email, city..."
                         value={clientSearch}
                         onChange={(e) => setClientSearch(e.target.value)}
-                        className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                       />
                     </div>
                     <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -957,7 +952,7 @@ export const BgaPortal: React.FC = () => {
                       <select
                         value={clientCategoryFilter}
                         onChange={(e) => setClientCategoryFilter(e.target.value)}
-                        className="w-full sm:w-auto text-xs p-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-slate-700"
+                        className="w-full sm:w-auto text-xs p-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#3066BE] font-medium text-slate-700"
                       >
                         <option value="ALL">All Categories ({clients.length})</option>
                         {BUSINESS_CATEGORIES.map((cat) => (
@@ -982,7 +977,7 @@ export const BgaPortal: React.FC = () => {
                           setClientViewMode('add');
                           setClientFormSuccess(null);
                         }}
-                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm"
+                        className="px-4 py-2 bg-[#3066BE] text-white rounded-lg text-xs font-bold hover:bg-[#255299] shadow-sm"
                       >
                         + Add Your First Client
                       </button>
@@ -1009,7 +1004,7 @@ export const BgaPortal: React.FC = () => {
                           setClientSearch('');
                           setClientCategoryFilter('ALL');
                         }}
-                        className="mt-3 text-xs text-emerald-600 font-bold hover:underline"
+                        className="mt-3 text-xs text-[#119DA4] font-bold hover:underline"
                       >
                         Reset Search Filters
                       </button>
@@ -1107,7 +1102,7 @@ export const BgaPortal: React.FC = () => {
                                           <span
                                             className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                                               latestEnquiry.status === 'APPROVED'
-                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                ? 'bg-teal-50 text-[#119DA4] border-[#119DA4]/20'
                                                 : latestEnquiry.status === 'QUOTATION_REQUESTED'
                                                 ? 'bg-purple-50 text-purple-700 border-purple-200'
                                                 : latestEnquiry.status === 'SUBMITTED'
@@ -1157,7 +1152,7 @@ export const BgaPortal: React.FC = () => {
                                           onClick={() =>
                                             setNewEnquiryModal({ clientId: c.id, clientName: c.clientName })
                                           }
-                                          className="px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold flex items-center gap-1 transition-colors"
+                                          className="px-2.5 py-1.5 rounded-lg bg-teal-50 text-[#119DA4] hover:bg-[#80DED9]/20 text-xs font-bold flex items-center gap-1 transition-colors"
                                           title="Submit New Enquiry"
                                         >
                                           <Plus className="w-3.5 h-3.5" />
@@ -1185,7 +1180,7 @@ export const BgaPortal: React.FC = () => {
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="text-lg font-bold text-slate-900">{selectedClientDetails.clientName}</h3>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-[#119DA4] border border-[#119DA4]/20">
                             Active Associate Client
                           </span>
                         </div>
@@ -1205,7 +1200,7 @@ export const BgaPortal: React.FC = () => {
                       {/* Section 1: Contact & Client Overview */}
                       <div>
                         <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                          <Users className="w-4 h-4 text-emerald-600" />
+                          <Users className="w-4 h-4 text-[#119DA4]" />
                           Client Contact Overview
                         </h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1246,8 +1241,8 @@ export const BgaPortal: React.FC = () => {
                             <span className="text-[10px] font-semibold text-slate-400 uppercase block">
                               Exclusive Owner
                             </span>
-                            <span className="text-xs font-bold text-emerald-700 mt-0.5 block flex items-center gap-1">
-                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="text-xs font-bold text-[#119DA4] mt-0.5 block flex items-center gap-1">
+                              <ShieldCheck className="w-3.5 h-3.5 text-[#119DA4]" />
                               Assigned to You ({user?.name})
                             </span>
                           </div>
@@ -1282,7 +1277,7 @@ export const BgaPortal: React.FC = () => {
                         return (
                           <div>
                             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-emerald-600" />
+                              <MapPin className="w-4 h-4 text-[#119DA4]" />
                               Complete Business Address
                             </h4>
                             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-3">
@@ -1336,7 +1331,7 @@ export const BgaPortal: React.FC = () => {
                       <div>
                         <div className="flex justify-between items-center mb-3">
                           <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4 text-emerald-600" />
+                            <MessageSquare className="w-4 h-4 text-[#119DA4]" />
                             Client Enquiries & Requirements ({selectedClientDetails.enquiries?.length || 0})
                           </h4>
                           <button
@@ -1345,7 +1340,7 @@ export const BgaPortal: React.FC = () => {
                               setSelectedClientDetails(null);
                               setNewEnquiryModal({ clientId: c.id, clientName: c.clientName });
                             }}
-                            className="px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-colors"
+                            className="px-2.5 py-1 bg-teal-50 text-[#119DA4] hover:bg-[#80DED9]/20 rounded-lg text-xs font-bold transition-colors"
                           >
                             + Add Another Enquiry
                           </button>
@@ -1435,7 +1430,7 @@ export const BgaPortal: React.FC = () => {
                       {selectedClientDetails.quotations && selectedClientDetails.quotations.length > 0 && (
                         <div>
                           <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                            <CreditCard className="w-4 h-4 text-emerald-600" />
+                            <CreditCard className="w-4 h-4 text-[#119DA4]" />
                             Commercial Quotations ({selectedClientDetails.quotations.length})
                           </h4>
                           <div className="space-y-2">
@@ -1567,7 +1562,7 @@ export const BgaPortal: React.FC = () => {
                         <div className="flex items-center gap-3">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                             enq.status === 'APPROVED'
-                              ? 'bg-emerald-100 text-emerald-800'
+                              ? 'bg-emerald-100 text-[#119DA4]'
                               : enq.status === 'SUBMITTED'
                               ? 'bg-amber-100 text-amber-800'
                               : 'bg-red-100 text-red-800'
@@ -1596,7 +1591,7 @@ export const BgaPortal: React.FC = () => {
                         <span>Submitted on {new Date(enq.createdAt).toLocaleDateString()}</span>
 
                         {hasActiveQuote ? (
-                          <span className="text-emerald-600 font-semibold">
+                          <span className="text-[#119DA4] font-semibold">
                             Quotation Issued ({enq.quotations[0].quotationNumber})
                           </span>
                         ) : (
@@ -1621,7 +1616,7 @@ export const BgaPortal: React.FC = () => {
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                 <div>
                   <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <FileCheck className="w-5 h-5 text-emerald-600" />
+                    <FileCheck className="w-5 h-5 text-[#119DA4]" />
                     My Client Requests & End-to-End Workflow Pipeline
                   </h2>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -1650,7 +1645,7 @@ export const BgaPortal: React.FC = () => {
                       setActiveTab('clients');
                       setClientViewMode('add');
                     }}
-                    className="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors"
+                    className="mt-4 px-4 py-2 bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm rounded-xl text-xs font-bold transition-colors"
                   >
                     + Register New Client
                   </button>
@@ -1696,7 +1691,7 @@ export const BgaPortal: React.FC = () => {
                             <span
                               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                 r.adminApprovalStatus === 'APPROVED'
-                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                  ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
                                   : r.adminApprovalStatus === 'REJECTED'
                                   ? 'bg-red-100 text-red-800 border border-red-200'
                                   : r.adminApprovalStatus === 'CHANGES_REQUESTED'
@@ -1713,7 +1708,7 @@ export const BgaPortal: React.FC = () => {
                                 r.quotationStatus === 'QUOTATION_APPROVED'
                                   ? 'bg-blue-100 text-blue-800 border border-blue-200'
                                   : r.quotationStatus === 'QUOTATION_ACCEPTED'
-                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                  ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
                                   : r.quotationStatus === 'QUOTATION_PENDING_ADMIN_APPROVAL'
                                   ? 'bg-purple-100 text-purple-800 border border-purple-200'
                                   : 'bg-slate-100 text-slate-700'
@@ -1726,7 +1721,7 @@ export const BgaPortal: React.FC = () => {
                             <span
                               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                 r.clientResponse === 'ACCEPTED'
-                                  ? 'bg-emerald-100 text-emerald-800'
+                                  ? 'bg-emerald-100 text-[#119DA4]'
                                   : r.clientResponse === 'REJECTED'
                                   ? 'bg-red-100 text-red-800'
                                   : 'bg-slate-100 text-slate-600'
@@ -1739,7 +1734,7 @@ export const BgaPortal: React.FC = () => {
                             <span
                               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                 r.paymentStatus === 'VERIFIED'
-                                  ? 'bg-emerald-100 text-emerald-800'
+                                  ? 'bg-emerald-100 text-[#119DA4]'
                                   : r.paymentStatus === 'PAYMENT_SUBMITTED'
                                   ? 'bg-amber-100 text-amber-800'
                                   : 'bg-slate-100 text-slate-500'
@@ -1752,7 +1747,7 @@ export const BgaPortal: React.FC = () => {
                             <span
                               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                 r.projectStatus === 'COMPLETED'
-                                  ? 'bg-emerald-100 text-emerald-800'
+                                  ? 'bg-emerald-100 text-[#119DA4]'
                                   : r.projectStatus === 'IN_PROGRESS'
                                   ? 'bg-amber-100 text-amber-800'
                                   : r.projectStatus === 'READY_TO_START'
@@ -1834,7 +1829,7 @@ export const BgaPortal: React.FC = () => {
                           <span
                             className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
                               q.status === 'ACCEPTED'
-                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
                                 : isApproved
                                 ? 'bg-blue-100 text-blue-800 border border-blue-200'
                                 : isPendingAdmin
@@ -1880,7 +1875,7 @@ export const BgaPortal: React.FC = () => {
                           </div>
                           <div>
                             <span className="text-slate-400 block">Required Advance ({q.advanceRequiredPercent}%)</span>
-                            <span className="font-bold text-emerald-700">₹{q.advanceRequiredAmount?.toLocaleString()}</span>
+                            <span className="font-bold text-[#119DA4]">₹{q.advanceRequiredAmount?.toLocaleString()}</span>
                           </div>
                         </div>
                       ) : (
@@ -1935,7 +1930,7 @@ export const BgaPortal: React.FC = () => {
                               </button>
                               <button
                                 onClick={() => setAcceptanceModal({ quotationId: q.id, quotationNumber: q.quotationNumber })}
-                                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                                className="px-4 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm rounded-lg text-xs font-bold transition-colors shadow-sm"
                               >
                                 Record Client Acceptance ✓
                               </button>
@@ -1943,8 +1938,8 @@ export const BgaPortal: React.FC = () => {
                           )}
 
                           {q.status === 'ACCEPTED' && (
-                            <span className="text-emerald-700 font-bold flex items-center gap-1">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <span className="text-[#119DA4] font-bold flex items-center gap-1">
+                              <CheckCircle2 className="w-4 h-4 text-[#119DA4]" />
                               Accepted on {new Date(q.acceptedAt).toLocaleDateString()}
                             </span>
                           )}
@@ -2060,7 +2055,7 @@ export const BgaPortal: React.FC = () => {
                         value={acceptanceNotes}
                         onChange={(e) => setAcceptanceNotes(e.target.value)}
                         placeholder="e.g. Approved via email confirmation from MD on 16 Nov 2026. PO Ref: APEX-2026-PO99"
-                        className="w-full text-xs p-2.5 border border-slate-300 rounded focus:ring-1 focus:ring-emerald-500"
+                        className="w-full text-xs p-2.5 border border-slate-300 rounded focus:ring-1 focus:ring-[#3066BE]"
                       />
                     </div>
                     <div className="mt-4 flex justify-end gap-2">
@@ -2073,7 +2068,7 @@ export const BgaPortal: React.FC = () => {
                       <button
                         onClick={handleClientAcceptance}
                         disabled={!acceptanceNotes}
-                        className="px-4 py-1.5 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-700 disabled:opacity-50"
+                        className="px-4 py-1.5 bg-[#3066BE] text-white rounded text-xs font-bold hover:bg-[#255299] disabled:opacity-50"
                       >
                         Confirm Acceptance
                       </button>
@@ -2110,7 +2105,7 @@ export const BgaPortal: React.FC = () => {
 
                         <div className="flex items-center gap-2">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            wo.advanceVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                            wo.advanceVerified ? 'bg-emerald-100 text-[#119DA4]' : 'bg-amber-100 text-amber-800'
                           }`}>
                             Advance: {wo.advanceVerified ? 'VERIFIED' : 'AWAITING VERIFICATION'}
                           </span>
@@ -2128,7 +2123,7 @@ export const BgaPortal: React.FC = () => {
                           </div>
                           <div className="w-full bg-slate-100 rounded-full h-2">
                             <div
-                              className="bg-emerald-600 h-2 rounded-full transition-all"
+                              className="bg-[#3066BE] h-2 rounded-full transition-all"
                               style={{ width: `${prj.progressPercentage}%` }}
                             />
                           </div>
@@ -2138,7 +2133,7 @@ export const BgaPortal: React.FC = () => {
                               <div key={m.id} className="p-2 rounded bg-slate-50 border border-slate-100 text-[11px]">
                                 <span className="font-semibold text-slate-800 block truncate">{m.title}</span>
                                 <span className={`text-[10px] font-bold ${
-                                  m.status === 'COMPLETED' ? 'text-emerald-600' : 'text-slate-400'
+                                  m.status === 'COMPLETED' ? 'text-[#119DA4]' : 'text-slate-400'
                                 }`}>
                                   {m.status}
                                 </span>
@@ -2188,19 +2183,19 @@ export const BgaPortal: React.FC = () => {
                           <div className="text-[10px] text-slate-400">{c.serviceCategory}</div>
                         </td>
                         <td className="p-3.5 font-semibold text-slate-600">{c.billingType}</td>
-                        <td className="p-3.5 font-bold text-emerald-700 text-sm">
+                        <td className="p-3.5 font-bold text-[#119DA4] text-sm">
                           ₹{c.calculatedCommission?.toLocaleString()}
                         </td>
                         <td className="p-3.5">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            c.eligibilityStatus === 'ELIGIBLE' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                            c.eligibilityStatus === 'ELIGIBLE' ? 'bg-emerald-100 text-[#119DA4]' : 'bg-slate-100 text-slate-600'
                           }`}>
                             {c.eligibilityStatus}
                           </span>
                         </td>
                         <td className="p-3.5">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            c.approvalStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                            c.approvalStatus === 'APPROVED' ? 'bg-emerald-100 text-[#119DA4]' : 'bg-amber-100 text-amber-800'
                           }`}>
                             {c.approvalStatus}
                           </span>
@@ -2239,7 +2234,7 @@ export const BgaPortal: React.FC = () => {
                         <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">{s.category}</span>
                         <h4 className="text-sm font-bold text-slate-900">{s.name}</h4>
                       </div>
-                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                      <span className="text-xs font-bold text-[#119DA4] bg-teal-50 px-2 py-0.5 rounded">
                         {s.defaultCommissionRate}% Commission
                       </span>
                     </div>

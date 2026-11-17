@@ -50,7 +50,7 @@ const EmptyState: React.FC<{
   onAction?: () => void;
 }> = ({ icon: Icon, title, description, actionText, onAction }) => (
   <div className="w-full p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center space-y-3">
-    <div className="w-14 h-14 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shadow-sm">
+    <div className="w-14 h-14 rounded-2xl bg-blue-50/70 border border-purple-100 flex items-center justify-center text-[#3066BE] shadow-sm">
       <Icon className="w-7 h-7" />
     </div>
     <h3 className="text-base font-bold text-slate-800">{title}</h3>
@@ -58,7 +58,7 @@ const EmptyState: React.FC<{
     {actionText && onAction && (
       <button
         onClick={onAction}
-        className="mt-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm"
+        className="mt-2 px-4 py-2 bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm rounded-xl text-xs font-bold transition-colors shadow-sm"
       >
         {actionText}
       </button>
@@ -577,10 +577,10 @@ export const AdminPortal: React.FC = () => {
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'dashboard' ? 'bg-purple-600 text-white font-bold' : 'hover:bg-slate-800'
+                activeTab === 'dashboard' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <LayoutDashboard className="w-4 h-4" />
+              <LayoutDashboard className="w-4 h-4 text-[#80DED9]" />
               <span>Dashboard & Analytics</span>
             </button>
 
@@ -590,11 +590,11 @@ export const AdminPortal: React.FC = () => {
                 setActiveTab('bgas');
               }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'bgas' ? 'bg-purple-600 text-white font-bold' : 'hover:bg-slate-800'
+                activeTab === 'bgas' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <Users className="w-4 h-4" />
+                <Users className="w-4 h-4 text-[#80DED9]" />
                 <span>BGA Management</span>
               </div>
               {stats?.bgas?.pendingApprovals > 0 && (
@@ -607,11 +607,11 @@ export const AdminPortal: React.FC = () => {
             <button
               onClick={() => setActiveTab('enquiries')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'enquiries' ? 'bg-purple-600 text-white font-bold' : 'hover:bg-slate-800'
+                activeTab === 'enquiries' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <CheckSquare className="w-4 h-4" />
+                <CheckSquare className="w-4 h-4 text-[#80DED9]" />
                 <span>Enquiry Approvals</span>
               </div>
               {stats?.enquiries?.pending > 0 && (
@@ -624,80 +624,80 @@ export const AdminPortal: React.FC = () => {
             <button
               onClick={() => setActiveTab('clients')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'clients' ? 'bg-purple-600 text-white font-bold' : 'hover:bg-slate-800'
+                activeTab === 'clients' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <UserCheck className="w-4 h-4" />
+              <UserCheck className="w-4 h-4 text-[#80DED9]" />
               <span>Clients & Ownership</span>
             </button>
 
             <button
               onClick={() => setActiveTab('services')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'services' ? 'bg-purple-600 text-white font-bold' : 'hover:bg-slate-800'
+                activeTab === 'services' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <Layers className="w-4 h-4" />
+              <Layers className="w-4 h-4 text-[#80DED9]" />
               <span>Services & Pricing</span>
             </button>
 
             <button
               onClick={() => setActiveTab('resources')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'resources' ? 'bg-purple-600 text-white font-bold' : 'hover:bg-slate-800'
+                activeTab === 'resources' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <FileText className="w-4 h-4" />
+              <FileText className="w-4 h-4 text-[#80DED9]" />
               <span>Company Resources</span>
             </button>
 
             <button
               onClick={() => setActiveTab('quotations')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'quotations' ? 'bg-purple-600 text-white font-bold' : 'hover:bg-slate-800'
+                activeTab === 'quotations' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <CreditCard className="w-4 h-4" />
+              <CreditCard className="w-4 h-4 text-[#80DED9]" />
               <span>Quotation Monitoring</span>
             </button>
 
             <button
               onClick={() => setActiveTab('workorders')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'workorders' ? 'bg-purple-600 text-white font-bold' : 'hover:bg-slate-800'
+                activeTab === 'workorders' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <Briefcase className="w-4 h-4" />
+              <Briefcase className="w-4 h-4 text-[#80DED9]" />
               <span>Work Orders & Accounts</span>
             </button>
 
             <button
               onClick={() => setActiveTab('technical')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'technical' ? 'bg-purple-600 text-white font-bold' : 'hover:bg-slate-800'
+                activeTab === 'technical' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <Layers className="w-4 h-4" />
+              <Layers className="w-4 h-4 text-[#80DED9]" />
               <span>Technical Projects</span>
             </button>
 
             <button
               onClick={() => setActiveTab('commissions')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'commissions' ? 'bg-purple-600 text-white font-bold' : 'hover:bg-slate-800'
+                activeTab === 'commissions' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <DollarSign className="w-4 h-4" />
+              <DollarSign className="w-4 h-4 text-[#80DED9]" />
               <span>Commissions & Payouts</span>
             </button>
 
             <button
               onClick={() => setActiveTab('settings')}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'settings' ? 'bg-purple-600 text-white font-bold' : 'hover:bg-slate-800'
+                activeTab === 'settings' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-4 h-4 text-[#80DED9]" />
               <span>Workflow & Audit Logs</span>
             </button>
           </div>
@@ -720,7 +720,7 @@ export const AdminPortal: React.FC = () => {
                 <p className="text-xs text-slate-500 mt-1">Connecting to database metrics feed...</p>
                 <button
                   onClick={loadData}
-                  className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-semibold"
+                  className="mt-4 px-4 py-2 bg-[#3066BE] text-white shadow-sm rounded-xl text-xs font-semibold"
                 >
                   Load Analytics Feed
                 </button>
@@ -747,10 +747,10 @@ export const AdminPortal: React.FC = () => {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div
                   onClick={() => setActiveTab('bgas')}
-                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-purple-300 transition-all cursor-pointer group"
+                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
                 >
                   <span className="text-xs text-slate-500 font-semibold uppercase block">Total Associates</span>
-                  <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-purple-600 transition-colors">
+                  <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-[#3066BE] transition-colors">
                     {stats?.bgas?.total || 0}
                   </div>
                   <div className="flex items-center justify-between text-xs mt-2">
@@ -761,10 +761,10 @@ export const AdminPortal: React.FC = () => {
 
                 <div
                   onClick={() => setActiveTab('enquiries')}
-                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-purple-300 transition-all cursor-pointer group"
+                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
                 >
                   <span className="text-xs text-slate-500 font-semibold uppercase block">Total Enquiries</span>
-                  <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-purple-600 transition-colors">
+                  <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-[#3066BE] transition-colors">
                     {stats?.enquiries?.total || 0}
                   </div>
                   <div className="flex items-center justify-between text-xs mt-2">
@@ -775,10 +775,10 @@ export const AdminPortal: React.FC = () => {
 
                 <div
                   onClick={() => setActiveTab('clients')}
-                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-purple-300 transition-all cursor-pointer group"
+                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
                 >
                   <span className="text-xs text-slate-500 font-semibold uppercase block">Registered Clients</span>
-                  <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-purple-600 transition-colors">
+                  <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-[#3066BE] transition-colors">
                     {stats?.clients?.total || 0}
                   </div>
                   <span className="text-xs text-indigo-600 font-medium block mt-2">
@@ -788,7 +788,7 @@ export const AdminPortal: React.FC = () => {
 
                 <div
                   onClick={() => setActiveTab('workorders')}
-                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-purple-300 transition-all cursor-pointer group"
+                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
                 >
                   <span className="text-xs text-slate-500 font-semibold uppercase block">Verified Revenue</span>
                   <div className="text-3xl font-extrabold text-emerald-600 mt-1">
@@ -805,14 +805,14 @@ export const AdminPortal: React.FC = () => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
                   <div>
                     <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-600" />
+                      <Sparkles className="w-4 h-4 text-[#3066BE]" />
                       10-Stage Enterprise Workflow Pipeline Monitoring
                     </h3>
                     <p className="text-xs text-slate-500">
                       Real-time progression tracking across client approvals, quotation preparation, payment clearance, and technical delivery. Click any card to filter tasks.
                     </p>
                   </div>
-                  <span className="text-[11px] font-bold text-purple-700 bg-purple-100 px-3 py-1 rounded-full border border-purple-200">
+                  <span className="text-[11px] font-bold text-[#3066BE] bg-purple-100 px-3 py-1 rounded-full border border-[#3066BE]/25">
                     Live System Feeds
                   </span>
                 </div>
@@ -827,7 +827,7 @@ export const AdminPortal: React.FC = () => {
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
                   >
                     <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 1</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
                       Pending Approvals
                     </span>
                     <div className="text-2xl font-black text-amber-600 mt-2">
@@ -845,7 +845,7 @@ export const AdminPortal: React.FC = () => {
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
                   >
                     <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 2</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
                       Approved Enquiries
                     </span>
                     <div className="text-2xl font-black text-emerald-600 mt-2">
@@ -863,7 +863,7 @@ export const AdminPortal: React.FC = () => {
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
                   >
                     <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 3</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
                       Pending Quotations
                     </span>
                     <div className="text-2xl font-black text-blue-600 mt-2">
@@ -896,13 +896,13 @@ export const AdminPortal: React.FC = () => {
                       setActiveTab('quotations');
                       setQuotationStatusFilter('PENDING_ADMIN_APPROVAL');
                     }}
-                    className="p-4 rounded-xl bg-white border border-purple-200 bg-purple-50/30 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    className="p-4 rounded-xl bg-white border border-[#3066BE]/25 bg-blue-50/70/30 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
                   >
-                    <span className="text-[10px] text-purple-600 font-bold uppercase block tracking-wider">Stage 5</span>
-                    <span className="text-xs font-bold text-purple-900 mt-0.5 block group-hover:text-purple-600">
+                    <span className="text-[10px] text-[#3066BE] font-bold uppercase block tracking-wider">Stage 5</span>
+                    <span className="text-xs font-bold text-[#152544] mt-0.5 block group-hover:text-[#3066BE]">
                       Quote Approvals
                     </span>
-                    <div className="text-2xl font-black text-purple-600 mt-2">
+                    <div className="text-2xl font-black text-[#3066BE] mt-2">
                       {stats?.workflow?.pendingQuotationApprovals || 0}
                     </div>
                     <span className="text-[10px] text-slate-500 block mt-1">Pending Admin release</span>
@@ -917,7 +917,7 @@ export const AdminPortal: React.FC = () => {
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
                   >
                     <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 6</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
                       Accepted Quotations
                     </span>
                     <div className="text-2xl font-black text-emerald-600 mt-2">
@@ -935,7 +935,7 @@ export const AdminPortal: React.FC = () => {
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
                   >
                     <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 7</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
                       Pending Advances
                     </span>
                     <div className="text-2xl font-black text-amber-600 mt-2">
@@ -953,7 +953,7 @@ export const AdminPortal: React.FC = () => {
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
                   >
                     <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 8</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
                       Payments Verified
                     </span>
                     <div className="text-2xl font-black text-emerald-600 mt-2">
@@ -986,10 +986,10 @@ export const AdminPortal: React.FC = () => {
                     className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
                   >
                     <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 10</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-purple-600">
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
                       Active Tech Projects
                     </span>
-                    <div className="text-2xl font-black text-purple-700 mt-2">
+                    <div className="text-2xl font-black text-[#3066BE] mt-2">
                       {stats?.workflow?.activeTechnicalProjects || 0}
                     </div>
                     <span className="text-[10px] text-slate-500 block mt-1">Engineering sprints active</span>
@@ -1001,7 +1001,7 @@ export const AdminPortal: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div
                   onClick={() => setActiveTab('commissions')}
-                  className="p-6 rounded-2xl bg-gradient-to-tr from-purple-900 to-indigo-900 text-white shadow-md cursor-pointer hover:shadow-xl transition-all"
+                  className="p-6 rounded-2xl bg-gradient-to-tr from-[#152544] to-[#3066BE] text-white shadow-md cursor-pointer hover:shadow-xl transition-all"
                 >
                   <span className="text-xs text-purple-200 uppercase tracking-wider font-semibold">Total Commissions</span>
                   <div className="text-3xl font-extrabold mt-1">₹{(stats?.finance?.totalCommissions || 0).toLocaleString()}</div>
@@ -1031,7 +1031,7 @@ export const AdminPortal: React.FC = () => {
 
                 <div
                   onClick={() => setActiveTab('technical')}
-                  className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm cursor-pointer hover:border-purple-300 transition-all flex flex-col justify-between"
+                  className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm cursor-pointer hover:border-[#3066BE]/35 transition-all flex flex-col justify-between"
                 >
                   <div>
                     <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Technical Delivery</span>
@@ -1072,9 +1072,9 @@ export const AdminPortal: React.FC = () => {
                       <button
                         key={m.tab}
                         onClick={() => setActiveTab(m.tab as any)}
-                        className="p-3.5 rounded-xl border border-slate-200 hover:border-purple-300 hover:bg-purple-50/40 text-left transition-all group"
+                        className="p-3.5 rounded-xl border border-slate-200 hover:border-[#3066BE]/35 hover:bg-[#AEECEF]/20/40 text-left transition-all group"
                       >
-                        <Icon className="w-5 h-5 text-purple-600 group-hover:scale-110 transition-transform mb-2" />
+                        <Icon className="w-5 h-5 text-[#3066BE] group-hover:scale-110 transition-transform mb-2" />
                         <span className="font-bold text-xs text-slate-900 block">{m.label}</span>
                         <span className="text-[10px] text-slate-400 block mt-0.5">{m.desc}</span>
                       </button>
@@ -1098,7 +1098,7 @@ export const AdminPortal: React.FC = () => {
                 <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm w-full">
                   <div className="flex items-center gap-3">
                     <h2 className="text-base font-bold text-slate-900 whitespace-nowrap">BGA Associates Directory</h2>
-                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 font-bold border border-purple-200">
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-50/70 text-[#3066BE] font-bold border border-[#3066BE]/25">
                       {bgas.length} Registered Associates
                     </span>
                   </div>
@@ -1107,7 +1107,7 @@ export const AdminPortal: React.FC = () => {
                     <select
                       value={bgaStatusFilter}
                       onChange={(e) => setBgaStatusFilter(e.target.value)}
-                      className="text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
+                      className="text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#3066BE] font-medium"
                     >
                       <option value="ALL">All Statuses</option>
                       <option value="SUBMITTED">SUBMITTED (Awaiting Approval)</option>
@@ -1125,12 +1125,12 @@ export const AdminPortal: React.FC = () => {
                           value={searchBga}
                           onChange={(e) => setSearchBga(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && loadData()}
-                          className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                         />
                       </div>
                       <button
                         onClick={loadData}
-                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-colors whitespace-nowrap shadow-sm"
+                        className="px-4 py-2 bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm rounded-xl text-xs font-bold transition-colors whitespace-nowrap shadow-sm"
                       >
                         Search
                       </button>
@@ -1169,11 +1169,11 @@ export const AdminPortal: React.FC = () => {
                           <tr
                             key={b.id}
                             onClick={() => setSelectedAssociateId(b.id)}
-                            className="hover:bg-purple-50/50 cursor-pointer transition-colors group"
+                            className="hover:bg-[#AEECEF]/20/50 cursor-pointer transition-colors group"
                             title="Click row to view complete associate profile"
                           >
                             <td className="p-4">
-                              <div className="font-bold text-slate-900 text-sm group-hover:text-purple-700 transition-colors">
+                              <div className="font-bold text-slate-900 text-sm group-hover:text-[#3066BE] transition-colors">
                                 {b.name}
                               </div>
                               <div className="text-slate-500 text-[11px] mt-0.5">{b.email} • {b.mobile}</div>
@@ -1238,7 +1238,7 @@ export const AdminPortal: React.FC = () => {
                               )}
                               <button
                                 onClick={() => setSelectedAssociateId(b.id)}
-                                className="px-3 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-lg text-xs font-bold transition-colors"
+                                className="px-3 py-1.5 bg-blue-50/70 text-[#3066BE] hover:bg-purple-100 border border-[#3066BE]/25 rounded-lg text-xs font-bold transition-colors"
                               >
                                 View Profile →
                               </button>
@@ -1285,7 +1285,7 @@ export const AdminPortal: React.FC = () => {
                       placeholder="Search client, company, phone..."
                       value={clientSearch}
                       onChange={(e) => setClientSearch(e.target.value)}
-                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                     />
                   </div>
                 </div>
@@ -1336,7 +1336,7 @@ export const AdminPortal: React.FC = () => {
                           <td className="p-3.5 text-right">
                             <button
                               onClick={() => setTransferModal({ client: c })}
-                              className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-purple-50 hover:text-purple-700 text-xs font-semibold border border-slate-200 flex items-center gap-1.5 ml-auto transition-colors"
+                              className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-[#AEECEF]/20 hover:text-[#3066BE] text-xs font-semibold border border-slate-200 flex items-center gap-1.5 ml-auto transition-colors"
                             >
                               <ArrowRightLeft className="w-3.5 h-3.5" /> Transfer Owner
                             </button>
@@ -1373,7 +1373,7 @@ export const AdminPortal: React.FC = () => {
                         <select
                           value={targetBgaId}
                           onChange={(e) => setTargetBgaId(e.target.value)}
-                          className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-purple-500"
+                          className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#3066BE]"
                         >
                           <option value="">-- Choose active associate --</option>
                           {bgas
@@ -1393,7 +1393,7 @@ export const AdminPortal: React.FC = () => {
                           value={transferReason}
                           onChange={(e) => setTransferReason(e.target.value)}
                           placeholder="Audit reason (e.g. Associate inactive, territory realignment)..."
-                          className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-purple-500"
+                          className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#3066BE]"
                         />
                       </div>
                     </div>
@@ -1408,7 +1408,7 @@ export const AdminPortal: React.FC = () => {
                       <button
                         onClick={executeClientTransfer}
                         disabled={!targetBgaId}
-                        className="px-4 py-2 rounded-lg text-xs font-bold bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+                        className="px-4 py-2 rounded-lg text-xs font-bold bg-[#3066BE] text-white shadow-sm hover:bg-[#255299] disabled:opacity-50"
                       >
                         Confirm Transfer
                       </button>
@@ -1450,7 +1450,7 @@ export const AdminPortal: React.FC = () => {
                       placeholder="Search enquiry, client, BGA..."
                       value={enquirySearch}
                       onChange={(e) => setEnquirySearch(e.target.value)}
-                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                     />
                   </div>
                 </div>
@@ -1505,9 +1505,9 @@ export const AdminPortal: React.FC = () => {
                       </div>
 
                       {enq.adminNotes && (
-                        <div className="p-3 bg-purple-50 rounded-xl border border-purple-100 text-xs">
-                          <strong className="text-purple-900 block font-semibold">Executive Review Remarks:</strong>
-                          <span className="text-purple-800 mt-0.5 block">{enq.adminNotes}</span>
+                        <div className="p-3 bg-blue-50/70 rounded-xl border border-purple-100 text-xs">
+                          <strong className="text-[#152544] block font-semibold">Executive Review Remarks:</strong>
+                          <span className="text-[#152544] mt-0.5 block">{enq.adminNotes}</span>
                         </div>
                       )}
 
@@ -1573,7 +1573,7 @@ export const AdminPortal: React.FC = () => {
                         value={enquiryReviewNotes}
                         onChange={(e) => setEnquiryReviewNotes(e.target.value)}
                         placeholder="Add review guidelines for Accounts or notes for BGA..."
-                        className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-purple-500"
+                        className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#3066BE]"
                       />
                     </div>
 
@@ -1685,7 +1685,7 @@ export const AdminPortal: React.FC = () => {
                       onClick={() => setServiceCategoryTab(cat.id)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                         serviceCategoryTab === cat.id
-                          ? 'bg-purple-600 text-white shadow-sm font-bold'
+                          ? 'bg-[#3066BE] text-white shadow-sm shadow-sm font-bold'
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
@@ -1756,13 +1756,13 @@ export const AdminPortal: React.FC = () => {
                       placeholder="Search resources..."
                       value={resourceSearch}
                       onChange={(e) => setResourceSearch(e.target.value)}
-                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                     />
                   </div>
 
                   <button
                     onClick={() => setShowResourceForm(!showResourceForm)}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0 shadow-sm"
+                    className="px-4 py-2 bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0 shadow-sm"
                   >
                     <Plus className="w-4 h-4" /> {showResourceForm ? 'Hide Form' : 'Upload Resource'}
                   </button>
@@ -1782,7 +1782,7 @@ export const AdminPortal: React.FC = () => {
                         value={newResource.title}
                         onChange={(e) => setNewResource({ ...newResource, title: e.target.value })}
                         placeholder="e.g. Enterprise Cloud ERP Presentation Deck 2026"
-                        className="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-1 focus:ring-purple-500"
+                        className="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-1 focus:ring-[#3066BE]"
                       />
                     </div>
 
@@ -1791,7 +1791,7 @@ export const AdminPortal: React.FC = () => {
                       <select
                         value={newResource.category}
                         onChange={(e) => setNewResource({ ...newResource, category: e.target.value })}
-                        className="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-1 focus:ring-purple-500"
+                        className="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-1 focus:ring-[#3066BE]"
                       >
                         <option value="PRESENTATION">Presentation Deck</option>
                         <option value="PROFILE">Company Profile</option>
@@ -1809,7 +1809,7 @@ export const AdminPortal: React.FC = () => {
                         value={newResource.description}
                         onChange={(e) => setNewResource({ ...newResource, description: e.target.value })}
                         placeholder="Key talking points or executive summary of presentation contents..."
-                        className="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-1 focus:ring-purple-500"
+                        className="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-1 focus:ring-[#3066BE]"
                       />
                     </div>
 
@@ -1836,7 +1836,7 @@ export const AdminPortal: React.FC = () => {
 
                       <button
                         type="submit"
-                        className="px-5 py-2.5 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 shadow-sm"
+                        className="px-5 py-2.5 bg-[#3066BE] text-white shadow-sm rounded-xl text-xs font-bold hover:bg-[#255299] shadow-sm"
                       >
                         Confirm & Publish
                       </button>
@@ -1951,7 +1951,7 @@ export const AdminPortal: React.FC = () => {
                       placeholder="Search quote #, client, BGA..."
                       value={quotationSearch}
                       onChange={(e) => setQuotationSearch(e.target.value)}
-                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                     />
                   </div>
                 </div>
@@ -1990,7 +1990,7 @@ export const AdminPortal: React.FC = () => {
                                 {q.quotationNumber}
                               </span>
                               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                <span className="text-[10px] text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded font-bold border border-purple-100">
+                                <span className="text-[10px] text-[#3066BE] bg-blue-50/70 px-1.5 py-0.5 rounded font-bold border border-purple-100">
                                   Version {q.version}
                                 </span>
                                 {q.reminderCount > 0 && (
@@ -2026,7 +2026,7 @@ export const AdminPortal: React.FC = () => {
                                     : q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA'
                                     ? 'bg-blue-100 text-blue-800 border border-blue-200'
                                     : q.status === 'PENDING_ADMIN_APPROVAL'
-                                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                    ? 'bg-purple-100 text-[#152544] border border-[#3066BE]/25'
                                     : q.status === 'REVISION_REQUESTED'
                                     ? 'bg-amber-100 text-amber-800 border border-amber-200'
                                     : 'bg-slate-100 text-slate-800 border border-slate-200'
@@ -2065,7 +2065,7 @@ export const AdminPortal: React.FC = () => {
                                 )}
                                 <button
                                   onClick={() => setQuotationDetailModal(q)}
-                                  className="px-2.5 py-1 rounded-lg border border-slate-300 text-slate-700 hover:bg-purple-50 hover:text-purple-700 text-xs font-semibold"
+                                  className="px-2.5 py-1 rounded-lg border border-slate-300 text-slate-700 hover:bg-[#AEECEF]/20 hover:text-[#3066BE] text-xs font-semibold"
                                 >
                                   Scope
                                 </button>
@@ -2093,7 +2093,7 @@ export const AdminPortal: React.FC = () => {
                   <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                       <div>
-                        <span className="text-xs font-mono text-purple-700 font-bold">
+                        <span className="text-xs font-mono text-[#3066BE] font-bold">
                           {quotationDetailModal.quotationNumber} (Version {quotationDetailModal.version})
                         </span>
                         <h3 className="text-base font-bold text-slate-900">
@@ -2164,7 +2164,7 @@ export const AdminPortal: React.FC = () => {
                         value={quotationReviewNotes}
                         onChange={(e) => setQuotationReviewNotes(e.target.value)}
                         placeholder="Add review guidelines for Accounts or notes for BGA..."
-                        className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                        className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE] resize-none"
                       />
                     </div>
 
@@ -2229,7 +2229,7 @@ export const AdminPortal: React.FC = () => {
                       placeholder="Search order #, client, BGA..."
                       value={workOrderSearch}
                       onChange={(e) => setWorkOrderSearch(e.target.value)}
-                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                     />
                   </div>
                 </div>
@@ -2298,7 +2298,7 @@ export const AdminPortal: React.FC = () => {
                                   w.handoverApproved
                                     ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                                     : isPendingHandover
-                                    ? 'bg-purple-100 text-purple-800 border border-purple-200 animate-pulse'
+                                    ? 'bg-purple-100 text-[#152544] border border-[#3066BE]/25 animate-pulse'
                                     : 'bg-slate-100 text-slate-700'
                                 }`}
                               >
@@ -2373,7 +2373,7 @@ export const AdminPortal: React.FC = () => {
                         value={handoverReviewNotes}
                         onChange={(e) => setHandoverReviewNotes(e.target.value)}
                         placeholder="Add kickoff guidelines for Technical Lead or notes for Accounts..."
-                        className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                        className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE] resize-none"
                       />
                     </div>
 
@@ -2438,7 +2438,7 @@ export const AdminPortal: React.FC = () => {
                       placeholder="Search project, client, lead..."
                       value={projectSearch}
                       onChange={(e) => setProjectSearch(e.target.value)}
-                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                     />
                   </div>
                 </div>
@@ -2458,7 +2458,7 @@ export const AdminPortal: React.FC = () => {
                     <div key={p.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                       <div className="flex justify-between items-start border-b border-slate-100 pb-3">
                         <div>
-                          <span className="font-mono text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                          <span className="font-mono text-xs font-bold text-[#3066BE] bg-blue-50/70 px-2 py-0.5 rounded border border-purple-100">
                             {p.projectNumber}
                           </span>
                           <h4 className="text-base font-bold text-slate-900 mt-1">{p.client?.clientName}</h4>
@@ -2476,7 +2476,7 @@ export const AdminPortal: React.FC = () => {
                         </div>
                         <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                           <div
-                            className="bg-purple-600 h-2.5 rounded-full transition-all duration-500"
+                            className="bg-[#3066BE] h-2.5 rounded-full transition-all duration-500"
                             style={{ width: `${p.progressPercentage}%` }}
                           />
                         </div>
@@ -2501,7 +2501,7 @@ export const AdminPortal: React.FC = () => {
                         </span>
                         <button
                           onClick={() => setProjectDetailModal(p)}
-                          className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-semibold"
+                          className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-[#AEECEF]/20 hover:text-[#3066BE] font-semibold"
                         >
                           View Milestones →
                         </button>
@@ -2517,7 +2517,7 @@ export const AdminPortal: React.FC = () => {
                   <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                       <div>
-                        <span className="font-mono text-xs text-purple-700 font-bold">{projectDetailModal.projectNumber}</span>
+                        <span className="font-mono text-xs text-[#3066BE] font-bold">{projectDetailModal.projectNumber}</span>
                         <h3 className="text-base font-bold text-slate-900">{projectDetailModal.client?.clientName}</h3>
                       </div>
                       <button
@@ -2586,7 +2586,7 @@ export const AdminPortal: React.FC = () => {
                         onClick={() => setCommissionTypeTab(tab.id as any)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                           commissionTypeTab === tab.id
-                            ? 'bg-purple-600 text-white font-bold shadow-sm'
+                            ? 'bg-[#3066BE] text-white shadow-sm font-bold shadow-sm'
                             : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
@@ -2602,7 +2602,7 @@ export const AdminPortal: React.FC = () => {
                       placeholder="Search associate, client..."
                       value={commissionSearch}
                       onChange={(e) => setCommissionSearch(e.target.value)}
-                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                     />
                   </div>
                 </div>
@@ -2728,7 +2728,7 @@ export const AdminPortal: React.FC = () => {
                         value={payoutReferenceInput}
                         onChange={(e) => setPayoutReferenceInput(e.target.value)}
                         placeholder="e.g. UTR1234567890 / NEFT-2026-X"
-                        className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-purple-500 font-mono"
+                        className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#3066BE] font-mono"
                       />
                     </div>
 
@@ -2830,7 +2830,7 @@ export const AdminPortal: React.FC = () => {
                         placeholder="Search audit trail..."
                         value={auditLogSearch}
                         onChange={(e) => setAuditLogSearch(e.target.value)}
-                        className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
                       />
                     </div>
                   </div>

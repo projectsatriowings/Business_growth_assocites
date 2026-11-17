@@ -154,9 +154,9 @@ export const LoginPage: React.FC = () => {
         } else {
           setError(
             data.error ||
-              (res.status === 502 || res.status === 504 || res.status === 500
-                ? 'Backend server is not reachable on port 5000. Please ensure the backend server is running.'
-                : `Authentication failed (HTTP ${res.status})`)
+            (res.status === 502 || res.status === 504 || res.status === 500
+              ? 'Backend server is not reachable on port 5000. Please ensure the backend server is running.'
+              : `Authentication failed (HTTP ${res.status})`)
           );
         }
         setLoading(false);
@@ -310,12 +310,12 @@ export const LoginPage: React.FC = () => {
                   {loading
                     ? 'Authenticating...'
                     : selectedDemoRole === 'ADMIN'
-                    ? 'Login to Admin Portal'
-                    : selectedDemoRole === 'ACCOUNTS'
-                    ? 'Login to Accounts Portal'
-                    : selectedDemoRole === 'TECHNICAL'
-                    ? 'Login to Technical Portal'
-                    : 'Login to BGA Portal'}
+                      ? 'Login to Admin Portal'
+                      : selectedDemoRole === 'ACCOUNTS'
+                        ? 'Login to Accounts Portal'
+                        : selectedDemoRole === 'TECHNICAL'
+                          ? 'Login to Technical Portal'
+                          : 'Login to BGA Portal'}
                 </span>
               </button>
             </form>
@@ -349,11 +349,10 @@ export const LoginPage: React.FC = () => {
                         key={demo.role}
                         type="button"
                         onClick={() => handleSelectDemo(demo)}
-                        className={`p-3 rounded-xl border text-left transition-all flex items-center gap-3 ${
-                          isSelected
+                        className={`p-3 rounded-xl border text-left transition-all flex items-center gap-3 ${isSelected
                             ? demo.activeBorder
                             : `border-slate-200 bg-slate-50/70 ${demo.hoverBorder} hover:shadow-sm`
-                        }`}
+                          }`}
                       >
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${demo.color}`}>
                           <Icon className="w-4 h-4 text-current" />
