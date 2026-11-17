@@ -277,23 +277,23 @@ export const LandingPage: React.FC = () => {
 
   // Verified Client Logos from atriowings.in
   const clientLogos = [
-    { name: 'Miniso', category: 'Retail & Lifestyle', file: '/img/vendor/miniso-poster-logo.webp', tag: 'Global Retail' },
-    { name: 'PRS Dental Care', category: 'Healthcare & Clinical', file: '/img/vendor/prs-logo.webp', tag: 'Healthcare' },
-    { name: 'M Cars', category: 'Automobile Dealership', file: '/img/vendor/mcars.webp', tag: 'Automotive' },
-    { name: 'Scissors Properties', category: 'Real Estate & Infrastructure', file: '/img/vendor/sissers.webp', tag: 'Real Estate' },
-    { name: 'Sivaji Sons', category: 'Textiles & Apparel', file: '/img/vendor/sivajisons.webp', tag: 'Textiles' },
-    { name: 'Meera Filings', category: 'Corporate & Legal Compliance', file: '/img/vendor/meera-filngs.webp', tag: 'Corporate Law' },
-    { name: 'Dhara Bio', category: 'Agri & Biotechnology', file: '/img/vendor/dhara.webp', tag: 'BioTechnology' },
-    { name: 'Space Media', category: 'Broadcasting & Advertising', file: '/img/vendor/spacemedia.webp', tag: 'Digital Media' },
-    { name: 'Divine', category: 'Consumer Wellness & Goods', file: '/img/vendor/divine.webp', tag: 'Consumer Goods' },
-    { name: 'Mithra', category: 'Specialty Commerce', file: '/img/vendor/mithra.webp', tag: 'Retail' },
-    { name: 'Joyson Trust', category: 'Non-Profit & Education', file: '/img/vendor/joysontrust.webp', tag: 'Foundation' },
-    { name: 'Studio J', category: 'Architecture & Design', file: '/img/vendor/studioj.webp', tag: 'Architecture' },
-    { name: 'Vasanth Group', category: 'Commercial Enterprise', file: '/img/vendor/vasanth.webp', tag: 'Enterprise' },
-    { name: 'VR Tech', category: 'IT & Automation', file: '/img/vendor/vrtech.webp', tag: 'Automation' },
-    { name: 'MK Logistics', category: 'Supply Chain & Freight', file: '/img/vendor/mk.webp', tag: 'Logistics' },
-    { name: 'Blessence', category: 'Cosmetics & Personal Care', file: '/img/vendor/blessence.webp', tag: 'Cosmetics' },
-    { name: 'Sai Enterprises', category: 'Hospitality & Commercial', file: '/img/vendor/sai.webp', tag: 'Hospitality' },
+    { file: '/img/vendor/sai.webp' },
+    { file: '/img/vendor/dhara.webp' },
+    { file: '/img/vendor/divine.webp' },
+    { file: '/img/vendor/mithra.webp' },
+    { file: '/img/vendor/mcars.webp' },
+    { file: '/img/vendor/miniso-poster-logo.webp' },
+    { file: '/img/vendor/prs-logo.webp' },
+    { file: '/img/vendor/sivajisons.webp' },
+    { file: '/img/vendor/joysontrust.webp' },
+    { file: '/img/vendor/spacemedia.webp' },
+    { file: '/img/vendor/meera-filngs.webp' },
+    { file: '/img/vendor/studioj.webp' },
+    { file: '/img/vendor/vasanth.webp' },
+    { file: '/img/vendor/vrtech.webp' },
+    { file: '/img/vendor/mk.webp' },
+    { file: '/img/vendor/sissers.webp' },
+    { file: '/img/vendor/blessence.webp' },
   ];
 
   // Verified Projects from atriowings.in/portfolio
@@ -988,55 +988,35 @@ export const LandingPage: React.FC = () => {
               <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-24 sm:w-48 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
 
               {/* Track 1: Smooth Left Scroll */}
-              <div className="animate-marquee gap-4 py-2">
+              <div className="animate-marquee gap-5 py-2">
                 {[...clientLogos.slice(0, 9), ...clientLogos.slice(0, 9)].map((client, idx) => (
                   <div
                     key={`track1-${idx}`}
-                    className="w-72 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#3066BE]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-4 shrink-0 group cursor-default"
+                    className="w-48 sm:w-56 h-24 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#3066BE]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center shrink-0 group cursor-default"
                   >
-                    <div className="w-16 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center p-2 shrink-0 group-hover:border-[#119DA4]/30 transition-all">
-                      <img
-                        src={client.file}
-                        alt={`${client.name} logo`}
-                        className="max-h-8 max-w-full object-contain filter group-hover:scale-105 transition-all"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#3066BE] transition-colors">
-                        {client.name}
-                      </h4>
-                      <span className="text-[10px] font-semibold text-[#119DA4] bg-[#119DA4]/10 px-2 py-0.5 rounded-full inline-block mt-1 truncate">
-                        {client.category}
-                      </span>
-                    </div>
+                    <img
+                      src={client.file}
+                      alt="Client Logo"
+                      className="max-h-12 max-w-[80%] object-contain filter group-hover:scale-105 transition-all duration-200"
+                      loading="lazy"
+                    />
                   </div>
                 ))}
               </div>
 
               {/* Track 2: Smooth Right Scroll */}
-              <div className="animate-marquee-reverse gap-4 py-2 mt-2">
+              <div className="animate-marquee-reverse gap-5 py-2 mt-3">
                 {[...clientLogos.slice(9), ...clientLogos.slice(9)].map((client, idx) => (
                   <div
                     key={`track2-${idx}`}
-                    className="w-72 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#119DA4]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-4 shrink-0 group cursor-default"
+                    className="w-48 sm:w-56 h-24 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#119DA4]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center shrink-0 group cursor-default"
                   >
-                    <div className="w-16 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center p-2 shrink-0 group-hover:border-[#3066BE]/30 transition-all">
-                      <img
-                        src={client.file}
-                        alt={`${client.name} logo`}
-                        className="max-h-8 max-w-full object-contain filter group-hover:scale-105 transition-all"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#119DA4] transition-colors">
-                        {client.name}
-                      </h4>
-                      <span className="text-[10px] font-semibold text-[#3066BE] bg-[#3066BE]/10 px-2 py-0.5 rounded-full inline-block mt-1 truncate">
-                        {client.category}
-                      </span>
-                    </div>
+                    <img
+                      src={client.file}
+                      alt="Client Logo"
+                      className="max-h-12 max-w-[80%] object-contain filter group-hover:scale-105 transition-all duration-200"
+                      loading="lazy"
+                    />
                   </div>
                 ))}
               </div>
@@ -1049,24 +1029,14 @@ export const LandingPage: React.FC = () => {
               {clientLogos.map((client, idx) => (
                 <div
                   key={`grid-${idx}`}
-                  className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md hover:border-[#3066BE]/40 hover:-translate-y-1 transition-all flex flex-col justify-between group"
+                  className="h-28 bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md hover:border-[#3066BE]/40 hover:-translate-y-1 transition-all flex items-center justify-center group"
                 >
-                  <div className="w-full h-16 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center justify-center p-3 mb-3 group-hover:bg-white group-hover:border-[#119DA4]/20 transition-all">
-                    <img
-                      src={client.file}
-                      alt={`${client.name} logo`}
-                      className="max-h-10 max-w-full object-contain group-hover:scale-105 transition-transform"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#3066BE] transition-colors">
-                      {client.name}
-                    </h4>
-                    <span className="text-[10px] font-medium text-[#119DA4] mt-0.5 block truncate">
-                      {client.category}
-                    </span>
-                  </div>
+                  <img
+                    src={client.file}
+                    alt="Client Logo"
+                    className="max-h-12 max-w-[80%] object-contain group-hover:scale-105 transition-transform duration-200"
+                    loading="lazy"
+                  />
                 </div>
               ))}
             </div>
