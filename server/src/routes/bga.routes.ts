@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import crypto from 'crypto';
 import { Role, BgaStatus, EnquiryStatus, QuotationStatus, WorkOrderStatus, ServiceCategoryType } from '@prisma/client';
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, checkBgaActive, AuthRequest, logAudit, createNotification } from '../middleware/auth';
@@ -2338,7 +2339,7 @@ router.get('/client-requests', async (req: AuthRequest, res: Response): Promise<
   }
 });
 
-// 7. Work Orders & My Projects
+// 7. Work Orders & My Projects (With Full Deliverables, Milestones & Feedback)
 router.get('/work-orders', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const workOrders = await prisma.workOrder.findMany({
@@ -2349,16 +2350,183 @@ router.get('/work-orders', async (req: AuthRequest, res: Response): Promise<void
         payments: true,
         project: {
           include: {
-            milestones: true,
-            deliverables: true,
+            milestones: {
+              orderBy: { createdAt: 'asc' },
+            },
+            deliverables: {
+              include: {
+                milestone: {
+                  select: { id: true, title: true },
+                },
+              },
+              orderBy: { createdAt: 'desc' },
+            },
+            feedback: {
+              orderBy: { createdAt: 'asc' },
+            },
           },
         },
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    // Ensure all projects have clientAccessToken for client-sharing
+    for (const wo of workOrders) {
+      if (wo.project && !wo.project.clientAccessToken) {
+        const token = `prj_${crypto.randomBytes(16).toString('hex')}`;
+        await prisma.technicalProject.update({
+          where: { id: wo.project.id },
+          data: { clientAccessToken: token },
+        });
+        (wo.project as any).clientAccessToken = token;
+      }
+    }
+
     res.json({ workOrders });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load work orders' });
+  }
+});
+
+// BGA Reviews Deliverable (Approve for Client or Request Changes from Technical)
+router.put('/deliverables/:id/review', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { action, notes } = req.body; // 'APPROVE_AND_SHARE' | 'REQUEST_CHANGES'
+
+    const deliverable = await prisma.projectDeliverable.findUnique({
+      where: { id },
+      include: {
+        project: {
+          include: {
+            workOrder: true,
+            client: true,
+          },
+        },
+      },
+    });
+
+    if (!deliverable) {
+      res.status(404).json({ error: 'Deliverable not found' });
+      return;
+    }
+
+    // Verify BGA ownership
+    if (deliverable.project.workOrder.bgaId !== req.user!.id) {
+      res.status(403).json({ error: 'Unauthorized to review this deliverable' });
+      return;
+    }
+
+    let updatedStatus = deliverable.status;
+    let bgaApprovalStatus = deliverable.bgaApprovalStatus;
+    let isClientVisible = deliverable.isClientVisible;
+
+    if (action === 'APPROVE_AND_SHARE') {
+      updatedStatus = 'SHARED_WITH_CLIENT';
+      bgaApprovalStatus = 'APPROVED';
+      isClientVisible = true;
+    } else if (action === 'REQUEST_CHANGES') {
+      updatedStatus = 'REVISION_REQUIRED';
+      bgaApprovalStatus = 'CHANGES_REQUESTED';
+      isClientVisible = false;
+    }
+
+    const updated = await prisma.projectDeliverable.update({
+      where: { id },
+      data: {
+        status: updatedStatus,
+        bgaApprovalStatus,
+        isClientVisible,
+        bgaReviewNotes: notes ? notes.trim() : null,
+      },
+    });
+
+    // Notify Technical team
+    const techUsers = await prisma.user.findMany({
+      where: { role: { in: [Role.TECHNICAL, Role.ADMIN] } },
+    });
+
+    const notifMsg =
+      action === 'APPROVE_AND_SHARE'
+        ? `BGA ${req.user!.name} approved and shared deliverable "${deliverable.title}" (v${deliverable.version}) with client.`
+        : `BGA ${req.user!.name} requested changes on deliverable "${deliverable.title}" (v${deliverable.version}): ${notes || 'Revision required'}`;
+
+    for (const tech of techUsers) {
+      await createNotification(tech.id, 'Deliverable Review Update', notifMsg, 'INFO', '/technical');
+    }
+
+    appCache.invalidatePrefix('technical:');
+    appCache.invalidatePrefix('bga:');
+
+    res.json({
+      message:
+        action === 'APPROVE_AND_SHARE'
+          ? 'Deliverable approved and shared with client.'
+          : 'Revision request sent to Technical team.',
+      deliverable: updated,
+    });
+  } catch (error) {
+    console.error('Deliverable review error:', error);
+    res.status(500).json({ error: 'Failed to review deliverable' });
+  }
+});
+
+// BGA Submits Project Feedback (Recorded on behalf of Client or Internal Note)
+router.post('/projects/:id/feedback', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { content, messageType, visibility, milestoneId, deliverableId } = req.body;
+
+    const project = await prisma.technicalProject.findUnique({
+      where: { id },
+      include: { workOrder: true, client: true },
+    });
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    if (project.workOrder.bgaId !== req.user!.id) {
+      res.status(403).json({ error: 'Unauthorized to post feedback for this project' });
+      return;
+    }
+
+    const isInternal = visibility === 'INTERNAL';
+    const feedback = await prisma.projectFeedback.create({
+      data: {
+        projectId: id,
+        content: content.trim(),
+        authorId: req.user!.id,
+        authorName: req.user!.name,
+        authorRole: 'BGA',
+        messageType: messageType || (isInternal ? 'INTERNAL_NOTE' : 'BGA_REPRESENTATIVE'),
+        visibility: isInternal ? 'INTERNAL' : 'CLIENT_VISIBLE',
+        feedbackType: isInternal ? 'INTERNAL_NOTE' : 'CLIENT_FEEDBACK',
+        status: 'NEW',
+        milestoneId: milestoneId || null,
+        deliverableId: deliverableId || null,
+      },
+    });
+
+    // Notify Technical team
+    const techUsers = await prisma.user.findMany({
+      where: { role: { in: [Role.TECHNICAL, Role.ADMIN] } },
+    });
+    const title = isInternal ? 'Internal Project Note from BGA' : 'Client Feedback Recorded by BGA';
+    const desc = `BGA ${req.user!.name} posted: "${content.trim().slice(0, 70)}..." on project ${project.projectNumber}`;
+
+    for (const tech of techUsers) {
+      await createNotification(tech.id, title, desc, 'INFO', '/technical');
+    }
+
+    appCache.invalidatePrefix('technical:');
+    appCache.invalidatePrefix('bga:');
+
+    res.status(201).json({ message: 'Feedback recorded successfully.', feedback });
+  } catch (error) {
+    console.error('BGA feedback error:', error);
+    res.status(500).json({ error: 'Failed to record feedback' });
   }
 });
 

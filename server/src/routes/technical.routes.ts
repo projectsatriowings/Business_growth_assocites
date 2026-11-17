@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { Role, ProjectStatus, MilestoneStatus, CommissionEligibility, WorkOrderStatus } from '@prisma/client';
+import crypto from 'crypto';
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification } from '../middleware/auth';
 import { appCache } from '../utils/cache';
@@ -7,6 +8,49 @@ import { appCache } from '../utils/cache';
 const router = Router();
 router.use(authenticateJWT);
 router.use(authorizeRoles(Role.TECHNICAL, Role.ADMIN));
+
+// ============================================================================
+// AUTOMATIC MILESTONE PROGRESS RECALCULATION HELPER
+// Progress = (Sum of weights of completed milestones / Total milestone weights) * 100
+// ============================================================================
+export async function recalculateProjectProgress(projectId: string): Promise<number> {
+  const milestones = await prisma.projectMilestone.findMany({ where: { projectId } });
+  if (milestones.length === 0) return 0;
+
+  const totalWeight = milestones.reduce((sum, m) => sum + (m.weight || 1), 0);
+  const completedWeight = milestones
+    .filter((m) => m.status === MilestoneStatus.COMPLETED)
+    .reduce((sum, m) => sum + (m.weight || 1), 0);
+
+  const percentage = totalWeight > 0 ? Math.round((completedWeight / totalWeight) * 100) : 0;
+
+  const project = await prisma.technicalProject.findUnique({
+    where: { id: projectId },
+  });
+
+  if (project) {
+    let newStatus: ProjectStatus = project.status;
+    if (percentage === 100 && project.status !== ProjectStatus.COMPLETED) {
+      newStatus = ProjectStatus.UNDER_REVIEW;
+    } else if (percentage > 0 && project.status === ProjectStatus.READY_TO_START) {
+      newStatus = ProjectStatus.IN_PROGRESS;
+    }
+
+    await prisma.technicalProject.update({
+      where: { id: projectId },
+      data: {
+        progressPercentage: percentage,
+        status: newStatus,
+      },
+    });
+
+    appCache.invalidatePrefix('technical:');
+    appCache.invalidatePrefix('admin:');
+    appCache.invalidatePrefix('bga:');
+  }
+
+  return percentage;
+}
 
 // 1. Technical Dashboard Stats (Optimized with Promise.all & cache)
 router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<void> => {
@@ -61,17 +105,7 @@ router.get('/projects', async (req: AuthRequest, res: Response): Promise<void> =
           handoverApproved: true,
         },
       },
-      select: {
-        id: true,
-        projectNumber: true,
-        serviceCategory: true,
-        approvedScope: true,
-        status: true,
-        progressPercentage: true,
-        startDate: true,
-        targetCompletionDate: true,
-        completedAt: true,
-        createdAt: true,
+      include: {
         client: {
           select: {
             id: true,
@@ -79,6 +113,8 @@ router.get('/projects', async (req: AuthRequest, res: Response): Promise<void> =
             businessName: true,
             location: true,
             businessCategory: true,
+            mobile: true,
+            email: true,
           },
         },
         workOrder: {
@@ -96,6 +132,7 @@ router.get('/projects', async (req: AuthRequest, res: Response): Promise<void> =
                 id: true,
                 name: true,
                 email: true,
+                mobile: true,
               },
             },
           },
@@ -111,14 +148,31 @@ router.get('/projects', async (req: AuthRequest, res: Response): Promise<void> =
           orderBy: { createdAt: 'asc' },
         },
         deliverables: {
+          include: {
+            milestone: {
+              select: { id: true, title: true },
+            },
+          },
           orderBy: { createdAt: 'desc' },
         },
         feedback: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: 'asc' },
         },
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    // Ensure all active projects have a secure clientAccessToken for client portal access
+    for (const prj of projects) {
+      if (!prj.clientAccessToken) {
+        const token = `prj_${crypto.randomBytes(16).toString('hex')}`;
+        await prisma.technicalProject.update({
+          where: { id: prj.id },
+          data: { clientAccessToken: token },
+        });
+        (prj as any).clientAccessToken = token;
+      }
+    }
 
     res.json({ projects });
   } catch (error) {
@@ -265,23 +319,26 @@ router.put('/projects/:id/status', async (req: AuthRequest, res: Response): Prom
   }
 });
 
-// 4. Milestone Management
+// 4. Milestone Management (With Automatic Progress Recalculation)
 router.post('/projects/:id/milestones', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { title, description, targetDate } = req.body;
+    const { title, description, targetDate, weight } = req.body;
 
     const milestone = await prisma.projectMilestone.create({
       data: {
         projectId: id,
         title,
         description,
+        weight: weight ? parseInt(weight) : 1,
         targetDate: targetDate ? new Date(targetDate) : null,
         status: MilestoneStatus.TODO,
       },
     });
 
-    res.status(201).json({ milestone });
+    const recalculatedProgress = await recalculateProjectProgress(id);
+
+    res.status(201).json({ milestone, progressPercentage: recalculatedProgress });
   } catch (error) {
     res.status(500).json({ error: 'Failed to create milestone' });
   }
@@ -290,27 +347,89 @@ router.post('/projects/:id/milestones', async (req: AuthRequest, res: Response):
 router.put('/milestones/:milestoneId', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { milestoneId } = req.params;
-    const { status } = req.body;
+    const { status, title, description, weight } = req.body;
+
+    const existing = await prisma.projectMilestone.findUnique({
+      where: { id: milestoneId },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Milestone not found' });
+      return;
+    }
+
+    const updateData: any = {};
+    if (status) {
+      updateData.status = status as MilestoneStatus;
+      updateData.completedAt = status === MilestoneStatus.COMPLETED ? new Date() : null;
+      updateData.completedById = status === MilestoneStatus.COMPLETED ? req.user!.id : null;
+    }
+    if (title) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (weight !== undefined) updateData.weight = parseInt(weight);
 
     const milestone = await prisma.projectMilestone.update({
       where: { id: milestoneId },
-      data: {
-        status: status as MilestoneStatus,
-        completedAt: status === MilestoneStatus.COMPLETED ? new Date() : null,
-      },
+      data: updateData,
     });
 
-    res.json({ milestone });
+    // AUTOMATIC PROGRESS RECALCULATION
+    const recalculatedProgress = await recalculateProjectProgress(milestone.projectId);
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'MILESTONE_STATUS_UPDATE',
+      'PROJECT_MILESTONE',
+      milestoneId,
+      { title: milestone.title, status, recalculatedProgress },
+      req.ip
+    );
+
+    res.json({ milestone, progressPercentage: recalculatedProgress });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update milestone' });
   }
 });
 
-// 5. Deliverables Submission
+router.delete('/milestones/:milestoneId', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { milestoneId } = req.params;
+
+    const existing = await prisma.projectMilestone.findUnique({
+      where: { id: milestoneId },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Milestone not found' });
+      return;
+    }
+
+    await prisma.projectMilestone.delete({ where: { id: milestoneId } });
+    const recalculatedProgress = await recalculateProjectProgress(existing.projectId);
+
+    res.json({ message: 'Milestone removed', progressPercentage: recalculatedProgress });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete milestone' });
+  }
+});
+
+// 5. Deliverables Submission (With Milestone Association & Version Tracking)
 router.post('/projects/:id/deliverables', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { title, description, fileUrl, fileType, version } = req.body;
+    const { title, description, fileUrl, fileType, fileSize, version, milestoneId, previousVersionId } = req.body;
+
+    const project = await prisma.technicalProject.findUnique({
+      where: { id },
+      include: { workOrder: true },
+    });
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
 
     const deliverable = await prisma.projectDeliverable.create({
       data: {
@@ -319,10 +438,34 @@ router.post('/projects/:id/deliverables', async (req: AuthRequest, res: Response
         description,
         fileUrl: fileUrl || '/sample-deliverable.zip',
         fileType: fileType || 'LINK',
+        fileSize: fileSize ? parseInt(fileSize) : null,
         version: version || '1.0',
+        milestoneId: milestoneId || null,
+        previousVersionId: previousVersionId || null,
+        status: 'PENDING_BGA_REVIEW',
+        isClientVisible: false,
         uploadedById: req.user!.id,
       },
+      include: {
+        milestone: {
+          select: { id: true, title: true },
+        },
+      },
     });
+
+    // Notify assigned BGA that deliverable is ready for review
+    if (project.workOrder?.bgaId) {
+      await createNotification(
+        project.workOrder.bgaId,
+        'Deliverable Ready for Review',
+        `Technical team uploaded deliverable "${title}" (v${version || '1.0'}) for project ${project.projectNumber}. Please review and approve for client.`,
+        'INFO',
+        '/bga/projects'
+      );
+    }
+
+    appCache.invalidatePrefix('technical:');
+    appCache.invalidatePrefix('bga:');
 
     res.status(201).json({ deliverable });
   } catch (error) {
@@ -330,33 +473,94 @@ router.post('/projects/:id/deliverables', async (req: AuthRequest, res: Response
   }
 });
 
-// 6. Correction Requests & Feedback Handling
+// 6. Unified Three-Way Feedback & Communication Thread
+router.get('/projects/:id/feedback', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const feedback = await prisma.projectFeedback.findMany({
+      where: { projectId: id },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    res.json({ feedback });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load feedback' });
+  }
+});
+
 router.post('/projects/:id/feedback', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { feedbackType, content } = req.body;
+    const { content, feedbackType, messageType, visibility, milestoneId, deliverableId, parentFeedbackId } = req.body;
+
+    const project = await prisma.technicalProject.findUnique({
+      where: { id },
+      include: { client: true, workOrder: true },
+    });
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
 
     const feedback = await prisma.projectFeedback.create({
       data: {
         projectId: id,
-        feedbackType: feedbackType || 'CORRECTION_REQUEST',
-        content,
-        submittedById: req.user!.id,
-        status: 'OPEN',
+        content: content.trim(),
+        authorId: req.user!.id,
+        authorName: req.user!.name,
+        authorRole: req.user!.role,
+        messageType: messageType || 'TECHNICAL_REPLY',
+        visibility: visibility || 'CLIENT_VISIBLE',
+        feedbackType: feedbackType || 'TECHNICAL_RESPONSE',
+        status: 'IN_PROGRESS',
+        milestoneId: milestoneId || null,
+        deliverableId: deliverableId || null,
+        parentFeedbackId: parentFeedbackId || null,
       },
     });
 
-    // If it's a correction request, mark project as CORRECTION_REQUIRED
-    if (feedbackType === 'CORRECTION_REQUEST') {
-      await prisma.technicalProject.update({
-        where: { id },
-        data: { status: ProjectStatus.CORRECTION_REQUIRED },
-      });
+    // Notify assigned BGA
+    if (project.workOrder?.bgaId) {
+      await createNotification(
+        project.workOrder.bgaId,
+        'Technical Team Replied to Project Feedback',
+        `Technical team posted a response for project ${project.projectNumber} (${project.client.clientName}): "${content.slice(0, 70)}..."`,
+        'INFO',
+        '/bga/projects'
+      );
     }
+
+    appCache.invalidatePrefix('technical:');
+    appCache.invalidatePrefix('bga:');
 
     res.status(201).json({ feedback });
   } catch (error) {
     res.status(500).json({ error: 'Failed to submit feedback' });
+  }
+});
+
+router.put('/feedback/:feedbackId/status', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { feedbackId } = req.params;
+    const { status, responseNotes } = req.body;
+
+    const feedback = await prisma.projectFeedback.update({
+      where: { id: feedbackId },
+      data: {
+        status,
+        responseNotes: responseNotes || undefined,
+        resolvedAt: status === 'RESOLVED' || status === 'CONFIRMED_BY_CLIENT' ? new Date() : undefined,
+      },
+    });
+
+    appCache.invalidatePrefix('technical:');
+    appCache.invalidatePrefix('bga:');
+
+    res.json({ feedback });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update feedback status' });
   }
 });
 

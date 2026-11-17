@@ -13,6 +13,7 @@ const AdminPortal = lazy(() => import('./pages/admin/AdminPortal').then((m) => (
 const BgaPortal = lazy(() => import('./pages/bga/BgaPortal').then((m) => ({ default: m.BgaPortal })));
 const AccountsPortal = lazy(() => import('./pages/accounts/AccountsPortal').then((m) => ({ default: m.AccountsPortal })));
 const TechnicalPortal = lazy(() => import('./pages/technical/TechnicalPortal').then((m) => ({ default: m.TechnicalPortal })));
+const ClientProjectPortal = lazy(() => import('./pages/client/ClientProjectPortal').then((m) => ({ default: m.ClientProjectPortal })));
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -73,6 +74,7 @@ export function App() {
               <Route path="/register" element={<RegisterBgaPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/login/:role" element={<LoginPage />} />
+              <Route path="/client/project/:token" element={<ClientProjectPortal />} />
 
               {/* Admin Protected Routes */}
               <Route
