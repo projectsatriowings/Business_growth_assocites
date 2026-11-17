@@ -1628,6 +1628,132 @@ router.post('/enquiries', async (req: AuthRequest, res: Response): Promise<void>
   }
 });
 
+// BGA Client Consultation & Follow-up on Enquiry (Response to Management Scope Changes)
+router.post('/enquiries/:id/follow-up', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { consultationNotes, consultationDate, revisedBudget, revisedRequirements, resubmit } = req.body;
+
+    if (!consultationNotes || !consultationNotes.trim()) {
+      res.status(400).json({ error: 'Client consultation notes are required.' });
+      return;
+    }
+
+    const enquiry = await prisma.enquiry.findFirst({
+      where: { id, bgaId: req.user!.id },
+      include: { client: true, bga: true },
+    });
+
+    if (!enquiry) {
+      res.status(404).json({ error: 'Enquiry not found or not assigned to your account.' });
+      return;
+    }
+
+    const dateObj = consultationDate ? new Date(consultationDate) : new Date();
+    const formattedDateTime = dateObj.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    let newEntry = `[${formattedDateTime}] Client Consultation by BGA ${req.user!.name}:\n${consultationNotes.trim()}`;
+    if (revisedBudget !== undefined && !isNaN(Number(revisedBudget)) && Number(revisedBudget) !== enquiry.expectedBudget) {
+      newEntry += `\n• Revised Budget: ₹${Number(revisedBudget).toLocaleString('en-IN')} (Previous: ₹${enquiry.expectedBudget.toLocaleString('en-IN')})`;
+    }
+    if (revisedRequirements && revisedRequirements.trim() && revisedRequirements.trim() !== enquiry.requirements.trim()) {
+      newEntry += `\n• Updated Scope Details:\n${revisedRequirements.trim()}`;
+    }
+
+    const updatedDiscussionNotes = enquiry.discussionNotes
+      ? `${newEntry}\n\n----------------------------------------\n${enquiry.discussionNotes}`
+      : newEntry;
+
+    const updateData: any = {
+      discussionNotes: updatedDiscussionNotes,
+      followUpDate: dateObj,
+    };
+
+    if (revisedBudget !== undefined && !isNaN(Number(revisedBudget)) && Number(revisedBudget) > 0) {
+      updateData.expectedBudget = Number(revisedBudget);
+    }
+
+    if (revisedRequirements && revisedRequirements.trim()) {
+      updateData.requirements = revisedRequirements.trim();
+    }
+
+    // Default to true: transition status to SUBMITTED so Admin can verify & approve the enquiry
+    if (resubmit !== false) {
+      updateData.status = EnquiryStatus.SUBMITTED;
+    }
+
+    const updatedEnquiry = await prisma.enquiry.update({
+      where: { id: enquiry.id },
+      data: updateData,
+      include: { client: true },
+    });
+
+    // Also record as a ContactActivity under the client for CRM timeline tracking
+    try {
+      await prisma.contactActivity.create({
+        data: {
+          clientId: enquiry.clientId,
+          bgaId: req.user!.id,
+          contactMethod: 'MEETING',
+          discussionSummary: `Consultation on Enquiry ${enquiry.id}: ${consultationNotes.trim().slice(0, 180)}`,
+          followUpNotes: consultationNotes.trim(),
+          outcome: 'CONNECTED',
+          createdBy: req.user!.name,
+          createdAt: dateObj,
+        },
+      });
+    } catch (crmErr) {
+      console.warn('Could not record ContactActivity (non-blocking):', crmErr);
+    }
+
+    // Notify Management / Admins
+    try {
+      const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+      for (const adm of admins) {
+        await createNotification(
+          adm.id,
+          'Client Consultation Follow-up Submitted',
+          `BGA ${req.user!.name} consulted client ${enquiry.client.clientName} on ${enquiry.id}. Ready for management verification.`,
+          'ACTION_REQUIRED',
+          '/admin/enquiries'
+        );
+      }
+    } catch (notifErr) {
+      console.warn('Could not send admin notification (non-blocking):', notifErr);
+    }
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'ENQUIRY_FOLLOW_UP_SUBMITTED',
+      'ENQUIRY',
+      enquiry.id,
+      {
+        clientName: enquiry.client.clientName,
+        consultationDate: dateObj,
+        budgetUpdated: !!revisedBudget,
+        resubmitted: resubmit !== false,
+      }
+    );
+
+    res.json({
+      message: 'Client consultation follow-up recorded successfully and submitted for Admin verification.',
+      enquiry: updatedEnquiry,
+    });
+  } catch (error: any) {
+    console.error('Error logging enquiry follow-up:', error);
+    res.status(500).json({ error: error.message || 'Failed to submit client consultation follow-up' });
+  }
+});
+
 // 6. Quotation Workflow (BGA interacts with Quotations)
 // Request Quotation from Accounts
 router.post('/enquiries/:id/request-quotation', async (req: AuthRequest, res: Response): Promise<void> => {

@@ -857,6 +857,16 @@ router.post('/enquiries/:id/review', async (req: AuthRequest, res: Response): Pr
             adminApprovalStatus: 'PENDING',
           },
         });
+      } else {
+        await prisma.quotation.update({
+          where: { id: existingQuotation.id },
+          data: {
+            serviceFee: enquiry.expectedBudget || existingQuotation.serviceFee,
+            serviceScope: enquiry.requirements || existingQuotation.serviceScope,
+            totalAmount: enquiry.expectedBudget || existingQuotation.totalAmount,
+            advanceRequiredAmount: (enquiry.expectedBudget || existingQuotation.totalAmount) * 0.5,
+          },
+        });
       }
 
       // Notify Accounts users

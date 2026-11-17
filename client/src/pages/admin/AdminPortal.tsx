@@ -1546,11 +1546,13 @@ export const AdminPortal: React.FC = () => {
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                             enq.status === 'APPROVED'
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              : enq.status === 'CHANGES_REQUESTED'
+                              ? 'bg-amber-100 text-amber-800 border border-amber-300'
                               : enq.status === 'SUBMITTED'
-                              ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                              ? 'bg-blue-100 text-blue-800 border border-blue-200'
                               : 'bg-red-100 text-red-800 border border-red-200'
                           }`}>
-                            {enq.status}
+                            {enq.status?.replace('_', ' ')}
                           </span>
                           <span className="text-sm font-extrabold text-slate-900 bg-slate-50 px-3 py-1 rounded-lg border border-slate-200">
                             Expected Budget: ₹{enq.expectedBudget?.toLocaleString()}
@@ -1572,34 +1574,52 @@ export const AdminPortal: React.FC = () => {
                         </div>
                       )}
 
+                      {enq.discussionNotes && (
+                        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs space-y-1">
+                          <div className="flex items-center justify-between font-bold text-emerald-900 border-b border-emerald-200/60 pb-1">
+                            <span className="flex items-center gap-1.5">
+                              💬 BGA Client Consultation & Follow-up Details:
+                            </span>
+                            {enq.followUpDate && (
+                              <span className="text-[10px] font-mono font-normal text-emerald-800">
+                                Consulted on: {new Date(enq.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                              </span>
+                            )}
+                          </div>
+                          <p className="whitespace-pre-wrap font-medium text-emerald-950 pl-2 leading-relaxed">
+                            {enq.discussionNotes}
+                          </p>
+                        </div>
+                      )}
+
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs text-slate-400 pt-3 border-t border-slate-100 gap-3">
                         <span>Submitted by: <strong className="text-slate-700">{enq.bga?.name}</strong> ({enq.bga?.email} • {enq.bga?.mobile})</span>
 
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setEnquiryDetailModal(enq)}
-                            className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold"
+                            className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer"
                           >
                             View Full Details
                           </button>
 
-                          {enq.status === 'SUBMITTED' && (
+                          {(enq.status === 'SUBMITTED' || enq.status === 'CHANGES_REQUESTED' || enq.status === 'UNDER_REVIEW') && (
                             <>
                               <button
                                 onClick={() => setEnquiryReviewModal({ enquiry: enq, action: 'APPROVE' })}
-                                className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm"
+                                className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm cursor-pointer"
                               >
                                 Approve Enquiry
                               </button>
                               <button
                                 onClick={() => setEnquiryReviewModal({ enquiry: enq, action: 'REQUEST_CHANGES' })}
-                                className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 shadow-sm"
+                                className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 shadow-sm cursor-pointer"
                               >
                                 Request Scope Changes
                               </button>
                               <button
                                 onClick={() => setEnquiryReviewModal({ enquiry: enq, action: 'REJECT' })}
-                                className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 shadow-sm"
+                                className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 shadow-sm cursor-pointer"
                               >
                                 Reject
                               </button>
@@ -1707,6 +1727,33 @@ export const AdminPortal: React.FC = () => {
                         {enquiryDetailModal.requirements}
                       </div>
                     </div>
+
+                    {enquiryDetailModal.adminNotes && (
+                      <div className="text-xs">
+                        <strong className="block text-amber-900 mb-1 font-bold">Executive Review Remarks:</strong>
+                        <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-950 whitespace-pre-wrap leading-relaxed">
+                          {enquiryDetailModal.adminNotes}
+                        </div>
+                      </div>
+                    )}
+
+                    {enquiryDetailModal.discussionNotes && (
+                      <div className="text-xs">
+                        <div className="flex items-center justify-between mb-1">
+                          <strong className="text-emerald-900 font-bold flex items-center gap-1.5">
+                            💬 BGA Client Consultation & Follow-up History:
+                          </strong>
+                          {enquiryDetailModal.followUpDate && (
+                            <span className="text-[10px] text-emerald-700 font-mono">
+                              Consulted on: {new Date(enquiryDetailModal.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                            </span>
+                          )}
+                        </div>
+                        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950 whitespace-pre-wrap leading-relaxed">
+                          {enquiryDetailModal.discussionNotes}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex justify-end pt-2">
                       <button
