@@ -182,8 +182,8 @@ export async function generateQuotationPdfBuffer(data: QuotationPdfData): Promis
   printMetaRow('Date:', formatDisplayDate(data.date), 23, false);
   printMetaRow('Valid Until:', formatDisplayDate(data.validityDate), 38, true);
 
-  // --- TWO COLUMN PARTY INFO (Y: 210 to 280) ---
-  const partyY = 210;
+  // --- TWO COLUMN PARTY INFO (Y: 206 to 275) ---
+  const partyY = 206;
   const colW = 265;
 
   // Left: Atriowings Details (Aligned at X: 45)
@@ -196,8 +196,8 @@ export async function generateQuotationPdfBuffer(data: QuotationPdfData): Promis
     .fontSize(7.5)
     .fillColor('#475569')
     .text(data.company.address || 'No. 1, Gurudev Complex, 57th St, Korattur, Chennai - 600080', 45, partyY + 29, { width: colW })
-    .text(`Phone: ${data.company.phone || '+91 8825948859'}  |  Email: ${data.company.email || 'info@atriowings.in'}`, 45, partyY + 49)
-    .text(`GSTIN: ${data.company.gstin || '33AASCA7189D1ZD'}  |  Web: ${data.company.website || 'https://atriowings.in'}`, 45, partyY + 59);
+    .text(`Phone: ${data.company.phone || '+91 8825948859'}  |  Email: ${data.company.email || 'info@atriowings.in'}`, 45, partyY + 47)
+    .text(`GSTIN: ${data.company.gstin || '33AASCA7189D1ZD'}  |  Web: ${data.company.website || 'https://atriowings.in'}`, 45, partyY + 57);
 
   // Right: Prepared For Client (Aligned at X: 330)
   const rightX = 330;
@@ -210,19 +210,20 @@ export async function generateQuotationPdfBuffer(data: QuotationPdfData): Promis
     .fontSize(7.5)
     .fillColor('#334155')
     .text(`Attn: ${data.client.clientName}`, rightX, partyY + 29)
-    .text(data.client.location || 'Location Not Specified', rightX, partyY + 39, { width: 220 })
-    .text(`${data.client.mobile}  |  ${data.client.email}`, rightX, partyY + 49);
+    .text(data.client.location || 'Location Not Specified', rightX, partyY + 38, { width: 220, ellipsis: true })
+    .text(`${data.client.mobile}  |  ${data.client.email}`, rightX, partyY + 47);
   kitDoc
     .font(boldFont)
     .fontSize(7.5)
     .fillColor('#119DA4')
-    .text(`Growth Associate: ${data.bga.name} (${data.bga.mobile})`, rightX, partyY + 59);
+    .text(`Growth Associate: ${data.bga.name} (${data.bga.mobile})`, rightX, partyY + 57);
 
-  // Divider
-  kitDoc.strokeColor('#e2e8f0').lineWidth(0.8).moveTo(45, 276).lineTo(550, 276).stroke();
+  // Divider placed with clear, generous breathing space below both columns
+  const partyDividerY = 284;
+  kitDoc.strokeColor('#e2e8f0').lineWidth(0.8).moveTo(45, partyDividerY).lineTo(550, partyDividerY).stroke();
 
-  // --- SERVICE SCOPE SUMMARY BOX (Y: 284) ---
-  const scopeY = 284;
+  // --- SERVICE SCOPE SUMMARY BOX (Y: 292) ---
+  const scopeY = partyDividerY + 8;
   const scopeTitle = `SERVICE SPECIFICATION: ${formatServiceCategoryTitle(data.serviceCategory).toUpperCase()}`;
   const scopeText = data.serviceScope || 'Standard commercial and engineering scope as agreed upon between client and Atriowings Technologies.';
   
