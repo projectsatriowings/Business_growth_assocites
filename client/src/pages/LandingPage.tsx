@@ -33,6 +33,8 @@ import {
   Send,
   AlertCircle,
   ChevronDown,
+  LayoutGrid,
+  Play,
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 
@@ -41,6 +43,7 @@ export const LandingPage: React.FC = () => {
   const location = useLocation();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [portfolioTab, setPortfolioTab] = useState<'all' | 'web' | 'specialized' | 'campaign'>('all');
+  const [brandViewMode, setBrandViewMode] = useState<'marquee' | 'grid'>('marquee');
 
   // Contact Form State
   const [contactName, setContactName] = useState('');
@@ -274,23 +277,23 @@ export const LandingPage: React.FC = () => {
 
   // Verified Client Logos from atriowings.in
   const clientLogos = [
-    { name: 'Sai', file: '/img/vendor/sai.webp' },
-    { name: 'Dhara', file: '/img/vendor/dhara.webp' },
-    { name: 'Divine', file: '/img/vendor/divine.webp' },
-    { name: 'Mithra', file: '/img/vendor/mithra.webp' },
-    { name: 'M Cars', file: '/img/vendor/mcars.webp' },
-    { name: 'Miniso', file: '/img/vendor/miniso-poster-logo.webp' },
-    { name: 'PRS', file: '/img/vendor/prs-logo.webp' },
-    { name: 'Sivaji Sons', file: '/img/vendor/sivajisons.webp' },
-    { name: 'Joyson Trust', file: '/img/vendor/joysontrust.webp' },
-    { name: 'Space Media', file: '/img/vendor/spacemedia.webp' },
-    { name: 'Meera Filings', file: '/img/vendor/meera-filngs.webp' },
-    { name: 'Studio J', file: '/img/vendor/studioj.webp' },
-    { name: 'Vasanth', file: '/img/vendor/vasanth.webp' },
-    { name: 'VR Tech', file: '/img/vendor/vrtech.webp' },
-    { name: 'MK', file: '/img/vendor/mk.webp' },
-    { name: 'Scissors Properties', file: '/img/vendor/sissers.webp' },
-    { name: 'Blessence', file: '/img/vendor/blessence.webp' },
+    { name: 'Miniso', category: 'Retail & Lifestyle', file: '/img/vendor/miniso-poster-logo.webp', tag: 'Global Retail' },
+    { name: 'PRS Dental Care', category: 'Healthcare & Clinical', file: '/img/vendor/prs-logo.webp', tag: 'Healthcare' },
+    { name: 'M Cars', category: 'Automobile Dealership', file: '/img/vendor/mcars.webp', tag: 'Automotive' },
+    { name: 'Scissors Properties', category: 'Real Estate & Infrastructure', file: '/img/vendor/sissers.webp', tag: 'Real Estate' },
+    { name: 'Sivaji Sons', category: 'Textiles & Apparel', file: '/img/vendor/sivajisons.webp', tag: 'Textiles' },
+    { name: 'Meera Filings', category: 'Corporate & Legal Compliance', file: '/img/vendor/meera-filngs.webp', tag: 'Corporate Law' },
+    { name: 'Dhara Bio', category: 'Agri & Biotechnology', file: '/img/vendor/dhara.webp', tag: 'BioTechnology' },
+    { name: 'Space Media', category: 'Broadcasting & Advertising', file: '/img/vendor/spacemedia.webp', tag: 'Digital Media' },
+    { name: 'Divine', category: 'Consumer Wellness & Goods', file: '/img/vendor/divine.webp', tag: 'Consumer Goods' },
+    { name: 'Mithra', category: 'Specialty Commerce', file: '/img/vendor/mithra.webp', tag: 'Retail' },
+    { name: 'Joyson Trust', category: 'Non-Profit & Education', file: '/img/vendor/joysontrust.webp', tag: 'Foundation' },
+    { name: 'Studio J', category: 'Architecture & Design', file: '/img/vendor/studioj.webp', tag: 'Architecture' },
+    { name: 'Vasanth Group', category: 'Commercial Enterprise', file: '/img/vendor/vasanth.webp', tag: 'Enterprise' },
+    { name: 'VR Tech', category: 'IT & Automation', file: '/img/vendor/vrtech.webp', tag: 'Automation' },
+    { name: 'MK Logistics', category: 'Supply Chain & Freight', file: '/img/vendor/mk.webp', tag: 'Logistics' },
+    { name: 'Blessence', category: 'Cosmetics & Personal Care', file: '/img/vendor/blessence.webp', tag: 'Cosmetics' },
+    { name: 'Sai Enterprises', category: 'Hospitality & Commercial', file: '/img/vendor/sai.webp', tag: 'Hospitality' },
   ];
 
   // Verified Projects from atriowings.in/portfolio
@@ -908,43 +911,193 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 9. OUR CLIENTS / PORTFOLIO SHOWCASE */}
-      <section id="portfolio" className="py-24 bg-white scroll-mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="portfolio" className="relative py-24 bg-gradient-to-b from-white via-slate-50/50 to-white overflow-hidden scroll-mt-20">
+        {/* Subtle Ambient Background Bloom */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[320px] bg-gradient-to-tr from-[#3066BE]/10 via-[#119DA4]/8 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           {/* Section Header */}
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#3066BE] bg-[#edf4fc] px-3.5 py-1.5 rounded-full border border-[#6D96C5]/30">
-              Verified Brand Showcase
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-4 tracking-tight">
-              Brands & Clients Associated with Atriowings
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#3066BE]/10 text-[#3066BE] border border-[#3066BE]/20 mb-4 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-[#119DA4]" />
+              <span>Verified Enterprise Ecosystem</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
+              Brands & Clients Associated with <span className="bg-gradient-to-r from-[#3066BE] to-[#119DA4] bg-clip-text text-transparent">Atriowings</span>
             </h2>
-            <p className="text-slate-600 text-sm sm:text-base mt-3 leading-relaxed">
-              Authentic client brands and verified project deliverables engineered by Atriowings Technologies across diverse business verticals.
+            <p className="text-slate-600 text-sm sm:text-base mt-4 max-w-2xl mx-auto leading-relaxed">
+              Enterprise institutions, consumer brands, retail chains, and clinics trust Atriowings Technologies for mission-critical software, web applications, and growth campaigns.
             </p>
+
+            {/* Authority Trust Metric Counters */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto mt-8">
+              <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm text-center hover:border-[#3066BE]/40 transition-all">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#3066BE]">50+</div>
+                <div className="text-xs font-semibold text-slate-600 mt-1">Enterprise & SME Clients</div>
+              </div>
+              <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm text-center hover:border-[#119DA4]/40 transition-all">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#119DA4]">100%</div>
+                <div className="text-xs font-semibold text-slate-600 mt-1">Delivery Success Rate</div>
+              </div>
+              <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm text-center hover:border-[#3066BE]/40 transition-all">
+                <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">15+</div>
+                <div className="text-xs font-semibold text-slate-600 mt-1">Industry Verticals</div>
+              </div>
+              <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm text-center hover:border-[#119DA4]/40 transition-all">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#119DA4]">4.9★</div>
+                <div className="text-xs font-semibold text-slate-600 mt-1">Partner Satisfaction</div>
+              </div>
+            </div>
           </div>
 
-          {/* Verified Client Logos Carousel/Grid */}
-          <div className="mb-20">
-            <div className="text-center mb-6">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Trusted Client Network
+          {/* Interactive Presentation Control Bar */}
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-4 pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#119DA4] animate-pulse" />
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Live Partner Network • {clientLogos.length} Verified Brands
               </span>
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 sm:gap-6 items-center justify-items-center">
+            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
+              <button
+                onClick={() => setBrandViewMode('marquee')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                  brandViewMode === 'marquee' ? 'bg-[#3066BE] text-white shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Play className="w-3.5 h-3.5" />
+                <span>Dynamic Stream</span>
+              </button>
+              <button
+                onClick={() => setBrandViewMode('grid')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                  brandViewMode === 'grid' ? 'bg-[#3066BE] text-white shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Full Directory ({clientLogos.length})</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Dynamic Marquee Stream Mode */}
+          {brandViewMode === 'marquee' && (
+            <div className="relative overflow-hidden py-3 mb-12 -mx-4 sm:-mx-6 lg:-mx-8">
+              {/* Left & Right Edge Gradient Masks */}
+              <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-24 sm:w-48 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
+              <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-24 sm:w-48 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
+
+              {/* Track 1: Smooth Left Scroll */}
+              <div className="animate-marquee gap-4 py-2">
+                {[...clientLogos.slice(0, 9), ...clientLogos.slice(0, 9)].map((client, idx) => (
+                  <div
+                    key={`track1-${idx}`}
+                    className="w-72 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#3066BE]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-4 shrink-0 group cursor-default"
+                  >
+                    <div className="w-16 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center p-2 shrink-0 group-hover:border-[#119DA4]/30 transition-all">
+                      <img
+                        src={client.file}
+                        alt={`${client.name} logo`}
+                        className="max-h-8 max-w-full object-contain filter group-hover:scale-105 transition-all"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#3066BE] transition-colors">
+                        {client.name}
+                      </h4>
+                      <span className="text-[10px] font-semibold text-[#119DA4] bg-[#119DA4]/10 px-2 py-0.5 rounded-full inline-block mt-1 truncate">
+                        {client.category}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Track 2: Smooth Right Scroll */}
+              <div className="animate-marquee-reverse gap-4 py-2 mt-2">
+                {[...clientLogos.slice(9), ...clientLogos.slice(9)].map((client, idx) => (
+                  <div
+                    key={`track2-${idx}`}
+                    className="w-72 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#119DA4]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-4 shrink-0 group cursor-default"
+                  >
+                    <div className="w-16 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center p-2 shrink-0 group-hover:border-[#3066BE]/30 transition-all">
+                      <img
+                        src={client.file}
+                        alt={`${client.name} logo`}
+                        className="max-h-8 max-w-full object-contain filter group-hover:scale-105 transition-all"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#119DA4] transition-colors">
+                        {client.name}
+                      </h4>
+                      <span className="text-[10px] font-semibold text-[#3066BE] bg-[#3066BE]/10 px-2 py-0.5 rounded-full inline-block mt-1 truncate">
+                        {client.category}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Full Directory Grid Mode */}
+          {brandViewMode === 'grid' && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-12">
               {clientLogos.map((client, idx) => (
                 <div
-                  key={idx}
-                  className="w-full aspect-[3/2] p-3 rounded-xl border border-slate-100 bg-slate-50/70 hover:bg-white hover:border-[#3066BE]/30 hover:shadow-sm transition-all duration-200 flex items-center justify-center group"
-                  title={client.name}
+                  key={`grid-${idx}`}
+                  className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md hover:border-[#3066BE]/40 hover:-translate-y-1 transition-all flex flex-col justify-between group"
                 >
-                  <img
-                    src={client.file}
-                    alt={`${client.name} Logo`}
-                    className="max-h-10 max-w-[85%] object-contain filter grayscale group-hover:grayscale-0 transition-all duration-200"
-                    loading="lazy"
-                  />
+                  <div className="w-full h-16 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center justify-center p-3 mb-3 group-hover:bg-white group-hover:border-[#119DA4]/20 transition-all">
+                    <img
+                      src={client.file}
+                      alt={`${client.name} logo`}
+                      className="max-h-10 max-w-full object-contain group-hover:scale-105 transition-transform"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#3066BE] transition-colors">
+                      {client.name}
+                    </h4>
+                    <span className="text-[10px] font-medium text-[#119DA4] mt-0.5 block truncate">
+                      {client.category}
+                    </span>
+                  </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* BGA Network Opportunity Callout Banner */}
+          <div className="mb-20 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-[#152544] to-[#3066BE] text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shrink-0 shadow-inner">
+                <TrendingUp className="w-7 h-7 text-[#80DED9]" />
+              </div>
+              <div>
+                <span className="text-[11px] font-bold text-[#80DED9] uppercase tracking-wider">
+                  Partner Opportunity
+                </span>
+                <h4 className="text-base sm:text-lg font-bold text-white mt-0.5">
+                  Know a Business That Needs Engineering or Marketing?
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
+                  Introduce clients in your business network to Atriowings and earn up to 15% guaranteed recurring or project commissions on every verified engagement.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 shrink-0 w-full md:w-auto">
+              <Link
+                to="/register"
+                className="w-full md:w-auto px-6 py-3 rounded-xl bg-[#119DA4] hover:bg-[#0d8187] text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"
+              >
+                <span>Become a Growth Associate</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
 
