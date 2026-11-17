@@ -3767,7 +3767,6 @@ export const BgaPortal: React.FC = () => {
                 };
 
                 const servicePerf: any[] = earningsData?.servicePerformance || [];
-                const funnelList: any[] = earningsData?.funnel || [];
 
                 // Filter commissions list
                 const filteredCommissions = commissions.filter((c) => {
@@ -4088,42 +4087,7 @@ export const BgaPortal: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* 4. 11-STAGE BUSINESS CONVERSION FUNNEL */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                      <div className="border-b border-slate-100 pb-3">
-                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-[#119DA4]" />
-                          11-Stage Business Conversion Funnel
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          Progressive client pipeline tracking from initial onboarding through verified payment and commission disbursement.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11 gap-2 text-center text-xs">
-                        {funnelList.map((step) => {
-                          const isActive = step.count > 0;
-                          return (
-                            <div
-                              key={step.step}
-                              className={`p-3 rounded-xl border flex flex-col justify-between transition-all ${
-                                isActive
-                                  ? 'bg-gradient-to-b from-teal-50/60 to-white border-teal-200 shadow-xs'
-                                  : 'bg-slate-50/70 border-slate-200/70 opacity-60'
-                              }`}
-                            >
-                              <div className="text-[10px] font-bold text-slate-400">Step {step.step}</div>
-                              <div className="text-lg font-extrabold text-slate-900 my-1">{step.count}</div>
-                              <div className="text-[10px] font-semibold text-slate-700 leading-tight">
-                                {step.label}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* 5. INTERACTIVE EARNINGS HISTORY TABLE WITH LIVE FILTERS */}
+                    {/* 4. INTERACTIVE EARNINGS HISTORY TABLE WITH LIVE FILTERS */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-5">
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
                         <div>
