@@ -20,6 +20,7 @@ import { apiRequest } from '../../utils/api';
 import { SkeletonStatsRow, SkeletonTable, TechnicalDashboardSkeleton } from '../../components/Skeleton';
 import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ModalPortal } from '../../components/ModalPortal';
 
 export const TechnicalPortal: React.FC = () => {
   const { toast } = useToast();
@@ -58,15 +59,19 @@ export const TechnicalPortal: React.FC = () => {
     }
   };
 
-  const loadProjects = async () => {
+  const loadProjects = async (bypass = false) => {
     setTabLoading(true);
     try {
-      const p = await apiRequest('/api/technical/projects');
-      setProjects(p.projects || []);
-      if (selectedProject) {
-        const refreshed = (p.projects || []).find((x: any) => x.id === selectedProject.id);
-        if (refreshed) setSelectedProject(refreshed);
-      }
+      const p = await apiRequest('/api/technical/projects', { bypassCache: bypass });
+      const projectList = p.projects || [];
+      setProjects(projectList);
+      
+      // Use functional state updater to eliminate stale closure bugs
+      setSelectedProject((prev: any) => {
+        if (!prev) return null;
+        const refreshed = projectList.find((x: any) => x.id === prev.id);
+        return refreshed ? { ...prev, ...refreshed } : prev;
+      });
     } catch (e) {
       console.error(e);
     } finally {
@@ -74,10 +79,10 @@ export const TechnicalPortal: React.FC = () => {
     }
   };
 
-  const loadData = async () => {
+  const loadData = async (bypass = false) => {
     setLoading(true);
     try {
-      await Promise.all([loadStats(), loadProjects()]);
+      await Promise.all([loadStats(bypass), loadProjects(bypass)]);
     } finally {
       setLoading(false);
     }
@@ -90,15 +95,40 @@ export const TechnicalPortal: React.FC = () => {
 
   // Handle Project Status Update
   const handleUpdateStatus = async (projectId: string, newStatus: string, progress?: number) => {
+    // 1. Instant optimistic update so the user sees the new percentage and status immediately
+    if (progress !== undefined) {
+      setSelectedProject((prev: any) => {
+        if (!prev || prev.id !== projectId) return prev;
+        return { ...prev, status: newStatus, progressPercentage: progress };
+      });
+      setProjects((prev: any[]) =>
+        prev.map((proj: any) =>
+          proj.id === projectId
+            ? { ...proj, status: newStatus, progressPercentage: progress }
+            : proj
+        )
+      );
+    }
+
     try {
       const res = await apiRequest(`/api/technical/projects/${projectId}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status: newStatus, progressPercentage: progress }),
       });
       toast.success(res.message || 'Project status updated successfully.');
-      loadData();
+      
+      // Update with server confirmed data
+      if (res.project) {
+        setSelectedProject((prev: any) => {
+          if (!prev || prev.id !== projectId) return prev;
+          return { ...prev, ...res.project };
+        });
+      }
+
+      await loadData(true);
     } catch (e: any) {
       toast.error(e.message || 'Failed to update project status');
+      await loadData(true);
     }
   };
 
@@ -199,10 +229,10 @@ export const TechnicalPortal: React.FC = () => {
     <div className="min-h-screen bg-slate-100 flex flex-col">
       <PortalHeader title="Technical Portal" subtitle="Engineering Architecture, Milestone Delivery & Handover" />
 
-      <div className="flex-1 flex flex-col md:flex-row">
-        {/* Sidebar Nav */}
-        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 flex flex-col justify-between">
-          <div className="space-y-1">
+      <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
+        {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
+        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
+          <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-2">
               Engineering Workspace
             </div>
@@ -233,13 +263,13 @@ export const TechnicalPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500">
+          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 shrink-0">
             Privacy Scope: <span className="text-[#80DED9] font-bold">FINANCIAL DATA ISOLATED</span>
           </div>
         </aside>
 
         {/* Main Content Area */}
-        <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
+        <main className="w-full flex-1 min-w-0 p-6 md:p-8">
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
             !stats ? (
@@ -463,11 +493,24 @@ export const TechnicalPortal: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        <strong className="block text-slate-800 mb-1">Execution Status:</strong>
-                        <div className="text-amber-800 font-bold uppercase">{selectedProject.status}</div>
-                        <div className="mt-2 text-slate-500">
-                          Progress: <strong className="text-slate-800">{selectedProject.progressPercentage}%</strong>
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between">
+                        <div>
+                          <strong className="block text-slate-800 mb-1">Execution Status:</strong>
+                          <div className="flex items-center justify-between">
+                            <span className="text-amber-800 font-bold uppercase">{selectedProject.status}</span>
+                            <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 text-[11px]">
+                              {selectedProject.progressPercentage || 0}%
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-2.5">
+                          <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${Math.min(100, Math.max(0, selectedProject.progressPercentage || 0))}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -610,9 +653,15 @@ export const TechnicalPortal: React.FC = () => {
               )}
 
               {/* Add Milestone Modal */}
-              {milestoneModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+              <ModalPortal
+                isOpen={milestoneModal}
+                onClose={() => setMilestoneModal(false)}
+              >
+                {milestoneModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">Add Project Milestone</h3>
                     <form onSubmit={handleAddMilestone} className="mt-4 space-y-3 text-xs">
                       <div>
@@ -653,13 +702,19 @@ export const TechnicalPortal: React.FC = () => {
                       </div>
                     </form>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
 
               {/* Add Deliverable Modal */}
-              {deliverableModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+              <ModalPortal
+                isOpen={deliverableModal}
+                onClose={() => setDeliverableModal(false)}
+              >
+                {deliverableModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">Register Deliverable</h3>
                     <form onSubmit={handleAddDeliverable} className="mt-4 space-y-3 text-xs">
                       <div>
@@ -709,13 +764,19 @@ export const TechnicalPortal: React.FC = () => {
                       </div>
                     </form>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
 
               {/* Feedback Modal */}
-              {feedbackModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+              <ModalPortal
+                isOpen={feedbackModal}
+                onClose={() => setFeedbackModal(false)}
+              >
+                {feedbackModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">Log Correction Request</h3>
                     <form onSubmit={handleAddFeedback} className="mt-4 space-y-3 text-xs">
                       <div>
@@ -746,85 +807,80 @@ export const TechnicalPortal: React.FC = () => {
                       </div>
                     </form>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
 
               {/* Progress Percentage Modal */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!progressModal}
+                onClose={() => setProgressModal(null)}
+              >
                 {progressModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => setProgressModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 to-indigo-600" />
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <h3 className="text-base font-bold text-slate-900">Update Execution Progress</h3>
-                          <button
-                            type="button"
-                            onClick={() => setProgressModal(null)}
-                            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
+                    <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 to-indigo-600" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <h3 className="text-base font-bold text-slate-900">Update Execution Progress</h3>
+                        <button
+                          type="button"
+                          onClick={() => setProgressModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
 
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-semibold text-slate-700">Completion Level:</span>
-                            <span className="text-lg font-bold text-[#3066BE] font-mono">{progressInput}%</span>
-                          </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            step="5"
-                            value={progressInput}
-                            onChange={(e) => setProgressInput(parseInt(e.target.value))}
-                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#3066BE]"
-                          />
-                          <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
-                            <span>0%</span>
-                            <span>50%</span>
-                            <span>100%</span>
-                          </div>
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-xs font-semibold text-slate-700">Completion Level:</span>
+                          <span className="text-lg font-bold text-[#3066BE] font-mono">{progressInput}%</span>
                         </div>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            onClick={() => setProgressModal(null)}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleUpdateStatus(progressModal.projectId, 'IN_PROGRESS', progressInput);
-                              setProgressModal(null);
-                            }}
-                            className="px-5 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg"
-                          >
-                            Save Progress
-                          </button>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="5"
+                          value={progressInput}
+                          onChange={(e) => setProgressInput(parseInt(e.target.value))}
+                          className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#3066BE]"
+                        />
+                        <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+                          <span>0%</span>
+                          <span>50%</span>
+                          <span>100%</span>
                         </div>
                       </div>
-                    </motion.div>
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => setProgressModal(null)}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleUpdateStatus(progressModal.projectId, 'IN_PROGRESS', progressInput);
+                            setProgressModal(null);
+                          }}
+                          className="px-5 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg"
+                        >
+                          Save Progress
+                        </button>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
             </div>
           )}
         </main>

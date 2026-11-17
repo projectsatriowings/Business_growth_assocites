@@ -245,6 +245,9 @@ router.put('/projects/:id/status', async (req: AuthRequest, res: Response): Prom
       data: updateData,
     });
 
+    appCache.invalidatePrefix('technical:');
+    appCache.invalidatePrefix('admin:');
+
     await logAudit(
       req.user!.id,
       req.user!.email,

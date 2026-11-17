@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, ShieldCheck, UserCheck, AlertCircle, LogOut, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +10,21 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (headerRef.current) {
+        const h = headerRef.current.offsetHeight;
+        if (h > 0) {
+          document.documentElement.style.setProperty('--portal-header-height', `${h}px`);
+        }
+      }
+    };
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, [title, subtitle]);
 
   const fetchNotifications = async () => {
     try {
@@ -81,7 +96,7 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
   };
 
   return (
-    <header className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-subtle">
+    <header ref={headerRef} className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-subtle shrink-0">
       <div className="px-6 py-3.5 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">{title}</h1>

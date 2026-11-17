@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 :root {
+  /* Dynamic Portal Header Height */
+  --portal-header-height: 68px;
+
   /* Approved Palette Tokens */
   --bga-blue: #3066BE;
   --bga-blue-hover: #25549e;
@@ -39,6 +42,21 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Subtle, slim scrollbar for fixed sidebars */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 9999px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
 }
 
 /* Modern Shimmer Wave Effect for Skeletons & Loaders */

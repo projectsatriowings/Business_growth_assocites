@@ -65,6 +65,7 @@ import { SkeletonStatsRow, SkeletonTable, BgaDashboardSkeleton } from '../../com
 import { BgaProfileView } from './BgaProfileView';
 import { getQuotationPdfUrl } from '../../utils/downloadPdf';
 import { BUSINESS_CATEGORIES } from '../../constants/categories';
+import { ModalPortal } from '../../components/ModalPortal';
 
 export const BgaPortal: React.FC = () => {
   const { user } = useAuth();
@@ -737,10 +738,10 @@ export const BgaPortal: React.FC = () => {
     <div className="min-h-screen bg-slate-100 flex flex-col">
       <PortalHeader title="BGA Associate Portal" subtitle="Client Management, Quotation Requests & Earnings" />
 
-      <div className="flex-1 flex flex-col md:flex-row">
-        {/* Sidebar Nav */}
-        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 flex flex-col justify-between">
-          <div className="space-y-1">
+      <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
+        {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
+        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
+          <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-2">
               Associate Workspace
             </div>
@@ -839,14 +840,14 @@ export const BgaPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500">
+          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 shrink-0">
             Account Status:{' '}
             <span className="text-[#80DED9] font-bold uppercase">{user?.status}</span>
           </div>
         </aside>
 
         {/* Main Content Area */}
-        <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
+        <main className="w-full flex-1 min-w-0 p-6 md:p-8">
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
             !stats ? (
@@ -2499,8 +2500,11 @@ export const BgaPortal: React.FC = () => {
               )}
 
               {/* DETAILED CLIENT VIEW MODAL */}
-              {selectedClientDetails && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <ModalPortal
+                isOpen={!!selectedClientDetails}
+                onClose={() => setSelectedClientDetails(null)}
+              >
+                {selectedClientDetails && (
                   <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
                     {/* Header */}
                     <div className="p-6 border-b border-slate-100 flex justify-between items-start sticky top-0 bg-white/95 backdrop-blur-sm z-10">
@@ -2823,27 +2827,23 @@ export const BgaPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
 
               {/* Extra Enquiry Modal */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!newEnquiryModal}
+                onClose={() => !modalSubmitting && setNewEnquiryModal(null)}
+              >
                 {newEnquiryModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => !modalSubmitting && setNewEnquiryModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
                       <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-cyan-500" />
                       <div className="p-6 space-y-4">
                         <div className="flex items-start justify-between">
@@ -2928,28 +2928,23 @@ export const BgaPortal: React.FC = () => {
                         </form>
                       </div>
                     </motion.div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
 
               {/* Log Contact Activity Modal */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!activityModal}
+                onClose={() => !activitySubmitting && setActivityModal(null)}
+              >
                 {activityModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => !activitySubmitting && setActivityModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
                       <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-[#119DA4] to-[#3066BE]" />
                       <div className="p-6 space-y-4">
                         <div className="flex items-start justify-between">
@@ -3080,9 +3075,8 @@ export const BgaPortal: React.FC = () => {
                         </form>
                       </div>
                     </motion.div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
             </div>
           )}
 
@@ -3483,23 +3477,24 @@ export const BgaPortal: React.FC = () => {
               </div>
 
               {/* Quotation Reminder Modal */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!reminderModal}
+                onClose={() => {
+                  if (!modalSubmitting) {
+                    setReminderModal(null);
+                    setReminderMessage('');
+                  }
+                }}
+              >
                 {reminderModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => !modalSubmitting && setReminderModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
                       <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600" />
                       <div className="p-6 space-y-4">
                         <div className="flex items-start justify-between">
@@ -3576,28 +3571,23 @@ export const BgaPortal: React.FC = () => {
                         </div>
                       </div>
                     </motion.div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
 
               {/* Revision Request Modal */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!revisionModal}
+                onClose={() => !modalSubmitting && setRevisionModal(null)}
+              >
                 {revisionModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => !modalSubmitting && setRevisionModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
                       <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600" />
                       <div className="p-6 space-y-4">
                         <div className="flex items-start justify-between">
@@ -3665,28 +3655,23 @@ export const BgaPortal: React.FC = () => {
                         </div>
                       </div>
                     </motion.div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
 
               {/* Client Acceptance Modal */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!acceptanceModal}
+                onClose={() => !modalSubmitting && setAcceptanceModal(null)}
+              >
                 {acceptanceModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => !modalSubmitting && setAcceptanceModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
                       <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-600" />
                       <div className="p-6 space-y-4">
                         <div className="flex items-start justify-between">
@@ -3754,9 +3739,8 @@ export const BgaPortal: React.FC = () => {
                         </div>
                       </div>
                     </motion.div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
             </div>
           )}
 
@@ -4433,23 +4417,19 @@ export const BgaPortal: React.FC = () => {
               })()}
 
               {/* CALCULATION BREAKDOWN MODAL */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!calculationModal}
+                onClose={() => setCalculationModal(null)}
+              >
                 {calculationModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => setCalculationModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
                       <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-[#119DA4] to-[#3066BE]" />
                       <div className="p-6 space-y-4 text-xs">
                         <div className="flex items-start justify-between border-b border-slate-100 pb-3">
@@ -4556,9 +4536,8 @@ export const BgaPortal: React.FC = () => {
                         </div>
                       </div>
                     </motion.div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
             </div>
           )}
 

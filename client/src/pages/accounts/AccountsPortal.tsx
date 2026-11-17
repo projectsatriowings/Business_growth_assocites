@@ -40,6 +40,7 @@ import { validateBankUtr, getUtrPlaceholderAndHint, UtrValidationResult } from '
 import { useToast } from '../../context/ToastContext';
 import { getQuotationPdfUrl, downloadQuotationPdf } from '../../utils/downloadPdf';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ModalPortal } from '../../components/ModalPortal';
 
 export const AccountsPortal: React.FC = () => {
   const { toast } = useToast();
@@ -446,10 +447,10 @@ export const AccountsPortal: React.FC = () => {
     <div className="min-h-screen bg-slate-100 flex flex-col">
       <PortalHeader title="Accounts Portal" subtitle="Quotation Drafting, Commercial Verification & Commission Processing" />
 
-      <div className="flex-1 flex flex-col md:flex-row">
-        {/* Sidebar Nav */}
-        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 flex flex-col justify-between">
-          <div className="space-y-1">
+      <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
+        {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
+        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
+          <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-2">
               Financial Modules
             </div>
@@ -514,13 +515,13 @@ export const AccountsPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500">
+          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 shrink-0">
             Accounts Clearance: <span className="text-[#80DED9] font-bold">AUTHORIZED</span>
           </div>
         </aside>
 
         {/* Main Content Area */}
-        <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
+        <main className="w-full flex-1 min-w-0 p-6 md:p-8">
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
             !stats ? (
@@ -1216,23 +1217,19 @@ export const AccountsPortal: React.FC = () => {
               </div>
 
               {/* Prepare Quotation Modal */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!prepModal}
+                onClose={() => !modalSubmitting && setPrepModal(null)}
+              >
                 {prepModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => !modalSubmitting && setPrepModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden relative max-h-[92vh] flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden relative max-h-[92vh] flex flex-col"
-                      onClick={(e) => e.stopPropagation()}
-                    >
                       <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 shrink-0" />
                       
                       <div className="p-6 border-b border-slate-100 flex items-start justify-between shrink-0">
@@ -1371,9 +1368,8 @@ export const AccountsPortal: React.FC = () => {
                         </form>
                       </div>
                     </motion.div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
             </div>
           )}
 
@@ -2032,23 +2028,19 @@ export const AccountsPortal: React.FC = () => {
               )}
 
               {/* MODAL 1: PAYMENT DETAIL DRAWER */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!paymentDetailModal}
+                onClose={() => setPaymentDetailModal(null)}
+              >
                 {paymentDetailModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => setPaymentDetailModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative max-h-[90vh] flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative max-h-[90vh] flex flex-col"
-                      onClick={(e) => e.stopPropagation()}
-                    >
                       <div className="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-teal-600 shrink-0" />
                       <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-3">
@@ -2176,28 +2168,23 @@ export const AccountsPortal: React.FC = () => {
                         )}
                       </div>
                     </motion.div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
 
               {/* MODAL 2: WORK ORDER DETAIL DRAWER */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!workOrderDetailModal}
+                onClose={() => setWorkOrderDetailModal(null)}
+              >
                 {workOrderDetailModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => setWorkOrderDetailModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative max-h-[90vh] flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative max-h-[90vh] flex flex-col"
-                      onClick={(e) => e.stopPropagation()}
-                    >
                       <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shrink-0" />
                       <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-3">
@@ -2364,28 +2351,23 @@ export const AccountsPortal: React.FC = () => {
                         )}
                       </div>
                     </motion.div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
 
               {/* MODAL 3: RELEASE TO TECHNICAL MODAL */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!releaseModal}
+                onClose={() => !modalSubmitting && setReleaseModal(null)}
+              >
                 {releaseModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => !modalSubmitting && setReleaseModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
                       <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600" />
                       
                       <div className="p-6 space-y-4">
@@ -2459,28 +2441,23 @@ export const AccountsPortal: React.FC = () => {
                         </div>
                       </div>
                     </motion.div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
 
               {/* MODAL 4: HOLD WORK ORDER MODAL */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!holdModal}
+                onClose={() => !modalSubmitting && setHoldModal(null)}
+              >
                 {holdModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => !modalSubmitting && setHoldModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
                       <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 to-rose-500" />
                       
                       <div className="p-6 space-y-4">
@@ -2539,108 +2516,98 @@ export const AccountsPortal: React.FC = () => {
                         </div>
                       </div>
                     </motion.div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
 
               {/* MODAL 5: REQUEST PAYMENT INFO MODAL */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!requestInfoModal}
+                onClose={() => !modalSubmitting && setRequestInfoModal(null)}
+              >
                 {requestInfoModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => !modalSubmitting && setRequestInfoModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 to-cyan-500" />
-                      
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200 shrink-0">
-                              <HelpCircle className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">Request Payment Clarification</h3>
-                              <p className="text-xs text-slate-500 font-mono">
-                                UTR: {requestInfoModal.payment.transactionReference}
-                              </p>
-                            </div>
+                    <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 to-cyan-500" />
+                    
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200 shrink-0">
+                            <HelpCircle className="w-5 h-5 text-blue-600" />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => !modalSubmitting && setRequestInfoModal(null)}
-                            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">Request Payment Clarification</h3>
+                            <p className="text-xs text-slate-500 font-mono">
+                              UTR: {requestInfoModal.payment.transactionReference}
+                            </p>
+                          </div>
                         </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                            Information Needed from Associate / Client <span className="text-rose-500">*</span>
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={requestInfoNotes}
-                            onChange={(e) => setRequestInfoNotes(e.target.value)}
-                            placeholder="e.g. Please provide bank transaction screenshot showing credit timestamp or verify sender account name..."
-                            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 resize-none transition-all"
-                          />
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            disabled={modalSubmitting}
-                            onClick={() => setRequestInfoModal(null)}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            disabled={modalSubmitting || !requestInfoNotes.trim()}
-                            onClick={confirmRequestPaymentInfo}
-                            className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-                          >
-                            {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                            {modalSubmitting ? 'Sending...' : 'Send Query to Associate'}
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => !modalSubmitting && setRequestInfoModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                    </motion.div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                          Information Needed from Associate / Client <span className="text-rose-500">*</span>
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={requestInfoNotes}
+                          onChange={(e) => setRequestInfoNotes(e.target.value)}
+                          placeholder="e.g. Please provide bank transaction screenshot showing credit timestamp or verify sender account name..."
+                          className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 resize-none transition-all"
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button
+                          type="button"
+                          disabled={modalSubmitting}
+                          onClick={() => setRequestInfoModal(null)}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={modalSubmitting || !requestInfoNotes.trim()}
+                          onClick={confirmRequestPaymentInfo}
+                          className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                          {modalSubmitting ? 'Sending...' : 'Send Query to Associate'}
+                        </button>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
 
               {/* MODAL 6: RECORD PAYMENT MODAL */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!paymentModal}
+                onClose={() => !modalSubmitting && setPaymentModal(null)}
+              >
                 {paymentModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => !modalSubmitting && setPaymentModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative max-h-[92vh] flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative max-h-[92vh] flex flex-col"
-                      onClick={(e) => e.stopPropagation()}
-                    >
                       <div className="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 shrink-0" />
                       
                       <div className="p-6 border-b border-slate-100 flex items-start justify-between shrink-0">
@@ -2815,108 +2782,102 @@ export const AccountsPortal: React.FC = () => {
                         </form>
                       </div>
                     </motion.div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
 
               {/* MODAL 7: VERIFY / REJECT AUDIT MODAL */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!verifyModal}
+                onClose={() => !modalSubmitting && setVerifyModal(null)}
+              >
                 {verifyModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => !modalSubmitting && setVerifyModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className={`h-1.5 w-full ${verifyModal.action === 'VERIFY' ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 'bg-gradient-to-r from-rose-500 to-red-600'}`} />
-                      
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                              verifyModal.action === 'VERIFY' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-600 border-rose-200'
-                            }`}>
-                              {verifyModal.action === 'VERIFY' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">
-                                {verifyModal.action === 'VERIFY' ? 'Verify Bank Credit' : 'Reject Payment Record'}
-                              </h3>
-                              <p className="text-xs text-slate-500 font-mono">
-                                UTR: {verifyModal.transactionReference}
-                              </p>
-                            </div>
+                    <div className={`h-1.5 w-full ${verifyModal.action === 'VERIFY' ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 'bg-gradient-to-r from-rose-500 to-red-600'}`} />
+                    
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                            verifyModal.action === 'VERIFY' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-600 border-rose-200'
+                          }`}>
+                            {verifyModal.action === 'VERIFY' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => !modalSubmitting && setVerifyModal(null)}
-                            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-
-                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-xs space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Client:</span>
-                            <span className="font-semibold text-slate-800">{verifyModal.clientName}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Amount Received:</span>
-                            <span className="font-bold text-emerald-700">₹{verifyModal.amount?.toLocaleString()}</span>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">
+                              {verifyModal.action === 'VERIFY' ? 'Verify Bank Credit' : 'Reject Payment Record'}
+                            </h3>
+                            <p className="text-xs text-slate-500 font-mono">
+                              UTR: {verifyModal.transactionReference}
+                            </p>
                           </div>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => !modalSubmitting && setVerifyModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
 
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                            Bank Statement Audit / Verification Notes <span className="text-rose-500">*</span>
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={verifyNotes}
-                            onChange={(e) => setVerifyNotes(e.target.value)}
-                            placeholder="Enter bank statement audit notes..."
-                            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-none transition-all"
-                          />
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-xs space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Client:</span>
+                          <span className="font-semibold text-slate-800">{verifyModal.clientName}</span>
                         </div>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            disabled={modalSubmitting}
-                            onClick={() => setVerifyModal(null)}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            disabled={modalSubmitting}
-                            onClick={confirmVerifyPayment}
-                            className={`px-5 py-2 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50 ${
-                              verifyModal.action === 'VERIFY'
-                                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700'
-                                : 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700'
-                            }`}
-                          >
-                            {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                            {modalSubmitting ? 'Processing...' : `Confirm ${verifyModal.action === 'VERIFY' ? 'Verification' : 'Rejection'}`}
-                          </button>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Amount Received:</span>
+                          <span className="font-bold text-emerald-700">₹{verifyModal.amount?.toLocaleString()}</span>
                         </div>
                       </div>
-                    </motion.div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                          Bank Statement Audit / Verification Notes <span className="text-rose-500">*</span>
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={verifyNotes}
+                          onChange={(e) => setVerifyNotes(e.target.value)}
+                          placeholder="Enter bank statement audit notes..."
+                          className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 resize-none transition-all"
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button
+                          type="button"
+                          disabled={modalSubmitting}
+                          onClick={() => setVerifyModal(null)}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={modalSubmitting}
+                          onClick={confirmVerifyPayment}
+                          className={`px-5 py-2 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50 ${
+                            verifyModal.action === 'VERIFY'
+                              ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700'
+                              : 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700'
+                          }`}
+                        >
+                          {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                          {modalSubmitting ? 'Processing...' : `Confirm ${verifyModal.action === 'VERIFY' ? 'Verification' : 'Rejection'}`}
+                        </button>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
             </div>
           )}
 

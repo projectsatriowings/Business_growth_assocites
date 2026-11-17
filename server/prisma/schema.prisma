@@ -384,6 +384,7 @@ model TechnicalProject {
   startDate            DateTime?
   targetCompletionDate DateTime?
   completedAt          DateTime?
+  clientAccessToken    String?            @unique
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
@@ -396,6 +397,7 @@ model TechnicalProject {
   @@index([assignedLeadId])
   @@index([status])
   @@index([createdAt])
+  @@index([clientAccessToken])
 }
 
 model ProjectMilestone {
@@ -404,44 +406,69 @@ model ProjectMilestone {
   project     TechnicalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
   title       String
   description String?
+  weight      Int             @default(1)
   targetDate  DateTime?
   status      MilestoneStatus @default(TODO)
   completedAt DateTime?
+  completedById String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+
+  deliverables ProjectDeliverable[]
 
   @@index([projectId])
   @@index([projectId, status])
 }
 
 model ProjectDeliverable {
-  id          String           @id @default(cuid())
-  projectId   String
-  project     TechnicalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  title       String
-  description String?
-  fileUrl     String
-  fileType    String?
-  version     String           @default("1.0")
-  uploadedById String?
-  createdAt   DateTime         @default(now())
+  id                 String            @id @default(cuid())
+  projectId          String
+  project            TechnicalProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestoneId        String?
+  milestone          ProjectMilestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  title              String
+  description        String?
+  fileUrl            String
+  fileType           String?
+  fileSize           Int?
+  version            String            @default("1.0")
+  uploadedById       String?
+  status             String            @default("PENDING_BGA_REVIEW") // UPLOADED_INTERNAL, PENDING_BGA_REVIEW, APPROVED_FOR_CLIENT, SHARED_WITH_CLIENT, CLIENT_VIEWED, REVISION_REQUIRED, ACCEPTED_BY_CLIENT
+  isClientVisible    Boolean           @default(false)
+  clientViewedAt     DateTime?
+  bgaReviewNotes     String?
+  bgaApprovalStatus  String?           @default("PENDING") // PENDING, APPROVED, CHANGES_REQUESTED
+  previousVersionId  String?
+  createdAt          DateTime          @default(now())
 
   @@index([projectId])
+  @@index([milestoneId])
+  @@index([status])
 }
 
 model ProjectFeedback {
-  id          String           @id @default(cuid())
-  projectId   String
-  project     TechnicalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  feedbackType String          // CLIENT_FEEDBACK, CORRECTION_REQUEST, INTERNAL_NOTE
-  content     String
-  status      String           @default("OPEN") // OPEN, RESOLVED
-  submittedById String?
-  resolvedAt  DateTime?
-  createdAt   DateTime         @default(now())
+  id                String           @id @default(cuid())
+  projectId         String
+  project           TechnicalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  feedbackType      String           // CLIENT_FEEDBACK, CORRECTION_REQUEST, INTERNAL_NOTE
+  content           String
+  status            String           @default("NEW") // NEW, ACKNOWLEDGED, UNDER_REVIEW, IN_PROGRESS, RESOLVED, CONFIRMED_BY_CLIENT, NEEDS_CLARIFICATION, REVISION_REQUIRED
+  authorId          String?
+  authorName        String?
+  authorRole        String?          // CLIENT, BGA, TECHNICAL, ADMIN
+  messageType       String?          // CLIENT_FEEDBACK, BGA_REPRESENTATIVE, TECHNICAL_REPLY, INTERNAL_NOTE
+  milestoneId       String?
+  deliverableId     String?
+  visibility        String           @default("CLIENT_VISIBLE") // CLIENT_VISIBLE, INTERNAL
+  parentFeedbackId  String?
+  responseNotes     String?
+  submittedById     String?
+  resolvedAt        DateTime?
+  createdAt         DateTime         @default(now())
 
   @@index([projectId])
   @@index([projectId, status])
+  @@index([visibility])
 }
 
 model Commission {

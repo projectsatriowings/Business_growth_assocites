@@ -46,6 +46,7 @@ import { useToast } from '../../context/ToastContext';
 import { getQuotationPdfUrl } from '../../utils/downloadPdf';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { ModalPortal } from '../../components/ModalPortal';
 
 // Formats client structured location JSON or legacy location string
 const formatClientLocation = (locStr?: string | null): string => {
@@ -618,10 +619,10 @@ export const AdminPortal: React.FC = () => {
     <div className="min-h-screen bg-slate-100 flex flex-col">
       <PortalHeader title="Admin Portal" subtitle="Central Company Management & Executive Controls" />
 
-      <div className="flex-1 flex flex-col md:flex-row">
-        {/* Sidebar Nav */}
-        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 flex flex-col justify-between">
-          <div className="space-y-1">
+      <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
+        {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
+        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
+          <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-2">
               Management Modules
             </div>
@@ -754,13 +755,13 @@ export const AdminPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500">
+          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 shrink-0">
             Database: <span className="text-emerald-400 font-semibold">Neon Cloud PostgreSQL</span>
           </div>
         </aside>
 
         {/* Main Content Area */}
-        <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
+        <main className="w-full flex-1 min-w-0 p-6 md:p-8">
           {/* TAB 1: DASHBOARD & ANALYTICS */}
           {activeTab === 'dashboard' && (
             !stats ? (
@@ -1391,9 +1392,15 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Ownership Transfer Modal */}
-              {transferModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+              <ModalPortal
+                isOpen={!!transferModal}
+                onClose={() => setTransferModal(null)}
+              >
+                {transferModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">Transfer Client Ownership</h3>
                     <p className="text-xs text-slate-500 mt-1">
                       Reassigning <strong>{transferModal.client.clientName}</strong> ({transferModal.client.businessName})
@@ -1456,8 +1463,8 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
             </div>
           )}
 
@@ -1682,9 +1689,18 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Enquiry Review Action Modal */}
-              {enquiryReviewModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+              <ModalPortal
+                isOpen={!!enquiryReviewModal}
+                onClose={() => {
+                  setEnquiryReviewModal(null);
+                  setEnquiryReviewNotes('');
+                }}
+              >
+                {enquiryReviewModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">
                       {enquiryReviewModal.action === 'APPROVE'
                         ? 'Approve Client Enquiry'
@@ -1731,13 +1747,19 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
 
               {/* Enquiry Detail Modal — Complete Client Registration & Scope Dossier */}
-              {enquiryDetailModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-3xl max-w-3xl w-full p-6 md:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[92vh] overflow-y-auto">
+              <ModalPortal
+                isOpen={!!enquiryDetailModal}
+                onClose={() => setEnquiryDetailModal(null)}
+              >
+                {enquiryDetailModal && (
+                  <div
+                    className="bg-white rounded-3xl max-w-3xl w-full p-6 md:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[92vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {/* Modal Header */}
                     <div className="flex justify-between items-start border-b border-slate-100 pb-4">
                       <div>
@@ -2029,8 +2051,8 @@ export const AdminPortal: React.FC = () => {
                       )}
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
             </div>
           )}
 
@@ -2296,69 +2318,64 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Delete Resource Confirmation Modal */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!deleteResourceModal}
+                onClose={() => setDeleteResourceModal(null)}
+              >
                 {deleteResourceModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => setDeleteResourceModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-rose-500 to-red-600" />
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
-                              <Trash2 className="w-5 h-5 text-rose-600" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">Delete Marketing Resource</h3>
-                              <p className="text-xs text-slate-500">This action cannot be undone.</p>
-                            </div>
+                    <div className="h-1.5 w-full bg-gradient-to-r from-rose-500 to-red-600" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
+                            <Trash2 className="w-5 h-5 text-rose-600" />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteResourceModal(null)}
-                            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">Delete Marketing Resource</h3>
+                            <p className="text-xs text-slate-500">This action cannot be undone.</p>
+                          </div>
                         </div>
-
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                          Are you sure you want to permanently delete <strong className="text-slate-900">{deleteResourceModal.title}</strong>? It will no longer be visible or downloadable by BGA associates.
-                        </p>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            onClick={() => setDeleteResourceModal(null)}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            onClick={confirmDeleteResource}
-                            className="px-5 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-1.5"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" /> Permanently Delete
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteResourceModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                    </motion.div>
+
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        Are you sure you want to permanently delete <strong className="text-slate-900">{deleteResourceModal.title}</strong>? It will no longer be visible or downloadable by BGA associates.
+                      </p>
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => setDeleteResourceModal(null)}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={confirmDeleteResource}
+                          className="px-5 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-1.5"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Permanently Delete
+                        </button>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
             </div>
           )}
 
@@ -2536,9 +2553,15 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Quotation Scope & Line Items Modal */}
-              {quotationDetailModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+              <ModalPortal
+                isOpen={!!quotationDetailModal}
+                onClose={() => setQuotationDetailModal(null)}
+              >
+                {quotationDetailModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                       <div>
                         <span className="text-xs font-mono text-[#3066BE] font-bold">
@@ -2583,13 +2606,22 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
 
               {/* Quotation Review Action Modal (Approve, Revision, Reject) */}
-              {quotationReviewModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+              <ModalPortal
+                isOpen={!!quotationReviewModal}
+                onClose={() => {
+                  setQuotationReviewModal(null);
+                  setQuotationReviewNotes('');
+                }}
+              >
+                {quotationReviewModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">
                       {quotationReviewModal.action === 'APPROVE'
                         ? 'Approve Official Quotation & Release to BGA'
@@ -2640,8 +2672,8 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
             </div>
           )}
 
@@ -2811,9 +2843,18 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Handover Review Action Modal */}
-              {handoverReviewModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+              <ModalPortal
+                isOpen={!!handoverReviewModal}
+                onClose={() => {
+                  setHandoverReviewModal(null);
+                  setHandoverReviewNotes('');
+                }}
+              >
+                {handoverReviewModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">
                       {handoverReviewModal.action === 'APPROVE'
                         ? 'Authorize Technical Handover & Activate Project'
@@ -2864,8 +2905,8 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
             </div>
           )}
 
@@ -2981,9 +3022,15 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Project Milestones Detail Modal */}
-              {projectDetailModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+              <ModalPortal
+                isOpen={!!projectDetailModal}
+                onClose={() => setProjectDetailModal(null)}
+              >
+                {projectDetailModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                       <div>
                         <span className="font-mono text-xs text-[#3066BE] font-bold">{projectDetailModal.projectNumber}</span>
@@ -3027,8 +3074,8 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
             </div>
           )}
 
@@ -3181,9 +3228,18 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Payout Reference Modal */}
-              {payoutModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+              <ModalPortal
+                isOpen={!!payoutModal}
+                onClose={() => {
+                  setPayoutModal(null);
+                  setPayoutReferenceInput('');
+                }}
+              >
+                {payoutModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">Record Commission Disbursement</h3>
                     <p className="text-xs text-slate-500">
                       Disbursing <strong>₹{payoutModal.amount?.toLocaleString()}</strong> to <strong>{payoutModal.bgaName}</strong>
@@ -3241,8 +3297,8 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
             </div>
           )}
 
