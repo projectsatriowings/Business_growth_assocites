@@ -333,6 +333,75 @@ export const BgaPortal: React.FC = () => {
     }
   };
 
+  // Deliverable Review Handler (Approve & Share with Client OR Request Changes from Technical)
+  const handleReviewDeliverable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deliverableReviewModal) return;
+    setReviewSubmitting(true);
+    try {
+      await apiRequest(`/api/bga/deliverables/${deliverableReviewModal.deliverable.id}/review`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          action: reviewAction,
+          notes: reviewNotes.trim() || undefined,
+        }),
+      });
+      toast.success(
+        reviewAction === 'APPROVE_AND_SHARE'
+          ? 'Deliverable approved & shared with client. Visible in Client Project Portal.'
+          : 'Revision requested from Technical team.'
+      );
+      setDeliverableReviewModal(null);
+      setReviewNotes('');
+      await loadTabData('projects');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to review deliverable');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  // BGA Post Feedback / Communication Handler
+  const handlePostBgaFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bgaFeedbackModal || !bgaFeedbackContent.trim()) return;
+    setBgaFeedbackSubmitting(true);
+    try {
+      await apiRequest(`/api/bga/projects/${bgaFeedbackModal.project.id}/feedback`, {
+        method: 'POST',
+        body: JSON.stringify({
+          content: bgaFeedbackContent.trim(),
+          feedbackType: bgaFeedbackType,
+          visibility: bgaFeedbackType === 'INTERNAL_NOTE' ? 'INTERNAL' : 'CLIENT_VISIBLE',
+          milestoneId: bgaFeedbackMilestoneId || undefined,
+        }),
+      });
+      toast.success(
+        bgaFeedbackType === 'INTERNAL_NOTE'
+          ? 'Internal note logged for Technical Team.'
+          : 'Client feedback recorded & dispatched to Technical Team.'
+      );
+      setBgaFeedbackModal(null);
+      setBgaFeedbackContent('');
+      setBgaFeedbackMilestoneId('');
+      await loadTabData('projects');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to submit feedback');
+    } finally {
+      setBgaFeedbackSubmitting(false);
+    }
+  };
+
+  // Copy Client Project Portal Direct Access Link
+  const handleCopyClientPortalLink = (token: string, clientName?: string) => {
+    const url = `${window.location.origin}/client/project/${token}`;
+    navigator.clipboard.writeText(url);
+    toast.success(
+      `Direct Client Portal link for ${clientName || 'client'} copied to clipboard! Send this link to the client to let them review deliverables and leave feedback.`,
+      'Client Link Copied'
+    );
+  };
+
   // Load BGA Dashboard Stats independently
   const loadStats = async (bypass = false) => {
     try {
@@ -4091,14 +4160,23 @@ export const BgaPortal: React.FC = () => {
           {/* TAB 7: WORK ORDERS & PROJECTS */}
           {activeTab === 'projects' && (
             <div className="space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200">
-                <h2 className="text-base font-bold text-slate-900">My Client Projects & Execution</h2>
-                <p className="text-xs text-slate-500">
-                  Track technical implementation progress and milestones for contracts accepted by your clients.
-                </p>
+              <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">My Client Projects & Deliverable Reviews</h2>
+                  <p className="text-xs text-slate-500">
+                    Track technical implementation progress, review & approve technical deliverables before sharing with clients, and manage client feedback threads.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => loadTabData('projects')}
+                  className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Refresh Projects
+                </button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {!workOrdersLoaded || tabLoading ? (
                   <SkeletonTable rows={4} cols={5} />
                 ) : workOrders.length === 0 ? (
@@ -4111,65 +4189,564 @@ export const BgaPortal: React.FC = () => {
                   </div>
                 ) : (
                   workOrders.map((wo) => {
-                  const prj = wo.project;
-                  return (
-                    <div key={wo.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-bold text-slate-900">{wo.workOrderNumber}</span>
-                            {prj && <span className="font-mono text-xs text-indigo-600 font-bold">({prj.projectNumber})</span>}
+                    const prj = wo.project;
+                    return (
+                      <div key={wo.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        {/* Project Header */}
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs font-bold text-slate-900">{wo.workOrderNumber}</span>
+                              {prj && (
+                                <span className="font-mono text-xs text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">
+                                  {prj.projectNumber}
+                                </span>
+                              )}
+                              <span className="text-xs font-semibold text-slate-600">
+                                • {wo.serviceCategory || prj?.serviceCategory || 'Service Delivery'}
+                              </span>
+                            </div>
+                            <h3 className="text-base font-bold text-slate-900 mt-0.5">{wo.client?.clientName}</h3>
                           </div>
-                          <h3 className="text-sm font-bold text-slate-900 mt-0.5">{wo.client?.clientName}</h3>
+
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                              wo.advanceVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              Advance: {wo.advanceVerified ? 'VERIFIED' : 'AWAITING VERIFICATION'}
+                            </span>
+                            <span className="text-xs font-bold text-slate-800 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200">
+                              Contract: ₹{wo.totalValue?.toLocaleString()}
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            wo.advanceVerified ? 'bg-emerald-100 text-[#119DA4]' : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            Advance: {wo.advanceVerified ? 'VERIFIED' : 'AWAITING VERIFICATION'}
-                          </span>
-                          <span className="text-xs font-bold text-slate-800">
-                            Value: ₹{wo.totalValue?.toLocaleString()}
-                          </span>
+                        {prj ? (
+                          <div className="space-y-4">
+                            {/* Client Portal Link Share Banner */}
+                            {prj.clientAccessToken && (
+                              <div className="p-3 bg-gradient-to-r from-teal-50 via-emerald-50 to-cyan-50 border border-teal-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                                <div>
+                                  <div className="font-bold text-teal-900 flex items-center gap-1.5">
+                                    <Globe className="w-4 h-4 text-teal-700" /> Secure Client Project Portal Access
+                                  </div>
+                                  <p className="text-[11px] text-teal-800 mt-0.5">
+                                    Your client can view approved deliverables, track milestone progress, and leave feedback directly.
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopyClientPortalLink(prj.clientAccessToken, wo.client?.clientName)}
+                                    className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                                  >
+                                    <Copy className="w-3.5 h-3.5" /> Copy Client Portal Link
+                                  </button>
+                                  <a
+                                    href={`/client/project/${prj.clientAccessToken}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-3 py-1.5 bg-white hover:bg-slate-50 text-teal-800 border border-teal-300 rounded-lg font-bold flex items-center gap-1.5 transition-colors"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" /> Open Preview
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Execution Progress & Status */}
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                              <div className="flex justify-between items-center text-xs mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-slate-600 font-semibold">Technical Execution Status:</span>
+                                  <span className="font-bold text-blue-700 uppercase px-2 py-0.5 rounded bg-blue-50 border border-blue-200">
+                                    {prj.status}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-slate-500">Milestone-Derived Progress:</span>
+                                  <span className="font-mono font-bold text-slate-900 text-sm">
+                                    {prj.progressPercentage || 0}%
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                                <div
+                                  className="bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500 h-2.5 rounded-full transition-all duration-300"
+                                  style={{ width: `${Math.min(100, Math.max(0, prj.progressPercentage || 0))}%` }}
+                                />
+                              </div>
+
+                              {/* Milestones Road Map */}
+                              <div className="mt-3">
+                                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-2">
+                                  Milestone Delivery Roadmap
+                                </span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                  {prj.milestones?.map((m: any) => (
+                                    <div key={m.id} className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs">
+                                      <div className="flex justify-between items-start gap-1">
+                                        <span className="font-semibold text-slate-800 truncate">{m.title}</span>
+                                        <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase shrink-0 ${
+                                          m.status === 'COMPLETED'
+                                            ? 'bg-emerald-100 text-emerald-800'
+                                            : m.status === 'IN_PROGRESS'
+                                            ? 'bg-amber-100 text-amber-800'
+                                            : 'bg-slate-100 text-slate-600'
+                                        }`}>
+                                          {m.status}
+                                        </span>
+                                      </div>
+                                      {m.description && (
+                                        <p className="text-[10px] text-slate-500 mt-1 line-clamp-1">{m.description}</p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Technical Deliverables Review Section */}
+                            <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                              <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                <div>
+                                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
+                                    Technical Deliverables & Releases
+                                  </h4>
+                                  <p className="text-[11px] text-slate-500">
+                                    Uploaded by Engineering Team. Review and approve to make visible to your client.
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2.5">
+                                {(!prj.deliverables || prj.deliverables.length === 0) ? (
+                                  <div className="text-xs text-slate-400 py-3 text-center bg-slate-50 rounded-lg">
+                                    No deliverables uploaded by technical team yet. Deliverables will appear here for your review as milestones are completed.
+                                  </div>
+                                ) : (
+                                  prj.deliverables.map((d: any) => {
+                                    const linkedMilestone = d.milestone || prj.milestones?.find((m: any) => m.id === d.milestoneId);
+                                    const isPendingReview = d.status === 'PENDING_BGA_REVIEW' || !d.isClientVisible;
+                                    const isApproved = d.status === 'SHARED_WITH_CLIENT' || d.isClientVisible;
+                                    const isRevision = d.status === 'REVISION_REQUIRED';
+
+                                    return (
+                                      <div
+                                        key={d.id}
+                                        className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-xs"
+                                      >
+                                        <div className="space-y-1">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-bold text-slate-900 text-sm">{d.title}</span>
+                                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">
+                                              v{d.version}
+                                            </span>
+                                            {linkedMilestone && (
+                                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
+                                                Milestone: {linkedMilestone.title}
+                                              </span>
+                                            )}
+                                          </div>
+                                          {d.description && <p className="text-slate-600 text-[11px]">{d.description}</p>}
+                                          <div className="flex items-center gap-3 text-slate-500 text-[11px]">
+                                            <a
+                                              href={d.fileUrl}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1 font-semibold"
+                                            >
+                                              <ExternalLink className="w-3 h-3" /> Inspect Artifact / Download
+                                            </a>
+                                            <span className="text-slate-400">
+                                              Uploaded {new Date(d.createdAt).toLocaleDateString()}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <div className="flex flex-col items-end gap-2 shrink-0">
+                                          {isApproved ? (
+                                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                                              <CheckCircle2 className="w-3 h-3" /> Approved & Shared with Client
+                                            </span>
+                                          ) : isRevision ? (
+                                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 flex items-center gap-1">
+                                              <AlertCircle className="w-3 h-3" /> Revision Requested from Tech
+                                            </span>
+                                          ) : (
+                                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
+                                              <Clock className="w-3 h-3" /> Pending Your Review
+                                            </span>
+                                          )}
+
+                                          {d.clientViewedAt && (
+                                            <span className="text-[10px] text-teal-700 font-bold flex items-center gap-1">
+                                              <Eye className="w-3 h-3" /> Client Viewed on {new Date(d.clientViewedAt).toLocaleDateString()}
+                                            </span>
+                                          )}
+
+                                          {d.bgaReviewNotes && (
+                                            <span className="text-[10px] text-slate-600 italic max-w-xs text-right">
+                                              Your Note: {d.bgaReviewNotes}
+                                            </span>
+                                          )}
+
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setDeliverableReviewModal({ deliverable: d, project: prj });
+                                              setReviewAction(isApproved ? 'REQUEST_CHANGES' : 'APPROVE_AND_SHARE');
+                                              setReviewNotes(d.bgaReviewNotes || '');
+                                            }}
+                                            className="px-3 py-1 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                          >
+                                            {isApproved ? 'Update Review / Retract' : 'Review & Share with Client'}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Three-Way Project Feedback Thread */}
+                            <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                              <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                <div>
+                                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
+                                    Project Communication & Feedback Thread
+                                  </h4>
+                                  <p className="text-[11px] text-slate-500">
+                                    Unified three-way discussion between Client, You (BGA), and Technical Team.
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setBgaFeedbackModal({ project: prj });
+                                    setBgaFeedbackContent('');
+                                    setBgaFeedbackType('CLIENT_FEEDBACK');
+                                    setBgaFeedbackMilestoneId('');
+                                  }}
+                                  className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5" /> Post Message / Relay Client Feedback
+                                </button>
+                              </div>
+
+                              <div className="space-y-2.5">
+                                {(!prj.feedback || prj.feedback.length === 0) ? (
+                                  <div className="text-xs text-slate-400 py-3 text-center bg-slate-50 rounded-lg">
+                                    No communication messages yet. You can post notes or relay feedback from client calls.
+                                  </div>
+                                ) : (
+                                  prj.feedback.map((f: any) => {
+                                    const isClient = f.authorRole === 'CLIENT' || f.authorRole === 'CLIENT_USER';
+                                    const isBga = f.authorRole === 'BGA' || f.authorRole === 'BGA_REPRESENTATIVE';
+                                    const isInternal = f.visibility === 'INTERNAL' || f.feedbackType === 'INTERNAL_NOTE';
+
+                                    return (
+                                      <div
+                                        key={f.id}
+                                        className={`p-3 rounded-xl border text-xs ${
+                                          isInternal
+                                            ? 'bg-amber-50/40 border-amber-200'
+                                            : isClient
+                                            ? 'bg-teal-50/40 border-teal-200'
+                                            : isBga
+                                            ? 'bg-blue-50/40 border-blue-200'
+                                            : 'bg-slate-50 border-slate-200'
+                                        }`}
+                                      >
+                                        <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5 pb-1.5 border-b border-slate-200/60">
+                                          <div className="flex items-center gap-2">
+                                            {isClient ? (
+                                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800">
+                                                👤 CLIENT: {f.authorName || 'Client'}
+                                              </span>
+                                            ) : isBga ? (
+                                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
+                                                💼 BGA (YOU): {f.authorName || 'Associate'}
+                                              </span>
+                                            ) : (
+                                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">
+                                                🛠️ TECHNICAL TEAM: {f.authorName || 'Engineer'}
+                                              </span>
+                                            )}
+
+                                            {isInternal ? (
+                                              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800">
+                                                🔒 Internal Note (Client Cannot See)
+                                              </span>
+                                            ) : (
+                                              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800">
+                                                🌐 Client Visible
+                                              </span>
+                                            )}
+                                          </div>
+
+                                          <span className="text-[10px] text-slate-400">
+                                            {new Date(f.createdAt).toLocaleString()}
+                                          </span>
+                                        </div>
+
+                                        <p className="text-slate-800 leading-relaxed whitespace-pre-wrap">
+                                          {f.content}
+                                        </p>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-3 p-3 rounded-lg bg-amber-50 text-amber-800 text-xs">
+                            ⏳ Waiting for Accounts to verify advance payment receipt before technical handover.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Deliverable Review Modal */}
+              <ModalPortal
+                isOpen={!!deliverableReviewModal}
+                onClose={() => setDeliverableReviewModal(null)}
+              >
+                {deliverableReviewModal && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="text-base font-bold text-slate-900">Review Technical Deliverable</h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {deliverableReviewModal.deliverable.title} (v{deliverableReviewModal.deliverable.version})
+                          </p>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => setDeliverableReviewModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
 
-                      {prj ? (
-                        <div className="mt-3">
-                          <div className="flex justify-between text-xs text-slate-600 mb-1">
-                            <span>Technical Execution: <strong>{prj.status}</strong></span>
-                            <span className="font-bold">{prj.progressPercentage}%</span>
+                      <form onSubmit={handleReviewDeliverable} className="space-y-4 text-xs">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1.5">Review Decision *</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setReviewAction('APPROVE_AND_SHARE')}
+                              className={`p-3 rounded-xl border text-left font-semibold transition-all cursor-pointer ${
+                                reviewAction === 'APPROVE_AND_SHARE'
+                                  ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-sm'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                              }`}
+                            >
+                              <span className="block font-bold text-sm">✓ Approve & Share</span>
+                              <span className="text-[10px] font-normal text-slate-500 mt-0.5 block">
+                                Make visible in Client Project Portal
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setReviewAction('REQUEST_CHANGES')}
+                              className={`p-3 rounded-xl border text-left font-semibold transition-all cursor-pointer ${
+                                reviewAction === 'REQUEST_CHANGES'
+                                  ? 'border-rose-500 bg-rose-50 text-rose-900 shadow-sm'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                              }`}
+                            >
+                              <span className="block font-bold text-sm">✕ Request Revision</span>
+                              <span className="text-[10px] font-normal text-slate-500 mt-0.5 block">
+                                Send feedback back to Tech team
+                              </span>
+                            </button>
                           </div>
-                          <div className="w-full bg-slate-100 rounded-full h-2">
-                            <div
-                              className="bg-[#3066BE] h-2 rounded-full transition-all"
-                              style={{ width: `${prj.progressPercentage}%` }}
-                            />
-                          </div>
+                        </div>
 
-                          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {prj.milestones?.map((m: any) => (
-                              <div key={m.id} className="p-2 rounded bg-slate-50 border border-slate-100 text-[11px]">
-                                <span className="font-semibold text-slate-800 block truncate">{m.title}</span>
-                                <span className={`text-[10px] font-bold ${
-                                  m.status === 'COMPLETED' ? 'text-[#119DA4]' : 'text-slate-400'
-                                }`}>
-                                  {m.status}
-                                </span>
-                              </div>
-                            ))}
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">
+                            {reviewAction === 'APPROVE_AND_SHARE' ? 'Notes for Client / Technical (Optional)' : 'Change Instructions for Technical Team *'}
+                          </label>
+                          <textarea
+                            rows={3}
+                            required={reviewAction === 'REQUEST_CHANGES'}
+                            value={reviewNotes}
+                            onChange={(e) => setReviewNotes(e.target.value)}
+                            placeholder={
+                              reviewAction === 'APPROVE_AND_SHARE'
+                                ? 'Add greeting or remarks for client review...'
+                                : 'Explain what issues need to be corrected before client release...'
+                            }
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-slate-800"
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            disabled={reviewSubmitting}
+                            onClick={() => setDeliverableReviewModal(null)}
+                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={reviewSubmitting}
+                            className={`px-5 py-2 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer ${
+                              reviewAction === 'APPROVE_AND_SHARE'
+                                ? 'bg-emerald-600 hover:bg-emerald-700'
+                                : 'bg-rose-600 hover:bg-rose-700'
+                            }`}
+                          >
+                            {reviewSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                            {reviewAction === 'APPROVE_AND_SHARE' ? 'Approve & Release to Client' : 'Submit Revision Request'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </motion.div>
+                )}
+              </ModalPortal>
+
+              {/* BGA Project Feedback / Communication Modal */}
+              <ModalPortal
+                isOpen={!!bgaFeedbackModal}
+                onClose={() => setBgaFeedbackModal(null)}
+              >
+                {bgaFeedbackModal && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="text-base font-bold text-slate-900">Post Project Communication</h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Project: {bgaFeedbackModal.project.projectNumber}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setBgaFeedbackModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <form onSubmit={handlePostBgaFeedback} className="space-y-4 text-xs">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1.5">Feedback Source & Audience *</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setBgaFeedbackType('CLIENT_FEEDBACK')}
+                              className={`p-2.5 rounded-lg border text-left font-semibold transition-all cursor-pointer ${
+                                bgaFeedbackType === 'CLIENT_FEEDBACK'
+                                  ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-sm'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                              }`}
+                            >
+                              <span className="block font-bold">🗣️ Client Feedback</span>
+                              <span className="text-[10px] font-normal text-slate-500 mt-0.5 block">
+                                Relaying client feedback to Tech
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setBgaFeedbackType('INTERNAL_NOTE')}
+                              className={`p-2.5 rounded-lg border text-left font-semibold transition-all cursor-pointer ${
+                                bgaFeedbackType === 'INTERNAL_NOTE'
+                                  ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-sm'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                              }`}
+                            >
+                              <span className="block font-bold">🔒 Internal Note</span>
+                              <span className="text-[10px] font-normal text-slate-500 mt-0.5 block">
+                                Private between BGA & Tech team
+                              </span>
+                            </button>
                           </div>
                         </div>
-                      ) : (
-                        <div className="mt-3 p-3 rounded-lg bg-amber-50 text-amber-800 text-xs">
-                          ⏳ Waiting for Accounts to verify advance payment receipt before technical handover.
+
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Related Milestone (Optional)</label>
+                          <select
+                            value={bgaFeedbackMilestoneId}
+                            onChange={(e) => setBgaFeedbackMilestoneId(e.target.value)}
+                            className="w-full p-2 border border-slate-300 rounded-lg bg-white text-slate-800"
+                          >
+                            <option value="">-- General Project Communication --</option>
+                            {bgaFeedbackModal.project.milestones?.map((m: any) => (
+                              <option key={m.id} value={m.id}>
+                                {m.title}
+                              </option>
+                            ))}
+                          </select>
                         </div>
-                      )}
+
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Message Content *</label>
+                          <textarea
+                            rows={4}
+                            required
+                            value={bgaFeedbackContent}
+                            onChange={(e) => setBgaFeedbackContent(e.target.value)}
+                            placeholder={
+                              bgaFeedbackType === 'CLIENT_FEEDBACK'
+                                ? 'Describe what the client requested via call, message, or meeting...'
+                                : 'Type internal coordination note for engineering team...'
+                            }
+                            className="w-full p-2.5 border border-slate-300 rounded-lg text-slate-800"
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            disabled={bgaFeedbackSubmitting}
+                            onClick={() => setBgaFeedbackModal(null)}
+                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={bgaFeedbackSubmitting}
+                            className="px-5 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                          >
+                            {bgaFeedbackSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                            Dispatch Message
+                          </button>
+                        </div>
+                      </form>
                     </div>
-                  );
-                }))}
-              </div>
+                  </motion.div>
+                )}
+              </ModalPortal>
             </div>
           )}
 
