@@ -202,12 +202,18 @@ export const LoginPage: React.FC = () => {
         <div className="w-full max-w-lg mx-auto">
           {/* Header & Branding */}
           <div className="text-center mb-8">
-            <Link to="/" className="inline-block mb-4 group" title="Atriowings Technologies India Private Limited">
-              <img
-                src="/img/atriowings-official-logo.png"
-                alt="Atriowings Technologies India Private Limited"
-                className="h-12 sm:h-14 w-auto object-contain mx-auto transition-transform duration-200 group-hover:scale-[1.02]"
-              />
+            <Link to="/" className="inline-flex items-center gap-3 mb-4 group">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform">
+                <Building2 className="w-6 h-6" />
+              </div>
+              <div className="text-left">
+                <span className="text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent block leading-tight">
+                  BGA Enterprise
+                </span>
+                <span className="text-[10px] tracking-widest text-indigo-600 font-semibold uppercase block">
+                  Growth Network & IT Solutions
+                </span>
+              </div>
             </Link>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">

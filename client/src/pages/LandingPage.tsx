@@ -10,7 +10,6 @@ import {
   Users,
   CheckCircle2,
   ArrowRight,
-  ArrowUpRight,
   DollarSign,
   ChevronRight,
   ChevronLeft,
@@ -1382,114 +1381,50 @@ export const LandingPage: React.FC = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {filteredProjects.map((project) => (
-                <div
-                  key={project.id}
-                  onClick={() => setLightboxProject(project)}
-                  className="group relative bg-white rounded-3xl p-3 sm:p-3.5 border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(48,102,190,0.18)] hover:border-[#3066BE]/40 transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1.5 overflow-hidden"
-                >
-                  {/* Top Subtle Gradient Line on Hover */}
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3066BE] via-[#119DA4] to-[#80DED9] opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-3xl" />
-
-                  {/* Media Showcase Inset Canvas */}
-                  <div className="relative aspect-[16/10] sm:aspect-[16/9.5] rounded-2xl overflow-hidden bg-slate-950">
-                    <img
-                      src={project.image}
-                      alt={project.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/40 opacity-70 group-hover:opacity-90 transition-opacity" />
-
-                    {/* Floating Glassmorphic Top Chips */}
-                    <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 z-10">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/15 text-[10px] font-bold text-white shadow-xs">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#80DED9] animate-pulse" />
-                        <span className="truncate">{project.category}</span>
-                      </div>
-                      {project.url && (
-                        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/15 text-[10px] font-mono text-slate-300 shadow-xs">
-                          <Globe className="w-3 h-3 text-[#80DED9]" />
-                          <span className="max-w-[110px] truncate">{project.url}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Interactive Hover Reveal Bar */}
-                    <div className="absolute inset-x-3 bottom-3 translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950/85 backdrop-blur-md border border-white/20 text-white shadow-lg z-10">
-                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-[#80DED9]" />
-                        <span>Inspect Scope & Deliverables</span>
-                      </span>
-                      <span className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-white">
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card Information Body */}
-                  <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
-                    <div className="space-y-2">
-                      {/* Title & Interactive Action Pill */}
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-base font-bold text-[#152544] group-hover:text-[#3066BE] transition-colors leading-snug">
-                          {project.title}
-                        </h4>
-                        <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-[#3066BE] text-slate-500 group-hover:text-white flex items-center justify-center shrink-0 transition-all duration-200">
-                          <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                        </div>
-                      </div>
-
-                      {/* Description */}
-                      <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                        {project.description}
-                      </p>
-
-                      {/* Deliverable Scope Tags */}
-                      {project.tags && project.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {project.tags.slice(0, 3).map((tag: string, i: number) => (
-                            <span
-                              key={i}
-                              className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100/90 border border-slate-200/80 text-slate-700"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Impact / Metric Highlight */}
-                    {project.metrics && (
-                      <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-[11px] text-emerald-800 font-semibold">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <TrendingUp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span className="truncate">{project.metrics}</span>
-                        </div>
-                        <span className="text-[9px] uppercase font-bold text-emerald-700 tracking-wider shrink-0 pl-1">
-                          Verified
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+              >
+                {filteredProjects.map((project) => (
+                  <div
+                    key={project.id}
+                    onClick={() => setLightboxProject(project)}
+                    className="group bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-[#3066BE]/50 transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1"
+                  >
+                    <div className="h-44 sm:h-48 bg-slate-100 overflow-hidden relative">
+                      <img
+                        src={project.image}
+                        alt={project.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+                      <div className="absolute top-3 left-3">
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-900/80 text-white backdrop-blur-md">
+                          {project.category}
                         </span>
                       </div>
-                    )}
-
-                    {/* Card Footer: Verified Delivery Stamp */}
-                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1.5 font-bold text-slate-700">
-                        <ShieldCheck className="w-4 h-4 text-[#119DA4]" />
-                        <span className="text-[11px]">Atriowings Delivery</span>
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="w-8 h-8 rounded-full bg-white/90 text-slate-900 flex items-center justify-center shadow-md">
+                          <Maximize2 className="w-3.5 h-3.5 text-[#3066BE]" />
+                        </span>
                       </div>
-                      <span className="text-[11px] font-semibold text-[#3066BE] group-hover:underline flex items-center gap-0.5">
-                        <span>Case Specs</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </span>
+                    </div>
+                    <div className="p-4 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-base font-bold text-slate-900 group-hover:text-[#3066BE] transition-colors">
+                          {project.title}
+                        </h4>
+                        <p className="text-xs text-slate-600 mt-1 line-clamp-2 leading-relaxed">
+                          {project.description}
+                        </p>
+                      </div>
+                      <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-[#119DA4] font-semibold">
+                        <span>Atriowings Delivery</span>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#119DA4]" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </motion.div>
+                ))}
+              </motion.div>
 
             {/* LIGHTBOX MODAL (Interactive MotionSites Inspection) */}
             <AnimatePresence>
