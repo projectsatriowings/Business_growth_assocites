@@ -23,6 +23,7 @@ import { apiRequest } from '../../utils/api';
 import { SkeletonStatsRow, SkeletonTable, AccountsDashboardSkeleton } from '../../components/Skeleton';
 import { validateBankUtr, getUtrPlaceholderAndHint, UtrValidationResult } from '../../utils/utrValidator';
 import { useToast } from '../../context/ToastContext';
+import { getQuotationPdfUrl } from '../../utils/downloadPdf';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const AccountsPortal: React.FC = () => {
@@ -435,7 +436,7 @@ export const AccountsPortal: React.FC = () => {
                           {q.status === 'PENDING_ADMIN_APPROVAL' ? 'PENDING ADMIN APPROVAL' : q.status}
                         </span>
                         <a
-                          href={`/api/resources/quotations/${q.id}/pdf`}
+                          href={getQuotationPdfUrl(q.id)}
                           target="_blank"
                           rel="noreferrer"
                           className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 rounded text-xs font-bold flex items-center gap-1 transition-colors"
@@ -692,23 +693,39 @@ export const AccountsPortal: React.FC = () => {
                             {w.advanceVerified ? 'VERIFIED ✓' : 'PENDING'}
                           </span>
                         </td>
-                        <td className="p-3.5 text-right">
-                          <button
-                            onClick={() => {
-                              setPaymentModal({ workOrder: w });
-                              setPaymentForm({
-                                paymentType: w.advanceVerified ? 'FINAL' : 'ADVANCE',
-                                amount: String(w.advanceRequired),
-                                adBudgetAmount: '0',
-                                paymentMethod: 'BANK_TRANSFER',
-                                transactionReference: '',
-                                paymentDate: new Date().toISOString().slice(0, 10),
-                              });
-                            }}
-                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold"
-                          >
-                            + Record Payment
-                          </button>
+                        <td className="p-3.5 text-right flex items-center justify-end gap-2">
+                          {w.quotationId && (
+                            <a
+                              href={getQuotationPdfUrl(w.quotationId)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold inline-flex items-center gap-1 transition-colors"
+                            >
+                              <Download className="w-3 h-3" /> Quotation PDF
+                            </a>
+                          )}
+                          {!w.advanceVerified ? (
+                            <button
+                              onClick={() => {
+                                setPaymentModal({ workOrder: w });
+                                setPaymentForm({
+                                  paymentType: 'ADVANCE',
+                                  amount: String(w.advanceRequired),
+                                  adBudgetAmount: '0',
+                                  paymentMethod: 'BANK_TRANSFER',
+                                  transactionReference: '',
+                                  paymentDate: new Date().toISOString().slice(0, 10),
+                                });
+                              }}
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold shadow-2xs transition-colors"
+                            >
+                              + Record Payment
+                            </button>
+                          ) : (
+                            <span className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded text-[11px] font-bold inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Advance Cleared
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
