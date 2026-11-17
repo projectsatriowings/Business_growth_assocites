@@ -67,7 +67,7 @@ export const BgaPortal: React.FC = () => {
   const { toast } = useToast();
   const [modalSubmitting, setModalSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'profile' | 'services' | 'resources' | 'new-client' | 'clients' | 'enquiries' | 'quotations' | 'projects' | 'earnings' | 'support' | 'requests'
+    'dashboard' | 'profile' | 'resources' | 'new-client' | 'clients' | 'enquiries' | 'quotations' | 'projects' | 'earnings' | 'support' | 'requests'
   >('dashboard');
 
   const [loading, setLoading] = useState(false);
@@ -79,7 +79,6 @@ export const BgaPortal: React.FC = () => {
   const [workOrders, setWorkOrders] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
-  const [services, setServices] = useState<any[]>([]);
   const [clientRequests, setClientRequests] = useState<any[]>([]);
   const [clientsLoaded, setClientsLoaded] = useState(false);
   const [enquiriesLoaded, setEnquiriesLoaded] = useState(false);
@@ -224,9 +223,6 @@ export const BgaPortal: React.FC = () => {
       } else if (tab === 'resources') {
         const r = await apiRequest('/api/bga/resources');
         setResources(r.resources || []);
-      } else if (tab === 'services') {
-        const svc = await apiRequest('/api/bga/services');
-        setServices(svc.services || []);
       }
     } catch (e) {
       console.error(e);
@@ -697,16 +693,6 @@ export const BgaPortal: React.FC = () => {
             >
               <DollarSign className="w-4 h-4 text-[#80DED9]" />
               <span>My Earnings & Commissions</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('services')}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'services' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
-            >
-              <Building2 className="w-4 h-4 text-[#80DED9]" />
-              <span>Company Services</span>
             </button>
 
             <button
@@ -2768,37 +2754,7 @@ export const BgaPortal: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 9: COMPANY SERVICES */}
-          {activeTab === 'services' && (
-            <div className="space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200">
-                <h2 className="text-base font-bold text-slate-900">Standardized Services Catalog</h2>
-                <p className="text-xs text-slate-500">Official company services available for client pitches.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {services.map((s) => (
-                  <div key={s.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">{s.category}</span>
-                        <h4 className="text-sm font-bold text-slate-900">{s.name}</h4>
-                      </div>
-                      <span className="text-xs font-bold text-[#119DA4] bg-teal-50 px-2 py-0.5 rounded">
-                        {s.defaultCommissionRate}% Commission
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 mt-2">{s.description}</p>
-                    <div className="mt-3 pt-2 border-t border-slate-100 text-xs text-slate-500">
-                      Standard Pricing: <strong>₹{s.basePrice?.toLocaleString()}</strong> {s.isMonthly ? '/ month' : ''}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 10: RESOURCES & PITCH DECKS */}
+          {/* TAB 8: RESOURCES & PITCH DECKS */}
           {activeTab === 'resources' && (
             <div className="space-y-4">
               <div className="bg-white p-4 rounded-xl border border-slate-200">
