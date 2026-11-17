@@ -686,68 +686,48 @@ export const TechnicalPortal: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Three-Way Synchronized Feedback & Communication Thread */}
+                  {/* Client Feedback (Logged by BGA) & Technical Team Responses */}
                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
                       <div>
-                        <h3 className="font-bold text-slate-900 text-sm">Unified Communication & Feedback Thread</h3>
+                        <h3 className="font-bold text-slate-900 text-sm">Client Feedback & Engineering Responses</h3>
                         <p className="text-[11px] text-slate-500">
-                          Three-way discussion between Client, BGA, and Technical Team.
+                          Review feedback and revision requests submitted by BGA on behalf of the client and reply with technical solutions.
                         </p>
                       </div>
                       <button
                         onClick={() => setFeedbackModal(true)}
-                        className="px-3 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        className="px-3 py-1 bg-[#3066BE] hover:bg-[#255299] text-white rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" /> Post Technical Update / Reply
+                        <MessageSquare className="w-3.5 h-3.5" /> Post Technical Reply to BGA
                       </button>
                     </div>
 
                     <div className="space-y-3">
                       {(!selectedProject.feedback || selectedProject.feedback.length === 0) ? (
-                        <div className="text-xs text-slate-400 py-4 text-center">No feedback messages yet. Post an update or wait for client/BGA review comments.</div>
+                        <div className="text-xs text-slate-400 py-4 text-center">No feedback recorded yet. Client feedback submitted by BGA will appear here.</div>
                       ) : (
                         selectedProject.feedback.map((f: any) => {
-                          const isClient = f.authorRole === 'CLIENT' || f.authorRole === 'CLIENT_USER';
                           const isBga = f.authorRole === 'BGA' || f.authorRole === 'BGA_REPRESENTATIVE';
-                          const isInternal = f.visibility === 'INTERNAL' || f.feedbackType === 'INTERNAL_NOTE';
 
                           return (
                             <div
                               key={f.id}
                               className={`p-3.5 rounded-xl border text-xs ${
-                                isInternal
-                                  ? 'bg-amber-50/40 border-amber-200'
-                                  : isClient
-                                  ? 'bg-teal-50/40 border-teal-200'
-                                  : isBga
-                                  ? 'bg-blue-50/40 border-blue-200'
-                                  : 'bg-slate-50 border-slate-200'
+                                isBga
+                                  ? 'bg-blue-50/50 border-blue-200'
+                                  : 'bg-indigo-50/50 border-indigo-200'
                               }`}
                             >
                               <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-200/60">
                                 <div className="flex items-center gap-2">
-                                  {isClient ? (
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800">
-                                      👤 CLIENT: {f.authorName || 'Client'}
-                                    </span>
-                                  ) : isBga ? (
+                                  {isBga ? (
                                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
-                                      💼 BGA: {f.authorName || 'BGA Representative'}
+                                      🗣️ CLIENT FEEDBACK (Logged by BGA: {f.authorName || 'Associate'})
                                     </span>
                                   ) : (
                                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">
-                                      🛠️ TECHNICAL TEAM: {f.authorName || 'Engineer'}
-                                    </span>
-                                  )}
-
-                                  {isInternal ? (
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800">
-                                      🔒 Internal Note (Client Cannot See)
-                                    </span>
-                                  ) : (
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800">
-                                      🌐 Visible to Client
+                                      🛠️ TECHNICAL TEAM RESPONSE ({f.authorName || 'Engineer'})
                                     </span>
                                   )}
                                 </div>
@@ -936,7 +916,7 @@ export const TechnicalPortal: React.FC = () => {
                 )}
               </ModalPortal>
 
-              {/* Three-Way Feedback & Communication Modal */}
+              {/* Technical Reply Modal */}
               <ModalPortal
                 isOpen={feedbackModal}
                 onClose={() => setFeedbackModal(false)}
@@ -946,41 +926,11 @@ export const TechnicalPortal: React.FC = () => {
                     className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <h3 className="text-base font-bold text-slate-900">Post Technical Update / Reply</h3>
+                    <h3 className="text-base font-bold text-slate-900">Post Technical Reply to BGA</h3>
                     <p className="text-xs text-slate-500 mt-1">
-                      Post response to client questions or coordinate internally with BGA.
+                      Post an engineering response, fix update, or clarification that the BGA can communicate back to the client.
                     </p>
                     <form onSubmit={handleAddFeedback} className="mt-4 space-y-3 text-xs">
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Audience & Visibility *</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setFeedbackVisibility('CLIENT_VISIBLE')}
-                            className={`p-2.5 rounded-lg border text-left font-semibold transition-all ${
-                              feedbackVisibility === 'CLIENT_VISIBLE'
-                                ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
-                                : 'border-slate-200 bg-white text-slate-600'
-                            }`}
-                          >
-                            <span className="block font-bold">🌐 Client & BGA</span>
-                            <span className="text-[10px] font-normal text-slate-500">Visible to client in their portal</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFeedbackVisibility('INTERNAL')}
-                            className={`p-2.5 rounded-lg border text-left font-semibold transition-all ${
-                              feedbackVisibility === 'INTERNAL'
-                                ? 'border-amber-500 bg-amber-50 text-amber-900'
-                                : 'border-slate-200 bg-white text-slate-600'
-                            }`}
-                          >
-                            <span className="block font-bold">🔒 Internal Note</span>
-                            <span className="text-[10px] font-normal text-slate-500">Only BGA & Technical team see this</span>
-                          </button>
-                        </div>
-                      </div>
-
                       <div>
                         <label className="block text-slate-700 font-semibold mb-1">Related Milestone (Optional)</label>
                         <select
@@ -998,13 +948,13 @@ export const TechnicalPortal: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Message / Response Content *</label>
+                        <label className="block text-slate-700 font-semibold mb-1">Technical Reply Details *</label>
                         <textarea
                           rows={4}
                           required
                           value={feedbackContent}
                           onChange={(e) => setFeedbackContent(e.target.value)}
-                          placeholder="Type technical update, answer client queries, or notify BGA..."
+                          placeholder="Describe the solution, deployed fix, or instructions for BGA to convey to client..."
                           className="w-full p-2 border border-slate-300 rounded"
                         />
                       </div>
@@ -1021,7 +971,7 @@ export const TechnicalPortal: React.FC = () => {
                           type="submit"
                           className="px-4 py-1.5 bg-[#3066BE] text-white rounded font-bold hover:bg-[#255299] transition-colors"
                         >
-                          Send Message
+                          Send Reply to BGA
                         </button>
                       </div>
                     </form>

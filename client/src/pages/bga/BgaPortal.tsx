@@ -4223,37 +4223,6 @@ export const BgaPortal: React.FC = () => {
 
                         {prj ? (
                           <div className="space-y-4">
-                            {/* Client Portal Link Share Banner */}
-                            {prj.clientAccessToken && (
-                              <div className="p-3 bg-gradient-to-r from-teal-50 via-emerald-50 to-cyan-50 border border-teal-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-                                <div>
-                                  <div className="font-bold text-teal-900 flex items-center gap-1.5">
-                                    <Globe className="w-4 h-4 text-teal-700" /> Secure Client Project Portal Access
-                                  </div>
-                                  <p className="text-[11px] text-teal-800 mt-0.5">
-                                    Your client can view approved deliverables, track milestone progress, and leave feedback directly.
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleCopyClientPortalLink(prj.clientAccessToken, wo.client?.clientName)}
-                                    className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                                  >
-                                    <Copy className="w-3.5 h-3.5" /> Copy Client Portal Link
-                                  </button>
-                                  <a
-                                    href={`/client/project/${prj.clientAccessToken}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="px-3 py-1.5 bg-white hover:bg-slate-50 text-teal-800 border border-teal-300 rounded-lg font-bold flex items-center gap-1.5 transition-colors"
-                                  >
-                                    <ExternalLink className="w-3.5 h-3.5" /> Open Preview
-                                  </a>
-                                </div>
-                              </div>
-                            )}
-
                             {/* Execution Progress & Status */}
                             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                               <div className="flex justify-between items-center text-xs mb-2">
@@ -4306,15 +4275,15 @@ export const BgaPortal: React.FC = () => {
                               </div>
                             </div>
 
-                            {/* Technical Deliverables Review Section */}
+                            {/* Technical Deliverables Section */}
                             <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
                               <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                                 <div>
                                   <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-                                    Technical Deliverables & Releases
+                                    Technical Deliverables from Engineering
                                   </h4>
                                   <p className="text-[11px] text-slate-500">
-                                    Uploaded by Engineering Team. Review and approve to make visible to your client.
+                                    Inspect build artifacts and demo links uploaded by Tech team to share with your client.
                                   </p>
                                 </div>
                               </div>
@@ -4322,12 +4291,11 @@ export const BgaPortal: React.FC = () => {
                               <div className="space-y-2.5">
                                 {(!prj.deliverables || prj.deliverables.length === 0) ? (
                                   <div className="text-xs text-slate-400 py-3 text-center bg-slate-50 rounded-lg">
-                                    No deliverables uploaded by technical team yet. Deliverables will appear here for your review as milestones are completed.
+                                    No deliverables uploaded by technical team yet. Deliverables will appear here as engineering milestones progress.
                                   </div>
                                 ) : (
                                   prj.deliverables.map((d: any) => {
                                     const linkedMilestone = d.milestone || prj.milestones?.find((m: any) => m.id === d.milestoneId);
-                                    const isPendingReview = d.status === 'PENDING_BGA_REVIEW' || !d.isClientVisible;
                                     const isApproved = d.status === 'SHARED_WITH_CLIENT' || d.isClientVisible;
                                     const isRevision = d.status === 'REVISION_REQUIRED';
 
@@ -4367,7 +4335,7 @@ export const BgaPortal: React.FC = () => {
                                         <div className="flex flex-col items-end gap-2 shrink-0">
                                           {isApproved ? (
                                             <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                                              <CheckCircle2 className="w-3 h-3" /> Approved & Shared with Client
+                                              <CheckCircle2 className="w-3 h-3" /> Handed Over to Client
                                             </span>
                                           ) : isRevision ? (
                                             <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 flex items-center gap-1">
@@ -4375,13 +4343,7 @@ export const BgaPortal: React.FC = () => {
                                             </span>
                                           ) : (
                                             <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
-                                              <Clock className="w-3 h-3" /> Pending Your Review
-                                            </span>
-                                          )}
-
-                                          {d.clientViewedAt && (
-                                            <span className="text-[10px] text-teal-700 font-bold flex items-center gap-1">
-                                              <Eye className="w-3 h-3" /> Client Viewed on {new Date(d.clientViewedAt).toLocaleDateString()}
+                                              <Clock className="w-3 h-3" /> Ready for Client Handover
                                             </span>
                                           )}
 
@@ -4400,7 +4362,7 @@ export const BgaPortal: React.FC = () => {
                                             }}
                                             className="px-3 py-1 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
                                           >
-                                            {isApproved ? 'Update Review / Retract' : 'Review & Share with Client'}
+                                            {isApproved ? 'Request Revision from Tech' : 'Confirm Handed Over to Client'}
                                           </button>
                                         </div>
                                       </div>
@@ -4410,15 +4372,15 @@ export const BgaPortal: React.FC = () => {
                               </div>
                             </div>
 
-                            {/* Three-Way Project Feedback Thread */}
+                            {/* Client Feedback & Technical Response Thread */}
                             <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
                               <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                                 <div>
                                   <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-                                    Project Communication & Feedback Thread
+                                    Client Feedback & Technical Team Responses
                                   </h4>
                                   <p className="text-[11px] text-slate-500">
-                                    Unified three-way discussion between Client, You (BGA), and Technical Team.
+                                    Log feedback received from your client. Technical team answers and updates will appear here.
                                   </p>
                                 </div>
                                 <button
@@ -4429,61 +4391,47 @@ export const BgaPortal: React.FC = () => {
                                     setBgaFeedbackType('CLIENT_FEEDBACK');
                                     setBgaFeedbackMilestoneId('');
                                   }}
-                                  className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                  className="px-3 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
                                 >
-                                  <MessageSquare className="w-3.5 h-3.5" /> Post Message / Relay Client Feedback
+                                  <MessageSquare className="w-3.5 h-3.5" /> Log Client Feedback / Request
                                 </button>
                               </div>
 
                               <div className="space-y-2.5">
                                 {(!prj.feedback || prj.feedback.length === 0) ? (
                                   <div className="text-xs text-slate-400 py-3 text-center bg-slate-50 rounded-lg">
-                                    No communication messages yet. You can post notes or relay feedback from client calls.
+                                    No feedback logged yet. Click above to log feedback or changes requested by your client.
                                   </div>
                                 ) : (
                                   prj.feedback.map((f: any) => {
-                                    const isClient = f.authorRole === 'CLIENT' || f.authorRole === 'CLIENT_USER';
                                     const isBga = f.authorRole === 'BGA' || f.authorRole === 'BGA_REPRESENTATIVE';
-                                    const isInternal = f.visibility === 'INTERNAL' || f.feedbackType === 'INTERNAL_NOTE';
 
                                     return (
                                       <div
                                         key={f.id}
                                         className={`p-3 rounded-xl border text-xs ${
-                                          isInternal
-                                            ? 'bg-amber-50/40 border-amber-200'
-                                            : isClient
-                                            ? 'bg-teal-50/40 border-teal-200'
-                                            : isBga
-                                            ? 'bg-blue-50/40 border-blue-200'
-                                            : 'bg-slate-50 border-slate-200'
+                                          isBga
+                                            ? 'bg-blue-50/50 border-blue-200'
+                                            : 'bg-indigo-50/50 border-indigo-200'
                                         }`}
                                       >
                                         <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5 pb-1.5 border-b border-slate-200/60">
                                           <div className="flex items-center gap-2">
-                                            {isClient ? (
-                                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800">
-                                                👤 CLIENT: {f.authorName || 'Client'}
-                                              </span>
-                                            ) : isBga ? (
+                                            {isBga ? (
                                               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
-                                                💼 BGA (YOU): {f.authorName || 'Associate'}
+                                                🗣️ CLIENT FEEDBACK (Logged by You)
                                               </span>
                                             ) : (
                                               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">
-                                                🛠️ TECHNICAL TEAM: {f.authorName || 'Engineer'}
+                                                🛠️ TECHNICAL TEAM RESPONSE ({f.authorName || 'Engineer'})
                                               </span>
                                             )}
 
-                                            {isInternal ? (
-                                              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800">
-                                                🔒 Internal Note (Client Cannot See)
-                                              </span>
-                                            ) : (
-                                              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800">
-                                                🌐 Client Visible
-                                              </span>
-                                            )}
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                              f.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
+                                            }`}>
+                                              {f.status}
+                                            </span>
                                           </div>
 
                                           <span className="text-[10px] text-slate-400">
@@ -4491,7 +4439,7 @@ export const BgaPortal: React.FC = () => {
                                           </span>
                                         </div>
 
-                                        <p className="text-slate-800 leading-relaxed whitespace-pre-wrap">
+                                        <p className="text-slate-800 leading-relaxed whitespace-pre-wrap font-normal">
                                           {f.content}
                                         </p>
                                       </div>
@@ -4546,7 +4494,7 @@ export const BgaPortal: React.FC = () => {
 
                       <form onSubmit={handleReviewDeliverable} className="space-y-4 text-xs">
                         <div>
-                          <label className="block text-slate-700 font-semibold mb-1.5">Review Decision *</label>
+                          <label className="block text-slate-700 font-semibold mb-1.5">Deliverable Action *</label>
                           <div className="grid grid-cols-2 gap-2">
                             <button
                               type="button"
@@ -4557,9 +4505,9 @@ export const BgaPortal: React.FC = () => {
                                   : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                               }`}
                             >
-                              <span className="block font-bold text-sm">✓ Approve & Share</span>
+                              <span className="block font-bold text-sm">✓ Delivered to Client</span>
                               <span className="text-[10px] font-normal text-slate-500 mt-0.5 block">
-                                Make visible in Client Project Portal
+                                Confirm you handed this over to client
                               </span>
                             </button>
                             <button
@@ -4573,7 +4521,7 @@ export const BgaPortal: React.FC = () => {
                             >
                               <span className="block font-bold text-sm">✕ Request Revision</span>
                               <span className="text-[10px] font-normal text-slate-500 mt-0.5 block">
-                                Send feedback back to Tech team
+                                Send changes back to Technical team
                               </span>
                             </button>
                           </div>
@@ -4581,7 +4529,7 @@ export const BgaPortal: React.FC = () => {
 
                         <div>
                           <label className="block text-slate-700 font-semibold mb-1">
-                            {reviewAction === 'APPROVE_AND_SHARE' ? 'Notes for Client / Technical (Optional)' : 'Change Instructions for Technical Team *'}
+                            {reviewAction === 'APPROVE_AND_SHARE' ? 'Handover Notes (Optional)' : 'Change Instructions for Technical Team *'}
                           </label>
                           <textarea
                             rows={3}
@@ -4590,8 +4538,8 @@ export const BgaPortal: React.FC = () => {
                             onChange={(e) => setReviewNotes(e.target.value)}
                             placeholder={
                               reviewAction === 'APPROVE_AND_SHARE'
-                                ? 'Add greeting or remarks for client review...'
-                                : 'Explain what issues need to be corrected before client release...'
+                                ? 'Add handover remarks or client presentation notes...'
+                                : 'Explain what issues need to be corrected before client acceptance...'
                             }
                             className="w-full p-2.5 border border-slate-300 rounded-lg text-slate-800"
                           />
@@ -4616,7 +4564,7 @@ export const BgaPortal: React.FC = () => {
                             }`}
                           >
                             {reviewSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                            {reviewAction === 'APPROVE_AND_SHARE' ? 'Approve & Release to Client' : 'Submit Revision Request'}
+                            {reviewAction === 'APPROVE_AND_SHARE' ? 'Confirm Handed Over' : 'Submit Revision Request'}
                           </button>
                         </div>
                       </form>
@@ -4625,7 +4573,7 @@ export const BgaPortal: React.FC = () => {
                 )}
               </ModalPortal>
 
-              {/* BGA Project Feedback / Communication Modal */}
+              {/* BGA Project Feedback Modal */}
               <ModalPortal
                 isOpen={!!bgaFeedbackModal}
                 onClose={() => setBgaFeedbackModal(null)}
@@ -4643,9 +4591,9 @@ export const BgaPortal: React.FC = () => {
                     <div className="p-6 space-y-4">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h3 className="text-base font-bold text-slate-900">Post Project Communication</h3>
+                          <h3 className="text-base font-bold text-slate-900">Log Client Feedback & Requirements</h3>
                           <p className="text-xs text-slate-500 mt-0.5">
-                            Project: {bgaFeedbackModal.project.projectNumber}
+                            Project: {bgaFeedbackModal.project.projectNumber} • {bgaFeedbackModal.project.client?.clientName || 'Client'}
                           </p>
                         </div>
                         <button
@@ -4659,47 +4607,13 @@ export const BgaPortal: React.FC = () => {
 
                       <form onSubmit={handlePostBgaFeedback} className="space-y-4 text-xs">
                         <div>
-                          <label className="block text-slate-700 font-semibold mb-1.5">Feedback Source & Audience *</label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setBgaFeedbackType('CLIENT_FEEDBACK')}
-                              className={`p-2.5 rounded-lg border text-left font-semibold transition-all cursor-pointer ${
-                                bgaFeedbackType === 'CLIENT_FEEDBACK'
-                                  ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-sm'
-                                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                              }`}
-                            >
-                              <span className="block font-bold">🗣️ Client Feedback</span>
-                              <span className="text-[10px] font-normal text-slate-500 mt-0.5 block">
-                                Relaying client feedback to Tech
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setBgaFeedbackType('INTERNAL_NOTE')}
-                              className={`p-2.5 rounded-lg border text-left font-semibold transition-all cursor-pointer ${
-                                bgaFeedbackType === 'INTERNAL_NOTE'
-                                  ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-sm'
-                                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                              }`}
-                            >
-                              <span className="block font-bold">🔒 Internal Note</span>
-                              <span className="text-[10px] font-normal text-slate-500 mt-0.5 block">
-                                Private between BGA & Tech team
-                              </span>
-                            </button>
-                          </div>
-                        </div>
-
-                        <div>
                           <label className="block text-slate-700 font-semibold mb-1">Related Milestone (Optional)</label>
                           <select
                             value={bgaFeedbackMilestoneId}
                             onChange={(e) => setBgaFeedbackMilestoneId(e.target.value)}
                             className="w-full p-2 border border-slate-300 rounded-lg bg-white text-slate-800"
                           >
-                            <option value="">-- General Project Communication --</option>
+                            <option value="">-- General Project Feedback --</option>
                             {bgaFeedbackModal.project.milestones?.map((m: any) => (
                               <option key={m.id} value={m.id}>
                                 {m.title}
@@ -4709,17 +4623,13 @@ export const BgaPortal: React.FC = () => {
                         </div>
 
                         <div>
-                          <label className="block text-slate-700 font-semibold mb-1">Message Content *</label>
+                          <label className="block text-slate-700 font-semibold mb-1">Client Feedback / Correction Details *</label>
                           <textarea
                             rows={4}
                             required
                             value={bgaFeedbackContent}
                             onChange={(e) => setBgaFeedbackContent(e.target.value)}
-                            placeholder={
-                              bgaFeedbackType === 'CLIENT_FEEDBACK'
-                                ? 'Describe what the client requested via call, message, or meeting...'
-                                : 'Type internal coordination note for engineering team...'
-                            }
+                            placeholder="Enter the client's comments, defect corrections, or revision requirements from your phone call / discussion..."
                             className="w-full p-2.5 border border-slate-300 rounded-lg text-slate-800"
                           />
                         </div>
@@ -4739,7 +4649,7 @@ export const BgaPortal: React.FC = () => {
                             className="px-5 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                           >
                             {bgaFeedbackSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                            Dispatch Message
+                            Submit to Technical Team
                           </button>
                         </div>
                       </form>
