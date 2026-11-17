@@ -14,6 +14,7 @@ import {
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification } from '../middleware/auth';
 import { appCache } from '../utils/cache';
+import { validateBankUtr } from '../utils/utrValidator';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -286,6 +287,27 @@ router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response)
       return;
     }
 
+    // 1. Strict Bank Transaction / UTR Validation
+    const utrValidation = validateBankUtr(transactionReference, paymentMethod);
+    if (!utrValidation.isValid) {
+      res.status(400).json({ error: utrValidation.error, hint: utrValidation.hint });
+      return;
+    }
+
+    // 2. Duplicate UTR Check in Payment Ledger
+    const existingPayment = await prisma.payment.findFirst({
+      where: { transactionReference: utrValidation.formattedUtr },
+      select: { id: true, workOrderId: true, paymentDate: true },
+    });
+
+    if (existingPayment) {
+      res.status(400).json({
+        error: `Duplicate Bank Transaction: Reference "${utrValidation.formattedUtr}" has already been recorded in the system.`,
+        hint: 'Each bank transaction / UTR reference must be unique. Please verify your bank receipt.',
+      });
+      return;
+    }
+
     const payAmount = parseFloat(amount);
     const adAmount = parseFloat(adBudgetAmount) || 0;
     const netFee = Math.max(0, payAmount - adAmount);
@@ -298,7 +320,7 @@ router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response)
         adBudgetAmount: adAmount,
         netServiceFee: netFee,
         paymentMethod: paymentMethod || 'BANK_TRANSFER',
-        transactionReference: transactionReference || 'TXN-' + Date.now(),
+        transactionReference: utrValidation.formattedUtr,
         paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
         proofAttachmentUrl: proofAttachmentUrl || null,
         status: PaymentStatus.PENDING_VERIFICATION,
