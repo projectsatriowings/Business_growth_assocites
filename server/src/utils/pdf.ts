@@ -413,7 +413,7 @@ export async function generateQuotationPdfBuffer(data: QuotationPdfData): Promis
 
   const helveticaFont = await finalDoc.embedFont(StandardFonts.Helvetica);
 
-  embeddedContentPages.forEach((contentPage, idx) => {
+  embeddedContentPages.forEach((contentPage: any, idx: number) => {
     const page = finalDoc.addPage([595.28, 841.89]);
     // 1. Draw official vector letterhead underlay
     page.drawPage(embeddedLh, { x: 0, y: 0, width: 595.28, height: 841.89 });

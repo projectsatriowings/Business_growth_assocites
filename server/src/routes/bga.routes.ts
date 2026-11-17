@@ -734,6 +734,8 @@ router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> =>
             requirements: true,
             discussionNotes: true,
             followUpDate: true,
+            adminNotes: true,
+            reviewedAt: true,
             createdAt: true,
           },
           orderBy: { createdAt: 'desc' },
@@ -1482,6 +1484,8 @@ router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
             requirements: true,
             discussionNotes: true,
             followUpDate: true,
+            adminNotes: true,
+            reviewedAt: true,
             createdAt: true,
           },
           orderBy: { createdAt: 'desc' },
@@ -1625,6 +1629,178 @@ router.post('/enquiries', async (req: AuthRequest, res: Response): Promise<void>
     res.status(201).json({ enquiry });
   } catch (error) {
     res.status(500).json({ error: 'Failed to create enquiry' });
+  }
+});
+
+// BGA Client Consultation & Follow-up on Enquiry (Response to Management Scope Changes or Rejection)
+router.post('/enquiries/:id/follow-up', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const {
+      consultationNotes,
+      consultationDate,
+      contactMethod,
+      clientOutcome,
+      revisedBudget,
+      revisedRequirements,
+      resubmit,
+      isRejectionFollowUp,
+    } = req.body;
+
+    if (!consultationNotes || !consultationNotes.trim()) {
+      res.status(400).json({ error: 'Client consultation notes are required.' });
+      return;
+    }
+
+    const enquiry = await prisma.enquiry.findFirst({
+      where: { id, bgaId: req.user!.id },
+      include: { client: true, bga: true },
+    });
+
+    if (!enquiry) {
+      res.status(404).json({ error: 'Enquiry not found or not assigned to your account.' });
+      return;
+    }
+
+    const isRej = enquiry.status === 'REJECTED' || !!isRejectionFollowUp;
+
+    const dateObj = consultationDate ? new Date(consultationDate) : new Date();
+    const formattedDateTime = dateObj.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    const methodStr = contactMethod ? ` via ${contactMethod}` : '';
+    let newEntry: string;
+    if (isRej) {
+      newEntry = `[${formattedDateTime}] Client Informed of Rejection by BGA ${req.user!.name}${methodStr}:\n${consultationNotes.trim()}`;
+      if (clientOutcome) {
+        newEntry += `\n• Client Outcome / Next Step: ${clientOutcome}`;
+      }
+    } else {
+      newEntry = `[${formattedDateTime}] Client Consultation by BGA ${req.user!.name}${methodStr}:\n${consultationNotes.trim()}`;
+    }
+
+    if (revisedBudget !== undefined && !isNaN(Number(revisedBudget)) && Number(revisedBudget) !== enquiry.expectedBudget) {
+      newEntry += `\n• Revised Budget: ₹${Number(revisedBudget).toLocaleString('en-IN')} (Previous: ₹${enquiry.expectedBudget.toLocaleString('en-IN')})`;
+    }
+    if (revisedRequirements && revisedRequirements.trim() && revisedRequirements.trim() !== enquiry.requirements.trim()) {
+      newEntry += `\n• Updated Scope Details:\n${revisedRequirements.trim()}`;
+    }
+
+    const updatedDiscussionNotes = enquiry.discussionNotes
+      ? `${newEntry}\n\n----------------------------------------\n${enquiry.discussionNotes}`
+      : newEntry;
+
+    const updateData: any = {
+      discussionNotes: updatedDiscussionNotes,
+      followUpDate: dateObj,
+    };
+
+    if (revisedBudget !== undefined && !isNaN(Number(revisedBudget)) && Number(revisedBudget) > 0) {
+      updateData.expectedBudget = Number(revisedBudget);
+    }
+
+    if (revisedRequirements && revisedRequirements.trim()) {
+      updateData.requirements = revisedRequirements.trim();
+    }
+
+    // Default to true for CHANGES_REQUESTED so Admin can verify & approve;
+    // For REJECTED, only transition to SUBMITTED if BGA explicitly chose to resubmit
+    if (isRej) {
+      if (resubmit === true) {
+        updateData.status = EnquiryStatus.SUBMITTED;
+      }
+    } else {
+      if (resubmit !== false) {
+        updateData.status = EnquiryStatus.SUBMITTED;
+      }
+    }
+
+    const updatedEnquiry = await prisma.enquiry.update({
+      where: { id: enquiry.id },
+      data: updateData,
+      include: { client: true },
+    });
+
+    // Also record as a ContactActivity under the client for CRM timeline tracking
+    try {
+      await prisma.contactActivity.create({
+        data: {
+          clientId: enquiry.clientId,
+          bgaId: req.user!.id,
+          contactMethod: contactMethod || (isRej ? 'PHONE_CALL' : 'MEETING'),
+          discussionSummary: isRej
+            ? `Client informed of rejection on ${enquiry.id}: ${consultationNotes.trim().slice(0, 160)}`
+            : `Consultation on Enquiry ${enquiry.id}: ${consultationNotes.trim().slice(0, 180)}`,
+          followUpNotes: consultationNotes.trim(),
+          outcome: clientOutcome || 'CONNECTED',
+          createdBy: req.user!.name,
+          createdAt: dateObj,
+        },
+      });
+    } catch (crmErr) {
+      console.warn('Could not record ContactActivity (non-blocking):', crmErr);
+    }
+
+    // Notify Management / Admins
+    try {
+      const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+      const notifTitle = isRej
+        ? resubmit
+          ? `Enquiry Resubmitted After Rejection Discussion`
+          : `Client Informed of Rejection: ${enquiry.client.clientName}`
+        : 'Client Consultation Follow-up Submitted';
+
+      const notifMsg = isRej
+        ? resubmit
+          ? `BGA ${req.user!.name} informed client ${enquiry.client.clientName} of rejected enquiry ${enquiry.id} and resubmitted with revised terms for Admin review.`
+          : `BGA ${req.user!.name} informed client ${enquiry.client.clientName} regarding rejected enquiry ${enquiry.id}. Client Response: "${consultationNotes.trim().slice(0, 120)}"`
+        : `BGA ${req.user!.name} consulted client ${enquiry.client.clientName} on ${enquiry.id}. Ready for management verification.`;
+
+      for (const adm of admins) {
+        await createNotification(
+          adm.id,
+          notifTitle,
+          notifMsg,
+          isRej && !resubmit ? 'INFO' : 'ACTION_REQUIRED',
+          `/admin?tab=enquiries&enquiryId=${enquiry.id}`
+        );
+      }
+    } catch (notifErr) {
+      console.warn('Could not send admin notification (non-blocking):', notifErr);
+    }
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      isRej ? 'ENQUIRY_REJECTION_FOLLOW_UP_SUBMITTED' : 'ENQUIRY_FOLLOW_UP_SUBMITTED',
+      'ENQUIRY',
+      enquiry.id,
+      {
+        clientName: enquiry.client.clientName,
+        consultationDate: dateObj,
+        isRejection: isRej,
+        outcome: clientOutcome,
+        budgetUpdated: !!revisedBudget,
+        resubmitted: updateData.status === EnquiryStatus.SUBMITTED,
+      }
+    );
+
+    res.json({
+      message: isRej
+        ? 'Client rejection follow-up recorded successfully and forwarded to Management.'
+        : 'Client consultation follow-up recorded successfully and submitted for Admin verification.',
+      enquiry: updatedEnquiry,
+    });
+  } catch (error: any) {
+    console.error('Error logging enquiry follow-up:', error);
+    res.status(500).json({ error: error.message || 'Failed to submit client consultation follow-up' });
   }
 });
 
