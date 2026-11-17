@@ -12,6 +12,7 @@ import {
   ArrowRight,
   DollarSign,
   ChevronRight,
+  ChevronLeft,
   HelpCircle,
   Mail,
   Phone,
@@ -47,7 +48,8 @@ import { Navbar } from '../components/Navbar';
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [activeFaq, setActiveFaq] = useState<number>(0);
+  const [faqInput, setFaqInput] = useState<string>('');
   const [portfolioTab, setPortfolioTab] = useState<'all' | 'web' | 'specialized' | 'campaign'>('all');
   const [brandViewMode, setBrandViewMode] = useState<'marquee' | 'grid'>('marquee');
   const [portfolioViewMode, setPortfolioViewMode] = useState<'spotlight' | 'grid'>('spotlight');
@@ -1225,87 +1227,402 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Project Portfolio Filter & Showcase */}
+          {/* Project Portfolio Filter & MotionSites Showcase */}
           <div className="pt-10 border-t border-slate-100">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-10">
+            {/* Header Toolbar */}
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 mb-8">
               <div>
-                <h3 className="text-2xl font-bold text-slate-900">Featured Work Highlights</h3>
-                <p className="text-xs text-slate-500 mt-1">Authentic project showcases from Atriowings portfolio</p>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#119DA4]/10 border border-[#80DED9]/40 text-[#119DA4] text-[11px] font-bold uppercase tracking-wider mb-2">
+                  <Sparkles className="w-3.5 h-3.5 text-[#119DA4]" />
+                  <span>Interactive Production Showcase</span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                  Featured Work Highlights
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                  Authentic project deliverables and verified case studies from the Atriowings portfolio
+                </p>
               </div>
 
-              {/* Filter Tabs */}
-              <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-100 text-xs font-semibold">
-                <button
-                  type="button"
-                  onClick={() => setPortfolioTab('all')}
-                  className={`px-3.5 py-1.5 rounded-lg transition-all ${portfolioTab === 'all' ? 'bg-white text-[#3066BE] shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                >
-                  All Projects
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPortfolioTab('web')}
-                  className={`px-3.5 py-1.5 rounded-lg transition-all ${portfolioTab === 'web' ? 'bg-white text-[#3066BE] shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                >
-                  Web Solutions
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPortfolioTab('specialized')}
-                  className={`px-3.5 py-1.5 rounded-lg transition-all ${portfolioTab === 'specialized' ? 'bg-white text-[#3066BE] shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                >
-                  Enterprise & Platforms
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPortfolioTab('campaign')}
-                  className={`px-3.5 py-1.5 rounded-lg transition-all ${portfolioTab === 'campaign' ? 'bg-white text-[#3066BE] shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                >
-                  Campaigns & Media
-                </button>
+              {/* Toolbar Controls: Filter Pills & View Switcher */}
+              <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
+                {/* Category Filter Tabs */}
+                <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
+                  {[
+                    { id: 'all', label: 'All Projects' },
+                    { id: 'web', label: 'Web Solutions' },
+                    { id: 'specialized', label: 'Enterprise & Platforms' },
+                    { id: 'campaign', label: 'Campaigns & Media' },
+                  ].map((tab) => {
+                    const isActive = portfolioTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setPortfolioTab(tab.id as any)}
+                        className={`relative px-3.5 py-1.5 rounded-lg transition-all text-xs ${isActive ? 'text-white font-bold' : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                      >
+                        {isActive && (
+                          <motion.span
+                            layoutId="activePortfolioTabPill"
+                            className="absolute inset-0 bg-[#3066BE] rounded-lg shadow-sm"
+                            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                          />
+                        )}
+                        <span className="relative z-10">{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* View Switcher: Spotlight Device Canvas vs Compact Bento Grid */}
+                <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setPortfolioViewMode('spotlight')}
+                    title="MotionSites Interactive Spotlight Device"
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${portfolioViewMode === 'spotlight'
+                      ? 'bg-white text-[#3066BE] shadow-sm font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                  >
+                    <Laptop className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Spotlight</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPortfolioViewMode('grid')}
+                    title="Compact Visual Grid"
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${portfolioViewMode === 'grid'
+                      ? 'bg-white text-[#3066BE] shadow-sm font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Compact Grid</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredProjects.map((project, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col group hover:border-[#3066BE]/40"
-                >
-                  <div className="h-48 sm:h-52 bg-slate-100 overflow-hidden relative">
-                    <img
-                      src={project.image}
-                      alt={project.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                    <div className="absolute top-3 right-3">
-                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-900/80 text-white backdrop-blur-md">
-                        {project.category}
+            {/* SPOTLIGHT VIEW MODE (Compact MotionSites Device Canvas) */}
+            {portfolioViewMode === 'spotlight' && activeProject && (
+              <div className="bg-slate-900 text-white rounded-3xl p-5 sm:p-7 border border-slate-800 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[#119DA4]/15 blur-[120px] pointer-events-none rounded-full" />
+                <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#3066BE]/15 blur-[120px] pointer-events-none rounded-full" />
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
+                  {/* Left Column: Interactive Project Navigator (5 Cols) */}
+                  <div className="lg:col-span-5 flex flex-col justify-between h-full">
+                    <div>
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 text-xs">
+                        <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
+                          Select Work ({filteredProjects.length} Verified)
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handlePrevProject}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                            title="Previous project"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <span className="text-xs font-mono font-bold text-[#80DED9]">
+                            {String(currentProjectIndex + 1).padStart(2, '0')} / {String(filteredProjects.length).padStart(2, '0')}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleNextProject}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                            title="Next project"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                        {filteredProjects.map((project, idx) => {
+                          const isSelected = project.id === activeProject.id;
+                          return (
+                            <button
+                              key={project.id}
+                              type="button"
+                              onClick={() => setSelectedProjectId(project.id)}
+                              onMouseEnter={() => setSelectedProjectId(project.id)}
+                              className={`w-full text-left p-3.5 rounded-2xl transition-all relative flex items-start justify-between gap-3 ${isSelected
+                                ? 'bg-slate-800/90 border border-[#3066BE]/60 shadow-md shadow-[#3066BE]/10'
+                                : 'bg-slate-800/30 hover:bg-slate-800/60 border border-slate-800/50'
+                                }`}
+                            >
+                              {isSelected && (
+                                <motion.div
+                                  layoutId="spotlightActiveIndicator"
+                                  className="absolute left-0 top-3 bottom-3 w-1 bg-gradient-to-b from-[#80DED9] to-[#3066BE] rounded-r-full"
+                                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                />
+                              )}
+                              <div className="pl-1.5 min-w-0 flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className={`text-[10px] font-mono font-bold ${isSelected ? 'text-[#80DED9]' : 'text-slate-500'}`}>
+                                    {String(idx + 1).padStart(2, '0')}
+                                  </span>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${isSelected
+                                    ? 'bg-[#119DA4]/20 text-[#80DED9] border border-[#80DED9]/30'
+                                    : 'bg-slate-800 text-slate-400'
+                                    }`}>
+                                    {project.category}
+                                  </span>
+                                </div>
+                                <h4 className={`text-sm font-bold truncate ${isSelected ? 'text-white' : 'text-slate-300'}`}>
+                                  {project.title}
+                                </h4>
+                                {isSelected && (
+                                  <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                                    {project.description}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="shrink-0 pt-1">
+                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isSelected ? 'bg-[#3066BE] text-white' : 'text-slate-600'
+                                  }`}>
+                                  <ChevronRight className="w-3.5 h-3.5" />
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                      <span className="flex items-center gap-1.5 text-[#80DED9] font-medium text-[11px]">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Atriowings Production Delivery</span>
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => setLightboxProject(activeProject)}
+                        className="text-xs font-bold text-white hover:text-[#80DED9] underline flex items-center gap-1"
+                      >
+                        <span>Inspect Specs</span>
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-                  <div className="p-6 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h4 className="text-lg font-bold text-slate-900 group-hover:text-[#3066BE] transition-colors">
-                        {project.title}
-                      </h4>
-                      <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                        {project.description}
-                      </p>
-                    </div>
-                    <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-[#119DA4] font-semibold">
-                      <span>Atriowings Technologies Delivery</span>
-                      <CheckCircle2 className="w-4 h-4 text-[#119DA4]" />
+
+                  {/* Right Column: MotionSites Browser Canvas Showcase (7 Cols) */}
+                  <div className="lg:col-span-7">
+                    <div className="bg-slate-950/90 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden backdrop-blur-xl group">
+                      {/* Browser Top Header */}
+                      <div className="px-4 py-3 bg-slate-900/90 border-b border-slate-800/80 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]" />
+                          <div className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]" />
+                          <div className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]" />
+                        </div>
+                        {/* URL Bar */}
+                        <div className="flex-1 max-w-sm mx-auto bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1 flex items-center justify-center gap-2 text-[11px] text-slate-400 font-mono truncate">
+                          <Lock className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <span className="truncate">https://atriowings.in/portfolio/{activeProject.id}</span>
+                        </div>
+                        {/* Maximize Button */}
+                        <button
+                          type="button"
+                          onClick={() => setLightboxProject(activeProject)}
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors shrink-0"
+                          title="View Fullscreen Lightbox"
+                        >
+                          <Maximize2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Canvas Screen */}
+                      <div className="relative aspect-[16/10] sm:aspect-[16/9.5] overflow-hidden bg-slate-950 flex items-center justify-center">
+                        <AnimatePresence mode="wait">
+                          <motion.div
+                            key={activeProject.id}
+                            initial={{ opacity: 0, scale: 0.96 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 1.04 }}
+                            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                            className="w-full h-full relative cursor-pointer"
+                            onClick={() => setLightboxProject(activeProject)}
+                          >
+                            <img
+                              src={activeProject.image}
+                              alt={activeProject.title}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            {/* Glass overlay gradient at bottom */}
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 via-slate-950/85 to-transparent p-5 pt-12 flex flex-col justify-end">
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <span className="px-2.5 py-0.5 rounded-md bg-[#119DA4]/80 text-white font-bold text-[10px] backdrop-blur-md">
+                                  {activeProject.badge || activeProject.category}
+                                </span>
+                                {activeProject.metrics && (
+                                  <span className="px-2.5 py-0.5 rounded-md bg-[#3066BE]/80 text-[#AEECEF] font-bold text-[10px] backdrop-blur-md border border-[#80DED9]/30">
+                                    ★ {activeProject.metrics}
+                                  </span>
+                                )}
+                              </div>
+                              <h3 className="text-xl sm:text-2xl font-extrabold text-white leading-tight">
+                                {activeProject.title}
+                              </h3>
+                              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                                {activeProject.tags?.map((tag: string, tidx: number) => (
+                                  <span
+                                    key={tidx}
+                                    className="px-2 py-0.5 rounded bg-white/10 text-slate-300 text-[10px] font-medium backdrop-blur-md"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </motion.div>
+                        </AnimatePresence>
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
+            {/* COMPACT BENTO GRID MODE */}
+            {portfolioViewMode === 'grid' && (
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+              >
+                {filteredProjects.map((project) => (
+                  <div
+                    key={project.id}
+                    onClick={() => setLightboxProject(project)}
+                    className="group bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-[#3066BE]/50 transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1"
+                  >
+                    <div className="h-44 sm:h-48 bg-slate-100 overflow-hidden relative">
+                      <img
+                        src={project.image}
+                        alt={project.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+                      <div className="absolute top-3 left-3">
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-900/80 text-white backdrop-blur-md">
+                          {project.category}
+                        </span>
+                      </div>
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="w-8 h-8 rounded-full bg-white/90 text-slate-900 flex items-center justify-center shadow-md">
+                          <Maximize2 className="w-3.5 h-3.5 text-[#3066BE]" />
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-4 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-base font-bold text-slate-900 group-hover:text-[#3066BE] transition-colors">
+                          {project.title}
+                        </h4>
+                        <p className="text-xs text-slate-600 mt-1 line-clamp-2 leading-relaxed">
+                          {project.description}
+                        </p>
+                      </div>
+                      <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-[#119DA4] font-semibold">
+                        <span>Atriowings Delivery</span>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#119DA4]" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+
+            {/* LIGHTBOX MODAL (Interactive MotionSites Inspection) */}
+            <AnimatePresence>
+              {lightboxProject && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, y: 20 }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                    className="bg-white rounded-3xl max-w-4xl w-full overflow-hidden shadow-2xl border border-slate-200 relative max-h-[90vh] flex flex-col"
+                  >
+                    {/* Header */}
+                    <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                      <div className="flex items-center gap-2.5">
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#3066BE]/10 text-[#3066BE] text-xs font-bold">
+                          {lightboxProject.category}
+                        </span>
+                        <h3 className="font-extrabold text-slate-900 text-base sm:text-lg">
+                          {lightboxProject.title}
+                        </h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setLightboxProject(null)}
+                        className="w-8 h-8 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-700 flex items-center justify-center transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Image Preview & Specs */}
+                    <div className="p-6 overflow-y-auto space-y-5">
+                      <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-950 aspect-[16/10] max-h-[420px]">
+                        <img
+                          src={lightboxProject.image}
+                          alt={lightboxProject.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                        <div className="md:col-span-2 space-y-2">
+                          <h4 className="font-bold text-slate-900 text-sm">Project Scope & Highlights</h4>
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            {lightboxProject.description}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5 pt-2">
+                            {lightboxProject.tags?.map((t: string, idx: number) => (
+                              <span key={idx} className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium">
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-[#edf4fc] border border-[#6D96C5]/30 space-y-2.5 text-xs">
+                          <div className="text-[10px] font-bold text-[#3066BE] uppercase tracking-wider">
+                            Verified Delivery Credentials
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block">Parent Engineering Firm:</span>
+                            <span className="font-bold text-slate-800">Atriowings Technologies India Pvt Ltd</span>
+                          </div>
+                          {lightboxProject.metrics && (
+                            <div>
+                              <span className="text-slate-500 block">Performance Metric:</span>
+                              <span className="font-bold text-[#119DA4]">{lightboxProject.metrics}</span>
+                            </div>
+                          )}
+                          <div className="pt-2 border-t border-[#6D96C5]/20 flex items-center gap-1.5 text-[#119DA4] font-bold">
+                            <CheckCircle2 className="w-4 h-4 shrink-0" />
+                            <span>100% Client Audited Delivery</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </section>
