@@ -123,23 +123,41 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password,
-          portalRole: internalRole,
-        }),
-      });
+      let res: Response;
+      try {
+        res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email.trim(),
+            password,
+          }),
+        });
+      } catch (fetchErr: any) {
+        setError('Cannot reach authentication server on port 5000. Please ensure the backend server is running.');
+        setLoading(false);
+        return;
+      }
 
-      const data = await res.json();
+      // Safe JSON response parsing
+      let data: any = {};
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = {};
+      }
 
       if (!res.ok) {
         if (data.status && data.status !== 'ACTIVE') {
-          setInfo(data.error);
+          setInfo(data.error || 'Your registration is awaiting approval.');
         } else {
-          setError(data.error || 'Login failed. Please check your credentials.');
+          setError(
+            data.error ||
+              (res.status === 502 || res.status === 504 || res.status === 500
+                ? 'Backend server is not reachable on port 5000. Please ensure the backend server is running.'
+                : `Authentication failed (HTTP ${res.status})`)
+          );
         }
         setLoading(false);
         return;
@@ -148,7 +166,7 @@ export const LoginPage: React.FC = () => {
       // Successful login - persist in auth context
       login(data.token, data.user);
 
-      // Route to role-specific dashboard
+      // Route to role-specific dashboard based on authenticated user role
       switch (data.user.role) {
         case 'ADMIN':
           navigate('/admin');
@@ -166,31 +184,14 @@ export const LoginPage: React.FC = () => {
           navigate('/');
       }
     } catch (err: any) {
-      setError(err.message || 'Server connection failed');
+      if (err.message?.includes('JSON') || err.message?.includes('fetch')) {
+        setError('Cannot reach authentication server on port 5000. Please ensure the backend server is running.');
+      } else {
+        setError(err.message || 'Server connection failed');
+      }
     } finally {
       setLoading(false);
     }
-  };
-
-  // Determine UI titles based on direct internal route vs standard BGA login
-  const isDirectInternal = Boolean(
-    routeRole && ['ADMIN', 'ACCOUNTS', 'TECHNICAL'].includes(routeRole.toUpperCase())
-  );
-
-  const getHeading = () => {
-    if (isDirectInternal) {
-      if (internalRole === 'ADMIN') return 'Admin Portal Login';
-      if (internalRole === 'ACCOUNTS') return 'Accounts Portal Login';
-      if (internalRole === 'TECHNICAL') return 'Technical Portal Login';
-    }
-    return 'BGA Portal Login';
-  };
-
-  const getSubheading = () => {
-    if (isDirectInternal) {
-      return `Authorized Internal Access — ${internalRole} Portal`;
-    }
-    return 'Sign in to your Business Growth Associate account';
   };
 
   return (
@@ -216,10 +217,10 @@ export const LoginPage: React.FC = () => {
             </Link>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              {getHeading()}
+              BGA Portal Login
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              {getSubheading()}
+              Sign in to your Business Growth Associate account
             </p>
           </div>
 
@@ -305,7 +306,17 @@ export const LoginPage: React.FC = () => {
                 className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Lock className="w-4 h-4" />
-                <span>{loading ? 'Authenticating...' : 'Login to BGA Portal'}</span>
+                <span>
+                  {loading
+                    ? 'Authenticating...'
+                    : selectedDemoRole === 'ADMIN'
+                    ? 'Login to Admin Portal'
+                    : selectedDemoRole === 'ACCOUNTS'
+                    ? 'Login to Accounts Portal'
+                    : selectedDemoRole === 'TECHNICAL'
+                    ? 'Login to Technical Portal'
+                    : 'Login to BGA Portal'}
+                </span>
               </button>
             </form>
 

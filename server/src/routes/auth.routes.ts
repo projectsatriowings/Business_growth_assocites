@@ -28,14 +28,6 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Role check if logging in via a role-specific portal
-    if (portalRole && user.role !== portalRole) {
-      res.status(403).json({
-        error: `Unauthorized portal access. Your registered role is ${user.role}, but you are attempting to login to the ${portalRole} portal.`,
-      });
-      return;
-    }
-
     // Verify Password
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
