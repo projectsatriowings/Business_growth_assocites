@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Building2, ArrowRight, Briefcase, Menu, X } from 'lucide-react';
+import { ArrowRight, Briefcase, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Navbar: React.FC = () => {
@@ -8,14 +8,13 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [logoError, setLogoError] = useState(false);
 
   const navLinks = [
     { label: 'About', target: 'about' },
     { label: 'Services', target: 'services' },
     { label: 'Why Us', target: 'why-atriowings' },
     { label: 'How It Works', target: 'how-it-works' },
-    { label: 'Commission Model', target: 'earning' },
+    { label: 'Commissions', target: 'earning' },
     { label: 'Portfolio', target: 'portfolio' },
     { label: 'Benefits', target: 'benefits' },
     { label: 'FAQ', target: 'faq' },
@@ -38,10 +37,10 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 glass-nav border-b border-slate-200/80 transition-all duration-200 bg-white/95 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 glass-nav border-b border-slate-200/80 transition-all duration-200 bg-white/95 backdrop-blur-md shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 sm:h-20">
-          {/* Logo & Parent Company Branding */}
+        <div className="flex justify-between items-center h-20 sm:h-22">
+          {/* Official Company Logo (Clean presentation without duplicate labels) */}
           <Link
             to="/"
             onClick={() => {
@@ -49,51 +48,32 @@ export const Navbar: React.FC = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className="flex items-center space-x-3 shrink-0 group"
+            className="flex items-center shrink-0 group py-1.5"
+            title="Atriowings Technologies India Private Limited"
           >
-            {!logoError ? (
-              <img
-                src="/img/logo.webp"
-                alt="Atriowings Technologies"
-                onError={() => setLogoError(true)}
-                className="h-9 sm:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
-              />
-            ) : (
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-[#3066BE] to-[#119DA4] flex items-center justify-center text-white shadow-md shadow-[#3066BE]/20 group-hover:scale-105 transition-all duration-300">
-                <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-            )}
-            <div className="border-l border-slate-200 pl-3">
-              <div className="flex items-center gap-1.5">
-                <span className="text-base sm:text-lg font-extrabold bg-gradient-to-r from-slate-900 via-[#3066BE] to-[#119DA4] bg-clip-text text-transparent block leading-tight tracking-tight">
-                  BGA Enterprise
-                </span>
-                <span className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-bold rounded bg-[#119DA4]/10 text-[#119DA4] border border-[#80DED9]/40">
-                  By Atriowings
-                </span>
-              </div>
-              <span className="block text-[9px] sm:text-[10px] tracking-wider text-slate-500 font-semibold uppercase">
-                Atriowings Technologies
-              </span>
-            </div>
+            <img
+              src="/img/atriowings-official-logo.png"
+              alt="Atriowings Technologies India Private Limited"
+              className="h-11 sm:h-13 w-auto object-contain transition-transform duration-200 group-hover:scale-[1.02]"
+            />
           </Link>
 
           {/* Desktop Nav Links */}
-          <div className="hidden xl:flex items-center space-x-6 text-[13px] font-semibold text-slate-600">
+          <div className="hidden xl:flex items-center space-x-7 text-[13px] font-semibold text-slate-600">
             {navLinks.map((link) => (
               <a
                 key={link.target}
                 href={`#${link.target}`}
                 onClick={(e) => handleNavClick(e, link.target)}
-                className="relative py-1 hover:text-[#3066BE] transition-colors duration-150 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#119DA4] hover:after:w-full after:transition-all after:duration-200"
+                className="relative py-1.5 hover:text-[#3066BE] transition-colors duration-150 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#3066BE] hover:after:w-full after:transition-all after:duration-200"
               >
                 {link.label}
               </a>
             ))}
           </div>
 
-          {/* Desktop Action Buttons (Only Public: Become a Growth Associate & BGA Login) */}
-          <div className="hidden sm:flex items-center space-x-3">
+          {/* Desktop Action Buttons */}
+          <div className="hidden sm:flex items-center space-x-3.5">
             {user ? (
               <div className="flex items-center space-x-3">
                 <button
@@ -119,13 +99,13 @@ export const Navbar: React.FC = () => {
               <>
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-[#3066BE] hover:bg-slate-100/70 rounded-xl transition-all duration-150 border border-slate-200/80"
+                  className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:text-[#3066BE] hover:bg-slate-50 rounded-xl transition-all duration-150 border border-slate-200 shadow-sm"
                 >
-                  BGA Login
+                  Portal Login
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2.5 text-xs font-bold rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white shadow-md shadow-[#3066BE]/25 hover:shadow-lg hover:shadow-[#3066BE]/30 transition-all duration-200 flex items-center space-x-1.5 transform hover:-translate-y-0.5"
+                  className="px-5 py-2.5 text-xs font-bold rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white shadow-md shadow-[#3066BE]/25 hover:shadow-lg hover:shadow-[#3066BE]/30 transition-all duration-200 flex items-center space-x-1.5 transform hover:-translate-y-0.5"
                 >
                   <span>Become a Growth Associate</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -151,13 +131,13 @@ export const Navbar: React.FC = () => {
       {/* Mobile dropdown menu */}
       {mobileMenuOpen && (
         <div className="xl:hidden border-t border-slate-200 bg-white/98 backdrop-blur-xl px-5 pt-3 pb-6 space-y-4 shadow-xl animate-fadeIn">
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-1.5">
             {navLinks.map((link) => (
               <a
                 key={link.target}
                 href={`#${link.target}`}
                 onClick={(e) => handleNavClick(e, link.target)}
-                className="block px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-[#edf4fc] hover:text-[#3066BE] transition-colors"
+                className="block px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:bg-[#edf4fc] hover:text-[#3066BE] transition-colors"
               >
                 {link.label}
               </a>
@@ -200,7 +180,7 @@ export const Navbar: React.FC = () => {
                   onClick={() => setMobileMenuOpen(false)}
                   className="block w-full text-center px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
                 >
-                  BGA Login
+                  Portal Login
                 </Link>
                 <Link
                   to="/register"
@@ -217,3 +197,5 @@ export const Navbar: React.FC = () => {
     </nav>
   );
 };
+
+export default Navbar;
