@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
-import { SkeletonStatsRow, SkeletonTable } from '../../components/Skeleton';
+import { SkeletonStatsRow, SkeletonTable, AccountsDashboardSkeleton } from '../../components/Skeleton';
 
 export const AccountsPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'quotation-requests' | 'work-orders' | 'payments' | 'commissions'>('dashboard');
@@ -270,7 +270,7 @@ export const AccountsPortal: React.FC = () => {
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
             !stats ? (
-              <SkeletonStatsRow count={4} />
+              <AccountsDashboardSkeleton />
             ) : (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

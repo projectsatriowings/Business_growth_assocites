@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
-import { SkeletonStatsRow, SkeletonTable } from '../../components/Skeleton';
+import { SkeletonStatsRow, SkeletonTable, TechnicalDashboardSkeleton } from '../../components/Skeleton';
 
 export const TechnicalPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects'>('dashboard');
@@ -229,7 +229,7 @@ export const TechnicalPortal: React.FC = () => {
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
             !stats ? (
-              <SkeletonStatsRow count={5} />
+              <TechnicalDashboardSkeleton />
             ) : (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
