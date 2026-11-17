@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   LayoutDashboard,
   Users,
+  User,
   CheckSquare,
   Layers,
   FileText,
@@ -45,6 +46,28 @@ import { useToast } from '../../context/ToastContext';
 import { getQuotationPdfUrl } from '../../utils/downloadPdf';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { ModalPortal } from '../../components/ModalPortal';
+
+// Formats client structured location JSON or legacy location string
+const formatClientLocation = (locStr?: string | null): string => {
+  if (!locStr) return 'N/A';
+  try {
+    if (locStr.startsWith('{')) {
+      const parsed = JSON.parse(locStr);
+      if (parsed.fullAddress) return parsed.fullAddress;
+      const parts = [
+        parsed.addressLine1,
+        parsed.addressLine2,
+        parsed.city,
+        parsed.state,
+        parsed.pinCode ? `PIN: ${parsed.pinCode}` : '',
+        parsed.country,
+      ].filter(Boolean);
+      if (parts.length > 0) return parts.join(', ');
+    }
+  } catch {}
+  return locStr;
+};
 
 // Generic Reusable Empty State Component
 const EmptyState: React.FC<{
@@ -596,10 +619,10 @@ export const AdminPortal: React.FC = () => {
     <div className="min-h-screen bg-slate-100 flex flex-col">
       <PortalHeader title="Admin Portal" subtitle="Central Company Management & Executive Controls" />
 
-      <div className="flex-1 flex flex-col md:flex-row">
-        {/* Sidebar Nav */}
-        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 flex flex-col justify-between">
-          <div className="space-y-1">
+      <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
+        {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
+        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
+          <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-2">
               Management Modules
             </div>
@@ -732,13 +755,13 @@ export const AdminPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500">
+          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 shrink-0">
             Database: <span className="text-emerald-400 font-semibold">Neon Cloud PostgreSQL</span>
           </div>
         </aside>
 
         {/* Main Content Area */}
-        <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
+        <main className="w-full flex-1 min-w-0 p-6 md:p-8">
           {/* TAB 1: DASHBOARD & ANALYTICS */}
           {activeTab === 'dashboard' && (
             !stats ? (
@@ -1369,9 +1392,15 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Ownership Transfer Modal */}
-              {transferModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+              <ModalPortal
+                isOpen={!!transferModal}
+                onClose={() => setTransferModal(null)}
+              >
+                {transferModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">Transfer Client Ownership</h3>
                     <p className="text-xs text-slate-500 mt-1">
                       Reassigning <strong>{transferModal.client.clientName}</strong> ({transferModal.client.businessName})
@@ -1434,8 +1463,8 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
             </div>
           )}
 
@@ -1528,21 +1557,53 @@ export const AdminPortal: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {filteredEnquiries.map((enq) => (
-                    <div key={enq.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div key={enq.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3.5">
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
                         <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-bold text-slate-500">{enq.id}</span>
-                            <span className="text-xs text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                              {enq.id}
+                            </span>
+                            <span className="text-xs text-[#3066BE] font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
                               {enq.serviceCategory}
                             </span>
+                            {enq.client?.businessCategory && (
+                              <span className="text-[10px] text-indigo-700 font-bold bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                                {enq.client.businessCategory}
+                              </span>
+                            )}
                           </div>
                           <h3 className="text-base font-bold text-slate-900 mt-1">
-                            {enq.client?.clientName} ({enq.client?.businessName})
+                            {enq.client?.clientName}
+                            {enq.client?.businessName && enq.client?.businessName !== enq.client?.clientName && (
+                              <span className="text-slate-500 font-semibold ml-1.5">({enq.client.businessName})</span>
+                            )}
                           </h3>
+
+                          {/* Quick Client Contact Row */}
+                          <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
+                            <span className="flex items-center gap-1 text-slate-600 font-medium">
+                              <Phone className="w-3 h-3 text-slate-400" />
+                              {enq.client?.mobile || 'N/A'}
+                            </span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1 text-slate-600 font-medium">
+                              <Mail className="w-3 h-3 text-slate-400" />
+                              {enq.client?.email || 'N/A'}
+                            </span>
+                            {enq.client?.location && (
+                              <>
+                                <span>•</span>
+                                <span className="flex items-center gap-1 text-slate-600 font-medium">
+                                  <MapPin className="w-3 h-3 text-slate-400" />
+                                  {formatClientLocation(enq.client.location)}
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 shrink-0">
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                             enq.status === 'APPROVED'
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
@@ -1565,8 +1626,8 @@ export const AdminPortal: React.FC = () => {
                               </span>
                             )
                           )}
-                          <span className="text-sm font-extrabold text-slate-900 bg-slate-50 px-3 py-1 rounded-lg border border-slate-200">
-                            Expected Budget: ₹{enq.expectedBudget?.toLocaleString()}
+                          <span className="text-sm font-extrabold text-slate-900 bg-slate-50 px-3 py-1 rounded-lg border border-slate-200 font-mono">
+                            Expected Budget: ₹{enq.expectedBudget?.toLocaleString('en-IN')}
                           </span>
                         </div>
                       </div>
@@ -1577,6 +1638,20 @@ export const AdminPortal: React.FC = () => {
                           {enq.requirements}
                         </p>
                       </div>
+
+                      {enq.discussionNotes && (
+                        <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 text-xs">
+                          <strong className="text-blue-900 block font-semibold mb-0.5">Initial Discussion Notes:</strong>
+                          <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{enq.discussionNotes}</p>
+                        </div>
+                      )}
+
+                      {enq.followUpDate && (
+                        <div className="text-xs text-purple-700 font-semibold flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Follow-Up Date: {new Date(enq.followUpDate).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                        </div>
+                      )}
 
                       {enq.adminNotes && (
                         <div className={`p-3 rounded-xl border text-xs ${
@@ -1624,8 +1699,9 @@ export const AdminPortal: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setEnquiryDetailModal(enq)}
-                            className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer"
+                            className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                           >
+                            <Eye className="w-3.5 h-3.5 text-slate-400" />
                             View Full Details
                           </button>
 
@@ -1659,9 +1735,18 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Enquiry Review Action Modal */}
-              {enquiryReviewModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+              <ModalPortal
+                isOpen={!!enquiryReviewModal}
+                onClose={() => {
+                  setEnquiryReviewModal(null);
+                  setEnquiryReviewNotes('');
+                }}
+              >
+                {enquiryReviewModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">
                       {enquiryReviewModal.action === 'APPROVE'
                         ? 'Approve Client Enquiry'
@@ -1708,61 +1793,248 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
 
-              {/* Enquiry Detail Modal */}
-              {enquiryDetailModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
-                    <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              {/* Enquiry Detail Modal — Complete Client Registration & Scope Dossier */}
+              <ModalPortal
+                isOpen={!!enquiryDetailModal}
+                onClose={() => setEnquiryDetailModal(null)}
+              >
+                {enquiryDetailModal && (
+                  <div
+                    className="bg-white rounded-3xl max-w-3xl w-full p-6 md:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[92vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Modal Header */}
+                    <div className="flex justify-between items-start border-b border-slate-100 pb-4">
                       <div>
-                        <span className="font-mono text-xs text-slate-400">Enquiry #{enquiryDetailModal.id}</span>
-                        <h3 className="text-base font-bold text-slate-900">{enquiryDetailModal.client?.clientName}</h3>
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                            {enquiryDetailModal.id}
+                          </span>
+                          <span className="text-xs font-bold text-[#3066BE] bg-blue-50 px-2.5 py-0.5 rounded border border-blue-100">
+                            {enquiryDetailModal.serviceCategory}
+                          </span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            enquiryDetailModal.status === 'APPROVED'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              : enquiryDetailModal.status === 'SUBMITTED'
+                              ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                              : 'bg-red-100 text-red-800 border border-red-200'
+                          }`}>
+                            {enquiryDetailModal.status}
+                          </span>
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-900">
+                          {enquiryDetailModal.client?.clientName}
+                        </h2>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">
+                          Company / Business: <strong className="text-slate-800 font-semibold">{enquiryDetailModal.client?.businessName || 'N/A'}</strong>
+                        </p>
                       </div>
                       <button
                         onClick={() => setEnquiryDetailModal(null)}
-                        className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
+                        className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                       >
-                        ✕
+                        <X className="w-5 h-5" />
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="p-3 bg-slate-50 rounded-xl">
-                        <span className="text-slate-400 block text-[10px]">Service Category</span>
-                        <span className="font-bold text-slate-800">{enquiryDetailModal.serviceCategory}</span>
+                    {/* SECTION 1: COMPLETE REGISTERED CLIENT DETAILS (FROM BGA NEW CLIENT REGISTRATION) */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                          <Building2 className="w-4 h-4 text-[#3066BE]" />
+                          Registered Client & Commercial Profile
+                        </h3>
+                        <span className="text-[11px] text-slate-400">
+                          Client ID: <span className="font-mono">{enquiryDetailModal.client?.id?.slice(0, 10)}...</span>
+                        </span>
                       </div>
-                      <div className="p-3 bg-slate-50 rounded-xl">
-                        <span className="text-slate-400 block text-[10px]">Expected Budget</span>
-                        <span className="font-bold text-slate-800">₹{enquiryDetailModal.expectedBudget?.toLocaleString()}</span>
-                      </div>
-                      <div className="p-3 bg-slate-50 rounded-xl">
-                        <span className="text-slate-400 block text-[10px]">Submitting Associate</span>
-                        <span className="font-bold text-slate-800">{enquiryDetailModal.bga?.name} ({enquiryDetailModal.bga?.email})</span>
-                      </div>
-                      <div className="p-3 bg-slate-50 rounded-xl">
-                        <span className="text-slate-400 block text-[10px]">Submission Timestamp</span>
-                        <span className="font-bold text-slate-800">{new Date(enquiryDetailModal.createdAt).toLocaleString()}</span>
-                      </div>
-                    </div>
 
-                    <div className="text-xs">
-                      <strong className="block text-slate-700 mb-1">Detailed Client Requirements:</strong>
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-slate-800 whitespace-pre-wrap leading-relaxed">
-                        {enquiryDetailModal.requirements}
-                      </div>
-                    </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {/* Client Contact Person */}
+                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                            Client Contact Person
+                          </span>
+                          <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                            <User className="w-3.5 h-3.5 text-slate-400" />
+                            {enquiryDetailModal.client?.clientName || 'N/A'}
+                          </span>
+                        </div>
 
-                    {enquiryDetailModal.adminNotes && (
-                      <div className="text-xs">
-                        <strong className="block text-amber-900 mb-1 font-bold">Executive Review Remarks:</strong>
-                        <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-950 whitespace-pre-wrap leading-relaxed">
-                          {enquiryDetailModal.adminNotes}
+                        {/* Business / Company Name */}
+                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                            Business / Company Name
+                          </span>
+                          <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                            {enquiryDetailModal.client?.businessName || 'N/A'}
+                          </span>
+                        </div>
+
+                        {/* Industry / Business Category */}
+                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                            Business Category / Industry
+                          </span>
+                          <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 inline-block">
+                            {enquiryDetailModal.client?.businessCategory || 'General Commercial'}
+                          </span>
+                        </div>
+
+                        {/* Mobile Phone */}
+                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                            Mobile Phone
+                          </span>
+                          <a
+                            href={`tel:${enquiryDetailModal.client?.mobile}`}
+                            className="text-xs font-bold text-[#3066BE] hover:underline flex items-center gap-1.5"
+                          >
+                            <Phone className="w-3.5 h-3.5 text-slate-400" />
+                            {enquiryDetailModal.client?.mobile || 'N/A'}
+                          </a>
+                        </div>
+
+                        {/* Email Address */}
+                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                            Email Address
+                          </span>
+                          <a
+                            href={`mailto:${enquiryDetailModal.client?.email}`}
+                            className="text-xs font-bold text-[#3066BE] hover:underline flex items-center gap-1.5 truncate"
+                          >
+                            <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">{enquiryDetailModal.client?.email || 'N/A'}</span>
+                          </a>
+                        </div>
+
+                        {/* Registration Date */}
+                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                            Client Registration Date
+                          </span>
+                          <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                            {enquiryDetailModal.client?.createdAt
+                              ? new Date(enquiryDetailModal.client.createdAt).toLocaleDateString('en-IN', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })
+                              : 'N/A'}
+                          </span>
                         </div>
                       </div>
-                    )}
 
+                      {/* Full Registered Business Address */}
+                      <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                        <div className="flex items-center gap-1.5 mb-1 text-slate-500">
+                          <MapPin className="w-3.5 h-3.5 text-[#3066BE]" />
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Registered Business Address
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-800 font-medium leading-relaxed">
+                          {formatClientLocation(enquiryDetailModal.client?.location)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* SECTION 2: ENQUIRY SCOPE, BUDGET & SPECIFICATIONS */}
+                    <div className="space-y-3 pt-2 border-t border-slate-100">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                        <Layers className="w-4 h-4 text-[#3066BE]" />
+                        Project Requirements & Commercial Scope
+                      </h3>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                            Service Category
+                          </span>
+                          <span className="text-xs font-bold text-slate-900 block">
+                            {enquiryDetailModal.serviceCategory}
+                          </span>
+                        </div>
+
+                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                            Expected Client Budget
+                          </span>
+                          <span className="text-base font-extrabold text-slate-900 block font-mono">
+                            ₹{enquiryDetailModal.expectedBudget?.toLocaleString('en-IN') || '0'}
+                          </span>
+                        </div>
+
+                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                            Enquiry Submission Timestamp
+                          </span>
+                          <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                            {new Date(enquiryDetailModal.createdAt).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Detailed Client Requirements */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                          Detailed Client Requirements & Specifications:
+                        </label>
+                        <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 text-xs text-slate-800 whitespace-pre-wrap leading-relaxed font-sans">
+                          {enquiryDetailModal.requirements || 'No specific requirements entered.'}
+                        </div>
+                      </div>
+
+                      {/* Discussion Notes & Follow-up Date (from Client Meeting) */}
+                      {(enquiryDetailModal.discussionNotes || enquiryDetailModal.followUpDate) && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                          {enquiryDetailModal.discussionNotes && (
+                            <div className="p-3 bg-blue-50/40 rounded-xl border border-blue-100">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-900/70 block mb-1">
+                                Discussion Notes from Client Meeting
+                              </span>
+                              <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
+                                {enquiryDetailModal.discussionNotes}
+                              </p>
+                            </div>
+                          )}
+                          {enquiryDetailModal.followUpDate && (
+                            <div className="p-3 bg-purple-50/40 rounded-xl border border-purple-100">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-900/70 block mb-1">
+                                Scheduled Next Follow-Up Date
+                              </span>
+                              <p className="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5" />
+                                {new Date(enquiryDetailModal.followUpDate).toLocaleDateString('en-IN', {
+                                  weekday: 'short',
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Executive Review Remarks (If reviewed) */}
+                      {enquiryDetailModal.adminNotes && (
+                        <div className="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200 text-xs">
+                          <span className="font-bold text-amber-900 block mb-0.5">Executive Review Remarks:</span>
+                          <p className="text-amber-800 leading-relaxed">{enquiryDetailModal.adminNotes}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Consultation & Follow-up History */}
                     {enquiryDetailModal.discussionNotes && (
                       <div className="text-xs">
                         <div className="flex items-center justify-between mb-1">
@@ -1781,17 +2053,71 @@ export const AdminPortal: React.FC = () => {
                       </div>
                     )}
 
-                    <div className="flex justify-end pt-2">
+                    {/* SECTION 3: SUBMITTING BUSINESS GROWTH ASSOCIATE */}
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                          Submitting Business Growth Associate
+                        </span>
+                        <div className="text-xs font-bold text-slate-900">
+                          {enquiryDetailModal.bga?.name}
+                        </div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">
+                          {enquiryDetailModal.bga?.email} • {enquiryDetailModal.bga?.mobile || 'N/A'}
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 shadow-2xs">
+                        Exclusive Client Lock Active
+                      </span>
+                    </div>
+
+                    {/* Modal Actions Footer */}
+                    <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-3 pt-3 border-t border-slate-100">
                       <button
                         onClick={() => setEnquiryDetailModal(null)}
-                        className="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold"
+                        className="w-full sm:w-auto px-4 py-2 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-100 transition-colors"
                       >
                         Close
                       </button>
+
+                      {enquiryDetailModal.status === 'SUBMITTED' && (
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                          <button
+                            onClick={() => {
+                              const enq = enquiryDetailModal;
+                              setEnquiryDetailModal(null);
+                              setEnquiryReviewModal({ enquiry: enq, action: 'REJECT' });
+                            }}
+                            className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+                          >
+                            Reject
+                          </button>
+                          <button
+                            onClick={() => {
+                              const enq = enquiryDetailModal;
+                              setEnquiryDetailModal(null);
+                              setEnquiryReviewModal({ enquiry: enq, action: 'REQUEST_CHANGES' });
+                            }}
+                            className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+                          >
+                            Request Scope Changes
+                          </button>
+                          <button
+                            onClick={() => {
+                              const enq = enquiryDetailModal;
+                              setEnquiryDetailModal(null);
+                              setEnquiryReviewModal({ enquiry: enq, action: 'APPROVE' });
+                            }}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors"
+                          >
+                            Approve Enquiry
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
             </div>
           )}
 
@@ -2057,69 +2383,64 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Delete Resource Confirmation Modal */}
-              <AnimatePresence>
+              <ModalPortal
+                isOpen={!!deleteResourceModal}
+                onClose={() => setDeleteResourceModal(null)}
+              >
                 {deleteResourceModal && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => setDeleteResourceModal(null)}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-rose-500 to-red-600" />
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
-                              <Trash2 className="w-5 h-5 text-rose-600" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">Delete Marketing Resource</h3>
-                              <p className="text-xs text-slate-500">This action cannot be undone.</p>
-                            </div>
+                    <div className="h-1.5 w-full bg-gradient-to-r from-rose-500 to-red-600" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
+                            <Trash2 className="w-5 h-5 text-rose-600" />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteResourceModal(null)}
-                            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">Delete Marketing Resource</h3>
+                            <p className="text-xs text-slate-500">This action cannot be undone.</p>
+                          </div>
                         </div>
-
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                          Are you sure you want to permanently delete <strong className="text-slate-900">{deleteResourceModal.title}</strong>? It will no longer be visible or downloadable by BGA associates.
-                        </p>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            onClick={() => setDeleteResourceModal(null)}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            onClick={confirmDeleteResource}
-                            className="px-5 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-1.5"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" /> Permanently Delete
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteResourceModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                    </motion.div>
+
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        Are you sure you want to permanently delete <strong className="text-slate-900">{deleteResourceModal.title}</strong>? It will no longer be visible or downloadable by BGA associates.
+                      </p>
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => setDeleteResourceModal(null)}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={confirmDeleteResource}
+                          className="px-5 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-1.5"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Permanently Delete
+                        </button>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
             </div>
           )}
 
@@ -2297,9 +2618,15 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Quotation Scope & Line Items Modal */}
-              {quotationDetailModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+              <ModalPortal
+                isOpen={!!quotationDetailModal}
+                onClose={() => setQuotationDetailModal(null)}
+              >
+                {quotationDetailModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                       <div>
                         <span className="text-xs font-mono text-[#3066BE] font-bold">
@@ -2344,13 +2671,22 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
 
               {/* Quotation Review Action Modal (Approve, Revision, Reject) */}
-              {quotationReviewModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+              <ModalPortal
+                isOpen={!!quotationReviewModal}
+                onClose={() => {
+                  setQuotationReviewModal(null);
+                  setQuotationReviewNotes('');
+                }}
+              >
+                {quotationReviewModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">
                       {quotationReviewModal.action === 'APPROVE'
                         ? 'Approve Official Quotation & Release to BGA'
@@ -2401,8 +2737,8 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
             </div>
           )}
 
@@ -2572,9 +2908,18 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Handover Review Action Modal */}
-              {handoverReviewModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+              <ModalPortal
+                isOpen={!!handoverReviewModal}
+                onClose={() => {
+                  setHandoverReviewModal(null);
+                  setHandoverReviewNotes('');
+                }}
+              >
+                {handoverReviewModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">
                       {handoverReviewModal.action === 'APPROVE'
                         ? 'Authorize Technical Handover & Activate Project'
@@ -2625,8 +2970,8 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
             </div>
           )}
 
@@ -2742,9 +3087,15 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Project Milestones Detail Modal */}
-              {projectDetailModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+              <ModalPortal
+                isOpen={!!projectDetailModal}
+                onClose={() => setProjectDetailModal(null)}
+              >
+                {projectDetailModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                       <div>
                         <span className="font-mono text-xs text-[#3066BE] font-bold">{projectDetailModal.projectNumber}</span>
@@ -2788,8 +3139,8 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
             </div>
           )}
 
@@ -2942,9 +3293,18 @@ export const AdminPortal: React.FC = () => {
               )}
 
               {/* Payout Reference Modal */}
-              {payoutModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+              <ModalPortal
+                isOpen={!!payoutModal}
+                onClose={() => {
+                  setPayoutModal(null);
+                  setPayoutReferenceInput('');
+                }}
+              >
+                {payoutModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">Record Commission Disbursement</h3>
                     <p className="text-xs text-slate-500">
                       Disbursing <strong>₹{payoutModal.amount?.toLocaleString()}</strong> to <strong>{payoutModal.bgaName}</strong>
@@ -3002,8 +3362,8 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
             </div>
           )}
 

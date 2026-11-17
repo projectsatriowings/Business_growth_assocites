@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Navbar } from '../components/Navbar';
+import { ModalPortal } from '../components/ModalPortal';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -1427,85 +1428,87 @@ export const LandingPage: React.FC = () => {
               </motion.div>
 
             {/* LIGHTBOX MODAL (Interactive MotionSites Inspection) */}
-            <AnimatePresence>
+            <ModalPortal
+              isOpen={!!lightboxProject}
+              onClose={() => setLightboxProject(null)}
+            >
               {lightboxProject && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.92, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.92, y: 20 }}
-                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    className="bg-white rounded-3xl max-w-4xl w-full overflow-hidden shadow-2xl border border-slate-200 relative max-h-[90vh] flex flex-col"
-                  >
-                    {/* Header */}
-                    <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                      <div className="flex items-center gap-2.5">
-                        <span className="px-2.5 py-0.5 rounded-full bg-[#3066BE]/10 text-[#3066BE] text-xs font-bold">
-                          {lightboxProject.category}
-                        </span>
-                        <h3 className="font-extrabold text-slate-900 text-base sm:text-lg">
-                          {lightboxProject.title}
-                        </h3>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setLightboxProject(null)}
-                        className="w-8 h-8 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-700 flex items-center justify-center transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.92, y: 20 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  className="bg-white rounded-3xl max-w-4xl w-full overflow-hidden shadow-2xl border border-slate-200 relative max-h-[90vh] flex flex-col"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Header */}
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                    <div className="flex items-center gap-2.5">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#3066BE]/10 text-[#3066BE] text-xs font-bold">
+                        {lightboxProject.category}
+                      </span>
+                      <h3 className="font-extrabold text-slate-900 text-base sm:text-lg">
+                        {lightboxProject.title}
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLightboxProject(null)}
+                      className="w-8 h-8 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-700 flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Image Preview & Specs */}
+                  <div className="p-6 overflow-y-auto space-y-5">
+                    <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-950 aspect-[16/10] max-h-[420px]">
+                      <img
+                        src={lightboxProject.image}
+                        alt={lightboxProject.title}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
 
-                    {/* Image Preview & Specs */}
-                    <div className="p-6 overflow-y-auto space-y-5">
-                      <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-950 aspect-[16/10] max-h-[420px]">
-                        <img
-                          src={lightboxProject.image}
-                          alt={lightboxProject.title}
-                          className="w-full h-full object-cover"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                      <div className="md:col-span-2 space-y-2">
+                        <h4 className="font-bold text-slate-900 text-sm">Project Scope & Highlights</h4>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          {lightboxProject.description}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5 pt-2">
+                          {lightboxProject.tags?.map((t: string, idx: number) => (
+                            <span key={idx} className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                        <div className="md:col-span-2 space-y-2">
-                          <h4 className="font-bold text-slate-900 text-sm">Project Scope & Highlights</h4>
-                          <p className="text-xs text-slate-600 leading-relaxed">
-                            {lightboxProject.description}
-                          </p>
-                          <div className="flex flex-wrap gap-1.5 pt-2">
-                            {lightboxProject.tags?.map((t: string, idx: number) => (
-                              <span key={idx} className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium">
-                                {t}
-                              </span>
-                            ))}
-                          </div>
+                      <div className="p-4 rounded-2xl bg-[#edf4fc] border border-[#6D96C5]/30 space-y-2.5 text-xs">
+                        <div className="text-[10px] font-bold text-[#3066BE] uppercase tracking-wider">
+                          Verified Delivery Credentials
                         </div>
-
-                        <div className="p-4 rounded-2xl bg-[#edf4fc] border border-[#6D96C5]/30 space-y-2.5 text-xs">
-                          <div className="text-[10px] font-bold text-[#3066BE] uppercase tracking-wider">
-                            Verified Delivery Credentials
-                          </div>
+                        <div>
+                          <span className="text-slate-500 block">Parent Engineering Firm:</span>
+                          <span className="font-bold text-slate-800">Atriowings Technologies India Pvt Ltd</span>
+                        </div>
+                        {lightboxProject.metrics && (
                           <div>
-                            <span className="text-slate-500 block">Parent Engineering Firm:</span>
-                            <span className="font-bold text-slate-800">Atriowings Technologies India Pvt Ltd</span>
+                            <span className="text-slate-500 block">Performance Metric:</span>
+                            <span className="font-bold text-[#119DA4]">{lightboxProject.metrics}</span>
                           </div>
-                          {lightboxProject.metrics && (
-                            <div>
-                              <span className="text-slate-500 block">Performance Metric:</span>
-                              <span className="font-bold text-[#119DA4]">{lightboxProject.metrics}</span>
-                            </div>
-                          )}
-                          <div className="pt-2 border-t border-[#6D96C5]/20 flex items-center gap-1.5 text-[#119DA4] font-bold">
-                            <CheckCircle2 className="w-4 h-4 shrink-0" />
-                            <span>100% Client Audited Delivery</span>
-                          </div>
+                        )}
+                        <div className="pt-2 border-t border-[#6D96C5]/20 flex items-center gap-1.5 text-[#119DA4] font-bold">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          <span>100% Client Audited Delivery</span>
                         </div>
                       </div>
                     </div>
-                  </motion.div>
-                </div>
+                  </div>
+                </motion.div>
               )}
-            </AnimatePresence>
+            </ModalPortal>
           </div>
         </div>
       </section>

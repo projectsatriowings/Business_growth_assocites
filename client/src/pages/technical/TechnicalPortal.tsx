@@ -14,12 +14,17 @@ import {
   Plus,
   X,
   RefreshCw,
+  ExternalLink,
+  Send,
+  Eye,
+  ShieldCheck,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
 import { SkeletonStatsRow, SkeletonTable, TechnicalDashboardSkeleton } from '../../components/Skeleton';
 import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ModalPortal } from '../../components/ModalPortal';
 
 export const TechnicalPortal: React.FC = () => {
   const { toast } = useToast();
@@ -30,10 +35,6 @@ export const TechnicalPortal: React.FC = () => {
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
 
-  // Progress Update Modal
-  const [progressModal, setProgressModal] = useState<{ projectId: string; current: number } | null>(null);
-  const [progressInput, setProgressInput] = useState<number>(0);
-
   // New Milestone Modal
   const [milestoneModal, setMilestoneModal] = useState<boolean>(false);
   const [milestoneTitle, setMilestoneTitle] = useState('');
@@ -42,12 +43,16 @@ export const TechnicalPortal: React.FC = () => {
   // New Deliverable Modal
   const [deliverableModal, setDeliverableModal] = useState<boolean>(false);
   const [deliverableTitle, setDeliverableTitle] = useState('');
+  const [deliverableDesc, setDeliverableDesc] = useState('');
   const [deliverableUrl, setDeliverableUrl] = useState('');
   const [deliverableVersion, setDeliverableVersion] = useState('1.0');
+  const [deliverableMilestoneId, setDeliverableMilestoneId] = useState('');
 
-  // Correction Request Modal
+  // Correction Request & Three-Way Communication Modal
   const [feedbackModal, setFeedbackModal] = useState<boolean>(false);
   const [feedbackContent, setFeedbackContent] = useState('');
+  const [feedbackVisibility, setFeedbackVisibility] = useState<'CLIENT_VISIBLE' | 'INTERNAL'>('CLIENT_VISIBLE');
+  const [feedbackMilestoneId, setFeedbackMilestoneId] = useState('');
 
   const loadStats = async (bypass = false) => {
     try {
@@ -58,15 +63,19 @@ export const TechnicalPortal: React.FC = () => {
     }
   };
 
-  const loadProjects = async () => {
+  const loadProjects = async (bypass = false) => {
     setTabLoading(true);
     try {
-      const p = await apiRequest('/api/technical/projects');
-      setProjects(p.projects || []);
-      if (selectedProject) {
-        const refreshed = (p.projects || []).find((x: any) => x.id === selectedProject.id);
-        if (refreshed) setSelectedProject(refreshed);
-      }
+      const p = await apiRequest('/api/technical/projects', { bypassCache: bypass });
+      const projectList = p.projects || [];
+      setProjects(projectList);
+      
+      // Use functional state updater to eliminate stale closure bugs
+      setSelectedProject((prev: any) => {
+        if (!prev) return null;
+        const refreshed = projectList.find((x: any) => x.id === prev.id);
+        return refreshed ? { ...prev, ...refreshed } : prev;
+      });
     } catch (e) {
       console.error(e);
     } finally {
@@ -74,10 +83,10 @@ export const TechnicalPortal: React.FC = () => {
     }
   };
 
-  const loadData = async () => {
+  const loadData = async (bypass = false) => {
     setLoading(true);
     try {
-      await Promise.all([loadStats(), loadProjects()]);
+      await Promise.all([loadStats(bypass), loadProjects(bypass)]);
     } finally {
       setLoading(false);
     }
@@ -90,15 +99,40 @@ export const TechnicalPortal: React.FC = () => {
 
   // Handle Project Status Update
   const handleUpdateStatus = async (projectId: string, newStatus: string, progress?: number) => {
+    // 1. Instant optimistic update so the user sees the new percentage and status immediately
+    if (progress !== undefined) {
+      setSelectedProject((prev: any) => {
+        if (!prev || prev.id !== projectId) return prev;
+        return { ...prev, status: newStatus, progressPercentage: progress };
+      });
+      setProjects((prev: any[]) =>
+        prev.map((proj: any) =>
+          proj.id === projectId
+            ? { ...proj, status: newStatus, progressPercentage: progress }
+            : proj
+        )
+      );
+    }
+
     try {
       const res = await apiRequest(`/api/technical/projects/${projectId}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status: newStatus, progressPercentage: progress }),
       });
       toast.success(res.message || 'Project status updated successfully.');
-      loadData();
+      
+      // Update with server confirmed data
+      if (res.project) {
+        setSelectedProject((prev: any) => {
+          if (!prev || prev.id !== projectId) return prev;
+          return { ...prev, ...res.project };
+        });
+      }
+
+      await loadData(true);
     } catch (e: any) {
       toast.error(e.message || 'Failed to update project status');
+      await loadData(true);
     }
   };
 
@@ -122,21 +156,48 @@ export const TechnicalPortal: React.FC = () => {
     }
   };
 
-  // Handle Milestone Status
+  // Handle Milestone Status - Auto-recalculates project progress percentage
   const handleMilestoneStatus = async (milestoneId: string, status: string) => {
     try {
-      await apiRequest(`/api/technical/milestones/${milestoneId}`, {
+      const res = await apiRequest(`/api/technical/milestones/${milestoneId}`, {
         method: 'PUT',
         body: JSON.stringify({ status }),
       });
-      toast.success(`Milestone marked as ${status.toLowerCase()}.`);
-      loadData();
+      const newProgress = res.progressPercentage !== undefined ? res.progressPercentage : null;
+      toast.success(
+        newProgress !== null
+          ? `Milestone marked as ${status.toLowerCase()}. Progress updated to ${newProgress}%.`
+          : `Milestone marked as ${status.toLowerCase()}.`
+      );
+
+      // Instant optimistic update with recalculated progress
+      if (newProgress !== null) {
+        setSelectedProject((prev: any) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            progressPercentage: newProgress,
+            status: res.projectStatus || prev.status,
+            milestones: prev.milestones?.map((m: any) =>
+              m.id === milestoneId ? { ...m, status } : m
+            ),
+          };
+        });
+        setProjects((prev: any[]) =>
+          prev.map((p: any) =>
+            p.id === selectedProject?.id
+              ? { ...p, progressPercentage: newProgress, status: res.projectStatus || p.status }
+              : p
+          )
+        );
+      }
+      loadData(true);
     } catch (e: any) {
       toast.error(e.message || 'Failed to update milestone status');
     }
   };
 
-  // Handle Add Deliverable
+  // Handle Add Deliverable (With Milestone Link & BGA Review Notification)
   const handleAddDeliverable = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProject || !deliverableTitle) return;
@@ -146,21 +207,26 @@ export const TechnicalPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           title: deliverableTitle,
+          description: deliverableDesc || undefined,
           fileUrl: deliverableUrl || 'https://deliverables.bga.com/release-v1.zip',
           version: deliverableVersion,
+          milestoneId: deliverableMilestoneId || undefined,
         }),
       });
-      toast.success('Deliverable deployed and linked to project.');
+      toast.success('Deliverable uploaded & submitted to BGA for client sharing review.');
       setDeliverableModal(false);
       setDeliverableTitle('');
+      setDeliverableDesc('');
       setDeliverableUrl('');
-      loadData();
+      setDeliverableVersion('1.0');
+      setDeliverableMilestoneId('');
+      loadData(true);
     } catch (e: any) {
       toast.error(e.message || 'Failed to add deliverable');
     }
   };
 
-  // Handle Add Feedback / Correction Request
+  // Handle Add Feedback / Technical Reply in Three-Way Thread
   const handleAddFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProject || !feedbackContent) return;
@@ -169,14 +235,18 @@ export const TechnicalPortal: React.FC = () => {
       await apiRequest(`/api/technical/projects/${selectedProject.id}/feedback`, {
         method: 'POST',
         body: JSON.stringify({
-          feedbackType: 'CORRECTION_REQUEST',
           content: feedbackContent,
+          feedbackType: feedbackVisibility === 'INTERNAL' ? 'INTERNAL_NOTE' : 'TECHNICAL_RESPONSE',
+          messageType: 'TECHNICAL_REPLY',
+          visibility: feedbackVisibility,
+          milestoneId: feedbackMilestoneId || undefined,
         }),
       });
-      toast.success('Engineering feedback submitted successfully.');
+      toast.success('Response posted to project communication thread.');
       setFeedbackModal(false);
       setFeedbackContent('');
-      loadData();
+      setFeedbackMilestoneId('');
+      loadData(true);
     } catch (e: any) {
       toast.error(e.message || 'Failed to submit feedback');
     }
@@ -188,8 +258,8 @@ export const TechnicalPortal: React.FC = () => {
       await apiRequest(`/api/technical/feedback/${feedbackId}/resolve`, {
         method: 'PUT',
       });
-      toast.success('Feedback resolved successfully.');
-      loadData();
+      toast.success('Feedback marked as resolved.');
+      loadData(true);
     } catch (e: any) {
       toast.error(e.message || 'Failed to resolve feedback');
     }
@@ -199,10 +269,10 @@ export const TechnicalPortal: React.FC = () => {
     <div className="min-h-screen bg-slate-100 flex flex-col">
       <PortalHeader title="Technical Portal" subtitle="Engineering Architecture, Milestone Delivery & Handover" />
 
-      <div className="flex-1 flex flex-col md:flex-row">
-        {/* Sidebar Nav */}
-        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 flex flex-col justify-between">
-          <div className="space-y-1">
+      <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
+        {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
+        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
+          <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-2">
               Engineering Workspace
             </div>
@@ -233,13 +303,13 @@ export const TechnicalPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500">
+          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 shrink-0">
             Privacy Scope: <span className="text-[#80DED9] font-bold">FINANCIAL DATA ISOLATED</span>
           </div>
         </aside>
 
         {/* Main Content Area */}
-        <main className="w-full flex-1 min-w-0 p-6 md:p-8 overflow-y-auto">
+        <main className="w-full flex-1 min-w-0 p-6 md:p-8">
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
             !stats ? (
@@ -403,23 +473,12 @@ export const TechnicalPortal: React.FC = () => {
                         )}
 
                         {selectedProject.status === 'IN_PROGRESS' && (
-                          <>
-                            <button
-                              onClick={() => {
-                                setProgressModal({ projectId: selectedProject.id, current: selectedProject.progressPercentage || 0 });
-                                setProgressInput(selectedProject.progressPercentage || 0);
-                              }}
-                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition-colors"
-                            >
-                              Update Progress %
-                            </button>
-                            <button
-                              onClick={() => handleUpdateStatus(selectedProject.id, 'UNDER_REVIEW', 90)}
-                              className="px-3 py-1.5 bg-[#119DA4] hover:bg-[#0e8389] text-white rounded-lg text-xs font-bold"
-                            >
-                              Submit for Client Review
-                            </button>
-                          </>
+                          <button
+                            onClick={() => handleUpdateStatus(selectedProject.id, 'UNDER_REVIEW', 90)}
+                            className="px-3 py-1.5 bg-[#119DA4] hover:bg-[#0e8389] text-white rounded-lg text-xs font-bold"
+                          >
+                            Submit for Client Review
+                          </button>
                         )}
 
                         {selectedProject.status === 'UNDER_REVIEW' && (
@@ -463,11 +522,24 @@ export const TechnicalPortal: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        <strong className="block text-slate-800 mb-1">Execution Status:</strong>
-                        <div className="text-amber-800 font-bold uppercase">{selectedProject.status}</div>
-                        <div className="mt-2 text-slate-500">
-                          Progress: <strong className="text-slate-800">{selectedProject.progressPercentage}%</strong>
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between">
+                        <div>
+                          <strong className="block text-slate-800 mb-1">Execution Status:</strong>
+                          <div className="flex items-center justify-between">
+                            <span className="text-amber-800 font-bold uppercase">{selectedProject.status}</span>
+                            <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 text-[11px]">
+                              {selectedProject.progressPercentage || 0}%
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-2.5">
+                          <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${Math.min(100, Math.max(0, selectedProject.progressPercentage || 0))}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -531,78 +603,181 @@ export const TechnicalPortal: React.FC = () => {
                   {/* Deliverables Section */}
                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                      <h3 className="font-bold text-slate-900 text-sm">Deliverables & Releases</h3>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm">Deliverables & Releases</h3>
+                        <p className="text-[11px] text-slate-500">
+                          Upload project artifacts. Assigned BGA reviews and shares with client.
+                        </p>
+                      </div>
                       <button
                         onClick={() => setDeliverableModal(true)}
-                        className="px-3 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded text-xs font-bold flex items-center gap-1"
+                        className="px-3 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
                       >
                         <Upload className="w-3.5 h-3.5" /> Upload / Register Deliverable
                       </button>
                     </div>
 
-                    <div className="space-y-2">
-                      {selectedProject.deliverables?.length === 0 ? (
-                        <div className="text-xs text-slate-400 py-3 text-center">No deliverables recorded yet.</div>
+                    <div className="space-y-3">
+                      {(!selectedProject.deliverables || selectedProject.deliverables.length === 0) ? (
+                        <div className="text-xs text-slate-400 py-4 text-center">No deliverables recorded yet. Click above to register deliverables for client review.</div>
                       ) : (
-                        selectedProject.deliverables?.map((d: any) => (
-                          <div
-                            key={d.id}
-                            className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex justify-between items-center text-xs"
-                          >
-                            <div>
-                              <span className="font-bold text-slate-800">{d.title}</span>
-                              <span className="text-[10px] text-slate-400 ml-2">v{d.version}</span>
-                              <div className="text-slate-500 font-mono text-[11px]">{d.fileUrl}</div>
+                        selectedProject.deliverables.map((d: any) => {
+                          const linkedMilestone = d.milestone || selectedProject.milestones?.find((m: any) => m.id === d.milestoneId);
+                          return (
+                            <div
+                              key={d.id}
+                              className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-xs"
+                            >
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-slate-900">{d.title}</span>
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">v{d.version}</span>
+                                  {linkedMilestone && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
+                                      Milestone: {linkedMilestone.title}
+                                    </span>
+                                  )}
+                                </div>
+                                {d.description && <p className="text-slate-600 text-[11px]">{d.description}</p>}
+                                <div className="flex items-center gap-3 text-slate-500 font-mono text-[11px]">
+                                  <a
+                                    href={d.fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1 font-semibold"
+                                  >
+                                    <ExternalLink className="w-3 h-3" /> Access Deliverable Artifact
+                                  </a>
+                                  <span className="text-slate-400">Uploaded {new Date(d.createdAt).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                {d.status === 'SHARED_WITH_CLIENT' || d.isClientVisible ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3" /> Approved & Shared with Client
+                                  </span>
+                                ) : d.status === 'REVISION_REQUIRED' ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" /> Changes Requested by BGA
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" /> Pending BGA Review
+                                  </span>
+                                )}
+
+                                {d.clientViewedAt && (
+                                  <span className="text-[10px] text-teal-700 font-medium flex items-center gap-1">
+                                    <Eye className="w-3 h-3" /> Client Viewed: {new Date(d.clientViewedAt).toLocaleDateString()}
+                                  </span>
+                                )}
+
+                                {d.bgaReviewNotes && (
+                                  <span className="text-[10px] text-slate-600 italic max-w-xs text-right">
+                                    BGA Note: {d.bgaReviewNotes}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <span className="text-[10px] text-slate-400">
-                              {new Date(d.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </div>
 
-                  {/* Correction Requests & Feedback */}
+                  {/* Three-Way Synchronized Feedback & Communication Thread */}
                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                      <h3 className="font-bold text-slate-900 text-sm">Client Feedback & Corrections</h3>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm">Unified Communication & Feedback Thread</h3>
+                        <p className="text-[11px] text-slate-500">
+                          Three-way discussion between Client, BGA, and Technical Team.
+                        </p>
+                      </div>
                       <button
                         onClick={() => setFeedbackModal(true)}
-                        className="px-3 py-1 bg-red-50 text-red-700 hover:bg-red-100 rounded text-xs font-bold flex items-center gap-1"
+                        className="px-3 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" /> Log Correction Request
+                        <MessageSquare className="w-3.5 h-3.5" /> Post Technical Update / Reply
                       </button>
                     </div>
 
-                    <div className="space-y-2">
-                      {selectedProject.feedback?.length === 0 ? (
-                        <div className="text-xs text-slate-400 py-3 text-center">No correction requests logged.</div>
+                    <div className="space-y-3">
+                      {(!selectedProject.feedback || selectedProject.feedback.length === 0) ? (
+                        <div className="text-xs text-slate-400 py-4 text-center">No feedback messages yet. Post an update or wait for client/BGA review comments.</div>
                       ) : (
-                        selectedProject.feedback?.map((f: any) => (
-                          <div
-                            key={f.id}
-                            className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex justify-between items-start text-xs"
-                          >
-                            <div>
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                f.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                              }`}>
-                                {f.status}
-                              </span>
-                              <p className="text-slate-700 mt-1.5">{f.content}</p>
-                            </div>
+                        selectedProject.feedback.map((f: any) => {
+                          const isClient = f.authorRole === 'CLIENT' || f.authorRole === 'CLIENT_USER';
+                          const isBga = f.authorRole === 'BGA' || f.authorRole === 'BGA_REPRESENTATIVE';
+                          const isInternal = f.visibility === 'INTERNAL' || f.feedbackType === 'INTERNAL_NOTE';
 
-                            {f.status !== 'RESOLVED' && (
-                              <button
-                                onClick={() => handleResolveFeedback(f.id)}
-                                className="px-2.5 py-1 bg-emerald-600 text-white rounded text-[11px] font-semibold hover:bg-emerald-700 shrink-0 ml-4"
-                              >
-                                Mark Resolved ✓
-                              </button>
-                            )}
-                          </div>
-                        ))
+                          return (
+                            <div
+                              key={f.id}
+                              className={`p-3.5 rounded-xl border text-xs ${
+                                isInternal
+                                  ? 'bg-amber-50/40 border-amber-200'
+                                  : isClient
+                                  ? 'bg-teal-50/40 border-teal-200'
+                                  : isBga
+                                  ? 'bg-blue-50/40 border-blue-200'
+                                  : 'bg-slate-50 border-slate-200'
+                              }`}
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-200/60">
+                                <div className="flex items-center gap-2">
+                                  {isClient ? (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800">
+                                      👤 CLIENT: {f.authorName || 'Client'}
+                                    </span>
+                                  ) : isBga ? (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
+                                      💼 BGA: {f.authorName || 'BGA Representative'}
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">
+                                      🛠️ TECHNICAL TEAM: {f.authorName || 'Engineer'}
+                                    </span>
+                                  )}
+
+                                  {isInternal ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800">
+                                      🔒 Internal Note (Client Cannot See)
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800">
+                                      🌐 Visible to Client
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-slate-400">
+                                    {new Date(f.createdAt).toLocaleString()}
+                                  </span>
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    f.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
+                                  }`}>
+                                    {f.status}
+                                  </span>
+                                  {f.status !== 'RESOLVED' && (
+                                    <button
+                                      onClick={() => handleResolveFeedback(f.id)}
+                                      className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold cursor-pointer transition-colors"
+                                    >
+                                      Mark Resolved ✓
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              <p className="text-slate-800 leading-relaxed font-normal whitespace-pre-wrap">
+                                {f.content}
+                              </p>
+                            </div>
+                          );
+                        })
                       )}
                     </div>
                   </div>
@@ -610,9 +785,15 @@ export const TechnicalPortal: React.FC = () => {
               )}
 
               {/* Add Milestone Modal */}
-              {milestoneModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+              <ModalPortal
+                isOpen={milestoneModal}
+                onClose={() => setMilestoneModal(false)}
+              >
+                {milestoneModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="text-base font-bold text-slate-900">Add Project Milestone</h3>
                     <form onSubmit={handleAddMilestone} className="mt-4 space-y-3 text-xs">
                       <div>
@@ -646,21 +827,30 @@ export const TechnicalPortal: React.FC = () => {
                         </button>
                         <button
                           type="submit"
-                          className="px-4 py-1.5 bg-[#3066BE] text-white shadow-sm rounded font-bold hover:bg-amber-700"
+                          className="px-4 py-1.5 bg-[#3066BE] text-white shadow-sm rounded font-bold hover:bg-[#255299]"
                         >
                           Add Milestone
                         </button>
                       </div>
                     </form>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
 
               {/* Add Deliverable Modal */}
-              {deliverableModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-                    <h3 className="text-base font-bold text-slate-900">Register Deliverable</h3>
+              <ModalPortal
+                isOpen={deliverableModal}
+                onClose={() => setDeliverableModal(false)}
+              >
+                {deliverableModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h3 className="text-base font-bold text-slate-900">Register Project Deliverable</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Deliverables will be forwarded to BGA for review before client release.
+                    </p>
                     <form onSubmit={handleAddDeliverable} className="mt-4 space-y-3 text-xs">
                       <div>
                         <label className="block text-slate-700 font-semibold mb-1">Deliverable Title *</label>
@@ -669,162 +859,175 @@ export const TechnicalPortal: React.FC = () => {
                           required
                           value={deliverableTitle}
                           onChange={(e) => setDeliverableTitle(e.target.value)}
-                          placeholder="e.g. Production Release Artifacts"
+                          placeholder="e.g. Website Core Implementation v1"
                           className="w-full p-2 border border-slate-300 rounded"
                         />
                       </div>
+
                       <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Download / Staging Link</label>
+                        <label className="block text-slate-700 font-semibold mb-1">Associated Milestone</label>
+                        <select
+                          value={deliverableMilestoneId}
+                          onChange={(e) => setDeliverableMilestoneId(e.target.value)}
+                          className="w-full p-2 border border-slate-300 rounded bg-white text-slate-800"
+                        >
+                          <option value="">-- General / No Milestone Attached --</option>
+                          {selectedProject?.milestones?.map((m: any) => (
+                            <option key={m.id} value={m.id}>
+                              {m.title} ({m.status})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">Artifact / Staging / Download Link *</label>
                         <input
                           type="text"
+                          required
                           value={deliverableUrl}
                           onChange={(e) => setDeliverableUrl(e.target.value)}
-                          placeholder="https://client-staging.bga.com or zip URL"
-                          className="w-full p-2 border border-slate-300 rounded"
+                          placeholder="https://staging.domain.com or google drive / release URL"
+                          className="w-full p-2 border border-slate-300 rounded font-mono text-[11px]"
                         />
                       </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Version Number</label>
+                          <input
+                            type="text"
+                            value={deliverableVersion}
+                            onChange={(e) => setDeliverableVersion(e.target.value)}
+                            placeholder="1.0"
+                            className="w-full p-2 border border-slate-300 rounded"
+                          />
+                        </div>
+                      </div>
+
                       <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Version</label>
-                        <input
-                          type="text"
-                          value={deliverableVersion}
-                          onChange={(e) => setDeliverableVersion(e.target.value)}
+                        <label className="block text-slate-700 font-semibold mb-1">Description / Release Notes</label>
+                        <textarea
+                          rows={2}
+                          value={deliverableDesc}
+                          onChange={(e) => setDeliverableDesc(e.target.value)}
+                          placeholder="Explain what has been completed, test instructions, or notes for BGA/Client..."
                           className="w-full p-2 border border-slate-300 rounded"
                         />
                       </div>
-                      <div className="flex justify-end gap-2 pt-2">
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                         <button
                           type="button"
                           onClick={() => setDeliverableModal(false)}
-                          className="px-3 py-1.5 rounded text-slate-600 font-semibold"
+                          className="px-3 py-1.5 rounded text-slate-600 font-semibold hover:bg-slate-100 transition-colors"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="px-4 py-1.5 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700"
+                          className="px-4 py-1.5 bg-[#3066BE] text-white rounded font-bold hover:bg-[#255299] transition-colors"
                         >
-                          Save Deliverable
+                          Upload & Submit for BGA Review
                         </button>
                       </div>
                     </form>
                   </div>
-                </div>
-              )}
+                )}
+              </ModalPortal>
 
-              {/* Feedback Modal */}
-              {feedbackModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-                    <h3 className="text-base font-bold text-slate-900">Log Correction Request</h3>
+              {/* Three-Way Feedback & Communication Modal */}
+              <ModalPortal
+                isOpen={feedbackModal}
+                onClose={() => setFeedbackModal(false)}
+              >
+                {feedbackModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h3 className="text-base font-bold text-slate-900">Post Technical Update / Reply</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Post response to client questions or coordinate internally with BGA.
+                    </p>
                     <form onSubmit={handleAddFeedback} className="mt-4 space-y-3 text-xs">
                       <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Feedback / Defect Details *</label>
+                        <label className="block text-slate-700 font-semibold mb-1">Audience & Visibility *</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setFeedbackVisibility('CLIENT_VISIBLE')}
+                            className={`p-2.5 rounded-lg border text-left font-semibold transition-all ${
+                              feedbackVisibility === 'CLIENT_VISIBLE'
+                                ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
+                                : 'border-slate-200 bg-white text-slate-600'
+                            }`}
+                          >
+                            <span className="block font-bold">🌐 Client & BGA</span>
+                            <span className="text-[10px] font-normal text-slate-500">Visible to client in their portal</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFeedbackVisibility('INTERNAL')}
+                            className={`p-2.5 rounded-lg border text-left font-semibold transition-all ${
+                              feedbackVisibility === 'INTERNAL'
+                                ? 'border-amber-500 bg-amber-50 text-amber-900'
+                                : 'border-slate-200 bg-white text-slate-600'
+                            }`}
+                          >
+                            <span className="block font-bold">🔒 Internal Note</span>
+                            <span className="text-[10px] font-normal text-slate-500">Only BGA & Technical team see this</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">Related Milestone (Optional)</label>
+                        <select
+                          value={feedbackMilestoneId}
+                          onChange={(e) => setFeedbackMilestoneId(e.target.value)}
+                          className="w-full p-2 border border-slate-300 rounded bg-white text-slate-800"
+                        >
+                          <option value="">-- General Project Communication --</option>
+                          {selectedProject?.milestones?.map((m: any) => (
+                            <option key={m.id} value={m.id}>
+                              {m.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">Message / Response Content *</label>
                         <textarea
-                          rows={3}
+                          rows={4}
                           required
                           value={feedbackContent}
                           onChange={(e) => setFeedbackContent(e.target.value)}
-                          placeholder="Describe the requested correction from the client or QA..."
+                          placeholder="Type technical update, answer client queries, or notify BGA..."
                           className="w-full p-2 border border-slate-300 rounded"
                         />
                       </div>
-                      <div className="flex justify-end gap-2 pt-2">
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                         <button
                           type="button"
                           onClick={() => setFeedbackModal(false)}
-                          className="px-3 py-1.5 rounded text-slate-600 font-semibold"
+                          className="px-3 py-1.5 rounded text-slate-600 font-semibold hover:bg-slate-100 transition-colors"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="px-4 py-1.5 bg-red-600 text-white rounded font-bold hover:bg-red-700"
+                          className="px-4 py-1.5 bg-[#3066BE] text-white rounded font-bold hover:bg-[#255299] transition-colors"
                         >
-                          Submit Correction
+                          Send Message
                         </button>
                       </div>
                     </form>
                   </div>
-                </div>
-              )}
-
-              {/* Progress Percentage Modal */}
-              <AnimatePresence>
-                {progressModal && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-                    onClick={() => setProgressModal(null)}
-                  >
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 to-indigo-600" />
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <h3 className="text-base font-bold text-slate-900">Update Execution Progress</h3>
-                          <button
-                            type="button"
-                            onClick={() => setProgressModal(null)}
-                            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-semibold text-slate-700">Completion Level:</span>
-                            <span className="text-lg font-bold text-[#3066BE] font-mono">{progressInput}%</span>
-                          </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            step="5"
-                            value={progressInput}
-                            onChange={(e) => setProgressInput(parseInt(e.target.value))}
-                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#3066BE]"
-                          />
-                          <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
-                            <span>0%</span>
-                            <span>50%</span>
-                            <span>100%</span>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            onClick={() => setProgressModal(null)}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleUpdateStatus(progressModal.projectId, 'IN_PROGRESS', progressInput);
-                              setProgressModal(null);
-                            }}
-                            className="px-5 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg"
-                          >
-                            Save Progress
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </motion.div>
                 )}
-              </AnimatePresence>
+              </ModalPortal>
             </div>
           )}
         </main>
