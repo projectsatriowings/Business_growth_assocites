@@ -97,7 +97,12 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
         },
       }),
       prisma.quotation.count({
-        where: { status: QuotationStatus.PENDING_ADMIN_APPROVAL },
+        where: {
+          OR: [
+            { status: QuotationStatus.PENDING_ADMIN_APPROVAL },
+            { adminApprovalStatus: 'PENDING', preparedById: { not: null } },
+          ],
+        },
       }),
       prisma.quotation.count({
         where: { status: QuotationStatus.ACCEPTED },
@@ -117,7 +122,7 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       bgas: { total: totalBgas, active: activeBgas, pendingApprovals: pendingBgaApprovals },
       clients: { total: totalClients },
       enquiries: { total: totalEnquiries, approved: approvedEnquiries, pending: pendingEnquiries },
-      quotations: { total: totalQuotations },
+      quotations: { total: totalQuotations, pendingApprovals: pendingQuotationApprovals },
       workOrders: { total: totalWorkOrders },
       projects: { total: totalProjects, active: activeProjects, completed: completedProjects },
       technical: { total: totalProjects, active: activeProjects, completed: completedProjects },
@@ -1021,22 +1026,22 @@ router.post('/quotations/:id/review', async (req: AuthRequest, res: Response): P
       newStatus = QuotationStatus.REJECTED;
       adminApprovalStatus = 'REJECTED';
 
-      // Notify Accounts & BGA
+      // Notify Accounts to make needed corrections and resubmit
       const accountsUsers = await prisma.user.findMany({ where: { role: Role.ACCOUNTS } });
       for (const acc of accountsUsers) {
         await createNotification(
           acc.id,
-          'Quotation Rejected by Admin',
-          `Quotation ${quotation.quotationNumber} for ${quotation.client.clientName} was rejected by Admin. Note: ${notes || 'Rejected.'}`,
+          'Quotation Rejected by Admin - Correction Required',
+          `Quotation ${quotation.quotationNumber} for ${quotation.client.clientName} was rejected by Admin. Please make the needed corrections and resubmit for approval. Note: ${notes || 'Rejected - corrections needed.'}`,
           'WARNING',
           '/accounts/quotation-requests'
         );
       }
       await createNotification(
         quotation.bgaId,
-        'Quotation Rejected by Admin',
-        `Quotation ${quotation.quotationNumber} for ${quotation.client.clientName} was rejected by Admin.`,
-        'WARNING',
+        'Quotation Returned to Accounts for Corrections',
+        `Admin has requested corrections on official quotation draft ${quotation.quotationNumber} for ${quotation.client.clientName}. Accounts Department is making the required adjustments.`,
+        'INFO',
         '/bga/quotations'
       );
     }

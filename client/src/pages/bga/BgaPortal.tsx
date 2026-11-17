@@ -269,9 +269,8 @@ export const BgaPortal: React.FC = () => {
   const [acceptanceModal, setAcceptanceModal] = useState<{ quotationId: string; quotationNumber: string } | null>(null);
   const [acceptanceNotes, setAcceptanceNotes] = useState('');
 
-  // Quotation Reminder Modal
-  const [reminderModal, setReminderModal] = useState<{ quotationId: string; quotationNumber: string; clientName: string } | null>(null);
-  const [reminderMessage, setReminderMessage] = useState('');
+  // Quotation Reminder Direct Notification State (1-Click Notification)
+  const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
 
   // Deliverable Review Modal for BGA
   const [deliverableReviewModal, setDeliverableReviewModal] = useState<{
@@ -834,24 +833,25 @@ export const BgaPortal: React.FC = () => {
     }
   };
 
-  // Handle Quotation Reminder to Accounts & Admin
-  const handleSendReminder = async () => {
-    if (!reminderModal || modalSubmitting) return;
-    setModalSubmitting(true);
+  // Handle Quotation Reminder directly to Accounts & Admin (1-Click Notification)
+  const handleSendReminder = async (quotationId: string) => {
+    if (sendingReminderId) return;
+    setSendingReminderId(quotationId);
     try {
-      const res = await apiRequest(`/api/bga/quotations/${reminderModal.quotationId}/reminder`, {
+      const res = await apiRequest(`/api/bga/quotations/${quotationId}/reminder`, {
         method: 'POST',
-        body: JSON.stringify({ message: reminderMessage }),
+        body: JSON.stringify({}),
       });
-      toast.success(res.message || 'Quotation reminder dispatched to Accounts & Admin!', 'Reminder Sent');
-      setReminderModal(null);
-      setReminderMessage('');
-      loadTabData('quotations');
-      loadTabData('requests');
+      toast.success(res.message || 'Quotation reminder notification sent to Accounts & Admin!', 'Reminder Sent');
+      await loadTabData('quotations');
+      await loadTabData('clients');
+      if (activeClientDetail?.id) {
+        await handleOpenClientDetail(activeClientDetail.id);
+      }
     } catch (err: any) {
       toast.error(err.message || 'Failed to send reminder', 'Reminder Failed');
     } finally {
-      setModalSubmitting(false);
+      setSendingReminderId(null);
     }
   };
 
@@ -2095,18 +2095,17 @@ export const BgaPortal: React.FC = () => {
                                             <>
                                               <button
                                                 type="button"
-                                                onClick={() =>
-                                                  setReminderModal({
-                                                    quotationId: relatedQuote.id,
-                                                    quotationNumber: relatedQuote.quotationNumber,
-                                                    clientName: activeClientDetail.clientName,
-                                                  })
-                                                }
-                                                className="px-2.5 py-1 bg-white hover:bg-slate-50 text-amber-700 border border-amber-200 rounded-lg font-bold text-xs flex items-center gap-1"
-                                                title="Send reminder to Accounts & Admin"
+                                                disabled={sendingReminderId === relatedQuote.id}
+                                                onClick={() => handleSendReminder(relatedQuote.id)}
+                                                className="px-2.5 py-1 bg-white hover:bg-slate-50 text-amber-700 border border-amber-200 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                                title="Send reminder notification to Accounts & Admin"
                                               >
-                                                <Bell className="w-3.5 h-3.5" />
-                                                Reminder
+                                                {sendingReminderId === relatedQuote.id ? (
+                                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                ) : (
+                                                  <Bell className="w-3.5 h-3.5" />
+                                                )}
+                                                {sendingReminderId === relatedQuote.id ? 'Sending...' : 'Reminder'}
                                               </button>
                                               <button
                                                 type="button"
@@ -3669,7 +3668,7 @@ export const BgaPortal: React.FC = () => {
                     q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA' || q.adminApprovalStatus === 'APPROVED';
                   const isPendingAdmin =
                     q.status === 'PENDING_ADMIN_APPROVAL' || (q.adminApprovalStatus === 'PENDING' && q.preparedById);
-                  const isUnderPrep = q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED';
+                  const isUnderPrep = q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED' || q.status === 'REJECTED';
 
                   return (
                     <div key={q.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -3709,8 +3708,8 @@ export const BgaPortal: React.FC = () => {
                               ? 'QUOTATION PENDING ADMIN APPROVAL'
                               : q.status === 'REQUESTED'
                               ? 'AWAITING ACCOUNTS PREPARATION'
-                              : q.status === 'REVISION_REQUESTED'
-                              ? 'REVISION REQUESTED BY ADMIN'
+                              : q.status === 'REVISION_REQUESTED' || q.status === 'REJECTED'
+                              ? 'REVISION / CORRECTION UNDERWAY BY ACCOUNTS'
                               : isUnderPrep
                               ? 'QUOTATION UNDER PREPARATION'
                               : q.status}
@@ -3777,16 +3776,17 @@ export const BgaPortal: React.FC = () => {
                           {/* Send Reminder button if Accounts has not finished or quote is pending */}
                           {isUnderPrep && (
                             <button
-                              onClick={() =>
-                                setReminderModal({
-                                  quotationId: q.id,
-                                  quotationNumber: q.quotationNumber,
-                                  clientName: q.client?.clientName,
-                                })
-                              }
-                              className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                              type="button"
+                              disabled={sendingReminderId === q.id}
+                              onClick={() => handleSendReminder(q.id)}
+                              className="px-3.5 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
                             >
-                              <Bell className="w-3.5 h-3.5 text-amber-700" /> Send Reminder to Accounts
+                              {sendingReminderId === q.id ? (
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-700" />
+                              ) : (
+                                <Bell className="w-3.5 h-3.5 text-amber-700" />
+                              )}
+                              {sendingReminderId === q.id ? 'Sending Reminder...' : 'Send Reminder to Accounts'}
                             </button>
                           )}
 
@@ -3819,104 +3819,6 @@ export const BgaPortal: React.FC = () => {
                   );
                 }))}
               </div>
-
-              {/* Quotation Reminder Modal */}
-              <ModalPortal
-                isOpen={!!reminderModal}
-                onClose={() => {
-                  if (!modalSubmitting) {
-                    setReminderModal(null);
-                    setReminderMessage('');
-                  }
-                }}
-              >
-                {reminderModal && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    transition={{ duration: 0.2 }}
-                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600" />
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200">
-                              <Bell className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">
-                                Send Quotation Reminder
-                              </h3>
-                              <p className="text-xs text-slate-500 font-mono">
-                                {reminderModal.quotationNumber}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!modalSubmitting) {
-                                setReminderModal(null);
-                                setReminderMessage('');
-                              }
-                            }}
-                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-
-                        <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/60 text-xs text-amber-900">
-                          Dispatches an instant high-priority reminder to the Accounts Department and notifies Admin regarding pending quotation for{' '}
-                          <strong className="font-semibold">{reminderModal.clientName}</strong>.
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                            Optional Note to Accounts & Management
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={reminderMessage}
-                            onChange={(e) => setReminderMessage(e.target.value)}
-                            placeholder="e.g. Client requested urgent review as decision meeting is tomorrow morning..."
-                            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none transition-all"
-                          />
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            disabled={modalSubmitting}
-                            onClick={() => {
-                              setReminderModal(null);
-                              setReminderMessage('');
-                            }}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            disabled={modalSubmitting}
-                            onClick={handleSendReminder}
-                            className="px-5 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-                          >
-                            {modalSubmitting ? (
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Send className="w-3.5 h-3.5" />
-                            )}
-                            {modalSubmitting ? 'Dispatching...' : 'Dispatch Reminder'}
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                )}
-              </ModalPortal>
 
               {/* Revision Request Modal */}
               <ModalPortal
