@@ -14,6 +14,10 @@ import {
   Plus,
   X,
   RefreshCw,
+  ExternalLink,
+  Send,
+  Eye,
+  ShieldCheck,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
@@ -31,10 +35,6 @@ export const TechnicalPortal: React.FC = () => {
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
 
-  // Progress Update Modal
-  const [progressModal, setProgressModal] = useState<{ projectId: string; current: number } | null>(null);
-  const [progressInput, setProgressInput] = useState<number>(0);
-
   // New Milestone Modal
   const [milestoneModal, setMilestoneModal] = useState<boolean>(false);
   const [milestoneTitle, setMilestoneTitle] = useState('');
@@ -43,12 +43,16 @@ export const TechnicalPortal: React.FC = () => {
   // New Deliverable Modal
   const [deliverableModal, setDeliverableModal] = useState<boolean>(false);
   const [deliverableTitle, setDeliverableTitle] = useState('');
+  const [deliverableDesc, setDeliverableDesc] = useState('');
   const [deliverableUrl, setDeliverableUrl] = useState('');
   const [deliverableVersion, setDeliverableVersion] = useState('1.0');
+  const [deliverableMilestoneId, setDeliverableMilestoneId] = useState('');
 
-  // Correction Request Modal
+  // Correction Request & Three-Way Communication Modal
   const [feedbackModal, setFeedbackModal] = useState<boolean>(false);
   const [feedbackContent, setFeedbackContent] = useState('');
+  const [feedbackVisibility, setFeedbackVisibility] = useState<'CLIENT_VISIBLE' | 'INTERNAL'>('CLIENT_VISIBLE');
+  const [feedbackMilestoneId, setFeedbackMilestoneId] = useState('');
 
   const loadStats = async (bypass = false) => {
     try {
@@ -152,21 +156,48 @@ export const TechnicalPortal: React.FC = () => {
     }
   };
 
-  // Handle Milestone Status
+  // Handle Milestone Status - Auto-recalculates project progress percentage
   const handleMilestoneStatus = async (milestoneId: string, status: string) => {
     try {
-      await apiRequest(`/api/technical/milestones/${milestoneId}`, {
+      const res = await apiRequest(`/api/technical/milestones/${milestoneId}`, {
         method: 'PUT',
         body: JSON.stringify({ status }),
       });
-      toast.success(`Milestone marked as ${status.toLowerCase()}.`);
-      loadData();
+      const newProgress = res.progressPercentage !== undefined ? res.progressPercentage : null;
+      toast.success(
+        newProgress !== null
+          ? `Milestone marked as ${status.toLowerCase()}. Progress updated to ${newProgress}%.`
+          : `Milestone marked as ${status.toLowerCase()}.`
+      );
+
+      // Instant optimistic update with recalculated progress
+      if (newProgress !== null) {
+        setSelectedProject((prev: any) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            progressPercentage: newProgress,
+            status: res.projectStatus || prev.status,
+            milestones: prev.milestones?.map((m: any) =>
+              m.id === milestoneId ? { ...m, status } : m
+            ),
+          };
+        });
+        setProjects((prev: any[]) =>
+          prev.map((p: any) =>
+            p.id === selectedProject?.id
+              ? { ...p, progressPercentage: newProgress, status: res.projectStatus || p.status }
+              : p
+          )
+        );
+      }
+      loadData(true);
     } catch (e: any) {
       toast.error(e.message || 'Failed to update milestone status');
     }
   };
 
-  // Handle Add Deliverable
+  // Handle Add Deliverable (With Milestone Link & BGA Review Notification)
   const handleAddDeliverable = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProject || !deliverableTitle) return;
@@ -176,21 +207,26 @@ export const TechnicalPortal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           title: deliverableTitle,
+          description: deliverableDesc || undefined,
           fileUrl: deliverableUrl || 'https://deliverables.bga.com/release-v1.zip',
           version: deliverableVersion,
+          milestoneId: deliverableMilestoneId || undefined,
         }),
       });
-      toast.success('Deliverable deployed and linked to project.');
+      toast.success('Deliverable uploaded & submitted to BGA for client sharing review.');
       setDeliverableModal(false);
       setDeliverableTitle('');
+      setDeliverableDesc('');
       setDeliverableUrl('');
-      loadData();
+      setDeliverableVersion('1.0');
+      setDeliverableMilestoneId('');
+      loadData(true);
     } catch (e: any) {
       toast.error(e.message || 'Failed to add deliverable');
     }
   };
 
-  // Handle Add Feedback / Correction Request
+  // Handle Add Feedback / Technical Reply in Three-Way Thread
   const handleAddFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProject || !feedbackContent) return;
@@ -199,14 +235,18 @@ export const TechnicalPortal: React.FC = () => {
       await apiRequest(`/api/technical/projects/${selectedProject.id}/feedback`, {
         method: 'POST',
         body: JSON.stringify({
-          feedbackType: 'CORRECTION_REQUEST',
           content: feedbackContent,
+          feedbackType: feedbackVisibility === 'INTERNAL' ? 'INTERNAL_NOTE' : 'TECHNICAL_RESPONSE',
+          messageType: 'TECHNICAL_REPLY',
+          visibility: feedbackVisibility,
+          milestoneId: feedbackMilestoneId || undefined,
         }),
       });
-      toast.success('Engineering feedback submitted successfully.');
+      toast.success('Response posted to project communication thread.');
       setFeedbackModal(false);
       setFeedbackContent('');
-      loadData();
+      setFeedbackMilestoneId('');
+      loadData(true);
     } catch (e: any) {
       toast.error(e.message || 'Failed to submit feedback');
     }
@@ -218,8 +258,8 @@ export const TechnicalPortal: React.FC = () => {
       await apiRequest(`/api/technical/feedback/${feedbackId}/resolve`, {
         method: 'PUT',
       });
-      toast.success('Feedback resolved successfully.');
-      loadData();
+      toast.success('Feedback marked as resolved.');
+      loadData(true);
     } catch (e: any) {
       toast.error(e.message || 'Failed to resolve feedback');
     }
@@ -433,23 +473,12 @@ export const TechnicalPortal: React.FC = () => {
                         )}
 
                         {selectedProject.status === 'IN_PROGRESS' && (
-                          <>
-                            <button
-                              onClick={() => {
-                                setProgressModal({ projectId: selectedProject.id, current: selectedProject.progressPercentage || 0 });
-                                setProgressInput(selectedProject.progressPercentage || 0);
-                              }}
-                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition-colors"
-                            >
-                              Update Progress %
-                            </button>
-                            <button
-                              onClick={() => handleUpdateStatus(selectedProject.id, 'UNDER_REVIEW', 90)}
-                              className="px-3 py-1.5 bg-[#119DA4] hover:bg-[#0e8389] text-white rounded-lg text-xs font-bold"
-                            >
-                              Submit for Client Review
-                            </button>
-                          </>
+                          <button
+                            onClick={() => handleUpdateStatus(selectedProject.id, 'UNDER_REVIEW', 90)}
+                            className="px-3 py-1.5 bg-[#119DA4] hover:bg-[#0e8389] text-white rounded-lg text-xs font-bold"
+                          >
+                            Submit for Client Review
+                          </button>
                         )}
 
                         {selectedProject.status === 'UNDER_REVIEW' && (
@@ -807,78 +836,6 @@ export const TechnicalPortal: React.FC = () => {
                       </div>
                     </form>
                   </div>
-                )}
-              </ModalPortal>
-
-              {/* Progress Percentage Modal */}
-              <ModalPortal
-                isOpen={!!progressModal}
-                onClose={() => setProgressModal(null)}
-              >
-                {progressModal && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    transition={{ duration: 0.2 }}
-                    className="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 to-indigo-600" />
-                    <div className="p-6 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <h3 className="text-base font-bold text-slate-900">Update Execution Progress</h3>
-                        <button
-                          type="button"
-                          onClick={() => setProgressModal(null)}
-                          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs font-semibold text-slate-700">Completion Level:</span>
-                          <span className="text-lg font-bold text-[#3066BE] font-mono">{progressInput}%</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          step="5"
-                          value={progressInput}
-                          onChange={(e) => setProgressInput(parseInt(e.target.value))}
-                          className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#3066BE]"
-                        />
-                        <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
-                          <span>0%</span>
-                          <span>50%</span>
-                          <span>100%</span>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                        <button
-                          type="button"
-                          onClick={() => setProgressModal(null)}
-                          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleUpdateStatus(progressModal.projectId, 'IN_PROGRESS', progressInput);
-                            setProgressModal(null);
-                          }}
-                          className="px-5 py-2 bg-[#3066BE] hover:bg-[#255299] text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg"
-                        >
-                          Save Progress
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
                 )}
               </ModalPortal>
             </div>
