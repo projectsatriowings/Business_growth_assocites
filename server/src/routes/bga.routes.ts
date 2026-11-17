@@ -1551,6 +1551,7 @@ router.get('/enquiries', async (req: AuthRequest, res: Response): Promise<void> 
             status: true,
             totalAmount: true,
           },
+          orderBy: { version: 'desc' },
         },
       },
       orderBy: { createdAt: 'desc' },

@@ -3147,21 +3147,147 @@ export const BgaPortal: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-100">
+                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 text-xs text-slate-400 pt-3 border-t border-slate-100">
                         <span>Submitted on {new Date(enq.createdAt).toLocaleDateString()}</span>
 
-                        {hasActiveQuote ? (
-                          <span className="text-[#119DA4] font-semibold">
-                            Quotation Issued ({enq.quotations[0].quotationNumber})
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleRequestQuotation(enq.id)}
-                            className="px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 flex items-center gap-1.5 shadow-sm"
-                          >
-                            <Send className="w-3.5 h-3.5" /> Request Quotation from Accounts
-                          </button>
-                        )}
+                        {(() => {
+                          const latestQuot = enq.quotations && enq.quotations.length > 0 ? enq.quotations[0] : null;
+
+                          if (latestQuot) {
+                            if (latestQuot.status === 'REQUESTED') {
+                              return (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                                    <span>Quotation Requested • Pending Accounts Preparation ({latestQuot.quotationNumber})</span>
+                                  </span>
+                                  <button
+                                    onClick={() => setActiveTab('quotations')}
+                                    className="text-[11px] text-[#3066BE] hover:underline font-semibold"
+                                  >
+                                    Track in Quotes →
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            if (latestQuot.status === 'PREPARED' || latestQuot.status === 'PENDING_ADMIN_APPROVAL') {
+                              return (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200 flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-purple-600" />
+                                    <span>Quotation Drafted • Pending Admin Approval ({latestQuot.quotationNumber})</span>
+                                  </span>
+                                  <button
+                                    onClick={() => setActiveTab('quotations')}
+                                    className="text-[11px] text-[#3066BE] hover:underline font-semibold"
+                                  >
+                                    Track in Quotes →
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            if (latestQuot.status === 'REVISION_REQUESTED') {
+                              return (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-1.5">
+                                    <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                                    <span>Admin Requested Revision ({latestQuot.quotationNumber})</span>
+                                  </span>
+                                  <button
+                                    onClick={() => setActiveTab('quotations')}
+                                    className="text-[11px] text-[#3066BE] hover:underline font-semibold"
+                                  >
+                                    Track in Quotes →
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            if (latestQuot.status === 'ADMIN_APPROVED' || latestQuot.status === 'SENT_TO_BGA') {
+                              return (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-[#119DA4] border border-emerald-200 flex items-center gap-1.5">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-[#119DA4]" />
+                                    <span>Quotation Issued & Ready ({latestQuot.quotationNumber})</span>
+                                  </span>
+                                  <button
+                                    onClick={() => setActiveTab('quotations')}
+                                    className="px-2.5 py-1 bg-[#3066BE] text-white hover:bg-[#255299] rounded text-[11px] font-bold transition-colors"
+                                  >
+                                    Present to Client →
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            if (latestQuot.status === 'ACCEPTED') {
+                              return (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1.5">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>Quotation Accepted ({latestQuot.quotationNumber})</span>
+                                  </span>
+                                  <button
+                                    onClick={() => setActiveTab('projects')}
+                                    className="text-[11px] text-[#3066BE] hover:underline font-semibold"
+                                  >
+                                    View Work Order →
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            if (latestQuot.status === 'REJECTED') {
+                              return (
+                                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-50 text-red-700 border border-red-200">
+                                  Quotation Declined ({latestQuot.quotationNumber})
+                                </span>
+                              );
+                            }
+
+                            return (
+                              <span className="text-slate-600 font-semibold text-xs">
+                                Quotation {latestQuot.status} ({latestQuot.quotationNumber})
+                              </span>
+                            );
+                          }
+
+                          // If no quotation requested yet
+                          if (enq.status === 'APPROVED') {
+                            return (
+                              <button
+                                onClick={() => handleRequestQuotation(enq.id)}
+                                className="px-3.5 py-1.5 bg-[#3066BE] text-white rounded-lg text-xs font-bold hover:bg-[#255299] flex items-center gap-1.5 shadow-sm transition-colors"
+                              >
+                                <Send className="w-3.5 h-3.5" /> Request Quotation from Accounts
+                              </button>
+                            );
+                          }
+
+                          if (enq.status === 'SUBMITTED') {
+                            return (
+                              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                                <Clock className="w-3 h-3 text-amber-600 animate-pulse" /> Awaiting Management Review
+                              </span>
+                            );
+                          }
+
+                          if (enq.status === 'CHANGES_REQUESTED') {
+                            return (
+                              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                                Scope Changes Requested by Admin
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-50 text-red-700 border border-red-200">
+                              Enquiry Declined
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   );
@@ -3243,6 +3369,10 @@ export const BgaPortal: React.FC = () => {
                               ? 'APPROVED & AVAILABLE FOR CLIENT'
                               : isPendingAdmin
                               ? 'QUOTATION PENDING ADMIN APPROVAL'
+                              : q.status === 'REQUESTED'
+                              ? 'AWAITING ACCOUNTS PREPARATION'
+                              : q.status === 'REVISION_REQUESTED'
+                              ? 'REVISION REQUESTED BY ADMIN'
                               : isUnderPrep
                               ? 'QUOTATION UNDER PREPARATION'
                               : q.status}
