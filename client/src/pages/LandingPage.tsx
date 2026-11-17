@@ -49,7 +49,6 @@ export const LandingPage: React.FC = () => {
   const location = useLocation();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [portfolioTab, setPortfolioTab] = useState<'all' | 'web' | 'specialized' | 'campaign'>('all');
-  const [brandViewMode, setBrandViewMode] = useState<'marquee' | 'grid'>('marquee');
   const [portfolioViewMode, setPortfolioViewMode] = useState<'spotlight' | 'grid'>('spotlight');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('universal-eng');
   const [lightboxProject, setLightboxProject] = useState<any | null>(null);
@@ -1242,7 +1241,7 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Interactive Presentation Control Bar */}
+          {/* Interactive Presentation Header */}
           <div className="flex items-center justify-between mb-6 flex-wrap gap-4 pb-4 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-[#119DA4] animate-pulse" />
@@ -1250,87 +1249,52 @@ export const LandingPage: React.FC = () => {
                 Live Partner Network • {clientLogos.length} Verified Brands
               </span>
             </div>
-            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
-              <button
-                onClick={() => setBrandViewMode('marquee')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${brandViewMode === 'marquee' ? 'bg-[#3066BE] text-white shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                <Play className="w-3.5 h-3.5" />
-                <span>Dynamic Stream</span>
-              </button>
-              <button
-                onClick={() => setBrandViewMode('grid')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${brandViewMode === 'grid' ? 'bg-[#3066BE] text-white shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-                <span>Full Directory ({clientLogos.length})</span>
-              </button>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/80 text-xs font-bold text-[#3066BE]">
+              <Play className="w-3.5 h-3.5 fill-[#3066BE] text-[#3066BE]" />
+              <span>Dynamic Stream</span>
             </div>
           </div>
 
           {/* Dynamic Marquee Stream Mode */}
-          {brandViewMode === 'marquee' && (
-            <div className="relative overflow-hidden py-3 mb-12 -mx-4 sm:-mx-6 lg:-mx-8">
-              {/* Left & Right Edge Gradient Masks */}
-              <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-24 sm:w-48 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
-              <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-24 sm:w-48 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
+          <div className="relative overflow-hidden py-3 mb-12 -mx-4 sm:-mx-6 lg:-mx-8">
+            {/* Left & Right Edge Gradient Masks */}
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-24 sm:w-48 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-24 sm:w-48 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
 
-              {/* Track 1: Smooth Left Scroll */}
-              <div className="animate-marquee gap-5 py-2">
-                {[...clientLogos.slice(0, 9), ...clientLogos.slice(0, 9)].map((client, idx) => (
-                  <div
-                    key={`track1-${idx}`}
-                    className="w-48 sm:w-56 h-24 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#3066BE]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center shrink-0 group cursor-default"
-                  >
-                    <img
-                      src={client.file}
-                      alt="Client Logo"
-                      className="max-h-12 max-w-[80%] object-contain filter group-hover:scale-105 transition-all duration-200"
-                      loading="lazy"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              {/* Track 2: Smooth Right Scroll */}
-              <div className="animate-marquee-reverse gap-5 py-2 mt-3">
-                {[...clientLogos.slice(9), ...clientLogos.slice(9)].map((client, idx) => (
-                  <div
-                    key={`track2-${idx}`}
-                    className="w-48 sm:w-56 h-24 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#119DA4]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center shrink-0 group cursor-default"
-                  >
-                    <img
-                      src={client.file}
-                      alt="Client Logo"
-                      className="max-h-12 max-w-[80%] object-contain filter group-hover:scale-105 transition-all duration-200"
-                      loading="lazy"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Full Directory Grid Mode */}
-          {brandViewMode === 'grid' && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-12">
-              {clientLogos.map((client, idx) => (
+            {/* Track 1: Smooth Left Scroll */}
+            <div className="animate-marquee gap-5 py-2">
+              {[...clientLogos.slice(0, 9), ...clientLogos.slice(0, 9)].map((client, idx) => (
                 <div
-                  key={`grid-${idx}`}
-                  className="h-28 bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md hover:border-[#3066BE]/40 hover:-translate-y-1 transition-all flex items-center justify-center group"
+                  key={`track1-${idx}`}
+                  className="w-48 sm:w-56 h-24 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#3066BE]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center shrink-0 group cursor-default"
                 >
                   <img
                     src={client.file}
                     alt="Client Logo"
-                    className="max-h-12 max-w-[80%] object-contain group-hover:scale-105 transition-transform duration-200"
+                    className="max-h-12 max-w-[80%] object-contain filter group-hover:scale-105 transition-all duration-200"
                     loading="lazy"
                   />
                 </div>
               ))}
             </div>
-          )}
+
+            {/* Track 2: Smooth Right Scroll */}
+            <div className="animate-marquee-reverse gap-5 py-2 mt-3">
+              {[...clientLogos.slice(9), ...clientLogos.slice(9)].map((client, idx) => (
+                <div
+                  key={`track2-${idx}`}
+                  className="w-48 sm:w-56 h-24 bg-white/95 hover:bg-white border border-slate-200/80 hover:border-[#119DA4]/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center shrink-0 group cursor-default"
+                >
+                  <img
+                    src={client.file}
+                    alt="Client Logo"
+                    className="max-h-12 max-w-[80%] object-contain filter group-hover:scale-105 transition-all duration-200"
+                    loading="lazy"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* BGA Network Opportunity Callout Banner */}
           <div className="mb-20 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-[#152544] to-[#3066BE] text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800">
