@@ -15,6 +15,7 @@ import {
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification, invalidateUserCache } from '../middleware/auth';
 import { appCache } from '../utils/cache';
+import { validateBankUtr } from '../utils/utrValidator';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -1342,8 +1343,9 @@ router.post('/commissions/:id/payout', async (req: AuthRequest, res: Response): 
     const { id } = req.params;
     const { payoutReference, notes } = req.body;
 
-    if (!payoutReference) {
-      res.status(400).json({ error: 'Bank transfer/payout transaction reference is required' });
+    const utrValidation = validateBankUtr(payoutReference, 'BANK_TRANSFER');
+    if (!utrValidation.isValid) {
+      res.status(400).json({ error: utrValidation.error, hint: utrValidation.hint });
       return;
     }
 

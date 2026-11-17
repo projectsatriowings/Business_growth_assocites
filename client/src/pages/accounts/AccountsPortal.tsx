@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   LayoutDashboard,
   FileCheck,
@@ -18,6 +18,7 @@ import {
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
 import { SkeletonStatsRow, SkeletonTable, AccountsDashboardSkeleton } from '../../components/Skeleton';
+import { validateBankUtr, getUtrPlaceholderAndHint } from '../../utils/utrValidator';
 
 export const AccountsPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'quotation-requests' | 'work-orders' | 'payments' | 'commissions'>('dashboard');
@@ -141,24 +142,45 @@ export const AccountsPortal: React.FC = () => {
     }
   };
 
+  // Dynamic UTR helper and live validation
+  const utrConfig = useMemo(() => {
+    return getUtrPlaceholderAndHint(paymentForm.paymentMethod);
+  }, [paymentForm.paymentMethod]);
+
+  const utrCheck = useMemo(() => {
+    if (!paymentForm.transactionReference) {
+      return { isValid: false, error: 'Bank Transaction / UTR Reference is required.' };
+    }
+    return validateBankUtr(paymentForm.transactionReference, paymentForm.paymentMethod);
+  }, [paymentForm.transactionReference, paymentForm.paymentMethod]);
+
   // Handle Record Client Payment
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!paymentModal) return;
 
+    const validation = validateBankUtr(paymentForm.transactionReference, paymentForm.paymentMethod);
+    if (!validation.isValid) {
+      alert(`Invalid Bank Transaction / UTR:\n\n${validation.error}${validation.hint ? '\n\n' + validation.hint : ''}`);
+      return;
+    }
+
     try {
       await apiRequest(`/api/accounts/work-orders/${paymentModal.workOrder.id}/payments`, {
         method: 'POST',
-        body: JSON.stringify(paymentForm),
+        body: JSON.stringify({
+          ...paymentForm,
+          transactionReference: validation.formattedUtr,
+        }),
       });
 
-      alert('Payment recorded. Now please verify the actual bank receipt.');
+      alert(`Payment recorded successfully with verified UTR: ${validation.formattedUtr}. Now pending Accounts bank receipt verification.`);
       setPaymentModal(null);
       setPaymentForm({
         paymentType: 'ADVANCE',
         amount: '',
         adBudgetAmount: '0',
-        paymentMethod: 'BANK_TRANSFER',
+        paymentMethod: 'UPI',
         transactionReference: '',
         paymentDate: new Date().toISOString().slice(0, 10),
       });
@@ -663,45 +685,103 @@ export const AccountsPortal: React.FC = () => {
                       )}
 
                       <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Payment Method</label>
+                        <label className="block text-slate-700 font-semibold mb-1">Payment Method *</label>
                         <select
                           value={paymentForm.paymentMethod}
                           onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}
-                          className="w-full p-2 border border-slate-300 rounded"
+                          className="w-full p-2 border border-slate-300 rounded font-medium text-sm"
                         >
+                          <option value="UPI">UPI / QR Code</option>
                           <option value="NEFT">NEFT Bank Transfer</option>
                           <option value="RTGS">RTGS Bank Transfer</option>
                           <option value="IMPS">IMPS Immediate Transfer</option>
-                          <option value="UPI">UPI / QR Code</option>
                           <option value="CHEQUE">Cheque Clearance</option>
                         </select>
                       </div>
 
                       <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Bank Transaction / UTR Reference *</label>
-                        <input
-                          type="text"
-                          required
-                          value={paymentForm.transactionReference}
-                          onChange={(e) => setPaymentForm({ ...paymentForm, transactionReference: e.target.value })}
-                          placeholder="e.g. UTR123456789012"
-                          className="w-full p-2 border border-slate-300 rounded font-mono"
-                        />
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="block text-slate-700 font-semibold text-xs">
+                            Bank Transaction / UTR Reference *
+                          </label>
+                          <span className={`text-[11px] font-mono ${
+                            paymentForm.transactionReference.length === 0
+                              ? 'text-slate-400'
+                              : utrCheck.isValid
+                              ? 'text-emerald-600 font-bold'
+                              : 'text-amber-600 font-semibold'
+                          }`}>
+                            {paymentForm.transactionReference.length} chars • Req: {utrConfig.expectedLength}
+                          </span>
+                        </div>
+
+                        <div className="relative">
+                          <input
+                            type="text"
+                            required
+                            value={paymentForm.transactionReference}
+                            onChange={(e) => {
+                              const val = e.target.value.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
+                              setPaymentForm({ ...paymentForm, transactionReference: val });
+                            }}
+                            placeholder={utrConfig.placeholder}
+                            className={`w-full p-2.5 pr-9 border rounded-lg font-mono text-sm uppercase tracking-wide transition-all ${
+                              !paymentForm.transactionReference
+                                ? 'border-slate-300 focus:ring-2 focus:ring-blue-500'
+                                : utrCheck.isValid
+                                ? 'border-emerald-500 bg-emerald-50/20 text-emerald-900 focus:ring-2 focus:ring-emerald-500'
+                                : 'border-red-400 bg-red-50/20 text-red-900 focus:ring-2 focus:ring-red-500'
+                            }`}
+                          />
+                          <div className="absolute right-2.5 top-3">
+                            {paymentForm.transactionReference && (
+                              utrCheck.isValid ? (
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                              ) : (
+                                <AlertCircle className="w-4 h-4 text-red-500" />
+                              )
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Helper and Error feedback banner */}
+                        {paymentForm.transactionReference && !utrCheck.isValid ? (
+                          <div className="mt-1.5 p-2 bg-red-50 border border-red-200 rounded-lg text-[11px] text-red-700 space-y-0.5">
+                            <div className="flex items-center gap-1.5 font-bold">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600" />
+                              <span>{utrCheck.error}</span>
+                            </div>
+                            {utrCheck.hint && (
+                              <p className="text-slate-600 pl-5">{utrCheck.hint}</p>
+                            )}
+                          </div>
+                        ) : paymentForm.transactionReference && utrCheck.isValid ? (
+                          <div className="mt-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] text-emerald-800 flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span className="font-semibold">{utrCheck.hint || `Valid ${paymentForm.paymentMethod} transaction reference.`}</span>
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-[11px] text-slate-500">
+                            {utrConfig.helper}
+                          </p>
+                        )}
                       </div>
 
                       <div className="pt-3 flex justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => setPaymentModal(null)}
-                          className="px-3 py-1.5 rounded text-slate-600 font-semibold hover:bg-slate-100"
+                          className="px-3 py-1.5 rounded text-slate-600 font-semibold hover:bg-slate-100 text-xs"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold"
+                          disabled={!paymentForm.transactionReference || !utrCheck.isValid}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg font-bold text-xs shadow-sm transition-all flex items-center gap-1.5"
                         >
-                          Save Payment Record
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Save Payment Record</span>
                         </button>
                       </div>
                     </form>

@@ -40,6 +40,7 @@ import { PortalHeader } from '../../components/PortalHeader';
 import { AssociateProfileView } from './AssociateProfileView';
 import { apiRequest } from '../../utils/api';
 import { SkeletonCard, SkeletonStatsRow, SkeletonTable, AdminDashboardSkeleton } from '../../components/Skeleton';
+import { validateBankUtr } from '../../utils/utrValidator';
 
 // Generic Reusable Empty State Component
 const EmptyState: React.FC<{
@@ -342,14 +343,16 @@ export const AdminPortal: React.FC = () => {
 
   // Handle Payout Disbursed
   const executePayout = async () => {
-    if (!payoutModal || !payoutReferenceInput.trim()) {
-      alert('Please enter a valid bank transaction or UTR reference.');
+    if (!payoutModal) return;
+    const validation = validateBankUtr(payoutReferenceInput, 'BANK_TRANSFER');
+    if (!validation.isValid) {
+      alert(`Invalid Bank Transaction / UTR:\n\n${validation.error}${validation.hint ? '\n\n' + validation.hint : ''}`);
       return;
     }
     try {
       await apiRequest(`/api/admin/commissions/${payoutModal.commissionId}/payout`, {
         method: 'POST',
-        body: JSON.stringify({ payoutReference: payoutReferenceInput.trim() }),
+        body: JSON.stringify({ payoutReference: validation.formattedUtr }),
       });
       setPayoutModal(null);
       setPayoutReferenceInput('');
@@ -2778,17 +2781,36 @@ export const AdminPortal: React.FC = () => {
                     </p>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Bank Transaction / UTR Reference *
-                      </label>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-xs font-semibold text-slate-700">
+                          Bank Transaction / UTR Reference *
+                        </label>
+                        <span className="text-[10px] font-mono text-slate-500">
+                          {payoutReferenceInput.length} chars (8-24 req)
+                        </span>
+                      </div>
                       <input
                         type="text"
                         required
                         value={payoutReferenceInput}
-                        onChange={(e) => setPayoutReferenceInput(e.target.value)}
-                        placeholder="e.g. UTR1234567890 / NEFT-2026-X"
-                        className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-purple-500 font-mono"
+                        onChange={(e) => setPayoutReferenceInput(e.target.value.toUpperCase().replace(/[^A-Z0-9\-]/g, ''))}
+                        placeholder="e.g. AXISP26123456789 / NEFT-2026-X"
+                        className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-purple-500 font-mono uppercase"
                       />
+                      {payoutReferenceInput && (
+                        (() => {
+                          const v = validateBankUtr(payoutReferenceInput, 'BANK_TRANSFER');
+                          return v.isValid ? (
+                            <p className="mt-1 text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Valid transaction reference format
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-[11px] text-red-600 flex items-center gap-1">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {v.error}
+                            </p>
+                          );
+                        })()
+                      )}
                     </div>
 
                     <div className="flex justify-end gap-2 pt-2">
@@ -2803,7 +2825,8 @@ export const AdminPortal: React.FC = () => {
                       </button>
                       <button
                         onClick={executePayout}
-                        className="px-4 py-2 rounded-lg text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                        disabled={!payoutReferenceInput || !validateBankUtr(payoutReferenceInput, 'BANK_TRANSFER').isValid}
+                        className="px-4 py-2 rounded-lg text-xs font-bold bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white hover:bg-blue-700 shadow-sm"
                       >
                         Confirm Disbursement
                       </button>
