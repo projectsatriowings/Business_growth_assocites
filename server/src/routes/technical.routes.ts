@@ -226,7 +226,9 @@ router.put('/projects/:id/status', async (req: AuthRequest, res: Response): Prom
     const project = await prisma.technicalProject.findUnique({
       where: { id },
       include: {
-        workOrder: true,
+        workOrder: {
+          include: { bga: true },
+        },
         client: true,
       },
     });
@@ -307,26 +309,46 @@ router.put('/projects/:id/status', async (req: AuthRequest, res: Response): Prom
         });
       }
 
-      // Notify BGA, Accounts and Admin
+      // Notify BGA, Accounts and Admin with complete structured details & direct links
+      const bgaName = project.workOrder.bga?.name || 'Growth Associate';
+      const woNum = project.workOrder.workOrderNumber;
+      const totalVal = (project.workOrder.totalValue || 0).toLocaleString('en-IN');
+      const serviceCat = project.serviceCategory;
+
+      // 1. Notify Assigned BGA
       await createNotification(
         project.workOrder.bgaId,
-        'Project Completed by Technical Team',
-        `Project ${project.projectNumber} for ${project.client.clientName} has been marked COMPLETED.`,
-        'SUCCESS',
-        '/bga/projects'
+        'Project Completed – Final Payment Follow-up Required',
+        `Technical team completed project ${project.projectNumber} for ${project.client.clientName} (WO: ${woNum}, Value: ₹${totalVal}, Category: ${serviceCat}). Action required: Contact client regarding final payment clearance.`,
+        'ACTION_REQUIRED',
+        `/bga?tab=projects&projectId=${project.id}`
       );
 
-      const notifyUsers = await prisma.user.findMany({
-        where: { role: { in: [Role.ACCOUNTS, Role.ADMIN] } },
+      // 2. Notify Accounts Team
+      const accountsUsers = await prisma.user.findMany({
+        where: { role: Role.ACCOUNTS },
       });
-
-      for (const u of notifyUsers) {
+      for (const acc of accountsUsers) {
         await createNotification(
-          u.id,
-          'Technical Project Completed',
-          `Project ${project.projectNumber} for ${project.client.clientName} has been marked COMPLETED by Technical Team.`,
-          'SUCCESS',
-          '/accounts/work-orders'
+          acc.id,
+          'Project Completed – Final Payment Follow-up Required',
+          `Technical team completed project ${project.projectNumber} for ${project.client.clientName} (BGA: ${bgaName}, WO: ${woNum}, Value: ₹${totalVal}). Action required: Monitor client final payment clearance.`,
+          'ACTION_REQUIRED',
+          `/accounts?tab=final-payments&projectId=${project.id}`
+        );
+      }
+
+      // 3. Notify Admin Team
+      const adminUsers = await prisma.user.findMany({
+        where: { role: Role.ADMIN },
+      });
+      for (const adm of adminUsers) {
+        await createNotification(
+          adm.id,
+          'Project Completed by Technical Team',
+          `Project ${project.projectNumber} for ${project.client.clientName} (${serviceCat}) has been marked COMPLETED. Total Value: ₹${totalVal}. BGA: ${bgaName}.`,
+          'INFO',
+          `/admin?tab=technical&projectId=${project.id}`
         );
       }
     }

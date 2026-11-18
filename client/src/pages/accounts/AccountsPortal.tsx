@@ -33,6 +33,9 @@ import {
   User,
   Info,
   Calendar,
+  Phone,
+  ChevronDown,
+  History,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
@@ -118,6 +121,21 @@ export const AccountsPortal: React.FC = () => {
   } | null>(null);
   const [verifyNotes, setVerifyNotes] = useState('Bank statement checked & verified');
 
+  // Stage 3 & Stage 5 State: Final Payment Clearance & Commission Payouts
+  const [workOrderSubTab, setWorkOrderSubTab] = useState<'WORK_ORDERS' | 'FINAL_CLEARANCE'>('WORK_ORDERS');
+  const [finalPaymentProjects, setFinalPaymentProjects] = useState<any[]>([]);
+  const [expandedFollowUpPrjId, setExpandedFollowUpPrjId] = useState<string | null>(null);
+
+  const [commissionSubTab, setCommissionSubTab] = useState<'LEDGER' | 'PAYOUTS'>('LEDGER');
+  const [payoutsList, setPayoutsList] = useState<any[]>([]);
+  const [disburseModal, setDisburseModal] = useState<any | null>(null);
+  const [payoutUtr, setPayoutUtr] = useState('');
+  const [payoutMethod, setPayoutMethod] = useState('NEFT');
+  const [payoutDate, setPayoutDate] = useState(new Date().toISOString().slice(0, 10));
+  const [payoutReceiptUrl, setPayoutReceiptUrl] = useState('');
+  const [payoutNotes, setPayoutNotes] = useState('');
+  const [disbursing, setDisbursing] = useState(false);
+
   const loadStats = async (bypass = false) => {
     try {
       const s = await apiRequest('/api/accounts/dashboard-stats', { bypassCache: bypass });
@@ -156,15 +174,21 @@ export const AccountsPortal: React.FC = () => {
         (tab as string) === 'work-orders' ||
         (tab as string) === 'payments'
       ) {
-        const [p, w] = await Promise.all([
+        const [p, w, fp] = await Promise.all([
           apiRequest('/api/accounts/payments'),
           apiRequest('/api/accounts/work-orders'),
+          apiRequest('/api/accounts/final-payments').catch(() => ({ projects: [] })),
         ]);
         setPayments(p.payments || []);
         setWorkOrders(w.workOrders || []);
+        setFinalPaymentProjects(fp.projects || []);
       } else if (tab === 'commissions') {
-        const comm = await apiRequest('/api/accounts/commissions');
+        const [comm, payouts] = await Promise.all([
+          apiRequest('/api/accounts/commissions'),
+          apiRequest('/api/accounts/commission-payouts').catch(() => ({ commissions: [] })),
+        ]);
         setCommissions(comm.commissions || []);
+        setPayoutsList(payouts.commissions || []);
       }
     } catch (e) {
       console.error(e);
@@ -432,6 +456,43 @@ export const AccountsPortal: React.FC = () => {
       toast.error(err.message || 'Failed to update payment status');
     } finally {
       setModalSubmitting(false);
+    }
+  };
+
+  // Stage 5: Disburse Commission Payout to Associate Bank Account
+  const handleDisbursePayout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!disburseModal) return;
+
+    const validation = validateBankUtr(payoutUtr, payoutMethod);
+    if (!validation.isValid) {
+      toast.warning(`Invalid Bank Transaction / UTR: ${validation.error}${validation.hint ? ' (' + validation.hint + ')' : ''}`);
+      return;
+    }
+
+    setDisbursing(true);
+    try {
+      const res = await apiRequest(`/api/accounts/commissions/${disburseModal.id}/payout`, {
+        method: 'POST',
+        body: JSON.stringify({
+          transactionReference: validation.formattedUtr,
+          paymentMethod: payoutMethod,
+          transferDate: payoutDate,
+          receiptUrl: payoutReceiptUrl.trim() || undefined,
+          payoutNotes: payoutNotes.trim() || undefined,
+        }),
+      });
+
+      toast.success(res.message || `Commission payout of ₹${disburseModal.calculatedCommission?.toLocaleString()} processed successfully!`);
+      setDisburseModal(null);
+      setPayoutUtr('');
+      setPayoutNotes('');
+      setPayoutReceiptUrl('');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to disburse commission payout');
+    } finally {
+      setDisbursing(false);
     }
   };
 
@@ -1632,7 +1693,41 @@ export const AccountsPortal: React.FC = () => {
                 </div>
               </div>
 
-              {/* WORK ORDERS DESK */}
+              {/* Module Sub-tabs: Production Work Orders vs Stage 3 Final Payment Clearance */}
+              <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setWorkOrderSubTab('WORK_ORDERS')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    workOrderSubTab === 'WORK_ORDERS'
+                      ? 'bg-[#3066BE] text-white shadow-sm'
+                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                  }`}
+                >
+                  <Briefcase className="w-3.5 h-3.5" />
+                  <span>Production Work Orders ({workOrders.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWorkOrderSubTab('FINAL_CLEARANCE')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    workOrderSubTab === 'FINAL_CLEARANCE'
+                      ? 'bg-[#3066BE] text-white shadow-sm'
+                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Stage 3: Final Payment Clearance Desk ({finalPaymentProjects.length})</span>
+                  {finalPaymentProjects.filter((p: any) => p.status === 'COMPLETED').length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-black">
+                      {finalPaymentProjects.filter((p: any) => p.status === 'COMPLETED').length} Ready
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* SUB-TAB 1: WORK ORDERS DESK */}
+              {workOrderSubTab === 'WORK_ORDERS' && (
               <div className="space-y-4">
                 {/* Filters Bar */}
                 <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-3">
@@ -1908,6 +2003,243 @@ export const AccountsPortal: React.FC = () => {
                     </table>
                   </div>
                 </div>
+              )}
+
+              {/* SUB-TAB 2: STAGE 3 FINAL PAYMENT CLEARANCE DESK */}
+              {workOrderSubTab === 'FINAL_CLEARANCE' && (
+                <div className="space-y-4">
+                  <div className="bg-white p-4 rounded-xl border border-slate-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                          Stage 3: Accounts Final Payment Clearance Desk
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Projects completed by Technical or actively underway. Reconcile final client payments against bank receipts and BGA commitments to unlock commission clearance.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => loadData()}
+                        disabled={loading || tabLoading}
+                        className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors inline-flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${loading || tabLoading ? 'animate-spin' : ''}`} />
+                        Refresh
+                      </button>
+                    </div>
+                  </div>
+
+                  {finalPaymentProjects.length === 0 ? (
+                    <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm">
+                      <CheckCircle2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <h3 className="text-sm font-bold text-slate-800">No projects currently awaiting final payment</h3>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                        When Technical finishes a project or when client reaches final milestone, it will appear here for payment settlement.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {finalPaymentProjects.map((p) => {
+                        const wo = p.workOrder;
+                        const verifiedPayments = (wo?.payments || []).filter((pay: any) => pay.status === 'VERIFIED');
+                        const totalVerifiedPaid = verifiedPayments.reduce((acc: number, pay: any) => acc + (pay.amount || 0), 0);
+                        const totalVal = wo?.totalValue || 0;
+                        const balanceRemaining = Math.max(0, totalVal - totalVerifiedPaid);
+                        const latestFollowUp = p.finalPaymentFollowUps?.[0];
+
+                        return (
+                          <div key={p.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
+                                    {p.projectNumber}
+                                  </span>
+                                  <span className="font-mono text-xs text-slate-500">
+                                    WO: {wo?.workOrderNumber}
+                                  </span>
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    p.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                                    p.status === 'UNDER_REVIEW' ? 'bg-amber-100 text-amber-800' :
+                                    'bg-blue-100 text-blue-800'
+                                  }`}>
+                                    {p.status} ({p.progressPercentage}%)
+                                  </span>
+                                  {p.closureStatus === 'COMPLETED_AND_SETTLED' && (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500 text-white">
+                                      ✓ Settled & Closed
+                                    </span>
+                                  )}
+                                </div>
+                                <h4 className="text-sm font-bold text-slate-900 mt-1">
+                                  {p.client?.clientName}
+                                  <span className="text-xs font-normal text-slate-500 ml-2">
+                                    • Service: <strong className="text-slate-700">{p.serviceCategory?.replace(/_/g, ' ')}</strong>
+                                  </span>
+                                </h4>
+                                <div className="text-xs text-slate-500">
+                                  Growth Associate: <strong>{wo?.bga?.name}</strong> ({wo?.bga?.mobile || wo?.bga?.email})
+                                </div>
+                              </div>
+
+                              <div className="text-right flex flex-col items-end gap-1">
+                                <div className="text-xs text-slate-500">
+                                  Total Contract: <strong className="text-slate-800">₹{totalVal.toLocaleString('en-IN')}</strong>
+                                </div>
+                                <div className="text-xs text-emerald-700 font-semibold">
+                                  Verified Paid: ₹{totalVerifiedPaid.toLocaleString('en-IN')}
+                                </div>
+                                <div className={`text-sm font-extrabold ${balanceRemaining > 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                                  {balanceRemaining > 0 ? `Balance Due: ₹${balanceRemaining.toLocaleString('en-IN')}` : 'Fully Settled ✓'}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* BGA Final Payment Follow-up Card */}
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                  <Phone className="w-3.5 h-3.5 text-indigo-600" />
+                                  BGA Final Payment Follow-up & Commitment
+                                </span>
+                                {p.finalPaymentFollowUps && p.finalPaymentFollowUps.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedFollowUpPrjId(expandedFollowUpPrjId === p.id ? null : p.id)}
+                                    className="text-[11px] font-bold text-[#3066BE] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <History className="w-3 h-3" />
+                                    {p.finalPaymentFollowUps.length} Follow-ups
+                                    <ChevronDown className={`w-3 h-3 transition-transform ${expandedFollowUpPrjId === p.id ? 'rotate-180' : ''}`} />
+                                  </button>
+                                )}
+                              </div>
+
+                              {latestFollowUp ? (
+                                <div className="text-xs space-y-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                      latestFollowUp.status === 'PAYMENT_PROMISED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                                      latestFollowUp.status === 'PAYMENT_DELAYED' ? 'bg-amber-100 text-amber-800' :
+                                      latestFollowUp.status === 'CLIENT_DISPUTED' ? 'bg-rose-100 text-rose-800' :
+                                      'bg-blue-100 text-blue-800'
+                                    }`}>
+                                      {latestFollowUp.status?.replace(/_/g, ' ')}
+                                    </span>
+                                    <span className="text-slate-500 text-[11px]">
+                                      via {latestFollowUp.contactMethod} by <strong>{latestFollowUp.bga?.name}</strong> on {new Date(latestFollowUp.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                    </span>
+                                  </div>
+                                  {latestFollowUp.clientResponse && (
+                                    <p className="text-slate-600 text-xs">
+                                      <strong>Client:</strong> {latestFollowUp.clientResponse}
+                                    </p>
+                                  )}
+                                  <p className="text-slate-700 text-xs italic">
+                                    "{latestFollowUp.notes}"
+                                  </p>
+                                  {(latestFollowUp.expectedPaymentDate || latestFollowUp.expectedAmount) && (
+                                    <div className="flex items-center gap-3 pt-1 text-slate-600 text-[11px] font-medium">
+                                      {latestFollowUp.expectedPaymentDate && (
+                                        <span>Promised Date: <strong className="text-slate-800">{new Date(latestFollowUp.expectedPaymentDate).toLocaleDateString('en-IN')}</strong></span>
+                                      )}
+                                      {latestFollowUp.expectedAmount && (
+                                        <span>Expected Amount: <strong className="text-emerald-700 font-bold">₹{Number(latestFollowUp.expectedAmount).toLocaleString('en-IN')}</strong></span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-slate-400 italic">
+                                  BGA has not recorded a client follow-up yet.
+                                </p>
+                              )}
+
+                              {/* Expanded Follow-up Logs */}
+                              {expandedFollowUpPrjId === p.id && p.finalPaymentFollowUps && (
+                                <div className="mt-2 pt-2 border-t border-slate-200 space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                                  {p.finalPaymentFollowUps.map((fu: any) => (
+                                    <div key={fu.id} className="p-2 rounded bg-white border border-slate-200 text-[11px] space-y-0.5">
+                                      <div className="flex items-center justify-between text-slate-500">
+                                        <span className="font-semibold text-slate-800">{fu.status?.replace(/_/g, ' ')} ({fu.contactMethod})</span>
+                                        <span>{new Date(fu.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                      </div>
+                                      <p className="text-slate-700">{fu.notes}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Action Bar */}
+                            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 flex-wrap">
+                              <div className="flex items-center gap-2">
+                                {balanceRemaining > 0 ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPaymentModal({ workOrder: wo });
+                                      setUtrTouched(false);
+                                      setPaymentForm({
+                                        paymentType: 'FINAL',
+                                        amount: String(balanceRemaining),
+                                        adBudgetAmount: '0',
+                                        paymentMethod: 'UPI',
+                                        transactionReference: '',
+                                        paymentDate: new Date().toISOString().slice(0, 10),
+                                      });
+                                    }}
+                                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    Record & Verify Final Payment (₹{balanceRemaining.toLocaleString('en-IN')})
+                                  </button>
+                                ) : (
+                                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl inline-flex items-center gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    All Project Payments Fully Verified
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (wo?.quotationId) {
+                                      setDownloadingPdfId(wo.quotationId);
+                                      try {
+                                        await downloadQuotationPdf(
+                                          wo.quotationId,
+                                          wo.quotation?.quotationNumber || wo.workOrderNumber
+                                        );
+                                      } catch (err: any) {
+                                        toast.error(err.message || 'Failed to download quotation PDF');
+                                      } finally {
+                                        setDownloadingPdfId(null);
+                                      }
+                                    }
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                                >
+                                  {downloadingPdfId === wo?.quotationId ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Download className="w-3 h-3 text-slate-500" />
+                                  )}
+                                  Quotation / Work Order PDF
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* MODAL 1: PAYMENT DETAIL DRAWER */}
               <ModalPortal
@@ -2731,62 +3063,410 @@ export const AccountsPortal: React.FC = () => {
           {/* TAB 5: COMMISSION ENGINE */}
           {activeTab === 'commissions' && (
             <div className="space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200">
-                <h2 className="text-base font-bold text-slate-900">Commission Engine Computations</h2>
-                <p className="text-xs text-slate-500">
-                  Audited calculations based on verified receipts. DM commissions exclude advertisement budgets.
-                </p>
+              <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Commission Engine & Payouts Processing</h2>
+                  <p className="text-xs text-slate-500">
+                    Audited calculations based on verified receipts. Disburse approved commissions directly to associate bank accounts.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCommissionSubTab('LEDGER')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      commissionSubTab === 'LEDGER'
+                        ? 'bg-[#3066BE] text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    All Computations ({commissions.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCommissionSubTab('PAYOUTS')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      commissionSubTab === 'PAYOUTS'
+                        ? 'bg-[#3066BE] text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>Stage 5: Commission Payouts Desk</span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">
+                      {payoutsList.length}
+                    </span>
+                  </button>
+                </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                    <tr>
-                      <th className="p-3.5">BGA Associate</th>
-                      <th className="p-3.5">Client & Service</th>
-                      <th className="p-3.5">Commission Amount</th>
-                      <th className="p-3.5">Eligibility Condition</th>
-                      <th className="p-3.5">Admin Approval</th>
-                      <th className="p-3.5">Payout Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {commissions.map((c) => (
-                      <tr key={c.id}>
-                        <td className="p-3.5 font-bold text-slate-900">{c.bga?.name}</td>
-                        <td className="p-3.5">
-                          <div className="font-semibold text-slate-800">{c.client?.clientName}</div>
-                          <div className="text-[10px] text-indigo-600">{c.serviceCategory}</div>
-                        </td>
-                        <td className="p-3.5 font-bold text-emerald-700 text-sm">
-                          ₹{c.calculatedCommission?.toLocaleString()}
-                        </td>
-                        <td className="p-3.5">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            c.eligibilityStatus === 'ELIGIBLE' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
-                          }`}>
-                            {c.eligibilityStatus}
-                          </span>
-                        </td>
-                        <td className="p-3.5">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            c.approvalStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {c.approvalStatus}
-                          </span>
-                        </td>
-                        <td className="p-3.5">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            c.payoutStatus === 'PROCESSED' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
-                          }`}>
-                            {c.payoutStatus}
-                          </span>
-                        </td>
+              {commissionSubTab === 'LEDGER' && (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                      <tr>
+                        <th className="p-3.5">BGA Associate</th>
+                        <th className="p-3.5">Client & Service</th>
+                        <th className="p-3.5">Commission Amount</th>
+                        <th className="p-3.5">Rate & Source</th>
+                        <th className="p-3.5">Eligibility Condition</th>
+                        <th className="p-3.5">Admin Approval</th>
+                        <th className="p-3.5">Payout Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {commissions.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="p-8 text-center text-slate-400">
+                            No commission records generated yet.
+                          </td>
+                        </tr>
+                      ) : (
+                        commissions.map((c) => (
+                          <tr key={c.id}>
+                            <td className="p-3.5 font-bold text-slate-900">{c.bga?.name}</td>
+                            <td className="p-3.5">
+                              <div className="font-semibold text-slate-800">{c.client?.clientName}</div>
+                              <div className="text-[10px] text-indigo-600">{c.serviceCategory}</div>
+                            </td>
+                            <td className="p-3.5 font-bold text-emerald-700 text-sm">
+                              ₹{c.calculatedCommission?.toLocaleString()}
+                            </td>
+                            <td className="p-3.5">
+                              <div className="font-bold text-slate-800">{c.commissionRate}%</div>
+                              {c.rateSource && (
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.2 rounded ${
+                                  c.rateSource === 'PROJECT_OVERRIDE' ? 'bg-indigo-100 text-indigo-700' :
+                                  c.rateSource === 'CLIENT_DEFAULT' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-slate-100 text-slate-600'
+                                }`}>
+                                  [{c.rateSource.replace(/_/g, ' ')}]
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                c.eligibilityStatus === 'ELIGIBLE' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                              }`}>
+                                {c.eligibilityStatus}
+                              </span>
+                            </td>
+                            <td className="p-3.5">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                c.approvalStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {c.approvalStatus}
+                              </span>
+                            </td>
+                            <td className="p-3.5">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                c.payoutStatus === 'PROCESSED' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
+                              }`}>
+                                {c.payoutStatus}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* SUB-TAB 2: STAGE 5 COMMISSION PAYOUTS DESK */}
+              {commissionSubTab === 'PAYOUTS' && (
+                <div className="space-y-4">
+                  {payoutsList.length === 0 ? (
+                    <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm">
+                      <CheckCircle2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <h3 className="text-sm font-bold text-slate-800">No commissions pending disbursement</h3>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                        When Admin authorizes a commission, it will appear here for Accounts to record the bank transfer.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                          <tr>
+                            <th className="p-3.5">Associate & Bank Details</th>
+                            <th className="p-3.5">Client & Project</th>
+                            <th className="p-3.5">Approved Amount</th>
+                            <th className="p-3.5">Rate & Hierarchy Source</th>
+                            <th className="p-3.5">Admin Approval</th>
+                            <th className="p-3.5">Disbursement Status</th>
+                            <th className="p-3.5 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {payoutsList.map((c) => {
+                            const isPaid = c.payoutStatus === 'PROCESSED';
+                            return (
+                              <tr key={c.id} className="hover:bg-slate-50/50">
+                                <td className="p-3.5">
+                                  <div className="font-bold text-slate-900 text-sm">{c.bga?.name}</div>
+                                  <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                                    {c.bga?.bankName || 'Bank'}: {c.bga?.bankAccountNumber ? '••••••••' + c.bga.bankAccountNumber.slice(-4) : 'Pending'}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 font-mono">
+                                    IFSC: {c.bga?.bankIfsc || '—'}
+                                  </div>
+                                  <span className={`inline-block mt-1 px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                    c.bga?.bankVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                                  }`}>
+                                    {c.bga?.bankVerified ? '✓ Bank Verified' : '⚠ Bank Unverified'}
+                                  </span>
+                                </td>
+                                <td className="p-3.5">
+                                  <div className="font-semibold text-slate-800 text-sm">{c.client?.clientName}</div>
+                                  <div className="text-[11px] text-indigo-600 font-medium">
+                                    {c.project?.projectNumber || c.workOrder?.workOrderNumber || 'Contract'}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400">{c.serviceCategory}</div>
+                                </td>
+                                <td className="p-3.5">
+                                  <div className="text-emerald-700 font-black text-sm flex items-center gap-1">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                    ₹{Number(c.calculatedCommission || 0).toLocaleString('en-IN')}
+                                  </div>
+                                  <div className="text-[10px] text-slate-500">
+                                    Gross: ₹{Number(c.grossAmount || 0).toLocaleString('en-IN')}
+                                  </div>
+                                </td>
+                                <td className="p-3.5">
+                                  <div className="font-bold text-slate-800">{c.commissionRate}%</div>
+                                  <span className={`text-[10px] font-semibold px-1.5 py-0.2 rounded inline-block mt-0.5 ${
+                                    c.rateSource === 'PROJECT_OVERRIDE' ? 'bg-indigo-100 text-indigo-700' :
+                                    c.rateSource === 'CLIENT_DEFAULT' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-slate-100 text-slate-600'
+                                  }`}>
+                                    [{c.rateSource?.replace(/_/g, ' ') || 'SYSTEM DEFAULT'}]
+                                  </span>
+                                </td>
+                                <td className="p-3.5">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    APPROVED ✓
+                                  </span>
+                                  {c.approvedAt && (
+                                    <div className="text-[10px] text-slate-400 mt-0.5">
+                                      {new Date(c.approvedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="p-3.5">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    isPaid ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                  }`}>
+                                    {isPaid ? 'PAID / DISBURSED' : 'READY FOR TRANSFER'}
+                                  </span>
+                                  {c.payoutReference && (
+                                    <div className="text-[10px] font-mono text-slate-500 mt-1">
+                                      UTR: {c.payoutReference}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="p-3.5 text-right whitespace-nowrap">
+                                  {!isPaid ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setDisburseModal(c);
+                                        setPayoutUtr('');
+                                        setPayoutMethod('NEFT');
+                                        setPayoutDate(new Date().toISOString().slice(0, 10));
+                                        setPayoutReceiptUrl('');
+                                        setPayoutNotes('');
+                                      }}
+                                      className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                      <CreditCard className="w-3.5 h-3.5" />
+                                      Disburse Payout
+                                    </button>
+                                  ) : (
+                                    <span className="text-emerald-700 font-bold text-xs inline-flex items-center gap-1">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                      Disbursed
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* STAGE 5 DISBURSE PAYOUT MODAL */}
+              <ModalPortal
+                isOpen={!!disburseModal}
+                onClose={() => !disbursing && setDisburseModal(null)}
+              >
+                {disburseModal && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative max-h-[90vh] flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500" />
+                    <div className="p-6 space-y-4 overflow-y-auto">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                            Stage 5 Bank Disbursement
+                          </span>
+                          <h3 className="text-base font-bold text-slate-900 mt-1">
+                            Disburse Commission Payout
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            Transferring authorized payout to <strong>{disburseModal.bga?.name}</strong>
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={disbursing}
+                          onClick={() => setDisburseModal(null)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Locked Amount & Bank Summary Card */}
+                      <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                            Approved Payout Amount (Locked)
+                          </span>
+                          <span className="text-lg font-black text-emerald-800">
+                            ₹{Number(disburseModal.calculatedCommission || 0).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                        <div className="pt-2 border-t border-emerald-200/60 grid grid-cols-2 gap-2 text-[11px] text-emerald-950">
+                          <div>
+                            <span className="text-emerald-700 block">Bank Account:</span>
+                            <span className="font-mono font-bold">{disburseModal.bga?.bankAccountNumber || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-emerald-700 block">IFSC Code:</span>
+                            <span className="font-mono font-bold">{disburseModal.bga?.bankIfsc || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-emerald-700 block">Account Holder:</span>
+                            <span className="font-bold">{disburseModal.bga?.bankAccountHolder || disburseModal.bga?.name}</span>
+                          </div>
+                          <div>
+                            <span className="text-emerald-700 block">Bank Name:</span>
+                            <span className="font-bold">{disburseModal.bga?.bankName || '—'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <form onSubmit={handleDisbursePayout} className="space-y-3.5 text-xs">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block font-bold text-slate-700 mb-1">
+                              Payment Method <span className="text-rose-500">*</span>
+                            </label>
+                            <select
+                              value={payoutMethod}
+                              onChange={(e) => setPayoutMethod(e.target.value)}
+                              className="w-full p-2.5 border border-slate-200 rounded-xl font-medium bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                            >
+                              <option value="NEFT">NEFT Transfer</option>
+                              <option value="RTGS">RTGS Transfer</option>
+                              <option value="IMPS">IMPS Immediate</option>
+                              <option value="UPI">UPI Transfer</option>
+                              <option value="BANK_TRANSFER">Direct Bank Transfer</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block font-bold text-slate-700 mb-1">
+                              Transfer Date <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              value={payoutDate}
+                              onChange={(e) => setPayoutDate(e.target.value)}
+                              required
+                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-slate-700 mb-1">
+                            Bank Transaction Reference / UTR <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. CMS123456789012 or HDFC000123456"
+                            value={payoutUtr}
+                            onChange={(e) => setPayoutUtr(e.target.value.toUpperCase())}
+                            required
+                            className="w-full p-2.5 font-mono border border-slate-200 rounded-xl uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                          />
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            Standard 12 to 22 alphanumeric bank UTR from company net banking.
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-slate-700 mb-1">
+                            Payment Receipt / Screenshot Link (Optional)
+                          </label>
+                          <input
+                            type="url"
+                            placeholder="https://... or cloud storage receipt url"
+                            value={payoutReceiptUrl}
+                            onChange={(e) => setPayoutReceiptUrl(e.target.value)}
+                            className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-slate-700 mb-1">
+                            Accounts Notes / Audit Memo
+                          </label>
+                          <textarea
+                            rows={2}
+                            placeholder="Disbursed via corporate banking portal..."
+                            value={payoutNotes}
+                            onChange={(e) => setPayoutNotes(e.target.value)}
+                            className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 resize-none"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            disabled={disbursing}
+                            onClick={() => setDisburseModal(null)}
+                            className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={disbursing}
+                            className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold shadow-md inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          >
+                            {disbursing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                            <span>{disbursing ? 'Recording Payout...' : 'Confirm Bank Payout'}</span>
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </motion.div>
+                )}
+              </ModalPortal>
             </div>
           )}
         </main>

@@ -2439,6 +2439,12 @@ router.get('/work-orders', async (req: AuthRequest, res: Response): Promise<void
             feedback: {
               orderBy: { createdAt: 'asc' },
             },
+            finalPaymentFollowUps: {
+              orderBy: { createdAt: 'desc' },
+              include: {
+                bga: { select: { id: true, name: true } },
+              },
+            },
           },
         },
       },
@@ -2622,6 +2628,141 @@ router.post('/projects/:id/feedback', async (req: AuthRequest, res: Response): P
   } catch (error) {
     console.error('BGA feedback error:', error);
     res.status(500).json({ error: 'Failed to record feedback' });
+  }
+});
+
+// ==========================================
+// 7.1 Final Payment Follow-Up Management (Stage 2)
+// ==========================================
+router.get('/projects/:id/final-payment-follow-ups', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const project = await prisma.technicalProject.findUnique({
+      where: { id },
+      include: { workOrder: true },
+    });
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    if (project.workOrder.bgaId !== req.user!.id && req.user!.role !== Role.ADMIN) {
+      res.status(403).json({ error: 'Unauthorized to view follow-ups for this project' });
+      return;
+    }
+
+    const followUps = await prisma.finalPaymentFollowUp.findMany({
+      where: { projectId: id },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        bga: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    res.json({ followUps });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch follow-ups' });
+  }
+});
+
+router.post('/projects/:id/final-payment-follow-ups', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const {
+      contactMethod,
+      clientResponse,
+      notes,
+      expectedPaymentDate,
+      expectedAmount,
+      status,
+    } = req.body;
+
+    if (!notes || !notes.trim()) {
+      res.status(400).json({ error: 'Follow-up notes are required' });
+      return;
+    }
+
+    const project = await prisma.technicalProject.findUnique({
+      where: { id },
+      include: { workOrder: true, client: true },
+    });
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    if (project.workOrder.bgaId !== req.user!.id && req.user!.role !== Role.ADMIN) {
+      res.status(403).json({ error: 'Unauthorized to record follow-up for this project' });
+      return;
+    }
+
+    const followUp = await prisma.finalPaymentFollowUp.create({
+      data: {
+        projectId: id,
+        clientId: project.clientId,
+        bgaId: req.user!.id,
+        contactMethod: contactMethod || 'CALL',
+        clientResponse: clientResponse ? clientResponse.trim() : null,
+        notes: notes.trim(),
+        expectedPaymentDate: expectedPaymentDate ? new Date(expectedPaymentDate) : null,
+        expectedAmount: expectedAmount ? parseFloat(expectedAmount) : null,
+        status: status || 'CLIENT_CONTACTED',
+      },
+      include: {
+        bga: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    // Notify Accounts and Admin when payment is promised or commitment made
+    const isPaymentCommitment = status === 'PAYMENT_PROMISED' || status === 'CLIENT_CONFIRMED_PAYMENT' || !!expectedPaymentDate;
+    if (isPaymentCommitment) {
+      const expDateStr = expectedPaymentDate ? new Date(expectedPaymentDate).toLocaleDateString('en-IN') : 'promised date';
+      const expAmtStr = expectedAmount ? `₹${parseFloat(expectedAmount).toLocaleString('en-IN')}` : 'outstanding balance';
+
+      const accountsUsers = await prisma.user.findMany({ where: { role: Role.ACCOUNTS } });
+      for (const acc of accountsUsers) {
+        await createNotification(
+          acc.id,
+          'Client Payment Commitment Recorded',
+          `BGA ${req.user!.name} recorded payment commitment for project ${project.projectNumber} (${project.client.clientName}). Expected: ${expAmtStr} on ${expDateStr}. Notes: "${notes.trim().slice(0, 60)}..."`,
+          'INFO',
+          `/accounts?tab=final-payments&projectId=${project.id}`
+        );
+      }
+
+      const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+      for (const a of admins) {
+        await createNotification(
+          a.id,
+          'BGA Recorded Final Payment Follow-up',
+          `BGA ${req.user!.name} updated payment follow-up for ${project.projectNumber} (${project.client.clientName}): [${status}] Expected ${expAmtStr} by ${expDateStr}.`,
+          'INFO',
+          `/admin?tab=technical&projectId=${project.id}`
+        );
+      }
+    }
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'FINAL_PAYMENT_FOLLOW_UP_RECORDED',
+      'PROJECT',
+      id,
+      { status, contactMethod, expectedPaymentDate, expectedAmount },
+      req.ip
+    );
+
+    appCache.invalidatePrefix('bga:');
+    appCache.invalidatePrefix('accounts:');
+    appCache.invalidatePrefix('admin:');
+
+    res.status(201).json({ message: 'Follow-up recorded successfully', followUp });
+  } catch (error) {
+    console.error('Follow-up error:', error);
+    res.status(500).json({ error: 'Failed to record follow-up' });
   }
 });
 

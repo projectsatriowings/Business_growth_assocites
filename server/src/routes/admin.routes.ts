@@ -1366,7 +1366,7 @@ router.post('/commissions/:id/approve', async (req: AuthRequest, res: Response):
 
     const comm = await prisma.commission.findUnique({
       where: { id },
-      include: { bga: true },
+      include: { bga: true, client: true, workOrder: true },
     });
 
     if (!comm) {
@@ -1375,33 +1375,72 @@ router.post('/commissions/:id/approve', async (req: AuthRequest, res: Response):
     }
 
     // Payout Security Check: Bank account MUST be verified before funds disbursement
-    if (!comm.bga.bankVerified) {
+    if (!comm.bga.bankVerified && action === 'APPROVE') {
       res.status(400).json({
-        error: 'Cannot process payout: Associate bank account is pending verification by Admin. Please review and verify bank details in BGA Management before disbursing funds.'
+        error: 'Cannot process approval: Associate bank account is pending verification by Admin. Please review and verify bank details in BGA Management before approving payout.'
       });
       return;
     }
 
     const isApprove = action === 'APPROVE';
+    if (!isApprove && (!notes || !notes.trim())) {
+      res.status(400).json({ error: 'A mandatory reason is required when rejecting a commission request.' });
+      return;
+    }
+
     const updated = await prisma.commission.update({
       where: { id },
       data: {
         approvalStatus: isApprove ? CommissionApproval.APPROVED : CommissionApproval.REJECTED,
         approvedById: req.user!.id,
         approvedAt: new Date(),
-        notes: notes || comm.notes,
+        rejectionReason: !isApprove ? notes.trim() : null,
+        notes: notes ? `${comm.notes || ''} | ${action}: ${notes.trim()}` : comm.notes,
       },
     });
 
-    await createNotification(
-      comm.bgaId,
-      isApprove ? 'Commission Payout Approved' : 'Commission Held/Rejected',
-      isApprove
-        ? `Your commission of Rs. ${comm.calculatedCommission.toLocaleString()} has been approved by Admin and queued for bank disbursement.`
-        : `Your commission was rejected/held. Reason: ${notes || 'Verification required'}`,
-      isApprove ? 'SUCCESS' : 'WARNING',
-      '/bga/earnings'
-    );
+    if (isApprove) {
+      // 1. Notify BGA
+      await createNotification(
+        comm.bgaId,
+        'Commission Payout Approved',
+        `Your commission of ₹${comm.calculatedCommission.toLocaleString('en-IN')} (${comm.commissionRate}%) for ${comm.client.clientName} has been approved by Admin and queued for bank disbursement.`,
+        'SUCCESS',
+        '/bga?tab=earnings'
+      );
+
+      // 2. Notify Accounts (Stage 4)
+      const accountsUsers = await prisma.user.findMany({ where: { role: Role.ACCOUNTS } });
+      for (const acc of accountsUsers) {
+        await createNotification(
+          acc.id,
+          'BGA Commission Approved – Payment Required',
+          `Admin approved commission of ₹${comm.calculatedCommission.toLocaleString('en-IN')} (${comm.commissionRate}%) for BGA ${comm.bga.name} (Client: ${comm.client.clientName}). Payout disbursement required.`,
+          'ACTION_REQUIRED',
+          '/accounts?tab=commission-payouts'
+        );
+      }
+    } else {
+      // Notify BGA and Accounts of Rejection
+      await createNotification(
+        comm.bgaId,
+        'Commission Approval Rejected',
+        `Your commission request for ${comm.client.clientName} was rejected by Admin. Reason: "${notes.trim()}".`,
+        'WARNING',
+        '/bga?tab=earnings'
+      );
+
+      const accountsUsers = await prisma.user.findMany({ where: { role: Role.ACCOUNTS } });
+      for (const acc of accountsUsers) {
+        await createNotification(
+          acc.id,
+          'Commission Approval Rejected by Admin',
+          `Commission for BGA ${comm.bga.name} (${comm.client.clientName}) was rejected by Admin. Reason: "${notes.trim()}".`,
+          'INFO',
+          '/accounts?tab=work-orders'
+        );
+      }
+    }
 
     await logAudit(
       req.user!.id,
@@ -1413,6 +1452,10 @@ router.post('/commissions/:id/approve', async (req: AuthRequest, res: Response):
       { amount: comm.calculatedCommission, notes },
       req.ip
     );
+
+    appCache.invalidatePrefix('accounts:');
+    appCache.invalidatePrefix('bga:');
+    appCache.invalidatePrefix('admin:');
 
     res.json({ message: `Commission ${action} successful`, commission: updated });
   } catch (error) {
@@ -1663,6 +1706,226 @@ router.post('/send-test-email', async (req: AuthRequest, res: Response): Promise
     }
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message || 'Failed to dispatch test email' });
+  }
+});
+
+// ==========================================
+// 15. Admin Commission Configuration Management (Section 8)
+// ==========================================
+
+// GET all commission configurations
+router.get('/commission-configs', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const configs = await prisma.commissionRateConfig.findMany({
+      include: {
+        client: { select: { id: true, clientName: true, businessName: true, mobile: true, email: true } },
+        project: { select: { id: true, projectNumber: true, serviceCategory: true, status: true, approvedScope: true } },
+        bga: { select: { id: true, name: true, email: true } },
+        history: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    res.json({ configs });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch commission configurations' });
+  }
+});
+
+// POST create or upsert a commission configuration
+router.post('/commission-configs', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { clientId, projectId, bgaId, commissionPercentage, effectiveDate, expiryDate, internalNotes } = req.body;
+
+    if (!clientId) {
+      res.status(400).json({ error: 'Client selection is required' });
+      return;
+    }
+
+    const percentage = parseFloat(commissionPercentage);
+    if (isNaN(percentage) || percentage <= 0 || percentage > 100) {
+      res.status(400).json({ error: 'Commission percentage must be a valid positive number between 0.1% and 100%.' });
+      return;
+    }
+
+    // Check if configuration already exists for this (clientId, projectId)
+    const existing = await prisma.commissionRateConfig.findFirst({
+      where: {
+        clientId,
+        projectId: projectId || null,
+      },
+    });
+
+    let config;
+    if (existing) {
+      // Record history
+      await prisma.commissionRateHistory.create({
+        data: {
+          configId: existing.id,
+          clientId,
+          projectId: projectId || null,
+          previousRate: existing.commissionPercentage,
+          newRate: percentage,
+          changedById: req.user!.id,
+          changedByName: req.user!.name,
+          reason: internalNotes || 'Commission percentage updated by Admin',
+        },
+      });
+
+      config = await prisma.commissionRateConfig.update({
+        where: { id: existing.id },
+        data: {
+          bgaId: bgaId || existing.bgaId,
+          commissionPercentage: percentage,
+          effectiveDate: effectiveDate ? new Date(effectiveDate) : existing.effectiveDate,
+          expiryDate: expiryDate ? new Date(expiryDate) : null,
+          internalNotes: internalNotes || existing.internalNotes,
+          status: 'ACTIVE',
+          updatedById: req.user!.id,
+        },
+      });
+    } else {
+      config = await prisma.commissionRateConfig.create({
+        data: {
+          clientId,
+          projectId: projectId || null,
+          bgaId: bgaId || null,
+          commissionPercentage: percentage,
+          effectiveDate: effectiveDate ? new Date(effectiveDate) : new Date(),
+          expiryDate: expiryDate ? new Date(expiryDate) : null,
+          internalNotes: internalNotes || null,
+          status: 'ACTIVE',
+          createdById: req.user!.id,
+          updatedById: req.user!.id,
+        },
+      });
+
+      // Initial history entry
+      await prisma.commissionRateHistory.create({
+        data: {
+          configId: config.id,
+          clientId,
+          projectId: projectId || null,
+          previousRate: null,
+          newRate: percentage,
+          changedById: req.user!.id,
+          changedByName: req.user!.name,
+          reason: internalNotes || 'Initial commission rate configuration established',
+        },
+      });
+    }
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      existing ? 'COMMISSION_CONFIG_UPDATED' : 'COMMISSION_CONFIG_CREATED',
+      'COMMISSION_CONFIG',
+      config.id,
+      { clientId, projectId, percentage },
+      req.ip
+    );
+
+    appCache.invalidatePrefix('admin:');
+    appCache.invalidatePrefix('accounts:');
+
+    res.status(201).json({ message: 'Commission configuration saved successfully', config });
+  } catch (error) {
+    console.error('Config save error:', error);
+    res.status(500).json({ error: 'Failed to save commission configuration' });
+  }
+});
+
+// PUT update an existing commission configuration (REQUIRES MANDATORY REASON)
+router.put('/commission-configs/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { commissionPercentage, reason, effectiveDate, expiryDate, internalNotes, status } = req.body;
+
+    if (!reason || !reason.trim()) {
+      res.status(400).json({ error: 'A mandatory reason is required to modify an established commission rate.' });
+      return;
+    }
+
+    const percentage = parseFloat(commissionPercentage);
+    if (isNaN(percentage) || percentage <= 0 || percentage > 100) {
+      res.status(400).json({ error: 'Commission percentage must be a valid positive number between 0.1% and 100%.' });
+      return;
+    }
+
+    const existing = await prisma.commissionRateConfig.findUnique({
+      where: { id },
+      include: { client: true, project: true },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Commission configuration not found' });
+      return;
+    }
+
+    // Record immutable audit history
+    await prisma.commissionRateHistory.create({
+      data: {
+        configId: existing.id,
+        clientId: existing.clientId,
+        projectId: existing.projectId,
+        previousRate: existing.commissionPercentage,
+        newRate: percentage,
+        changedById: req.user!.id,
+        changedByName: req.user!.name,
+        reason: reason.trim(),
+      },
+    });
+
+    const updated = await prisma.commissionRateConfig.update({
+      where: { id },
+      data: {
+        commissionPercentage: percentage,
+        effectiveDate: effectiveDate ? new Date(effectiveDate) : existing.effectiveDate,
+        expiryDate: expiryDate ? new Date(expiryDate) : existing.expiryDate,
+        internalNotes: internalNotes ? internalNotes.trim() : existing.internalNotes,
+        status: status || existing.status,
+        updatedById: req.user!.id,
+      },
+    });
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'COMMISSION_CONFIG_RATE_MODIFIED',
+      'COMMISSION_CONFIG',
+      id,
+      { previousRate: existing.commissionPercentage, newRate: percentage, reason: reason.trim() },
+      req.ip
+    );
+
+    appCache.invalidatePrefix('admin:');
+    appCache.invalidatePrefix('accounts:');
+
+    res.json({ message: 'Commission rate updated and audit recorded successfully', config: updated });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update commission configuration' });
+  }
+});
+
+// GET Commission Rate Audit History
+router.get('/commission-configs/history', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const history = await prisma.commissionRateHistory.findMany({
+      include: {
+        client: { select: { id: true, clientName: true, businessName: true } },
+        project: { select: { id: true, projectNumber: true, serviceCategory: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    res.json({ history });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch commission rate history' });
   }
 });
 
