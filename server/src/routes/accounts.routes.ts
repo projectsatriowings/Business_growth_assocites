@@ -497,7 +497,7 @@ router.get('/payments', async (req: AuthRequest, res: Response): Promise<void> =
   }
 });
 
-// Record new client payment
+// Record new client payment (Accounts records payment upon bank receipt -> automatically verified)
 router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -506,7 +506,12 @@ router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response)
 
     const workOrder = await prisma.workOrder.findUnique({
       where: { id },
-      include: { client: true, bga: true },
+      include: {
+        client: true,
+        bga: true,
+        quotation: true,
+        project: true,
+      },
     });
 
     if (!workOrder) {
@@ -539,6 +544,7 @@ router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response)
     const adAmount = parseFloat(adBudgetAmount) || 0;
     const netFee = Math.max(0, payAmount - adAmount);
 
+    // Payments recorded by Accounts are verified immediately upon recording
     const payment = await prisma.payment.create({
       data: {
         workOrderId: id,
@@ -550,23 +556,149 @@ router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response)
         transactionReference: utrValidation.formattedUtr,
         paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
         proofAttachmentUrl: proofAttachmentUrl || null,
-        status: PaymentStatus.PENDING_VERIFICATION,
+        status: PaymentStatus.VERIFIED,
+        verifiedById: req.user!.id,
+        verifiedAt: new Date(),
+        verificationNotes: 'Recorded and verified directly by Accounts upon bank receipt',
       },
     });
+
+    // 1. Advance Payment Verification Handling -> Moves to Admin for Technical Handover!
+    if (paymentType === PaymentType.ADVANCE) {
+      const newAdvancePaid = workOrder.advancePaid + payAmount;
+      const isAdvanceFulfilled = newAdvancePaid >= workOrder.advanceRequired;
+
+      await prisma.workOrder.update({
+        where: { id: workOrder.id },
+        data: {
+          advancePaid: newAdvancePaid,
+          advanceVerified: isAdvanceFulfilled,
+          handoverStatus: isAdvanceFulfilled ? 'PENDING' : workOrder.handoverStatus,
+          status: isAdvanceFulfilled ? WorkOrderStatus.ADVANCE_VERIFIED : workOrder.status,
+        },
+      });
+
+      if (isAdvanceFulfilled) {
+        // Notify Admin to review and authorize Technical Handover
+        const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+        for (const a of admins) {
+          await createNotification(
+            a.id,
+            'Advance Payment Verified - Technical Handover Required',
+            `Accounts verified advance payment (Rs. ${payAmount.toLocaleString('en-IN')}) for ${workOrder.client.clientName}. Please review and authorize Technical Handover.`,
+            'ACTION_REQUIRED',
+            '/admin/work-orders'
+          );
+        }
+
+        // Notify BGA that payment is verified and waiting for Admin handover authorization
+        await createNotification(
+          workOrder.bgaId,
+          'Advance Payment Verified',
+          `Accounts verified advance payment for ${workOrder.client.clientName}. Awaiting Admin Technical Handover authorization.`,
+          'SUCCESS',
+          '/bga/projects'
+        );
+      }
+    }
+
+    // 2. Commission Calculation Engine
+    // Digital Marketing Monthly Payment: Commission calculated per monthly verified payment
+    if (workOrder.serviceCategory === ServiceCategoryType.DIGITAL_MARKETING) {
+      const commissionableAmount = Math.max(0, payAmount - adAmount);
+      const dmSetting = await prisma.systemSetting.findUnique({ where: { key: 'dm_commission_rate' } });
+      const rate = dmSetting ? parseFloat(dmSetting.value) : 15;
+      const calculatedCommission = (commissionableAmount * rate) / 100;
+
+      await prisma.commission.create({
+        data: {
+          bgaId: workOrder.bgaId,
+          clientId: workOrder.clientId,
+          workOrderId: workOrder.id,
+          paymentId: payment.id,
+          serviceCategory: workOrder.serviceCategory,
+          billingType: 'MONTHLY_RECURRING',
+          grossAmount: payAmount,
+          excludedAdSpend: adAmount,
+          commissionableAmount,
+          commissionRate: rate,
+          calculatedCommission,
+          eligibilityStatus: CommissionEligibility.ELIGIBLE,
+          approvalStatus: CommissionApproval.PENDING_APPROVAL,
+          payoutStatus: CommissionPayout.UNPAID,
+          notes: `Monthly recurring DM commission. Ad spend of Rs. ${adAmount} strictly excluded.`,
+        },
+      });
+
+      const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+      for (const a of admins) {
+        await createNotification(
+          a.id,
+          'New Commission Awaiting Approval',
+          `Eligible commission of Rs. ${calculatedCommission.toLocaleString()} for BGA ${workOrder.bga.name} (Client: ${workOrder.client.clientName}).`,
+          'ACTION_REQUIRED',
+          '/admin/commissions'
+        );
+      }
+    } else if (paymentType === PaymentType.FINAL) {
+      // Website, Mobile App, Software: Commission on project completion and final payment verification
+      const isProjectCompleted = workOrder.project?.status === ProjectStatus.COMPLETED;
+      let rateKey = 'website_commission_rate';
+      if (workOrder.serviceCategory === ServiceCategoryType.MOBILE_APPLICATION_DEVELOPMENT) {
+        rateKey = 'mobile_commission_rate';
+      } else if (workOrder.serviceCategory === ServiceCategoryType.SOFTWARE_DEVELOPMENT) {
+        rateKey = 'software_commission_rate';
+      }
+
+      const rateSetting = await prisma.systemSetting.findUnique({ where: { key: rateKey } });
+      const rate = rateSetting ? parseFloat(rateSetting.value) : 12;
+
+      const commissionableAmount = workOrder.quotation.serviceFee - workOrder.quotation.discount;
+      const calculatedCommission = (commissionableAmount * rate) / 100;
+
+      await prisma.commission.create({
+        data: {
+          bgaId: workOrder.bgaId,
+          clientId: workOrder.clientId,
+          workOrderId: workOrder.id,
+          paymentId: payment.id,
+          projectId: workOrder.project?.id || null,
+          serviceCategory: workOrder.serviceCategory,
+          billingType: 'PROJECT_BASED',
+          grossAmount: workOrder.totalValue,
+          excludedAdSpend: 0,
+          commissionableAmount,
+          commissionRate: rate,
+          calculatedCommission,
+          eligibilityStatus: isProjectCompleted ? CommissionEligibility.ELIGIBLE : CommissionEligibility.PENDING_CRITERIA,
+          approvalStatus: CommissionApproval.PENDING_APPROVAL,
+          payoutStatus: CommissionPayout.UNPAID,
+          notes: isProjectCompleted
+            ? `Project-based commission for ${workOrder.serviceCategory}. Verified upon final payment and project completion.`
+            : `Final payment verified. Commission will become ELIGIBLE once Technical marks project COMPLETED.`,
+        },
+      });
+    }
+
+    // Invalidate caches
+    appCache.invalidatePrefix('accounts:');
+    appCache.invalidatePrefix('admin:');
+    appCache.invalidatePrefix('bga:');
 
     await logAudit(
       req.user!.id,
       req.user!.email,
       req.user!.role,
-      'PAYMENT_RECORDED',
+      'PAYMENT_RECORDED_AND_VERIFIED',
       'PAYMENT',
       payment.id,
-      { amount: payAmount, type: paymentType },
+      { amount: payAmount, type: paymentType, utr: utrValidation.formattedUtr },
       req.ip
     );
 
-    res.status(201).json({ message: 'Payment recorded. Pending Accounts bank verification.', payment });
+    res.status(201).json({ message: 'Payment recorded and verified successfully. Work order advance cleared.', payment });
   } catch (error) {
+    console.error('Record payment error:', error);
     res.status(500).json({ error: 'Failed to record payment' });
   }
 });
@@ -749,6 +881,10 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
       { amount: payment.amount, isVerified },
       req.ip
     );
+
+    appCache.invalidatePrefix('accounts:');
+    appCache.invalidatePrefix('admin:');
+    appCache.invalidatePrefix('bga:');
 
     res.json({ message: `Payment successfully marked as ${isVerified ? 'VERIFIED' : 'REJECTED'}`, payment: updatedPayment });
   } catch (error: any) {
