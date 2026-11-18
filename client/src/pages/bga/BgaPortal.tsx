@@ -4249,11 +4249,13 @@ export const BgaPortal: React.FC = () => {
                   </div>
                 ) : (
                   quotations.map((q) => {
+                    const isSuperseded = !!q.supersededBy;
                     const isApproved =
-                      q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA' || q.adminApprovalStatus === 'APPROVED';
+                      (q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA' || q.adminApprovalStatus === 'APPROVED') && !isSuperseded;
                     const isPendingAdmin =
-                      q.status === 'PENDING_ADMIN_APPROVAL' || (q.adminApprovalStatus === 'PENDING' && q.preparedById);
-                    const isUnderPrep = q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED' || q.status === 'REJECTED';
+                      (q.status === 'PENDING_ADMIN_APPROVAL' || (q.adminApprovalStatus === 'PENDING' && q.preparedById)) && !isSuperseded;
+                    const isUnderPrep =
+                      (q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED' || q.status === 'REJECTED') && !isSuperseded;
 
                     return (
                       <div key={q.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -4264,7 +4266,12 @@ export const BgaPortal: React.FC = () => {
                               <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                                 v{q.version}
                               </span>
-                              {q.reminderCount > 0 && (
+                              {q.previousVersion && (
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                                  Revision of v{q.previousVersion.version}
+                                </span>
+                              )}
+                              {q.reminderCount > 0 && !isSuperseded && (
                                 <span className="text-[10px] text-red-700 bg-red-50 px-2 py-0.5 rounded font-bold border border-red-200 flex items-center gap-1">
                                   <Bell className="w-3 h-3 text-red-600" /> {q.reminderCount} Reminder(s) Sent
                                 </span>
@@ -4277,42 +4284,70 @@ export const BgaPortal: React.FC = () => {
 
                           <div className="flex items-center gap-2">
                             <span
-                              className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${q.status === 'ACCEPTED'
-                                ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
-                                : isApproved
+                              className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
+                                isSuperseded
+                                  ? 'bg-slate-100 text-slate-700 border border-slate-300'
+                                  : q.status === 'ACCEPTED'
+                                  ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
+                                  : isApproved
                                   ? 'bg-blue-100 text-blue-800 border border-blue-200'
                                   : isPendingAdmin
-                                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
-                                }`}
+                                  ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                  : 'bg-amber-100 text-amber-800 border border-amber-200'
+                              }`}
                             >
-                              {isApproved
+                              {isSuperseded
+                                ? `SUPERSEDED BY V${q.supersededBy.version}`
+                                : isApproved
                                 ? 'APPROVED & AVAILABLE FOR CLIENT'
                                 : isPendingAdmin
-                                  ? 'QUOTATION PENDING ADMIN APPROVAL'
-                                  : q.status === 'REQUESTED'
-                                    ? 'AWAITING ACCOUNTS PREPARATION'
-                                    : q.status === 'REVISION_REQUESTED'
-                                      ? 'REVISION REQUESTED BY ADMIN'
-                                      : isUnderPrep
-                                        ? 'QUOTATION UNDER PREPARATION'
-                                        : q.status}
+                                ? 'QUOTATION PENDING ADMIN APPROVAL'
+                                : q.status === 'REQUESTED'
+                                ? 'AWAITING ACCOUNTS PREPARATION'
+                                : q.status === 'REVISION_REQUESTED'
+                                ? 'REVISION REQUESTED BY ADMIN'
+                                : isUnderPrep
+                                ? 'QUOTATION UNDER PREPARATION'
+                                : q.status}
                             </span>
-                            {isApproved && (
+                            {(isApproved || isSuperseded || (q.preparedById && q.status === 'EXPIRED')) && (
                               <a
-                                href={`/api/resources/quotations/${q.id}/pdf`}
+                                href={getQuotationPdfUrl(q.id)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="px-3 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
                               >
-                                <Download className="w-3.5 h-3.5" /> PDF
+                                <Download className="w-3.5 h-3.5" /> {isSuperseded ? `v${q.version} PDF` : 'PDF'}
                               </a>
                             )}
                           </div>
                         </div>
 
                         {/* Financial Breakdown (Visible only when approved or prepared) */}
-                        {isApproved ? (
+                        {isSuperseded ? (
+                          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                            <div className="flex items-start gap-2.5">
+                              <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                              <div>
+                                <strong className="block font-semibold text-slate-900">
+                                  Quotation Superseded by Revised Version {q.supersededBy.version} ({q.supersededBy.quotationNumber})
+                                </strong>
+                                <p className="text-[11px] text-slate-500 mt-0.5">
+                                  This initial draft (v{q.version}) was updated and replaced by revised quotation <strong className="text-slate-800">{q.supersededBy.quotationNumber}</strong>. It is preserved below as legal audit proof.
+                                </p>
+                              </div>
+                            </div>
+                            <a
+                              href={getQuotationPdfUrl(q.id)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3 py-1.5 bg-white border border-slate-300 hover:border-blue-400 hover:text-blue-700 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 shadow-2xs"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-blue-600" />
+                              <span>View v{q.version} PDF Archive</span>
+                            </a>
+                          </div>
+                        ) : isApproved ? (
                           <div className="py-2 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50/50 p-3 rounded-xl border border-slate-100">
                             <div>
                               <span className="text-slate-400 block">Service Fee</span>
@@ -4345,6 +4380,73 @@ export const BgaPortal: React.FC = () => {
                           </div>
                         )}
 
+                        {/* VERSION 1 AUDIT PROOF & BASELINE (Embedded inside v2 / revision quotation) */}
+                        {q.previousVersion && (
+                          <div className="bg-slate-50/90 border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200 pb-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold text-[11px] border border-blue-200 flex items-center gap-1">
+                                  <FileText className="w-3 h-3 text-blue-700" />
+                                  Version 1 (v1) Baseline & Proof
+                                </span>
+                                <span className="font-mono font-bold text-slate-800 text-xs">
+                                  {q.previousVersion.quotationNumber}
+                                </span>
+                                <span className="text-[11px] text-slate-500">
+                                  • Drafted on {new Date(q.previousVersion.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <a
+                                href={getQuotationPdfUrl(q.previousVersion.id)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-blue-200 hover:bg-blue-50 text-blue-700 rounded-lg text-xs font-bold transition-all shadow-2xs"
+                                title="View original Version 1 quotation PDF for client and admin clarification"
+                              >
+                                <Download className="w-3.5 h-3.5 text-blue-600" />
+                                <span>View v1 PDF Proof</span>
+                              </a>
+                            </div>
+
+                            {/* Financial Delta & Comparison */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                              <div className="bg-white p-2.5 rounded-lg border border-slate-200/80 shadow-2xs">
+                                <span className="text-slate-400 block text-[10px] font-medium uppercase">v1 Service Fee</span>
+                                <span className="font-bold text-slate-800 text-xs">₹{(q.previousVersion.serviceFee || 0).toLocaleString()}</span>
+                                {q.serviceFee !== q.previousVersion.serviceFee && (
+                                  <span className="text-[10px] text-blue-600 block font-semibold mt-0.5">
+                                    ➔ v2: ₹{q.serviceFee?.toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="bg-white p-2.5 rounded-lg border border-slate-200/80 shadow-2xs">
+                                <span className="text-slate-400 block text-[10px] font-medium uppercase">v1 GST ({q.previousVersion.taxRate || 18}%)</span>
+                                <span className="font-bold text-slate-800 text-xs">₹{(q.previousVersion.taxAmount || 0).toLocaleString()}</span>
+                              </div>
+                              <div className="bg-white p-2.5 rounded-lg border border-slate-200/80 shadow-2xs">
+                                <span className="text-slate-400 block text-[10px] font-medium uppercase">v1 Total Contract</span>
+                                <span className="font-bold text-slate-800 text-xs">₹{(q.previousVersion.totalAmount || 0).toLocaleString()}</span>
+                                {q.totalAmount !== q.previousVersion.totalAmount && (
+                                  <span className={`text-[10px] block font-bold mt-0.5 ${q.totalAmount > q.previousVersion.totalAmount ? 'text-indigo-600' : 'text-emerald-600'}`}>
+                                    ➔ v2: ₹{q.totalAmount?.toLocaleString()} ({q.totalAmount > q.previousVersion.totalAmount ? '+' : ''}₹{(q.totalAmount - q.previousVersion.totalAmount).toLocaleString()})
+                                  </span>
+                                )}
+                              </div>
+                              <div className="bg-white p-2.5 rounded-lg border border-slate-200/80 shadow-2xs">
+                                <span className="text-slate-400 block text-[10px] font-medium uppercase">v1 Advance ({q.previousVersion.advanceRequiredPercent || 50}%)</span>
+                                <span className="font-bold text-slate-800 text-xs">₹{(q.previousVersion.advanceRequiredAmount || 0).toLocaleString()}</span>
+                              </div>
+                            </div>
+
+                            {/* v1 Scope baseline */}
+                            {q.previousVersion.serviceScope && (
+                              <div className="text-[11px] text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200/80 shadow-2xs">
+                                <strong className="text-slate-700">v1 Original Scope:</strong> {q.previousVersion.serviceScope}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         {q.serviceScope && (
                           <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                             <strong>Approved Scope:</strong> {q.serviceScope}
@@ -4357,6 +4459,12 @@ export const BgaPortal: React.FC = () => {
                           </span>
 
                           <div className="flex items-center gap-2 flex-wrap">
+                            {isSuperseded && (
+                              <span className="text-slate-500 font-medium">
+                                Replaced by v{q.supersededBy.version} on {new Date(q.supersededBy.createdAt).toLocaleDateString()}
+                              </span>
+                            )}
+
                             {/* Send Reminder button if Accounts has not finished or quote is pending */}
                             {isUnderPrep && (
                               <button

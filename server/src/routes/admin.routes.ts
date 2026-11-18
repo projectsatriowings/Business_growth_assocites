@@ -18,6 +18,7 @@ import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotificat
 import { appCache } from '../utils/cache';
 import { validateBankUtr } from '../utils/utrValidator';
 import { verifySmtpConnection, sendEmail, sendKycStatusEmail, sendPasswordResetEmail, ADMIN_ALERT_EMAIL } from '../utils/mailer';
+import { hydrateQuotationVersions } from '../utils/quotationVersion';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -981,7 +982,7 @@ router.get('/quotations', async (req: AuthRequest, res: Response): Promise<void>
       where.status = status as QuotationStatus;
     }
 
-    const quotations = await prisma.quotation.findMany({
+    const rawQuotations = await prisma.quotation.findMany({
       where,
       include: {
         client: true,
@@ -993,6 +994,7 @@ router.get('/quotations', async (req: AuthRequest, res: Response): Promise<void>
       orderBy: { createdAt: 'desc' },
     });
 
+    const quotations = await hydrateQuotationVersions(rawQuotations);
     res.json({ quotations });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load quotations' });
@@ -1001,7 +1003,7 @@ router.get('/quotations', async (req: AuthRequest, res: Response): Promise<void>
 
 router.get('/quotations/pending-approval', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const pendingQuotations = await prisma.quotation.findMany({
+    const rawPending = await prisma.quotation.findMany({
       where: {
         OR: [
           { status: QuotationStatus.PENDING_ADMIN_APPROVAL },
@@ -1017,6 +1019,7 @@ router.get('/quotations/pending-approval', async (req: AuthRequest, res: Respons
       orderBy: { createdAt: 'desc' },
     });
 
+    const pendingQuotations = await hydrateQuotationVersions(rawPending);
     res.json({ quotations: pendingQuotations });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load pending quotation approvals' });

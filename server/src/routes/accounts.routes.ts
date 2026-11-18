@@ -15,6 +15,7 @@ import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification } from '../middleware/auth';
 import { appCache } from '../utils/cache';
 import { validateBankUtr } from '../utils/utrValidator';
+import { hydrateQuotationVersions } from '../utils/quotationVersion';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -131,7 +132,7 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
 // 2. Approved Enquiries & Quotation Requests
 router.get('/quotation-requests', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const requests = await prisma.quotation.findMany({
+    const rawRequests = await prisma.quotation.findMany({
       where: {
         status: { not: QuotationStatus.EXPIRED },
       },
@@ -143,6 +144,7 @@ router.get('/quotation-requests', async (req: AuthRequest, res: Response): Promi
       },
       orderBy: { createdAt: 'desc' },
     });
+    const requests = await hydrateQuotationVersions(rawRequests);
     res.json({ requests });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load quotation requests' });

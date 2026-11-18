@@ -4,6 +4,7 @@ import { Role, BgaStatus, EnquiryStatus, QuotationStatus, WorkOrderStatus, Servi
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, checkBgaActive, AuthRequest, logAudit, createNotification } from '../middleware/auth';
 import { appCache } from '../utils/cache';
+import { hydrateQuotationVersions } from '../utils/quotationVersion';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -1962,7 +1963,7 @@ router.post('/enquiries/:id/request-quotation', async (req: AuthRequest, res: Re
 // View My Quotations (Includes reminder history and status)
 router.get('/quotations', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const quotations = await prisma.quotation.findMany({
+    const rawQuotations = await prisma.quotation.findMany({
       where: { bgaId: req.user!.id },
       include: {
         client: true,
@@ -1972,6 +1973,7 @@ router.get('/quotations', async (req: AuthRequest, res: Response): Promise<void>
       },
       orderBy: { createdAt: 'desc' },
     });
+    const quotations = await hydrateQuotationVersions(rawQuotations);
     res.json({ quotations });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load quotations' });

@@ -14,6 +14,10 @@ export interface QuotationLineItem {
 export interface QuotationPdfData {
   quotationNumber: string;
   version: number;
+  previousQuotationNumber?: string;
+  previousVersion?: number;
+  isArchivedVersion?: boolean;
+  supersededByNumber?: string;
   date: string;
   validityDate: string;
   client: {
@@ -163,24 +167,47 @@ export async function generateQuotationPdfBuffer(data: QuotationPdfData): Promis
 
   // Right: Quote Meta Badge (Cleanly aligned to the right-hand column axis at X: 330, ending at X: 550)
   const metaX = 330;
-  const metaY = 142;
+  const metaY = data.previousQuotationNumber ? 134 : 142;
   const metaW = 220;
-  const metaH = 56;
+  const metaH = data.previousQuotationNumber ? 66 : 56;
 
   kitDoc.roundedRect(metaX, metaY, metaW, metaH, 6).fillAndStroke('#f8fafc', '#e2e8f0');
 
   const printMetaRow = (label: string, val: string, yOff: number, isTeal: boolean = false) => {
-    kitDoc.font(regularFont).fontSize(8.5).fillColor('#64748b').text(label, metaX + 12, metaY + yOff);
+    kitDoc.font(regularFont).fontSize(8).fillColor('#64748b').text(label, metaX + 10, metaY + yOff);
     kitDoc
       .font(boldFont)
-      .fontSize(8.5)
+      .fontSize(8)
       .fillColor(isTeal ? '#119DA4' : '#0f172a')
-      .text(val, metaX + 70, metaY + yOff, { width: 138, align: 'right' });
+      .text(val, metaX + 65, metaY + yOff, { width: 145, align: 'right' });
   };
 
-  printMetaRow('Quote No:', `${data.quotationNumber} (v${data.version})`, 8, false);
-  printMetaRow('Date:', formatDisplayDate(data.date), 23, false);
-  printMetaRow('Valid Until:', formatDisplayDate(data.validityDate), 38, true);
+  printMetaRow('Quote No:', `${data.quotationNumber} (v${data.version})`, 7, false);
+  if (data.previousQuotationNumber) {
+    printMetaRow('Revision of:', `${data.previousQuotationNumber} (v${data.previousVersion || 1})`, 21, true);
+    printMetaRow('Issue Date:', formatDisplayDate(data.date), 35, false);
+    printMetaRow('Valid Until:', formatDisplayDate(data.validityDate), 49, true);
+  } else {
+    printMetaRow('Issue Date:', formatDisplayDate(data.date), 23, false);
+    printMetaRow('Valid Until:', formatDisplayDate(data.validityDate), 39, true);
+  }
+
+  // If this is an archived superseded quotation, add an official audit watermark banner
+  if (data.isArchivedVersion) {
+    kitDoc
+      .roundedRect(45, 196, 505, 16, 4)
+      .fillAndStroke('#fef2f2', '#fecaca');
+    kitDoc
+      .font(boldFont)
+      .fontSize(7.5)
+      .fillColor('#dc2626')
+      .text(
+        `OFFICIAL ARCHIVE RECORD: This Version ${data.version} quotation has been superseded by revised quotation ${data.supersededByNumber || 'V2'}. Retained for legal & audit proof.`,
+        52,
+        200,
+        { width: 490, align: 'center' }
+      );
+  }
 
   // --- TWO COLUMN PARTY INFO (Y: 206 to 275) ---
   const partyY = 206;

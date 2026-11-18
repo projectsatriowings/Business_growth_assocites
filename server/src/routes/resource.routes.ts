@@ -46,18 +46,46 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
       return;
     }
 
-    // For BGA role: Quotation must be authorized by Admin before client-facing PDF release
+    // Check if there is a newer version referencing this quotation (meaning this is an archived earlier version)
+    const newerVersion = await prisma.quotation.findFirst({
+      where: { previousVersionId: quotation.id },
+      select: { id: true, quotationNumber: true, version: true, status: true },
+    });
+
+    const isSupersededArchived =
+      quotation.status === QuotationStatus.EXPIRED ||
+      quotation.status === QuotationStatus.REVISION_REQUESTED ||
+      quotation.status === QuotationStatus.REJECTED ||
+      !!newerVersion;
+
+    // For BGA role: Quotation must be authorized by Admin before client-facing PDF release,
+    // OR if it is an archived historical version (with drafted details), allow downloading for proof & audit trail.
     const isApprovedForRelease =
       quotation.status === QuotationStatus.ADMIN_APPROVED ||
       quotation.status === QuotationStatus.SENT_TO_BGA ||
       quotation.status === QuotationStatus.ACCEPTED ||
-      quotation.adminApprovalStatus === 'APPROVED';
+      quotation.adminApprovalStatus === 'APPROVED' ||
+      (isSupersededArchived && quotation.preparedById != null);
 
     if (user.role === Role.BGA && !isApprovedForRelease) {
       res.status(403).json({
         error: 'This commercial quotation is currently under preparation and has not yet been approved by Management for client release.',
       });
       return;
+    }
+
+    // Fetch previous quotation details if this is a revised quotation (e.g. v2)
+    let previousQuotationNumber: string | undefined;
+    let previousVersionNumber: number | undefined;
+    if (quotation.previousVersionId) {
+      const prev = await prisma.quotation.findUnique({
+        where: { id: quotation.previousVersionId },
+        select: { quotationNumber: true, version: true },
+      });
+      if (prev) {
+        previousQuotationNumber = prev.quotationNumber;
+        previousVersionNumber = prev.version;
+      }
     }
 
     // Technical users cannot view financial quotations
@@ -126,6 +154,10 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
       {
         quotationNumber: quotation.quotationNumber,
         version: quotation.version || 1,
+        previousQuotationNumber,
+        previousVersion: previousVersionNumber,
+        isArchivedVersion: !!newerVersion,
+        supersededByNumber: newerVersion?.quotationNumber,
         date: dateStr,
         validityDate: validityDateStr,
         client: {
