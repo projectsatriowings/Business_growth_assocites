@@ -8,7 +8,8 @@
     "build": "cd client && npx vite build && cd ../server && npx tsc",
     "start": "cd server && node dist/index.js",
     "seed": "cd server && npx tsx src/seed.ts",
-    "clean:port": "powershell -Command \"Stop-Process -Id (Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue).OwningProcess -Force -ErrorAction SilentlyContinue\"",
+    "clean:port": "node scripts/free-port.js",
+    "prestart": "node scripts/free-port.js",
     "test:e2e": "npx tsx tests/e2e.test.ts"
   },
   "keywords": [

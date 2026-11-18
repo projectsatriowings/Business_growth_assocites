@@ -17,7 +17,7 @@ import uploadRoutes from './routes/upload.routes';
 dotenv.config();
 
 export const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
 // Middleware
 app.use(
@@ -94,39 +94,87 @@ process.on('unhandledRejection', (reason) => {
 
 import { verifySmtpConnection } from './utils/mailer';
 
-if (process.env.NODE_ENV !== 'test') {
-  const server = app.listen(PORT, async () => {
-    console.log(`=======================================================`);
-    console.log(`🚀 BGA Management System running on http://localhost:${PORT}`);
-    console.log(`📡 Database: Neon Cloud PostgreSQL Connected`);
-    console.log(`🛡️  Role Portals Active: Admin | BGA | Accounts | Technical`);
-    console.log(`📧 SMTP Email Active: info@atriowings.in (Nodemailer Gateway)`);
-    console.log(`=======================================================`);
-
-    // Non-blocking SMTP connection verification
-    verifySmtpConnection().then((res) => {
-      if (res.success) {
-        console.log(`✅ [SMTP] ${res.message}`);
-      } else {
-        console.warn(`⚠️ [SMTP Notice] ${res.message} (Emails will queue or retry)`);
+function freePortSync(port: number): void {
+  try {
+    const { execSync } = require('child_process');
+    if (process.platform === 'win32') {
+      const output = execSync('netstat -ano').toString();
+      const lines = output
+        .split('\r\n')
+        .filter((l: string) => (l.includes(`:${port} `) || l.includes(`:${port}\t`)) && l.includes('LISTENING'));
+      const pids = new Set<string>();
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        const pid = parts[parts.length - 1];
+        if (pid && pid !== '0' && Number(pid) !== process.pid) {
+          pids.add(pid);
+        }
       }
-    }).catch((err) => {
-      console.warn(`⚠️ [SMTP Notice] Initial check:`, err.message);
-    });
+      for (const pid of pids) {
+        try {
+          execSync(`taskkill /F /PID ${pid}`);
+        } catch {
+          // Process already terminated
+        }
+      }
+    } else {
+      execSync(`fuser -k ${port}/tcp 2>/dev/null || true`);
+    }
+  } catch {
+    // Port was already free
+  }
+}
 
-    // Reconcile and auto-release any existing advance-verified work orders
-    import('./utils/autoRelease').then(({ reconcileEligibleWorkOrders }) => {
-      reconcileEligibleWorkOrders().catch((err) => {
-        console.warn(`⚠️ [AutoRelease Notice] Startup reconciliation:`, err.message);
+if (process.env.NODE_ENV !== 'test') {
+  let retryCount = 0;
+  const maxRetries = 2;
+
+  const startServer = () => {
+    const server = app.listen(PORT, async () => {
+      console.log(`=======================================================`);
+      console.log(`🚀 BGA Management System running on http://localhost:${PORT}`);
+      console.log(`📡 Database: Neon Cloud PostgreSQL Connected`);
+      console.log(`🛡️  Role Portals Active: Admin | BGA | Accounts | Technical`);
+      console.log(`📧 SMTP Email Active: info@atriowings.in (Nodemailer Gateway)`);
+      console.log(`=======================================================`);
+
+      // Non-blocking SMTP connection verification
+      verifySmtpConnection().then((res) => {
+        if (res.success) {
+          console.log(`✅ [SMTP] ${res.message}`);
+        } else {
+          console.warn(`⚠️ [SMTP Notice] ${res.message} (Emails will queue or retry)`);
+        }
+      }).catch((err) => {
+        console.warn(`⚠️ [SMTP Notice] Initial check:`, err.message);
+      });
+
+      // Reconcile and auto-release any existing advance-verified work orders
+      import('./utils/autoRelease').then(({ reconcileEligibleWorkOrders }) => {
+        reconcileEligibleWorkOrders().catch((err) => {
+          console.warn(`⚠️ [AutoRelease Notice] Startup reconciliation:`, err.message);
+        });
       });
     });
-  });
 
-  server.on('error', (err: any) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(`❌ Port ${PORT} is already in use by another running process.`);
-      console.error(`💡 Run: Stop-Process -Id (Get-NetTCPConnection -LocalPort ${PORT}).OwningProcess -Force`);
-      process.exit(1);
-    }
-  });
+    server.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`⚠️ Port ${PORT} is currently occupied. Automatically freeing port ${PORT} (attempt ${retryCount}/${maxRetries})...`);
+          freePortSync(PORT);
+          setTimeout(() => {
+            console.log(`🔄 Retrying server start on http://localhost:${PORT}...`);
+            startServer();
+          }, 800);
+          return;
+        }
+        console.error(`❌ Port ${PORT} is still in use after ${maxRetries} automatic retry attempts.`);
+        console.error(`💡 Run: npm run clean:port`);
+        process.exit(1);
+      }
+    });
+  };
+
+  startServer();
 }
