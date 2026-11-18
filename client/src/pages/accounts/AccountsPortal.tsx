@@ -10,6 +10,7 @@ import {
   AlertCircle,
   AlertTriangle,
   Clock,
+  Bell,
   Download,
   Send,
   Eye,
@@ -350,7 +351,11 @@ export const AccountsPortal: React.FC = () => {
         body: JSON.stringify(quoteForm),
       });
 
-      toast.success('Official quotation prepared and dispatched to the BGA successfully.');
+      toast.success(
+        prepModal.quotation.status === 'REJECTED' || prepModal.quotation.status === 'REVISION_REQUESTED'
+          ? 'Corrected quotation submitted to Admin for approval.'
+          : 'Official quotation submitted to Admin for approval.'
+      );
       setPrepModal(null);
       loadData();
     } catch (err: any) {
@@ -1135,15 +1140,25 @@ export const AccountsPortal: React.FC = () => {
                             q.status === 'REQUESTED'
                               ? 'bg-amber-100 text-amber-800 border border-amber-200'
                               : q.status === 'REVISION_REQUESTED'
-                              ? 'bg-red-100 text-red-800 border border-red-200'
+                              ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                              : q.status === 'REJECTED'
+                              ? 'bg-rose-100 text-rose-800 border border-rose-200'
                               : q.status === 'PENDING_ADMIN_APPROVAL'
                               ? 'bg-purple-100 text-purple-800 border border-purple-200'
                               : q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA'
                               ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                              : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              : q.status === 'ACCEPTED'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              : 'bg-slate-100 text-slate-700 border border-slate-200'
                           }`}
                         >
-                          {q.status === 'PENDING_ADMIN_APPROVAL' ? 'PENDING ADMIN APPROVAL' : q.status}
+                          {q.status === 'PENDING_ADMIN_APPROVAL'
+                            ? 'PENDING ADMIN APPROVAL'
+                            : q.status === 'REJECTED'
+                            ? 'REJECTED BY ADMIN (CORRECTION NEEDED)'
+                            : q.status === 'REVISION_REQUESTED'
+                            ? 'REVISION REQUESTED BY ADMIN'
+                            : q.status}
                         </span>
                         <button
                           type="button"
@@ -1177,14 +1192,51 @@ export const AccountsPortal: React.FC = () => {
                       <div>
                         <strong>Service Scope:</strong> {q.serviceScope}
                       </div>
+                      {q.reminderCount > 0 && (
+                        <div className="p-3 bg-amber-50 rounded-xl border border-amber-300 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mt-2">
+                          <div className="flex items-center gap-2">
+                            <Bell className="w-4 h-4 text-amber-700 animate-pulse shrink-0" />
+                            <div>
+                              <strong className="text-amber-950 font-bold block">
+                                Quotation Preparation Reminder ({q.reminderCount} {q.reminderCount === 1 ? 'time' : 'times'}):
+                              </strong>
+                              <span className="text-amber-900 mt-0.5 block">
+                                BGA <strong>{q.bga?.name}</strong> has sent a reminder requesting immediate preparation of this official quotation for client <strong>{q.client?.clientName}</strong>.
+                              </span>
+                            </div>
+                          </div>
+                          {q.lastReminderSentAt && (
+                            <span className="text-[10px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-mono shrink-0">
+                              Reminder sent: {new Date(q.lastReminderSentAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {q.revisionNotes && (
                         <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 mt-2">
                           <strong>Client Revision Feedback:</strong> {q.revisionNotes}
                         </div>
                       )}
                       {q.adminNotes && (
-                        <div className="p-2.5 bg-purple-50 rounded-lg border border-purple-200 text-purple-900 mt-2">
-                          <strong>Admin Guidance:</strong> {q.adminNotes}
+                        <div className={`p-3 rounded-xl border text-xs mt-2 ${
+                          q.status === 'REJECTED'
+                            ? 'bg-rose-50 border-rose-300 text-rose-950'
+                            : 'bg-purple-50 border-purple-200 text-purple-900'
+                        }`}>
+                          <div className="flex items-center gap-1.5 font-bold mb-1">
+                            <AlertCircle className={`w-4 h-4 shrink-0 ${q.status === 'REJECTED' ? 'text-rose-600' : 'text-purple-600'}`} />
+                            <span>
+                              {q.status === 'REJECTED'
+                                ? 'Admin Rejection Guidance (Needed Corrections):'
+                                : 'Admin Guidance / Revision Instructions:'}
+                            </span>
+                          </div>
+                          <div className="pl-5 text-slate-800 font-medium leading-relaxed">
+                            {q.adminNotes}
+                          </div>
+                          <div className="pl-5 text-[11px] text-rose-700 mt-1 font-semibold">
+                            ⚠️ Admin has returned this quotation for corrections. Update the quotation properly and resubmit for executive approval.
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1194,21 +1246,35 @@ export const AccountsPortal: React.FC = () => {
                         Total Value: ₹{(q.totalAmount || 0).toLocaleString()} (Advance: ₹{(q.advanceRequiredAmount || 0).toLocaleString()})
                       </span>
 
-                      {(q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED') ? (
+                      {(q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED' || q.status === 'REJECTED') ? (
                         <button
                           onClick={() => openPrepModal(q)}
-                          className="px-4 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition-colors"
+                          className={`px-4 py-1.5 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer ${
+                            q.status === 'REJECTED'
+                              ? 'bg-rose-600 hover:bg-rose-700'
+                              : q.status === 'REVISION_REQUESTED'
+                              ? 'bg-amber-600 hover:bg-amber-700'
+                              : 'bg-[#3066BE] hover:bg-[#255299]'
+                          }`}
                         >
                           <Send className="w-3.5 h-3.5" />{' '}
-                          {q.status === 'REVISION_REQUESTED' ? 'Draft Revised Quotation' : 'Prepare Official Quotation'}
+                          {q.status === 'REJECTED'
+                            ? 'Make Corrections & Resubmit Quotation'
+                            : q.status === 'REVISION_REQUESTED'
+                            ? 'Draft Revised Quotation'
+                            : 'Prepare Official Quotation'}
                         </button>
                       ) : q.status === 'PENDING_ADMIN_APPROVAL' ? (
                         <span className="text-purple-700 font-semibold bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
                           Awaiting Admin Authorization
                         </span>
-                      ) : (
+                      ) : (q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA' || q.status === 'ACCEPTED') ? (
                         <span className="text-emerald-700 font-semibold">
-                          Released to BGA & Client
+                          {q.status === 'ACCEPTED' ? 'Quotation Accepted by Client' : 'Released to BGA & Client'}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 font-semibold">
+                          {q.status}
                         </span>
                       )}
                     </div>
@@ -1239,7 +1305,13 @@ export const AccountsPortal: React.FC = () => {
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="text-base font-bold text-slate-900">Official Quotation Builder</h3>
+                              <h3 className="text-base font-bold text-slate-900">
+                                {prepModal.quotation.status === 'REJECTED'
+                                  ? 'Correct & Resubmit Quotation'
+                                  : prepModal.quotation.status === 'REVISION_REQUESTED'
+                                  ? 'Revise Official Quotation'
+                                  : 'Official Quotation Builder'}
+                              </h3>
                               <span className="font-mono text-xs font-bold text-[#3066BE] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
                                 {prepModal.quotation.quotationNumber}
                               </span>
@@ -1259,11 +1331,25 @@ export const AccountsPortal: React.FC = () => {
                       </div>
 
                       <div className="p-6 overflow-y-auto space-y-4">
+                        {prepModal.quotation.adminNotes && (
+                          <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-xs text-rose-950 flex items-start gap-2.5">
+                            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                            <div>
+                              <strong className="block text-rose-900 font-bold">
+                                {prepModal.quotation.status === 'REJECTED'
+                                  ? 'Admin Rejection Guidance (Needed Corrections):'
+                                  : 'Admin Revision Instructions:'}
+                              </strong>
+                              <p className="mt-0.5 text-slate-800 font-medium">{prepModal.quotation.adminNotes}</p>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Company Policy Notice */}
                         <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-xl text-xs text-blue-900 flex items-start gap-2">
                           <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                           <div>
-                            <strong>Workflow Policy Notice:</strong> Submitted official quotations are routed to Admin review. Official quotes are automatically released to the BGA immediately upon Admin approval.
+                            <strong>Workflow Policy Notice:</strong> Submitted official quotations are routed to Admin review. Official quotes are held until Admin executive approval.
                           </div>
                         </div>
 
@@ -1359,10 +1445,14 @@ export const AccountsPortal: React.FC = () => {
                             <button
                               type="submit"
                               disabled={modalSubmitting}
-                              className="px-5 py-2 bg-gradient-to-r from-[#3066BE] to-[#255299] hover:from-[#255299] hover:to-[#1b3d73] text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                              className="px-5 py-2 bg-gradient-to-r from-[#3066BE] to-[#255299] hover:from-[#255299] hover:to-[#1b3d73] text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                             >
                               {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                              {modalSubmitting ? 'Submitting...' : 'Submit for Admin Approval →'}
+                              {modalSubmitting
+                                ? 'Submitting...'
+                                : prepModal.quotation.status === 'REJECTED' || prepModal.quotation.status === 'REVISION_REQUESTED'
+                                ? 'Submit Corrected Quotation to Admin →'
+                                : 'Submit for Admin Approval →'}
                             </button>
                           </div>
                         </form>
