@@ -2822,14 +2822,20 @@ export const AdminPortal: React.FC = () => {
                                   >
                                     Scope
                                   </button>
-                                  <a
-                                    href={getQuotationPdfUrl(q.id)}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-xs font-semibold inline-block hover:bg-slate-800"
-                                  >
-                                    PDF
-                                  </a>
+                                  {q.status === 'REQUESTED' || !q.preparedById ? (
+                                    <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200" title="Quotation has not been drafted by Accounts yet">
+                                      PDF Awaiting Draft
+                                    </span>
+                                  ) : (
+                                    <a
+                                      href={getQuotationPdfUrl(q.id)}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-xs font-semibold inline-block hover:bg-slate-800"
+                                    >
+                                      PDF
+                                    </a>
+                                  )}
                                 </div>
                               </td>
                             </tr>
