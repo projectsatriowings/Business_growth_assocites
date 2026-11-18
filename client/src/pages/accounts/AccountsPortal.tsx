@@ -174,10 +174,10 @@ export const AccountsPortal: React.FC = () => {
     }
   };
 
-  const loadData = async () => {
+  const loadData = async (bypassCache = true) => {
     setLoading(true);
     try {
-      await Promise.all([loadStats(), loadTabData()]);
+      await Promise.all([loadStats(bypassCache), loadTabData()]);
     } finally {
       setLoading(false);
     }
@@ -390,7 +390,7 @@ export const AccountsPortal: React.FC = () => {
 
     setModalSubmitting(true);
     try {
-      await apiRequest(`/api/accounts/work-orders/${paymentModal.workOrder.id}/payments`, {
+      const res = await apiRequest(`/api/accounts/work-orders/${paymentModal.workOrder.id}/payments`, {
         method: 'POST',
         body: JSON.stringify({
           ...paymentForm,
@@ -398,7 +398,7 @@ export const AccountsPortal: React.FC = () => {
         }),
       });
 
-      toast.success(`Payment recorded with UTR: ${validation.formattedUtr}. Awaiting Accounts verification.`);
+      toast.success(res.message || `Payment recorded and verified with UTR: ${validation.formattedUtr}.`);
       setPaymentModal(null);
       setUtrTouched(false);
       setPaymentForm({
