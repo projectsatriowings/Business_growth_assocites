@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { Role } from '@prisma/client';
+import { Role, QuotationStatus } from '@prisma/client';
 import { prisma } from '../prisma';
 import { authenticateJWT, AuthRequest } from '../middleware/auth';
 import { generateQuotationPdf } from '../utils/pdf';
@@ -35,6 +35,20 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
     // Role-based security: BGA can only download their own client's quotation
     if (user.role === Role.BGA && quotation.bgaId !== user.id) {
       res.status(403).json({ error: 'Unauthorized to access this quotation' });
+      return;
+    }
+
+    // For BGA role: Quotation must be authorized by Admin before client-facing PDF release
+    const isApprovedForRelease =
+      quotation.status === QuotationStatus.ADMIN_APPROVED ||
+      quotation.status === QuotationStatus.SENT_TO_BGA ||
+      quotation.status === QuotationStatus.ACCEPTED ||
+      quotation.adminApprovalStatus === 'APPROVED';
+
+    if (user.role === Role.BGA && !isApprovedForRelease) {
+      res.status(403).json({
+        error: 'This commercial quotation is currently under preparation and has not yet been approved by Management for client release.',
+      });
       return;
     }
 

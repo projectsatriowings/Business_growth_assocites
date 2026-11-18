@@ -12,6 +12,9 @@ import {
   CreditCard,
   Lock,
   Sparkles,
+  Eye,
+  EyeOff,
+  Check,
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 
@@ -21,6 +24,14 @@ export const RegisterBgaPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<any | null>(null);
+
+  // Password Visibility State
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Field Validation State
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   // Form State
   const [formData, setFormData] = useState({
@@ -39,61 +50,197 @@ export const RegisterBgaPage: React.FC = () => {
     agreementAccepted: false,
   });
 
+  const validateField = (name: string, value: any, currentForm = formData): string | undefined => {
+    switch (name) {
+      case 'fullName':
+        if (!value || !value.trim()) return 'Full legal name is required';
+        if (value.trim().length < 3) return 'Name must be at least 3 characters';
+        if (!/^[a-zA-Z\s.']+$/.test(value.trim())) return 'Name must contain letters only';
+        return undefined;
+
+      case 'dob':
+        if (value) {
+          const birthDate = new Date(value);
+          const today = new Date();
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const m = today.getMonth() - birthDate.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+          if (age < 18) return 'You must be at least 18 years old to register';
+          if (age > 100) return 'Please enter a valid date of birth';
+        }
+        return undefined;
+
+      case 'mobile':
+        if (!value || !value.trim()) return 'Mobile number is required';
+        const cleanMobile = value.replace(/\D/g, '');
+        if (cleanMobile.length !== 10) return 'Mobile number must be exactly 10 digits';
+        if (!/^[6-9]\d{9}$/.test(cleanMobile)) return 'Enter valid Indian mobile number starting with 6, 7, 8, or 9';
+        return undefined;
+
+      case 'address':
+        if (value && value.trim().length > 0 && value.trim().length < 6) {
+          return 'Please enter a complete address (min. 6 characters)';
+        }
+        return undefined;
+
+      case 'email':
+        if (!value || !value.trim()) return 'Email address is required';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim())) return 'Enter a valid email address (e.g. name@domain.com)';
+        return undefined;
+
+      case 'password':
+        if (!value) return 'Password is required';
+        if (value.length < 6) return 'Password must be at least 6 characters';
+        return undefined;
+
+      case 'confirmPassword':
+        if (!value) return 'Please confirm your password';
+        if (value !== currentForm.password) return 'Passwords do not match';
+        return undefined;
+
+      case 'panNumber':
+        if (!value || !value.trim()) return 'PAN Number is required for tax & compliance';
+        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value.trim().toUpperCase())) {
+          return 'Invalid PAN format (e.g. ABCDE1234F: 5 letters, 4 digits, 1 letter)';
+        }
+        return undefined;
+
+      case 'aadhaarNumber':
+        if (value && value.trim()) {
+          const cleanAadhaar = value.replace(/\D/g, '');
+          if (cleanAadhaar.length !== 12) return 'Aadhaar must be a 12-digit number';
+        }
+        return undefined;
+
+      case 'bankAccountHolder':
+        if (!value || !value.trim()) return 'Bank beneficiary name is required';
+        if (value.trim().length < 3) return 'Name must be at least 3 characters';
+        return undefined;
+
+      case 'bankAccountNumber':
+        if (!value || !value.trim()) return 'Bank account number is required';
+        const cleanAcc = value.replace(/\D/g, '');
+        if (cleanAcc.length < 9 || cleanAcc.length > 18) return 'Account number must be between 9 and 18 digits';
+        return undefined;
+
+      case 'bankIfsc':
+        if (!value || !value.trim()) return 'Bank IFSC Code is required';
+        if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value.trim().toUpperCase())) {
+          return 'Invalid IFSC format (e.g. HDFC0001234: 4 letters, 0, 6 characters)';
+        }
+        return undefined;
+
+      case 'agreementAccepted':
+        if (!value) return 'You must accept the associate terms to proceed';
+        return undefined;
+
+      default:
+        return undefined;
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
+    let nextVal: any = value;
+
     if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData((prev) => ({ ...prev, [name]: checked }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      nextVal = (e.target as HTMLInputElement).checked;
+    } else if (name === 'panNumber' || name === 'bankIfsc') {
+      nextVal = value.toUpperCase();
+    } else if (name === 'mobile' || name === 'aadhaarNumber' || name === 'bankAccountNumber') {
+      nextVal = value.replace(/\D/g, '');
     }
+
+    const nextForm = { ...formData, [name]: nextVal };
+    setFormData(nextForm);
+
+    if (touched[name]) {
+      const err = validateField(name, nextVal, nextForm);
+      setFieldErrors((prev) => ({ ...prev, [name]: err || '' }));
+    }
+
+    if (name === 'password' && touched.confirmPassword) {
+      const confirmErr = validateField('confirmPassword', formData.confirmPassword, nextForm);
+      setFieldErrors((prev) => ({ ...prev, confirmPassword: confirmErr || '' }));
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    const err = validateField(name, value, formData);
+    setFieldErrors((prev) => ({ ...prev, [name]: err || '' }));
   };
 
   const handleNext = () => {
     setError(null);
+    let stepFields: string[] = [];
+
     if (step === 1) {
-      if (!formData.fullName || !formData.mobile || !formData.email || !formData.password) {
-        setError('Please fill in all mandatory profile fields');
-        return;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setError('Passwords do not match');
-        return;
-      }
-      if (formData.password.length < 6) {
-        setError('Password must be at least 6 characters');
-        return;
-      }
-      if (formData.mobile.replace(/\D/g, '').length < 10) {
-        setError('Please provide a valid 10-digit mobile number');
-        return;
-      }
+      stepFields = ['fullName', 'mobile', 'email', 'password', 'confirmPassword'];
+      if (formData.dob) stepFields.push('dob');
+      if (formData.address) stepFields.push('address');
     } else if (step === 2) {
-      if (!formData.panNumber) {
-        setError('PAN Number is required for tax & compliance');
-        return;
-      }
-      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-      if (!panRegex.test(formData.panNumber.trim().toUpperCase())) {
-        setError('Invalid PAN format. Standard format is 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F)');
-        return;
-      }
-      if (formData.aadhaarNumber && formData.aadhaarNumber.replace(/\D/g, '').length !== 12) {
-        setError('Aadhaar must be a 12-digit number');
-        return;
-      }
+      stepFields = ['panNumber'];
+      if (formData.aadhaarNumber) stepFields.push('aadhaarNumber');
     } else if (step === 3) {
-      if (!formData.bankAccountHolder || !formData.bankAccountNumber || !formData.bankIfsc) {
-        setError('Complete bank details are required for commission disbursement');
-        return;
-      }
-      const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
-      if (!ifscRegex.test(formData.bankIfsc.trim().toUpperCase())) {
-        setError('Invalid IFSC Code format (e.g. HDFC0001234)');
-        return;
+      stepFields = ['bankAccountHolder', 'bankAccountNumber', 'bankIfsc'];
+    }
+
+    const newErrors: Record<string, string> = {};
+    const newTouched: Record<string, boolean> = { ...touched };
+
+    let hasErrors = false;
+    for (const f of stepFields) {
+      newTouched[f] = true;
+      const err = validateField(f, (formData as any)[f], formData);
+      if (err) {
+        newErrors[f] = err;
+        hasErrors = true;
       }
     }
+
+    setTouched(newTouched);
+    setFieldErrors((prev) => ({ ...prev, ...newErrors }));
+
+    if (hasErrors) {
+      const firstError = Object.values(newErrors)[0];
+      setError(firstError || 'Please correct the highlighted errors before continuing');
+      return;
+    }
+
     setStep((prev) => prev + 1);
+  };
+
+  const getInputClasses = (fieldName: string, isMono = false, hasIconPadding = false) => {
+    const isErr = touched[fieldName] && fieldErrors[fieldName];
+    const isValid = touched[fieldName] && (formData as any)[fieldName] && !fieldErrors[fieldName];
+    return `w-full ${hasIconPadding ? 'pl-4 pr-11' : 'px-4'} py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 ${
+      isMono ? 'font-mono' : ''
+    } ${
+      isErr
+        ? 'border-rose-400 bg-rose-50/20 focus:ring-rose-200 text-rose-900'
+        : isValid
+        ? 'border-emerald-400 bg-emerald-50/10 focus:ring-emerald-200'
+        : 'border-slate-300 focus:ring-[#3066BE]'
+    }`;
+  };
+
+  const renderFieldError = (fieldName: string, defaultHelp?: string) => {
+    if (touched[fieldName] && fieldErrors[fieldName]) {
+      return (
+        <p className="text-[11px] text-rose-600 font-medium mt-1 flex items-center gap-1 animate-fadeIn">
+          <AlertCircle className="w-3 h-3 shrink-0" />
+          <span>{fieldErrors[fieldName]}</span>
+        </p>
+      );
+    }
+    if (defaultHelp) {
+      return <p className="text-[11px] text-slate-400 mt-1">{defaultHelp}</p>;
+    }
+    return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,6 +248,8 @@ export const RegisterBgaPage: React.FC = () => {
     setError(null);
 
     if (!formData.agreementAccepted) {
+      setTouched((prev) => ({ ...prev, agreementAccepted: true }));
+      setFieldErrors((prev) => ({ ...prev, agreementAccepted: 'You must accept the associate agreement and consent terms' }));
       setError('You must accept the associate agreement and consent terms');
       return;
     }
@@ -247,16 +396,20 @@ export const RegisterBgaPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Full Legal Name *</label>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Full Legal Name <span className="text-rose-500">*</span>
+                    </label>
                     <input
                       type="text"
                       name="fullName"
                       required
                       value={formData.fullName}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       placeholder="As per Government ID (Aadhaar / PAN)"
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                      className={getInputClasses('fullName')}
                     />
+                    {renderFieldError('fullName', 'Enter your full name as registered in official documents')}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -267,20 +420,27 @@ export const RegisterBgaPage: React.FC = () => {
                         name="dob"
                         value={formData.dob}
                         onChange={handleChange}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                        onBlur={handleBlur}
+                        className={getInputClasses('dob')}
                       />
+                      {renderFieldError('dob', 'Must be at least 18 years of age')}
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Mobile Phone Number *</label>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Mobile Phone Number <span className="text-rose-500">*</span>
+                      </label>
                       <input
                         type="tel"
                         name="mobile"
                         required
+                        maxLength={10}
                         value={formData.mobile}
                         onChange={handleChange}
+                        onBlur={handleBlur}
                         placeholder="10-digit mobile number"
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                        className={getInputClasses('mobile', true)}
                       />
+                      {renderFieldError('mobile', '10 digits without +91 or leading 0')}
                     </div>
                   </div>
 
@@ -291,47 +451,97 @@ export const RegisterBgaPage: React.FC = () => {
                       rows={2}
                       value={formData.address}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       placeholder="Door No, Street, Locality, City, State, PIN"
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                      className={getInputClasses('address')}
                     />
+                    {renderFieldError('address')}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Email Address <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      required
+                      value={formData.email}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder="name@domain.com"
+                      className={getInputClasses('email')}
+                    />
+                    {renderFieldError('email', 'Used for official notifications & login credentials')}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Email Address *</label>
-                      <input
-                        type="email"
-                        name="email"
-                        required
-                        value={formData.email}
-                        onChange={handleChange}
-                        placeholder="name@domain.com"
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                      />
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Password <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          name="password"
+                          required
+                          value={formData.password}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          placeholder="Min. 6 characters"
+                          className={getInputClasses('password', false, true)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 focus:outline-none transition-colors"
+                          title={showPassword ? 'Hide password' : 'Show password'}
+                          tabIndex={-1}
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      {renderFieldError('password', 'Minimum 6 characters')}
                     </div>
+
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Password *</label>
-                      <input
-                        type="password"
-                        name="password"
-                        required
-                        value={formData.password}
-                        onChange={handleChange}
-                        placeholder="Min. 6 characters"
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">Confirm Password *</label>
-                      <input
-                        type="password"
-                        name="confirmPassword"
-                        required
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        placeholder="Re-enter password"
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                      />
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Confirm Password <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          name="confirmPassword"
+                          required
+                          value={formData.confirmPassword}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          placeholder="Re-enter password"
+                          className={getInputClasses('confirmPassword', false, true)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 focus:outline-none transition-colors"
+                          title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                          tabIndex={-1}
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      {touched.confirmPassword && fieldErrors.confirmPassword ? (
+                        <p className="text-[11px] text-rose-600 font-medium mt-1 flex items-center gap-1 animate-fadeIn">
+                          <AlertCircle className="w-3 h-3 shrink-0" />
+                          <span>{fieldErrors.confirmPassword}</span>
+                        </p>
+                      ) : touched.confirmPassword && formData.confirmPassword && !fieldErrors.confirmPassword ? (
+                        <p className="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 shrink-0" />
+                          <span>Passwords match</span>
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-slate-400 mt-1">Must match password</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -346,18 +556,21 @@ export const RegisterBgaPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Permanent Account Number (PAN) *</label>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Permanent Account Number (PAN) <span className="text-rose-500">*</span>
+                    </label>
                     <input
                       type="text"
                       name="panNumber"
                       required
                       maxLength={10}
                       value={formData.panNumber}
-                      onChange={(e) => setFormData({ ...formData, panNumber: e.target.value.toUpperCase() })}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
                       placeholder="e.g. ABCDE1234F"
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                      className={getInputClasses('panNumber', true)}
                     />
-                    <p className="text-[11px] text-slate-400 mt-1">Used for TDS deduction on eligible commission disbursements.</p>
+                    {renderFieldError('panNumber', '5 letters, 4 digits, 1 letter (used for statutory TDS compliance)')}
                   </div>
 
                   <div>
@@ -368,12 +581,11 @@ export const RegisterBgaPage: React.FC = () => {
                       maxLength={12}
                       value={formData.aadhaarNumber}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       placeholder="e.g. 123456789012"
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                      className={getInputClasses('aadhaarNumber', true)}
                     />
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      Stored in masked format (XXXX-XXXX-1234) for security and privacy protection.
-                    </p>
+                    {renderFieldError('aadhaarNumber', 'Stored in masked format (XXXX-XXXX-1234) for security and privacy protection.')}
                   </div>
 
                   <div className="p-4 rounded-xl bg-[#edf4fc] border border-[#6D96C5]/30 text-slate-700 space-y-1">
@@ -394,43 +606,56 @@ export const RegisterBgaPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Bank Account Beneficiary Name *</label>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Bank Account Beneficiary Name <span className="text-rose-500">*</span>
+                    </label>
                     <input
                       type="text"
                       name="bankAccountHolder"
                       required
                       value={formData.bankAccountHolder}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       placeholder="Name as registered with your bank"
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                      className={getInputClasses('bankAccountHolder')}
                     />
+                    {renderFieldError('bankAccountHolder', 'Must match official bank account records')}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Bank Account Number *</label>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Bank Account Number <span className="text-rose-500">*</span>
+                      </label>
                       <input
                         type="text"
                         name="bankAccountNumber"
                         required
+                        maxLength={18}
                         value={formData.bankAccountNumber}
                         onChange={handleChange}
+                        onBlur={handleBlur}
                         placeholder="e.g. 9876543210123"
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                        className={getInputClasses('bankAccountNumber', true)}
                       />
+                      {renderFieldError('bankAccountNumber', 'Between 9 and 18 numeric digits')}
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Bank IFSC Code *</label>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Bank IFSC Code <span className="text-rose-500">*</span>
+                      </label>
                       <input
                         type="text"
                         name="bankIfsc"
                         required
                         maxLength={11}
                         value={formData.bankIfsc}
-                        onChange={(e) => setFormData({ ...formData, bankIfsc: e.target.value.toUpperCase() })}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
                         placeholder="e.g. HDFC0001234"
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                        className={getInputClasses('bankIfsc', true)}
                       />
+                      {renderFieldError('bankIfsc', '11-character alphanumeric IFSC code (e.g. HDFC0001234)')}
                     </div>
                   </div>
 
@@ -466,7 +691,13 @@ export const RegisterBgaPage: React.FC = () => {
                   </div>
 
                   <div className="pt-2">
-                    <label className="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                    <label className={`flex items-start gap-3 p-3.5 rounded-xl border transition-colors cursor-pointer ${
+                      touched.agreementAccepted && fieldErrors.agreementAccepted
+                        ? 'border-rose-400 bg-rose-50/30'
+                        : formData.agreementAccepted
+                        ? 'border-emerald-400 bg-emerald-50/20'
+                        : 'border-slate-200 hover:bg-slate-50'
+                    }`}>
                       <input
                         type="checkbox"
                         name="agreementAccepted"
@@ -479,6 +710,7 @@ export const RegisterBgaPage: React.FC = () => {
                         Associate terms, commission structure, and privacy policies.
                       </span>
                     </label>
+                    {renderFieldError('agreementAccepted')}
                   </div>
                 </div>
               )}

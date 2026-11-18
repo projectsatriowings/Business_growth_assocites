@@ -344,9 +344,9 @@ export const PageLoadingFallback: React.FC = () => {
           <div className="absolute -inset-2 rounded-2xl bg-gradient-to-tr from-indigo-500 via-teal-400 to-blue-500 opacity-60 blur-lg animate-pulse" />
           <div className="relative w-16 h-16 rounded-2xl bg-white p-2.5 flex items-center justify-center shadow-2xl">
             <img
-              src="/img/atriowings-official-logo.png"
+              src="/favicon.png"
               alt="Atriowings Technologies"
-              className="w-full h-full object-contain animate-pulse"
+              className="w-10 h-10 object-contain animate-pulse"
             />
           </div>
         </div>

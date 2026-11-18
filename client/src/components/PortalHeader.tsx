@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Bell, ShieldCheck, UserCheck, AlertCircle, LogOut, CheckCircle2 } from 'lucide-react';
+import { Bell, ShieldCheck, UserCheck, AlertCircle, LogOut, CheckCircle2, KeyRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../utils/api';
+import { ChangePasswordModal } from './ChangePasswordModal';
 
 export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ title, subtitle }) => {
   const { user, logout } = useAuth();
@@ -10,6 +11,7 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -98,21 +100,21 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
   return (
     <header ref={headerRef} className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-subtle shrink-0">
       <div className="px-6 py-3 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5 min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
           <Link
             to="/"
             className="flex items-center shrink-0 group py-0.5"
             title="Atriowings Technologies"
           >
             <img
-              src="/img/atriowings-official-logo.png"
+              src="/favicon.png"
               alt="Atriowings Technologies"
-              className="h-8 sm:h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain transition-transform duration-200 group-hover:scale-105"
             />
           </Link>
-          <div className="h-7 w-px bg-slate-200 hidden sm:block shrink-0" />
+          <div className="h-6 w-px bg-slate-200 hidden sm:block shrink-0" />
           <div className="min-w-0">
-            <span className="text-[10px] font-extrabold tracking-wider uppercase text-[#3066BE] block truncate leading-none mb-1">
+            <span className="text-[11px] font-semibold text-slate-500 block truncate leading-none mb-0.5">
               Atriowings Technologies
             </span>
             <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight truncate">{title}</h1>
@@ -210,6 +212,14 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
             </div>
 
             <button
+              onClick={() => setShowPasswordModal(true)}
+              className="p-2 rounded-xl text-slate-400 hover:text-[#3066BE] hover:bg-[#edf4fc] transition-colors"
+              title="Change Account Password"
+            >
+              <KeyRound className="w-5 h-5" />
+            </button>
+
+            <button
               onClick={logout}
               className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
               title="Sign Out"
@@ -219,6 +229,12 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
           </div>
         </div>
       </div>
+
+      {/* Global Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+      />
     </header>
   );
 };

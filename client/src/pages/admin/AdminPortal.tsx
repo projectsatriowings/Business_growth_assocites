@@ -678,16 +678,6 @@ export const AdminPortal: React.FC = () => {
         {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
         <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
           <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
-            {/* Parent Company & Portal Brand Identity */}
-            <div className="px-3 pt-1 pb-3 mb-2 border-b border-slate-800">
-              <span className="text-[10px] tracking-wider uppercase text-[#80DED9] font-bold block">
-                Atriowings Technologies
-              </span>
-              <span className="text-xs font-bold text-white block mt-0.5">
-                Executive Admin Portal
-              </span>
-            </div>
-
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1">
               Management Modules
             </div>
@@ -827,13 +817,10 @@ export const AdminPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-3 border-t border-slate-800 text-[10px] text-slate-500 shrink-0 space-y-1">
-            <div className="flex justify-between items-center">
+          <div className="pt-3 border-t border-slate-800 text-[10px] text-slate-500 shrink-0">
+            <div className="flex justify-between items-center px-1">
               <span>Database:</span>
               <span className="text-emerald-400 font-semibold">PostgreSQL</span>
-            </div>
-            <div className="text-[9px] text-slate-500 text-center pt-1.5 border-t border-slate-800/60">
-              © Atriowings Technologies
             </div>
           </div>
         </aside>
@@ -846,20 +833,14 @@ export const AdminPortal: React.FC = () => {
               <AdminDashboardSkeleton />
             ) : (
             <div className="space-y-6 w-full">
-              {/* Executive Brand Welcome Banner */}
-              <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              {/* Executive Greeting Banner */}
+              <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-blue-50 text-[#3066BE] border border-[#3066BE]/20">
-                      Atriowings Technologies
-                    </span>
-                    <span className="text-xs text-slate-400 font-medium">• Central Executive Control</span>
-                  </div>
-                  <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1.5">
-                    Welcome to Atriowings Admin Portal
+                  <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">
+                    Welcome back, {user?.name || 'Administrator'}
                   </h2>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    System Administrator: <strong className="text-slate-800">{user?.name}</strong> • Associate Onboarding, Enquiries, Quotations & Financial Clearances
+                    Central management across associates, enquiries, quotations, projects, and finances.
                   </p>
                 </div>
               </div>
@@ -1321,7 +1302,7 @@ export const AdminPortal: React.FC = () => {
                               </div>
                               <div className="text-slate-500 text-[11px] mt-0.5">{b.email} • {b.mobile}</div>
                               <div className="text-[10px] text-slate-400 mt-1 font-mono">
-                                ID: {b.id.slice(0, 10)}... • Clients: <strong className="text-slate-700">{b._count?.clients || 0}</strong>
+                                ID: {b.id.length > 15 ? `${b.id.slice(0, 10)}...` : b.id} • Clients: <strong className="text-slate-700">{b._count?.clients || 0}</strong>
                               </div>
                             </td>
                             <td className="p-4">
@@ -1909,11 +1890,11 @@ export const AdminPortal: React.FC = () => {
               >
                 {enquiryDetailModal && (
                   <div
-                    className="bg-white rounded-3xl max-w-3xl w-full p-6 md:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[92vh] overflow-y-auto"
+                    className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* Modal Header */}
-                    <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                    {/* Fixed Modal Header */}
+                    <div className="flex justify-between items-start border-b border-slate-100 p-6 md:px-8 pb-4 shrink-0 bg-white z-10 rounded-t-3xl">
                       <div>
                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                           <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
@@ -1941,13 +1922,15 @@ export const AdminPortal: React.FC = () => {
                       </div>
                       <button
                         onClick={() => setEnquiryDetailModal(null)}
-                        className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                        className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
                       >
                         <X className="w-5 h-5" />
                       </button>
                     </div>
 
-                    {/* SECTION 1: COMPLETE REGISTERED CLIENT DETAILS (FROM BGA NEW CLIENT REGISTRATION) */}
+                    {/* Scrollable Modal Content */}
+                    <div className="p-6 md:p-8 pt-4 space-y-6 overflow-y-auto flex-1">
+                      {/* SECTION 1: COMPLETE REGISTERED CLIENT DETAILS (FROM BGA NEW CLIENT REGISTRATION) */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
@@ -2247,52 +2230,53 @@ export const AdminPortal: React.FC = () => {
                         Exclusive Client Lock Active
                       </span>
                     </div>
-
-                    {/* Modal Actions Footer */}
-                    <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-3 pt-3 border-t border-slate-100">
-                      <button
-                        onClick={() => setEnquiryDetailModal(null)}
-                        className="w-full sm:w-auto px-4 py-2 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-100 transition-colors"
-                      >
-                        Close
-                      </button>
-
-                      {enquiryDetailModal.status === 'SUBMITTED' && (
-                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                          <button
-                            onClick={() => {
-                              const enq = enquiryDetailModal;
-                              setEnquiryDetailModal(null);
-                              setEnquiryReviewModal({ enquiry: enq, action: 'REJECT' });
-                            }}
-                            className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
-                          >
-                            Reject
-                          </button>
-                          <button
-                            onClick={() => {
-                              const enq = enquiryDetailModal;
-                              setEnquiryDetailModal(null);
-                              setEnquiryReviewModal({ enquiry: enq, action: 'REQUEST_CHANGES' });
-                            }}
-                            className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
-                          >
-                            Request Scope Changes
-                          </button>
-                          <button
-                            onClick={() => {
-                              const enq = enquiryDetailModal;
-                              setEnquiryDetailModal(null);
-                              setEnquiryReviewModal({ enquiry: enq, action: 'APPROVE' });
-                            }}
-                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors"
-                          >
-                            Approve Enquiry
-                          </button>
-                        </div>
-                      )}
-                    </div>
                   </div>
+
+                  {/* Fixed Modal Actions Footer */}
+                  <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-3 p-4 md:px-8 bg-slate-50 border-t border-slate-100 shrink-0 rounded-b-3xl">
+                    <button
+                      onClick={() => setEnquiryDetailModal(null)}
+                      className="w-full sm:w-auto px-4 py-2 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-100 transition-colors bg-white shadow-2xs"
+                    >
+                      Close
+                    </button>
+
+                    {enquiryDetailModal.status === 'SUBMITTED' && (
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button
+                          onClick={() => {
+                            const enq = enquiryDetailModal;
+                            setEnquiryDetailModal(null);
+                            setEnquiryReviewModal({ enquiry: enq, action: 'REJECT' });
+                          }}
+                          className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+                        >
+                          Reject
+                        </button>
+                        <button
+                          onClick={() => {
+                            const enq = enquiryDetailModal;
+                            setEnquiryDetailModal(null);
+                            setEnquiryReviewModal({ enquiry: enq, action: 'REQUEST_CHANGES' });
+                          }}
+                          className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+                        >
+                          Request Scope Changes
+                        </button>
+                        <button
+                          onClick={() => {
+                            const enq = enquiryDetailModal;
+                            setEnquiryDetailModal(null);
+                            setEnquiryReviewModal({ enquiry: enq, action: 'APPROVE' });
+                          }}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors"
+                        >
+                          Approve Enquiry
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 )}
               </ModalPortal>
             </div>

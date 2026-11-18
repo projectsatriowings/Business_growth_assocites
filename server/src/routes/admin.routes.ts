@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import {
   Role,
   BgaStatus,
@@ -16,7 +17,7 @@ import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification, invalidateUserCache } from '../middleware/auth';
 import { appCache } from '../utils/cache';
 import { validateBankUtr } from '../utils/utrValidator';
-import { verifySmtpConnection, sendEmail, sendKycStatusEmail, ADMIN_ALERT_EMAIL } from '../utils/mailer';
+import { verifySmtpConnection, sendEmail, sendKycStatusEmail, sendPasswordResetEmail, ADMIN_ALERT_EMAIL } from '../utils/mailer';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -371,18 +372,73 @@ router.get('/bgas/:id', async (req: AuthRequest, res: Response): Promise<void> =
   }
 });
 
-// 2c. Secure Associate Password Reset
+// 2c. Secure Associate Password Reset (Triggers secure reset email link; supports optional manual reset)
 router.post('/bgas/:id/reset-password', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { newPassword } = req.body;
+    const { newPassword, sendEmail: shouldSendEmail = true } = req.body;
 
-    const bga = await prisma.user.findUnique({ where: { id } });
-    if (!bga || bga.role !== Role.BGA) {
-      res.status(404).json({ error: 'Associate not found' });
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      res.status(404).json({ error: 'User account not found' });
       return;
     }
 
+    // Default & Recommended: Generate secure token and send official password reset email
+    if (shouldSendEmail && !newPassword) {
+      await prisma.passwordResetToken.deleteMany({
+        where: { userId: user.id },
+      });
+
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+      await prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+        },
+      });
+
+      const rawOrigin = req.headers.origin || req.headers.referer || process.env.APP_URL || 'http://localhost:5173';
+      let appBaseUrl = 'http://localhost:5173';
+      try {
+        const parsedUrl = new URL(typeof rawOrigin === 'string' ? rawOrigin : 'http://localhost:5173');
+        appBaseUrl = `${parsedUrl.protocol}//${parsedUrl.host}`;
+      } catch {
+        appBaseUrl = process.env.APP_URL || 'http://localhost:5173';
+      }
+
+      const resetLink = `${appBaseUrl}/reset-password?token=${rawToken}`;
+
+      await sendPasswordResetEmail({
+        name: user.name,
+        email: user.email,
+        resetLink,
+        ip: req.ip,
+      });
+
+      await logAudit(
+        req.user!.id,
+        req.user!.email,
+        req.user!.role,
+        'ADMIN_TRIGGERED_PASSWORD_RESET_EMAIL',
+        'USER',
+        id,
+        { targetEmail: user.email },
+        req.ip
+      );
+
+      res.json({
+        success: true,
+        message: `Password reset email dispatched to ${user.email}. The user will receive single-use reset instructions valid for 30 minutes.`,
+      });
+      return;
+    }
+
+    // Manual Admin override if an explicit new password was supplied
     const tempPassword = newPassword || `BGA@${Math.floor(100000 + Math.random() * 900000)}`;
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(tempPassword, salt);
@@ -399,16 +455,18 @@ router.post('/bgas/:id/reset-password', async (req: AuthRequest, res: Response):
       'ADMIN_RESET_BGA_PASSWORD',
       'USER',
       id,
-      { associateEmail: bga.email },
+      { targetEmail: user.email },
       req.ip
     );
 
     res.json({
+      success: true,
       message: 'Password reset successfully',
       temporaryPassword: tempPassword,
     });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to reset password' });
+  } catch (error: any) {
+    console.error('Admin password reset error:', error);
+    res.status(500).json({ error: error?.message || 'Failed to reset password' });
   }
 });
 

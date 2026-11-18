@@ -63,6 +63,23 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
 
   // Document Preview Modal
   const [previewDoc, setPreviewDoc] = useState<{ title: string; url: string; type: string } | null>(null);
+  const [sendingReset, setSendingReset] = useState(false);
+
+  const handleSendResetEmail = async () => {
+    if (!associate?.id) return;
+    setSendingReset(true);
+    try {
+      const res = await apiRequest(`/api/admin/bgas/${associate.id}/reset-password`, {
+        method: 'POST',
+        body: JSON.stringify({ sendEmail: true }),
+      });
+      toast.success(res.message || `Password reset email dispatched to ${associate.email}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to dispatch password reset email');
+    } finally {
+      setSendingReset(false);
+    }
+  };
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -832,6 +849,25 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                     Associate credentials, salted password hashes, and identity tokens are stored strictly within the secure database partition. In compliance with security policy, plaintext passwords and hashes are never exposed in the UI or transmitted across client interfaces. Standard account recovery is mediated via authenticated multi-factor recovery channels.
                   </p>
                 </div>
+              </div>
+
+              {/* Admin-Initiated Secure Password Reset */}
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div>
+                  <span className="font-bold text-slate-900 block">Trigger Password Recovery Email</span>
+                  <span className="text-slate-500 text-[11px] block mt-0.5">
+                    Sends an official single-use password reset link to <strong className="text-slate-700">{associate.email}</strong> valid for 30 minutes.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  disabled={sendingReset}
+                  onClick={handleSendResetEmail}
+                  className="px-4 py-2.5 rounded-xl bg-[#3066BE] hover:bg-[#25549e] text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>{sendingReset ? 'Dispatching Email...' : 'Send Reset Link Email'}</span>
+                </button>
               </div>
             </div>
           )}

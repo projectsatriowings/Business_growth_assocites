@@ -25,6 +25,7 @@ import {
   Download,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
+import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import { SkeletonStatsRow, SkeletonTable, TechnicalDashboardSkeleton } from '../../components/Skeleton';
 import { useToast } from '../../context/ToastContext';
@@ -33,6 +34,7 @@ import { ModalPortal } from '../../components/ModalPortal';
 import { MediaUploader, MediaUploadResult } from '../../components/MediaUploader';
 
 export const TechnicalPortal: React.FC = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects'>('dashboard');
   const [loading, setLoading] = useState(false);
@@ -287,16 +289,6 @@ export const TechnicalPortal: React.FC = () => {
         {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
         <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
           <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
-            {/* Parent Company & Portal Brand Identity */}
-            <div className="px-3 pt-1 pb-3 mb-2 border-b border-slate-800">
-              <span className="text-[10px] tracking-wider uppercase text-[#80DED9] font-bold block">
-                Atriowings Technologies
-              </span>
-              <span className="text-xs font-bold text-white block mt-0.5">
-                Technical & IT Solutions
-              </span>
-            </div>
-
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1">
               Engineering Workspace
             </div>
@@ -327,13 +319,10 @@ export const TechnicalPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-3 border-t border-slate-800 text-[10px] text-slate-500 shrink-0 space-y-1">
-            <div className="flex justify-between items-center">
+          <div className="pt-3 border-t border-slate-800 text-[10px] text-slate-500 shrink-0">
+            <div className="flex justify-between items-center px-1">
               <span>Security Scope:</span>
               <span className="text-[#80DED9] font-bold">FINANCIAL DATA ISOLATED</span>
-            </div>
-            <div className="text-[9px] text-slate-500 text-center pt-1.5 border-t border-slate-800/60">
-              © Atriowings Technologies
             </div>
           </div>
         </aside>
@@ -346,20 +335,14 @@ export const TechnicalPortal: React.FC = () => {
               <TechnicalDashboardSkeleton />
             ) : (
               <div className="space-y-6">
-                {/* Engineering Brand Welcome Banner */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                {/* Engineering Greeting Banner */}
+                <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                        Atriowings Technologies
-                      </span>
-                      <span className="text-xs text-slate-400 font-medium">• Software & IT Solutions Engineering</span>
-                    </div>
-                    <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1.5">
-                      Welcome to Atriowings Technical & IT Solutions Portal
+                    <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">
+                      Welcome back, {user?.name || 'Engineer'}
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Engineering Team • Milestone Execution, Deliverables & Client Feedback Revisions
+                      Milestone execution, project deliverables, and client feedback revisions.
                     </p>
                   </div>
                 </div>
