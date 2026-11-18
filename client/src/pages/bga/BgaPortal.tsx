@@ -2001,9 +2001,24 @@ export const BgaPortal: React.FC = () => {
 
                               const isSubmitted = true;
                               const isAdminApproved = enq.status === 'APPROVED';
-                              const isQuotePrepared = !!relatedQuote;
+
+                              const isQuoteApproved =
+                                relatedQuote?.status === 'ADMIN_APPROVED' ||
+                                relatedQuote?.status === 'SENT_TO_BGA' ||
+                                relatedQuote?.status === 'ACCEPTED' ||
+                                relatedQuote?.adminApprovalStatus === 'APPROVED';
+
+                              const isQuotePendingAdmin =
+                                relatedQuote?.status === 'PENDING_ADMIN_APPROVAL' ||
+                                (relatedQuote?.adminApprovalStatus === 'PENDING' && Boolean(relatedQuote?.preparedById));
+
+                              const isQuoteAwaitingAccounts =
+                                relatedQuote?.status === 'REQUESTED' ||
+                                relatedQuote?.status === 'REVISION_REQUESTED' ||
+                                (Boolean(relatedQuote) && !relatedQuote?.preparedById && relatedQuote?.adminApprovalStatus === 'PENDING');
+
                               const isQuoteAccepted = relatedQuote?.status === 'ACCEPTED';
-                              const isAdvanceVerified = !!relatedWorkOrder?.advanceVerified;
+                              const isAdvanceVerified = Boolean(relatedWorkOrder?.advanceVerified);
                               const isProjectCompleted = relatedProject?.status === 'COMPLETED';
 
                               return (
@@ -2136,30 +2151,48 @@ export const BgaPortal: React.FC = () => {
                                       </div>
                                       {/* Stage 3 */}
                                       <div
-                                        className={`p-2 rounded-lg text-center border ${isQuotePrepared
+                                        className={`p-2 rounded-lg text-center border ${isQuoteApproved
                                           ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
-                                          : isAdminApproved
-                                            ? 'bg-blue-50 border-blue-200 text-blue-700'
-                                            : 'bg-white border-slate-200 text-slate-400'
+                                          : isQuotePendingAdmin
+                                            ? 'bg-purple-50 border-purple-200 text-purple-700 animate-pulse'
+                                            : isQuoteAwaitingAccounts
+                                              ? 'bg-amber-50 border-amber-200 text-amber-700 animate-pulse'
+                                              : isAdminApproved
+                                                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                                : 'bg-white border-slate-200 text-slate-400'
                                           }`}
                                       >
                                         <span className="block text-[10px] font-bold">3. Quotation</span>
                                         <span className="text-[10px]">
-                                          {isQuotePrepared ? 'Issued' : isAdminApproved ? 'Ready to Req' : 'Pending'}
+                                          {isQuoteApproved
+                                            ? 'Issued'
+                                            : isQuotePendingAdmin
+                                              ? 'Admin Review'
+                                              : isQuoteAwaitingAccounts
+                                                ? 'Accounts Preparing'
+                                                : isAdminApproved
+                                                  ? 'Ready to Request'
+                                                  : 'Pending'}
                                         </span>
                                       </div>
                                       {/* Stage 4 */}
                                       <div
                                         className={`p-2 rounded-lg text-center border ${isQuoteAccepted
                                           ? 'bg-emerald-50 border-emerald-200 text-[#119DA4]'
-                                          : isQuotePrepared
+                                          : isQuoteApproved
                                             ? 'bg-amber-50 border-amber-200 text-amber-700'
                                             : 'bg-white border-slate-200 text-slate-400'
                                           }`}
                                       >
                                         <span className="block text-[10px] font-bold">4. Client Decision</span>
                                         <span className="text-[10px]">
-                                          {isQuoteAccepted ? 'Accepted' : isQuotePrepared ? 'Decision Pending' : 'Pending'}
+                                          {isQuoteAccepted
+                                            ? 'Accepted'
+                                            : isQuoteApproved
+                                              ? 'Decision Pending'
+                                              : isQuoteAwaitingAccounts || isQuotePendingAdmin
+                                                ? 'Awaiting Quote'
+                                                : 'Pending'}
                                         </span>
                                       </div>
                                       {/* Stage 5 */}
@@ -2215,76 +2248,126 @@ export const BgaPortal: React.FC = () => {
                                         </span>
                                       )
                                     ) : (
-                                      <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                                      <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-indigo-50/50 p-3.5 rounded-xl border border-indigo-100">
                                         <div>
-                                          <div className="flex items-center gap-2">
+                                          <div className="flex items-center gap-2 flex-wrap">
                                             <strong className="text-slate-900 font-mono">
                                               {relatedQuote.quotationNumber}
                                             </strong>
                                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white text-indigo-700 border border-indigo-200">
                                               ₹{(relatedQuote.totalAmount || 0).toLocaleString('en-IN')}
                                             </span>
-                                            <span className="text-[10px] font-semibold text-slate-500">
-                                              ({relatedQuote.status})
+                                            <span
+                                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                                isQuoteAccepted
+                                                  ? 'bg-emerald-100 text-emerald-800'
+                                                  : isQuoteApproved
+                                                    ? 'bg-blue-100 text-blue-800'
+                                                    : isQuotePendingAdmin
+                                                      ? 'bg-purple-100 text-purple-800'
+                                                      : 'bg-amber-100 text-amber-800'
+                                              }`}
+                                            >
+                                              {isQuoteAccepted
+                                                ? 'ACCEPTED BY CLIENT'
+                                                : isQuoteApproved
+                                                  ? 'APPROVED & ISSUED'
+                                                  : isQuotePendingAdmin
+                                                    ? 'PREPARED • AWAITING ADMIN SIGN-OFF'
+                                                    : 'AWAITING ACCOUNTS PREPARATION'}
                                             </span>
+                                            {relatedQuote.reminderCount > 0 && (
+                                              <span className="text-[10px] text-red-700 bg-red-50 px-2 py-0.5 rounded font-bold border border-red-200 flex items-center gap-1">
+                                                <Bell className="w-3 h-3 text-red-600" /> {relatedQuote.reminderCount} Reminder(s)
+                                              </span>
+                                            )}
                                           </div>
+                                          {!isQuoteApproved && (
+                                            <p className="text-[11px] text-amber-800 mt-1.5 flex items-center gap-1.5">
+                                              <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0 animate-pulse" />
+                                              <span>
+                                                {isQuotePendingAdmin
+                                                  ? 'Accounts has finalized the commercial quotation. Currently undergoing Admin executive review before release.'
+                                                  : 'Accounts Department is actively preparing the official commercial quotation. Official PDF & client acceptance will unlock once approved.'}
+                                              </span>
+                                            </p>
+                                          )}
                                         </div>
 
                                         <div className="flex items-center gap-2 flex-wrap">
-                                          <a
-                                            href={getQuotationPdfUrl(relatedQuote.id)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-3 py-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg font-bold text-xs flex items-center gap-1"
-                                          >
-                                            <Eye className="w-3.5 h-3.5" />
-                                            View Quote PDF
-                                          </a>
-
-                                          {relatedQuote.status !== 'ACCEPTED' && (
+                                          {isQuoteApproved ? (
                                             <>
-                                              <button
-                                                type="button"
-                                                disabled={sendingReminderId === relatedQuote.id}
-                                                onClick={() => handleSendReminder(relatedQuote.id)}
-                                                className="px-2.5 py-1 bg-white hover:bg-slate-50 text-amber-700 border border-amber-200 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                                                title="Send reminder notification to Accounts & Admin"
+                                              <a
+                                                href={getQuotationPdfUrl(relatedQuote.id)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-3 py-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg font-bold text-xs flex items-center gap-1"
                                               >
-                                                {sendingReminderId === relatedQuote.id ? (
-                                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                                ) : (
-                                                  <Bell className="w-3.5 h-3.5" />
-                                                )}
-                                                {sendingReminderId === relatedQuote.id ? 'Sending...' : 'Reminder'}
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() =>
-                                                  setRevisionModal({
-                                                    quotationId: relatedQuote.id,
-                                                    quotationNumber: relatedQuote.quotationNumber,
-                                                  })
-                                                }
-                                                className="px-2.5 py-1 bg-white hover:bg-slate-50 text-purple-700 border border-purple-200 rounded-lg font-bold text-xs flex items-center gap-1"
-                                                title="Request commercial revision"
-                                              >
-                                                <Edit3 className="w-3.5 h-3.5" />
-                                                Revision
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() =>
-                                                  setAcceptanceModal({
-                                                    quotationId: relatedQuote.id,
-                                                    quotationNumber: relatedQuote.quotationNumber,
-                                                  })
-                                                }
-                                                className="px-3.5 py-1 bg-[#119DA4] hover:bg-[#0e8389] text-white rounded-lg font-bold text-xs flex items-center gap-1 shadow-sm cursor-pointer"
-                                              >
-                                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                                Record Acceptance
-                                              </button>
+                                                <Eye className="w-3.5 h-3.5" />
+                                                View Quote PDF
+                                              </a>
+
+                                              {relatedQuote.status !== 'ACCEPTED' && (
+                                                <>
+                                                  <button
+                                                    type="button"
+                                                    disabled={sendingReminderId === relatedQuote.id}
+                                                    onClick={() => handleSendReminder(relatedQuote.id)}
+                                                    className="px-2.5 py-1 bg-white hover:bg-slate-50 text-amber-700 border border-amber-200 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                                    title="Send reminder notification to Accounts & Admin"
+                                                  >
+                                                    {sendingReminderId === relatedQuote.id ? (
+                                                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : (
+                                                      <Bell className="w-3.5 h-3.5" />
+                                                    )}
+                                                    {sendingReminderId === relatedQuote.id ? 'Sending...' : 'Reminder'}
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                      setRevisionModal({
+                                                        quotationId: relatedQuote.id,
+                                                        quotationNumber: relatedQuote.quotationNumber,
+                                                      })
+                                                    }
+                                                    className="px-2.5 py-1 bg-white hover:bg-slate-50 text-purple-700 border border-purple-200 rounded-lg font-bold text-xs flex items-center gap-1"
+                                                    title="Request commercial revision"
+                                                  >
+                                                    <Edit3 className="w-3.5 h-3.5" />
+                                                    Revision
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                      setAcceptanceModal({
+                                                        quotationId: relatedQuote.id,
+                                                        quotationNumber: relatedQuote.quotationNumber,
+                                                      })
+                                                    }
+                                                    className="px-3.5 py-1 bg-[#119DA4] hover:bg-[#0e8389] text-white rounded-lg font-bold text-xs flex items-center gap-1 shadow-sm cursor-pointer"
+                                                  >
+                                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                                    Record Acceptance
+                                                  </button>
+                                                </>
+                                              )}
                                             </>
+                                          ) : (
+                                            <button
+                                              type="button"
+                                              disabled={sendingReminderId === relatedQuote.id}
+                                              onClick={() => handleSendReminder(relatedQuote.id)}
+                                              className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-sm"
+                                              title="Nudge Accounts & Admin to expedite quote preparation"
+                                            >
+                                              {sendingReminderId === relatedQuote.id ? (
+                                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                              ) : (
+                                                <Bell className="w-3.5 h-3.5 text-amber-600" />
+                                              )}
+                                              {sendingReminderId === relatedQuote.id ? 'Sending...' : 'Nudge Accounts / Send Reminder'}
+                                            </button>
                                           )}
                                         </div>
                                       </div>
@@ -2361,14 +2444,35 @@ export const BgaPortal: React.FC = () => {
                           });
 
                           (activeClientDetail.quotations || []).forEach((q: any) => {
+                            const isQApproved =
+                              q.status === 'ADMIN_APPROVED' ||
+                              q.status === 'SENT_TO_BGA' ||
+                              q.status === 'ACCEPTED' ||
+                              q.adminApprovalStatus === 'APPROVED';
+                            const isQPendingAdmin =
+                              q.status === 'PENDING_ADMIN_APPROVAL' ||
+                              (q.adminApprovalStatus === 'PENDING' && Boolean(q.preparedById));
+
+                            const statusLabel = isQApproved
+                              ? 'Approved & Issued'
+                              : isQPendingAdmin
+                                ? 'Prepared (Awaiting Admin Sign-off)'
+                                : q.status === 'REQUESTED'
+                                  ? 'Awaiting Accounts Preparation'
+                                  : q.status;
+
                             events.push({
                               id: `quote-${q.id}`,
                               type: 'QUOTATION',
-                              title: `Commercial Quotation ${q.quotationNumber} (${q.status})`,
-                              description: `Total Commercial Value: ₹${(q.totalAmount || 0).toLocaleString('en-IN')} • Version v${q.version}`,
+                              title: `Commercial Quotation ${q.quotationNumber} — ${statusLabel}`,
+                              description: isQApproved
+                                ? `Total Commercial Value: ₹${(q.totalAmount || 0).toLocaleString('en-IN')} • Version v${q.version}`
+                                : `Target Budget: ₹${(q.totalAmount || 0).toLocaleString('en-IN')} • Accounts is preparing official commercial terms`,
                               date: new Date(q.createdAt),
                               icon: CreditCard,
-                              badgeColor: 'bg-purple-50 text-purple-700 border border-purple-200',
+                              badgeColor: isQApproved
+                                ? 'bg-emerald-50 text-[#119DA4] border border-[#119DA4]/20'
+                                : 'bg-amber-50 text-amber-800 border border-amber-200',
                             });
 
                             if (q.status === 'ACCEPTED') {
