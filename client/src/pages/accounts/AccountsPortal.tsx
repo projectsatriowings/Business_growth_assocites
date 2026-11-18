@@ -1703,7 +1703,7 @@ export const AccountsPortal: React.FC = () => {
                       <tbody className="divide-y divide-slate-100">
                         {filteredWorkOrders.map((w) => {
                           const pendingPayment = w.payments?.find((p: any) => p.status === 'PENDING_VERIFICATION');
-                          const isReleased = Boolean(w.handoverApproved);
+                          const isReleased = Boolean(w.handoverApproved || w.project || w.status === 'IN_PRODUCTION');
                           const isHeld = w.handoverStatus === 'ON_HOLD' || w.handoverStatus === 'CLARIFICATION_REQUESTED';
 
                           return (
@@ -1782,7 +1782,7 @@ export const AccountsPortal: React.FC = () => {
                                 ) : (
                                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 inline-flex items-center gap-1">
                                     <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                    AUTOMATICALLY RELEASED
+                                    QUEUED FOR RELEASE
                                   </span>
                                 )}
                               </td>

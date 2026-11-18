@@ -280,8 +280,11 @@ export async function reconcileEligibleWorkOrders(): Promise<number> {
     const unreleased = await prisma.workOrder.findMany({
       where: {
         advanceVerified: true,
-        handoverApproved: false,
         handoverStatus: { not: 'ON_HOLD' },
+        OR: [
+          { handoverApproved: false },
+          { project: null },
+        ],
       },
       select: { id: true, workOrderNumber: true },
     });
