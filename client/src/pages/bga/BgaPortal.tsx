@@ -105,7 +105,7 @@ export const BgaPortal: React.FC = () => {
   const [clientSearch, setClientSearch] = useState('');
   const [clientCategoryFilter, setClientCategoryFilter] = useState('ALL');
   const [clientStatusFilter, setClientStatusFilter] = useState('ALL');
-  const [clientFollowUpFilter, setClientFollowUpFilter] = useState<'ALL' | 'TODAY' | 'UPCOMING' | 'OVERDUE' | 'NONE'>('ALL');
+  const [clientFollowUpFilter, setClientFollowUpFilter] = useState<'ALL' | 'TODAY' | 'UPCOMING' | 'OVERDUE' | 'CONNECTED' | 'NONE'>('ALL');
   const [clientSortBy, setClientSortBy] = useState<'latest' | 'newest' | 'oldest' | 'name'>('latest');
   const [submittingClient, setSubmittingClient] = useState(false);
 
@@ -133,6 +133,7 @@ export const BgaPortal: React.FC = () => {
   const [followUpModal, setFollowUpModal] = useState<any | null>(null);
   const [followUpForm, setFollowUpForm] = useState({
     consultationDate: new Date().toISOString().slice(0, 16),
+    nextFollowUpDate: '',
     contactMethod: 'Phone Call',
     clientOutcome: 'Client Informed - Acknowledged Rejection & Closed',
     consultationNotes: '',
@@ -148,6 +149,7 @@ export const BgaPortal: React.FC = () => {
     setFollowUpModal(enq);
     setFollowUpForm({
       consultationDate: new Date().toISOString().slice(0, 16),
+      nextFollowUpDate: '',
       contactMethod: 'Phone Call',
       clientOutcome: isRej ? 'Client Informed - Acknowledged Rejection & Closed' : 'Client Agreed to Scope & Budget',
       consultationNotes: '',
@@ -173,6 +175,7 @@ export const BgaPortal: React.FC = () => {
         body: JSON.stringify({
           consultationNotes: followUpForm.consultationNotes,
           consultationDate: followUpForm.consultationDate,
+          nextFollowUpDate: followUpForm.nextFollowUpDate || undefined,
           contactMethod: followUpForm.contactMethod,
           clientOutcome: followUpForm.clientOutcome,
           revisedBudget: followUpForm.revisedBudget ? Number(followUpForm.revisedBudget) : undefined,
@@ -419,40 +422,142 @@ export const BgaPortal: React.FC = () => {
     loadTabData(activeTab);
   }, [activeTab]);
 
-  // Client follow-up helper calculation
+  // Enhanced client follow-up helper calculation
+  const getClientFollowUpState = (c: any) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const activities = (c.contactActivities || []).slice().sort(
+      (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    const latestActivity = activities[0] || null;
+
+    // Check if there is an explicit upcoming scheduled next follow-up date
+    let nextDate: Date | null = null;
+
+    if (latestActivity?.nextFollowUpDate) {
+      nextDate = new Date(latestActivity.nextFollowUpDate);
+    } else if (!latestActivity) {
+      // If no activities logged yet, check client or enquiry followUpDate
+      if (c.followUpDate) {
+        nextDate = new Date(c.followUpDate);
+      } else if (c.enquiries && c.enquiries.length > 0) {
+        const enq = c.enquiries.find((e: any) => e.followUpDate);
+        if (enq?.followUpDate) {
+          nextDate = new Date(enq.followUpDate);
+        }
+      }
+    } else {
+      // Activities exist: check if an enquiry has a future follow-up date that is AFTER latest activity
+      const latestActTime = new Date(latestActivity.createdAt).getTime();
+      if (c.enquiries && c.enquiries.length > 0) {
+        const futureEnq = c.enquiries.find((e: any) => {
+          if (!e.followUpDate) return false;
+          const d = new Date(e.followUpDate).getTime();
+          return d > latestActTime && d >= today.getTime();
+        });
+        if (futureEnq) {
+          nextDate = new Date(futureEnq.followUpDate);
+        }
+      }
+    }
+
+    if (nextDate) {
+      const target = new Date(nextDate);
+      target.setHours(0, 0, 0, 0);
+
+      const formattedDate = nextDate.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+      });
+
+      if (target.getTime() > today.getTime()) {
+        return {
+          hasScheduled: true,
+          scheduledDate: nextDate,
+          status: 'UPCOMING',
+          label: `Follow-up: ${formattedDate}`,
+          badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+          iconType: 'calendar',
+        };
+      } else if (target.getTime() === today.getTime()) {
+        return {
+          hasScheduled: true,
+          scheduledDate: nextDate,
+          status: 'TODAY',
+          label: `Today: ${formattedDate}`,
+          badgeClass: 'bg-amber-50 text-amber-700 border border-amber-200',
+          iconType: 'calendar',
+        };
+      } else {
+        // Scheduled date in the past: check if already satisfied by an activity on or after that date
+        const targetTime = target.getTime();
+        const activitySatisfied = activities.some((a: any) => {
+          const actDate = new Date(a.createdAt);
+          actDate.setHours(0, 0, 0, 0);
+          return actDate.getTime() >= targetTime;
+        });
+
+        if (!activitySatisfied) {
+          return {
+            hasScheduled: true,
+            scheduledDate: nextDate,
+            status: 'OVERDUE',
+            label: `Overdue: ${formattedDate}`,
+            badgeClass: 'bg-rose-50 text-rose-700 border border-rose-200',
+            iconType: 'calendar',
+          };
+        }
+      }
+    }
+
+    // If no unfulfilled scheduled date, but latest activity exists:
+    if (latestActivity) {
+      const actDate = new Date(latestActivity.createdAt);
+      const formattedActDate = actDate.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+      });
+      const outcomeUpper = (latestActivity.outcome || '').toUpperCase();
+      const isConnected =
+        outcomeUpper.includes('CONNECTED') ||
+        outcomeUpper.includes('AGREE') ||
+        outcomeUpper.includes('INFORMED') ||
+        outcomeUpper.includes('INTERESTED');
+
+      return {
+        hasScheduled: false,
+        scheduledDate: null,
+        lastContactDate: actDate,
+        status: 'CONNECTED',
+        label: isConnected ? `Connected: ${formattedActDate}` : `Contacted: ${formattedActDate}`,
+        badgeClass: 'bg-teal-50 text-teal-700 border border-teal-200',
+        iconType: 'phone',
+      };
+    }
+
+    return {
+      hasScheduled: false,
+      scheduledDate: null,
+      status: 'NONE',
+      label: 'No follow-up set',
+      badgeClass: 'text-slate-400',
+      iconType: 'none',
+    };
+  };
+
   const getClientFollowUpDate = (c: any): Date | null => {
-    if (c.followUpDate) return new Date(c.followUpDate);
-    if (c.contactActivities && c.contactActivities.length > 0) {
-      const act = c.contactActivities.find((a: any) => a.nextFollowUpDate);
-      if (act) return new Date(act.nextFollowUpDate);
-    }
-    if (c.enquiries && c.enquiries.length > 0) {
-      const enq = c.enquiries.find((e: any) => e.followUpDate);
-      if (enq) return new Date(enq.followUpDate);
-    }
-    return null;
+    return getClientFollowUpState(c).scheduledDate;
   };
 
   const isFollowUpMatching = (c: any, filter: string): boolean => {
     if (filter === 'ALL') return true;
-    const fDate = getClientFollowUpDate(c);
-    if (filter === 'NONE') return !fDate;
-    if (!fDate) return false;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const target = new Date(fDate);
-    target.setHours(0, 0, 0, 0);
-
-    if (filter === 'TODAY') {
-      return target.getTime() === today.getTime();
-    }
-    if (filter === 'UPCOMING') {
-      return target.getTime() > today.getTime();
-    }
-    if (filter === 'OVERDUE') {
-      return target.getTime() < today.getTime();
-    }
+    const state = getClientFollowUpState(c);
+    if (filter === 'TODAY') return state.status === 'TODAY';
+    if (filter === 'UPCOMING') return state.status === 'UPCOMING';
+    if (filter === 'OVERDUE') return state.status === 'OVERDUE';
+    if (filter === 'CONNECTED') return state.status === 'CONNECTED';
+    if (filter === 'NONE') return state.status === 'NONE' || state.status === 'CONNECTED';
     return true;
   };
 
@@ -1937,11 +2042,15 @@ export const BgaPortal: React.FC = () => {
                                             <MessageSquare className="w-3.5 h-3.5 text-emerald-700" />
                                             Client Consultation & Follow-up History:
                                           </span>
-                                          {enq.followUpDate && (
-                                            <span className="text-[10px] font-mono font-normal text-emerald-800">
-                                              {new Date(enq.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                                            </span>
-                                          )}
+                                          {(() => {
+                                            const match = enq.discussionNotes?.match(/^\[(.*?)\]/);
+                                            const consultDate = match ? match[1] : enq.followUpDate ? new Date(enq.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : null;
+                                            return consultDate ? (
+                                              <span className="text-[10px] font-mono font-normal text-emerald-800">
+                                                Consulted: {consultDate}
+                                              </span>
+                                            ) : null;
+                                          })()}
                                         </div>
                                         <p className="whitespace-pre-wrap font-medium text-emerald-950 pl-5 leading-relaxed">
                                           {enq.discussionNotes}
@@ -2412,7 +2521,8 @@ export const BgaPortal: React.FC = () => {
                         <option value="TODAY">Due Today</option>
                         <option value="UPCOMING">Upcoming</option>
                         <option value="OVERDUE">Overdue</option>
-                        <option value="NONE">No Follow-up</option>
+                        <option value="CONNECTED">Connected / Contacted</option>
+                        <option value="NONE">No Pending Follow-up</option>
                       </select>
 
                       {/* Sort By */}
@@ -2550,15 +2660,7 @@ export const BgaPortal: React.FC = () => {
                                     }
                                   }
 
-                                  const fDate = getClientFollowUpDate(c);
-                                  const today = new Date();
-                                  today.setHours(0, 0, 0, 0);
-                                  const targetFDate = fDate ? new Date(fDate) : null;
-                                  if (targetFDate) targetFDate.setHours(0, 0, 0, 0);
-
-                                  const isOverdue = targetFDate && targetFDate.getTime() < today.getTime();
-                                  const isDueToday = targetFDate && targetFDate.getTime() === today.getTime();
-
+                                  const fuState = getClientFollowUpState(c);
                                   const latestActivity = c.contactActivities?.[0] || null;
                                   const latestEnq = c.enquiries?.[0] || null;
 
@@ -2603,27 +2705,19 @@ export const BgaPortal: React.FC = () => {
                                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-[#119DA4] border border-[#119DA4]/20 block w-max">
                                           {c.status || 'ACTIVE'}
                                         </span>
-                                        {fDate ? (
-                                          <div
-                                            className={`text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded flex items-center gap-1 w-max ${
-                                              isOverdue
-                                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                                : isDueToday
-                                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                            }`}
-                                          >
-                                            <Calendar className="w-3 h-3" />
-                                            <span>
-                                              {isOverdue ? 'Overdue: ' : isDueToday ? 'Today: ' : 'Follow-up: '}
-                                              {fDate.toLocaleDateString('en-IN', {
-                                                day: '2-digit',
-                                                month: 'short',
-                                              })}
-                                            </span>
-                                          </div>
-                                        ) : (
+                                        {fuState.status === 'NONE' ? (
                                           <span className="text-[10px] text-slate-400 block mt-1">No follow-up set</span>
+                                        ) : (
+                                          <div
+                                            className={`text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded flex items-center gap-1 w-max ${fuState.badgeClass}`}
+                                          >
+                                            {fuState.iconType === 'phone' ? (
+                                              <Phone className="w-3 h-3" />
+                                            ) : (
+                                              <Calendar className="w-3 h-3" />
+                                            )}
+                                            <span>{fuState.label}</span>
+                                          </div>
                                         )}
                                       </td>
 
@@ -3434,11 +3528,15 @@ export const BgaPortal: React.FC = () => {
                                 <MessageSquare className="w-3.5 h-3.5 text-emerald-700" />
                                 Client Consultation & Follow-up History:
                               </span>
-                              {enq.followUpDate && (
-                                <span className="text-[10px] font-mono font-normal text-emerald-800">
-                                  {new Date(enq.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                                </span>
-                              )}
+                              {(() => {
+                                const match = enq.discussionNotes?.match(/^\[(.*?)\]/);
+                                const consultDate = match ? match[1] : enq.followUpDate ? new Date(enq.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : null;
+                                return consultDate ? (
+                                  <span className="text-[10px] font-mono font-normal text-emerald-800">
+                                    Consulted: {consultDate}
+                                  </span>
+                                ) : null;
+                              })()}
                             </div>
                             <p className="whitespace-pre-wrap font-medium text-emerald-950 pl-5 leading-relaxed">
                               {enq.discussionNotes}
@@ -5229,6 +5327,18 @@ export const BgaPortal: React.FC = () => {
                           <option value="Official Email">Official Email</option>
                         </select>
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        Next Scheduled Follow-up Date <span className="text-slate-400 font-normal">(Optional — leave blank if consultation concluded)</span>
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={followUpForm.nextFollowUpDate}
+                        onChange={(e) => setFollowUpForm({ ...followUpForm, nextFollowUpDate: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                      />
                     </div>
 
                     <div>

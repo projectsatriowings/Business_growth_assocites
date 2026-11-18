@@ -1744,11 +1744,15 @@ export const AdminPortal: React.FC = () => {
                             <span className="flex items-center gap-1.5">
                               💬 BGA Client Consultation & Follow-up Details:
                             </span>
-                            {enq.followUpDate && (
-                              <span className="text-[10px] font-mono font-normal text-emerald-800">
-                                Consulted on: {new Date(enq.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                              </span>
-                            )}
+                            {(() => {
+                              const match = enq.discussionNotes?.match(/^\[(.*?)\]/);
+                              const consultDate = match ? match[1] : enq.followUpDate ? new Date(enq.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : null;
+                              return consultDate ? (
+                                <span className="text-[10px] font-mono font-normal text-emerald-800">
+                                  Consulted: {consultDate}
+                                </span>
+                              ) : null;
+                            })()}
                           </div>
                           <p className="whitespace-pre-wrap font-medium text-emerald-950 pl-2 leading-relaxed">
                             {enq.discussionNotes}
@@ -2104,11 +2108,15 @@ export const AdminPortal: React.FC = () => {
                           <strong className="text-emerald-900 font-bold flex items-center gap-1.5">
                             💬 BGA Client Consultation & Follow-up History:
                           </strong>
-                          {enquiryDetailModal.followUpDate && (
-                            <span className="text-[10px] text-emerald-700 font-mono">
-                              Consulted on: {new Date(enquiryDetailModal.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                            </span>
-                          )}
+                          {(() => {
+                            const match = enquiryDetailModal.discussionNotes?.match(/^\[(.*?)\]/);
+                            const consultDate = match ? match[1] : enquiryDetailModal.followUpDate ? new Date(enquiryDetailModal.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : null;
+                            return consultDate ? (
+                              <span className="text-[10px] text-emerald-700 font-mono">
+                                Consulted: {consultDate}
+                              </span>
+                            ) : null;
+                          })()}
                         </div>
                         <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950 whitespace-pre-wrap leading-relaxed">
                           {enquiryDetailModal.discussionNotes}
