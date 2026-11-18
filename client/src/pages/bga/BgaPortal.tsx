@@ -1710,11 +1710,11 @@ export const BgaPortal: React.FC = () => {
                           setClientViewMode('list');
                           setActiveClientDetail(null);
                         }}
-                        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 mt-0.5"
-                        title="Back to My Clients"
+                        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors cursor-pointer shrink-0 mt-0.5 flex items-center justify-center"
+                        title="Back to Clients"
+                        aria-label="Back to Clients"
                       >
                         <ArrowLeft className="w-4 h-4" />
-                        <span>Clients</span>
                       </button>
                       <div>
                         <div className="flex items-center gap-2.5 flex-wrap">
