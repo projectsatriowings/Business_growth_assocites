@@ -381,8 +381,8 @@ router.post('/work-orders/:id/hold', async (req: AuthRequest, res: Response): Pr
     const handoverStatus = isResume
       ? (workOrder.handoverApproved ? 'APPROVED' : 'PENDING')
       : action === 'REQUEST_CLARIFICATION'
-      ? 'CLARIFICATION_REQUESTED'
-      : 'ON_HOLD';
+        ? 'CLARIFICATION_REQUESTED'
+        : 'ON_HOLD';
 
     const updated = await prisma.workOrder.update({
       where: { id },

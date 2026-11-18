@@ -178,28 +178,6 @@ export async function autoReleaseWorkOrderToTechnical(
           clientAccessToken,
         },
       });
-
-      // Seed 5 standard milestones tailored to the routed department
-      const milestonesData =
-        teamInfo.team === 'DIGITAL_MARKETING'
-          ? [
-              { projectId: project.id, title: 'Client Onboarding, Brand Strategy & KPIs', weight: 1, status: 'TODO' as const },
-              { projectId: project.id, title: 'SEO Audit, Competitor & Keyword Research', weight: 1, status: 'TODO' as const },
-              { projectId: project.id, title: 'Creatives, Ad Copies & Campaign Setup', weight: 1, status: 'TODO' as const },
-              { projectId: project.id, title: 'Campaign Launch, Ad Spend & A/B Optimization', weight: 2, status: 'TODO' as const },
-              { projectId: project.id, title: 'Monthly Performance Analytics & Growth Report', weight: 1, status: 'TODO' as const },
-            ]
-          : [
-              { projectId: project.id, title: 'Project Kick-off & Architecture Setup', weight: 1, status: 'TODO' as const },
-              { projectId: project.id, title: 'UI/UX Wireframes & System Design Approval', weight: 1, status: 'TODO' as const },
-              { projectId: project.id, title: 'Core Implementation & Feature Build', weight: 2, status: 'TODO' as const },
-              { projectId: project.id, title: 'QA Testing, Security Review & Bug Fixes', weight: 1, status: 'TODO' as const },
-              { projectId: project.id, title: 'Final Client Handover & Production Deployment', weight: 1, status: 'TODO' as const },
-            ];
-
-      await tx.projectMilestone.createMany({
-        data: milestonesData,
-      });
     }
 
     return { updatedWo, project };

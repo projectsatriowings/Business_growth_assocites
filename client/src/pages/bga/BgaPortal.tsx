@@ -4778,17 +4778,28 @@ export const BgaPortal: React.FC = () => {
                       />
                     </div>
 
-                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {prj.milestones?.map((m: any) => (
-                        <div key={m.id} className="p-2 rounded bg-slate-50 border border-slate-100 text-[11px]">
-                          <span className="font-semibold text-slate-800 block truncate">{m.title}</span>
-                          <span className={`text-[10px] font-bold ${m.status === 'COMPLETED' ? 'text-[#119DA4]' : 'text-slate-400'
-                            }`}>
-                            {m.status}
-                          </span>
+                    {prj.deliverables && prj.deliverables.length > 0 && (
+                      <div className="mt-3 space-y-1.5">
+                        <span className="text-[11px] font-semibold text-slate-700 block">Uploaded Deliverables:</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {prj.deliverables.map((d: any) => (
+                            <div key={d.id} className="p-2 rounded bg-slate-50 border border-slate-100 text-[11px] flex justify-between items-center">
+                              <span className="font-semibold text-slate-800 truncate">{d.title}</span>
+                              {d.fileUrl && (
+                                <a
+                                  href={d.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-[#3066BE] hover:underline font-bold shrink-0 ml-1"
+                                >
+                                  View
+                                </a>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="mt-3 p-3 rounded-lg bg-amber-50 text-amber-800 text-xs">
