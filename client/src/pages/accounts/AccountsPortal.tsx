@@ -504,12 +504,12 @@ export const AccountsPortal: React.FC = () => {
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <Layers className="w-4 h-4 text-[#80DED9]" />
-                <span>Payment & Work Orders</span>
+                <Briefcase className="w-4 h-4 text-[#80DED9]" />
+                <span>Work Orders</span>
               </div>
-              {(summaryCounts.pendingPaymentsCount > 0 || summaryCounts.eligibleForReleaseCount > 0) && (
-                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
-                  {summaryCounts.pendingPaymentsCount + summaryCounts.eligibleForReleaseCount}
+              {summaryCounts.eligibleForReleaseCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold">
+                  {summaryCounts.eligibleForReleaseCount}
                 </span>
               )}
             </button>
@@ -597,12 +597,11 @@ export const AccountsPortal: React.FC = () => {
                     <button
                       onClick={() => {
                         setActiveTab('payments-work-orders');
-                        setSubTab('payments');
-                        setPaymentStatusFilter('PENDING_VERIFICATION');
+                        setWorkOrderEligibilityFilter('AWAITING_ADVANCE');
                       }}
                       className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 transition-colors shadow-xs"
                     >
-                      Audit Receipts <ArrowRight className="w-3.5 h-3.5" />
+                      Audit Work Orders <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 )}
@@ -613,8 +612,6 @@ export const AccountsPortal: React.FC = () => {
                   <div
                     onClick={() => {
                       setActiveTab('payments-work-orders');
-                      setSubTab('payments');
-                      setPaymentStatusFilter('VERIFIED');
                     }}
                     className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:border-emerald-300 hover:shadow-md transition-all cursor-pointer group"
                   >
@@ -632,12 +629,11 @@ export const AccountsPortal: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Card 2: Pending Payment Verifications */}
+                  {/* Card 2: Pending Advance Work Orders */}
                   <div
                     onClick={() => {
                       setActiveTab('payments-work-orders');
-                      setSubTab('payments');
-                      setPaymentStatusFilter('PENDING_VERIFICATION');
+                      setWorkOrderEligibilityFilter('AWAITING_ADVANCE');
                     }}
                     className={`p-4 rounded-2xl bg-white border shadow-sm transition-all cursor-pointer group ${
                       stats.pendingPaymentVerifications > 0
@@ -764,11 +760,10 @@ export const AccountsPortal: React.FC = () => {
                         <button
                           onClick={() => {
                             setActiveTab('payments-work-orders');
-                            setSubTab('payments');
                           }}
                           className="text-xs font-bold text-[#3066BE] hover:text-[#204a8c] flex items-center gap-1 transition-colors"
                         >
-                          View All Payments <ArrowRight className="w-3.5 h-3.5" />
+                          View Work Orders <ArrowRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
@@ -963,16 +958,15 @@ export const AccountsPortal: React.FC = () => {
                         <button
                           onClick={() => {
                             setActiveTab('payments-work-orders');
-                            setSubTab('payments');
-                            setPaymentStatusFilter('PENDING_VERIFICATION');
+                            setWorkOrderEligibilityFilter('AWAITING_ADVANCE');
                           }}
                           className="p-3 rounded-xl bg-slate-50 hover:bg-amber-50/70 border border-slate-200 hover:border-amber-200 text-left transition-all group"
                         >
                           <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
-                            <ShieldCheck className="w-3.5 h-3.5" />
+                            <Clock className="w-3.5 h-3.5" />
                           </div>
-                          <div className="text-xs font-bold text-slate-800 group-hover:text-amber-700">Verify Bank UTR</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">Audit receipt statements</div>
+                          <div className="text-xs font-bold text-slate-800 group-hover:text-amber-700">Awaiting Advance</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">Manage work order deposits</div>
                         </button>
 
                         <button
@@ -1500,15 +1494,15 @@ export const AccountsPortal: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="p-2 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 text-indigo-600 rounded-xl border border-indigo-100">
-                      <Layers className="w-5 h-5" />
+                      <Briefcase className="w-5 h-5" />
                     </span>
-                    <h2 className="text-lg font-bold text-slate-900">Payment & Work Orders</h2>
+                    <h2 className="text-lg font-bold text-slate-900">Work Orders & Technical Release</h2>
                     <span className="text-[11px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-                      Unified Accounts Desk
+                      Production Release Desk
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
-                    Verify client bank credits, reconcile commercial payments, and authorize production release to the Technical Department.
+                    Track client work orders, reconcile advance payments, and authorize production release to the Technical Department.
                   </p>
                 </div>
 
@@ -1550,68 +1544,66 @@ export const AccountsPortal: React.FC = () => {
 
               {/* 4 Summary Metric Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* 1. Pending Payments */}
+                {/* 1. Total Orders */}
                 <div
                   onClick={() => {
-                    setSubTab('payments');
-                    setPaymentStatusFilter('PENDING_VERIFICATION');
+                    setWorkOrderEligibilityFilter('ALL');
+                    setWorkOrderStatusFilter('ALL');
                   }}
                   className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                    subTab === 'payments' && paymentStatusFilter === 'PENDING_VERIFICATION'
+                    workOrderEligibilityFilter === 'ALL' && workOrderStatusFilter === 'ALL'
+                      ? 'bg-slate-50/70 border-slate-300 shadow-sm ring-2 ring-slate-400/20'
+                      : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/30'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Orders</span>
+                    <span className="p-2 rounded-xl bg-slate-100 text-slate-700">
+                      <Briefcase className="w-4 h-4" />
+                    </span>
+                  </div>
+                  <div className="mt-2 text-2xl font-black text-slate-800">
+                    {workOrders.length}
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+                    <span>All client work orders</span>
+                    <ChevronRight className="w-3 h-3 text-slate-600" />
+                  </p>
+                </div>
+
+                {/* 2. Awaiting Advance */}
+                <div
+                  onClick={() => {
+                    setWorkOrderEligibilityFilter('AWAITING_ADVANCE');
+                  }}
+                  className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                    workOrderEligibilityFilter === 'AWAITING_ADVANCE'
                       ? 'bg-amber-50/70 border-amber-300 shadow-sm ring-2 ring-amber-400/20'
                       : 'bg-white border-slate-200 hover:border-amber-300 hover:bg-amber-50/30'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Payments</span>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Awaiting Advance</span>
                     <span className="p-2 rounded-xl bg-amber-100 text-amber-700">
                       <Clock className="w-4 h-4" />
                     </span>
                   </div>
                   <div className="mt-2 text-2xl font-black text-amber-700">
-                    {summaryCounts.pendingPaymentsCount}
+                    {workOrders.filter((w) => !w.advanceVerified).length}
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
-                    <span>Awaiting bank credit audit</span>
+                    <span>Pending client advance</span>
                     <ChevronRight className="w-3 h-3 text-amber-600" />
-                  </p>
-                </div>
-
-                {/* 2. Verified Collections */}
-                <div
-                  onClick={() => {
-                    setSubTab('payments');
-                    setPaymentStatusFilter('VERIFIED');
-                  }}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                    subTab === 'payments' && paymentStatusFilter === 'VERIFIED'
-                      ? 'bg-emerald-50/70 border-emerald-300 shadow-sm ring-2 ring-emerald-400/20'
-                      : 'bg-white border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/30'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Verified Collections</span>
-                    <span className="p-2 rounded-xl bg-emerald-100 text-emerald-700">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </span>
-                  </div>
-                  <div className="mt-2 text-2xl font-black text-emerald-700">
-                    ₹{summaryCounts.verifiedPaymentsAmount.toLocaleString()}
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
-                    <span>{summaryCounts.verifiedPaymentsCount} verified receipts</span>
-                    <ChevronRight className="w-3 h-3 text-emerald-600" />
                   </p>
                 </div>
 
                 {/* 3. Eligible for Release */}
                 <div
                   onClick={() => {
-                    setSubTab('work-orders');
                     setWorkOrderEligibilityFilter('ELIGIBLE_FOR_RELEASE');
                   }}
                   className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                    subTab === 'work-orders' && workOrderEligibilityFilter === 'ELIGIBLE_FOR_RELEASE'
+                    workOrderEligibilityFilter === 'ELIGIBLE_FOR_RELEASE'
                       ? 'bg-blue-50/70 border-blue-300 shadow-sm ring-2 ring-blue-400/20'
                       : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50/30'
                   }`}
@@ -1634,11 +1626,10 @@ export const AccountsPortal: React.FC = () => {
                 {/* 4. Released to Technical */}
                 <div
                   onClick={() => {
-                    setSubTab('work-orders');
                     setWorkOrderEligibilityFilter('RELEASED');
                   }}
                   className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                    subTab === 'work-orders' && workOrderEligibilityFilter === 'RELEASED'
+                    workOrderEligibilityFilter === 'RELEASED'
                       ? 'bg-indigo-50/70 border-indigo-300 shadow-sm ring-2 ring-indigo-400/20'
                       : 'bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30'
                   }`}
@@ -1659,247 +1650,10 @@ export const AccountsPortal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Sub-Tab Navigation Switch */}
-              <div className="flex border-b border-slate-200 space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setSubTab('payments')}
-                  className={`pb-3 px-4 text-xs font-bold inline-flex items-center gap-2 border-b-2 transition-all ${
-                    subTab === 'payments'
-                      ? 'border-[#3066BE] text-[#3066BE]'
-                      : 'border-transparent text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <CreditCard className="w-4 h-4" />
-                  <span>Tab A: Payment Verification</span>
-                  {summaryCounts.pendingPaymentsCount > 0 && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white animate-pulse">
-                      {summaryCounts.pendingPaymentsCount}
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSubTab('work-orders')}
-                  className={`pb-3 px-4 text-xs font-bold inline-flex items-center gap-2 border-b-2 transition-all ${
-                    subTab === 'work-orders'
-                      ? 'border-[#3066BE] text-[#3066BE]'
-                      : 'border-transparent text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <Briefcase className="w-4 h-4" />
-                  <span>Tab B: Work Orders</span>
-                  {summaryCounts.eligibleForReleaseCount > 0 && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-600 text-white">
-                      {summaryCounts.eligibleForReleaseCount}
-                    </span>
-                  )}
-                </button>
-              </div>
-
-              {/* SUBTAB A: PAYMENT VERIFICATION */}
-              {subTab === 'payments' && (
-                <div className="space-y-4">
-                  {/* Filters Bar */}
-                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-3">
-                    <div className="relative flex-1 min-w-[200px]">
-                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                      <input
-                        type="text"
-                        placeholder="Search by client, work order #, UTR, or BGA..."
-                        value={paymentSearch}
-                        onChange={(e) => setPaymentSearch(e.target.value)}
-                        className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <select
-                        value={paymentStatusFilter}
-                        onChange={(e) => setPaymentStatusFilter(e.target.value)}
-                        className="text-xs p-1.5 border border-slate-200 rounded-xl font-medium text-slate-700 bg-white"
-                      >
-                        <option value="ALL">All Statuses</option>
-                        <option value="PENDING_VERIFICATION">Pending Audit</option>
-                        <option value="VERIFIED">Verified</option>
-                        <option value="REJECTED">Rejected</option>
-                      </select>
-
-                      <select
-                        value={paymentTypeFilter}
-                        onChange={(e) => setPaymentTypeFilter(e.target.value)}
-                        className="text-xs p-1.5 border border-slate-200 rounded-xl font-medium text-slate-700 bg-white"
-                      >
-                        <option value="ALL">All Payment Types</option>
-                        <option value="ADVANCE">Advance</option>
-                        <option value="INTERIM">Interim Milestone</option>
-                        <option value="FINAL">Final Settlement</option>
-                        <option value="MONTHLY_RECURRING">Subscription (DM)</option>
-                      </select>
-
-                      {(paymentSearch || paymentStatusFilter !== 'ALL' || paymentTypeFilter !== 'ALL') && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPaymentSearch('');
-                            setPaymentStatusFilter('ALL');
-                            setPaymentTypeFilter('ALL');
-                          }}
-                          className="text-xs text-rose-600 hover:text-rose-700 font-semibold px-2 py-1 hover:bg-rose-50 rounded-lg transition-colors"
-                        >
-                          Clear Filters
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Payments Table */}
-                  <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-xs">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                        <tr>
-                          <th className="p-3.5">Client & Work Order</th>
-                          <th className="p-3.5">Type & Method</th>
-                          <th className="p-3.5">Amount</th>
-                          <th className="p-3.5">Bank UTR Reference</th>
-                          <th className="p-3.5">Verification Status</th>
-                          <th className="p-3.5 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {filteredPayments.map((p) => (
-                          <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
-                            <td className="p-3.5">
-                              <div className="font-bold text-slate-900">{p.workOrder?.client?.clientName}</div>
-                              {p.workOrder?.client?.businessName && (
-                                <div className="text-[11px] text-slate-500 font-normal">
-                                  {p.workOrder.client.businessName}
-                                </div>
-                              )}
-                              <div className="text-[10px] text-indigo-600 font-mono mt-0.5 font-semibold">
-                                {p.workOrder?.workOrderNumber}
-                              </div>
-                            </td>
-
-                            <td className="p-3.5">
-                              <span className="font-semibold text-slate-800 block">{p.paymentType}</span>
-                              <div className="text-[10px] text-slate-500 font-medium">{p.paymentMethod}</div>
-                            </td>
-
-                            <td className="p-3.5 font-bold text-slate-900 text-sm">
-                              ₹{p.amount?.toLocaleString()}
-                              {p.adBudgetAmount > 0 && (
-                                <div className="text-[10px] font-normal text-slate-500">
-                                  Ad Spend: ₹{p.adBudgetAmount?.toLocaleString()}
-                                </div>
-                              )}
-                            </td>
-
-                            <td className="p-3.5 font-mono text-slate-700">
-                              <div className="flex items-center gap-1.5">
-                                <span className="bg-slate-100 px-2 py-0.5 rounded text-[11px] font-semibold">
-                                  {p.transactionReference}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => copyUtr(p.transactionReference)}
-                                  title="Copy UTR"
-                                  className="text-slate-400 hover:text-slate-700 p-1 rounded hover:bg-slate-100 transition-colors"
-                                >
-                                  {copiedUtr === p.transactionReference ? (
-                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                  ) : (
-                                    <Copy className="w-3.5 h-3.5" />
-                                  )}
-                                </button>
-                              </div>
-                            </td>
-
-                            <td className="p-3.5">
-                              <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 ${
-                                  p.status === 'VERIFIED'
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : p.status === 'PENDING_VERIFICATION'
-                                    ? 'bg-amber-100 text-amber-800'
-                                    : 'bg-rose-100 text-rose-800'
-                                }`}
-                              >
-                                {p.status === 'VERIFIED' && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
-                                {p.status === 'PENDING_VERIFICATION' && <Clock className="w-3 h-3 text-amber-600" />}
-                                {p.status === 'REJECTED' && <AlertCircle className="w-3 h-3 text-rose-600" />}
-                                {p.status}
-                              </span>
-                            </td>
-
-                            <td className="p-3.5 text-right whitespace-nowrap">
-                              <div className="flex items-center justify-end gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => setPaymentDetailModal(p)}
-                                  className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
-                                  title="View Payment Details"
-                                >
-                                  <Eye className="w-3.5 h-3.5" />
-                                </button>
-
-                                {p.status === 'PENDING_VERIFICATION' ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      onClick={() => openVerifyModal(p, 'VERIFY')}
-                                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-colors"
-                                    >
-                                      Verify ✓
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => openVerifyModal(p, 'REJECT')}
-                                      className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold transition-colors"
-                                    >
-                                      Reject
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setRequestInfoModal({ payment: p })}
-                                      className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-medium transition-colors"
-                                    >
-                                      Clarify
-                                    </button>
-                                  </>
-                                ) : (
-                                  <span className="text-[11px] font-bold text-emerald-600 px-2 py-0.5">
-                                    Audited ✓
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-
-                        {filteredPayments.length === 0 && (
-                          <tr>
-                            <td colSpan={6} className="p-8 text-center text-slate-400">
-                              <CreditCard className="w-8 h-8 mx-auto text-slate-300 mb-2" />
-                              <p className="font-semibold text-slate-600">No payment records found matching your filters.</p>
-                              <p className="text-[11px] text-slate-400 mt-0.5">
-                                Try adjusting your search query or reset status filters.
-                              </p>
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* SUBTAB B: WORK ORDERS */}
-              {subTab === 'work-orders' && (
-                <div className="space-y-4">
-                  {/* Filters Bar */}
-                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-3">
+              {/* WORK ORDERS DESK */}
+              <div className="space-y-4">
+                {/* Filters Bar */}
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-3">
                     <div className="relative flex-1 min-w-[200px]">
                       <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                       <input
@@ -2146,7 +1900,6 @@ export const AccountsPortal: React.FC = () => {
                     </table>
                   </div>
                 </div>
-              )}
 
               {/* MODAL 1: PAYMENT DETAIL DRAWER */}
               <ModalPortal
