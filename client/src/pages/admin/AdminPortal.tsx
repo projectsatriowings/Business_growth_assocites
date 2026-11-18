@@ -1886,11 +1886,11 @@ export const AdminPortal: React.FC = () => {
               >
                 {enquiryDetailModal && (
                   <div
-                    className="bg-white rounded-3xl max-w-3xl w-full p-6 md:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[92vh] overflow-y-auto"
+                    className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* Modal Header */}
-                    <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                    {/* Fixed Modal Header */}
+                    <div className="flex justify-between items-start border-b border-slate-100 p-6 md:px-8 pb-4 shrink-0 bg-white z-10 rounded-t-3xl">
                       <div>
                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                           <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
@@ -1918,13 +1918,15 @@ export const AdminPortal: React.FC = () => {
                       </div>
                       <button
                         onClick={() => setEnquiryDetailModal(null)}
-                        className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                        className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
                       >
                         <X className="w-5 h-5" />
                       </button>
                     </div>
 
-                    {/* SECTION 1: COMPLETE REGISTERED CLIENT DETAILS (FROM BGA NEW CLIENT REGISTRATION) */}
+                    {/* Scrollable Modal Content */}
+                    <div className="p-6 md:p-8 pt-4 space-y-6 overflow-y-auto flex-1">
+                      {/* SECTION 1: COMPLETE REGISTERED CLIENT DETAILS (FROM BGA NEW CLIENT REGISTRATION) */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
@@ -2220,52 +2222,53 @@ export const AdminPortal: React.FC = () => {
                         Exclusive Client Lock Active
                       </span>
                     </div>
-
-                    {/* Modal Actions Footer */}
-                    <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-3 pt-3 border-t border-slate-100">
-                      <button
-                        onClick={() => setEnquiryDetailModal(null)}
-                        className="w-full sm:w-auto px-4 py-2 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-100 transition-colors"
-                      >
-                        Close
-                      </button>
-
-                      {enquiryDetailModal.status === 'SUBMITTED' && (
-                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                          <button
-                            onClick={() => {
-                              const enq = enquiryDetailModal;
-                              setEnquiryDetailModal(null);
-                              setEnquiryReviewModal({ enquiry: enq, action: 'REJECT' });
-                            }}
-                            className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
-                          >
-                            Reject
-                          </button>
-                          <button
-                            onClick={() => {
-                              const enq = enquiryDetailModal;
-                              setEnquiryDetailModal(null);
-                              setEnquiryReviewModal({ enquiry: enq, action: 'REQUEST_CHANGES' });
-                            }}
-                            className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
-                          >
-                            Request Scope Changes
-                          </button>
-                          <button
-                            onClick={() => {
-                              const enq = enquiryDetailModal;
-                              setEnquiryDetailModal(null);
-                              setEnquiryReviewModal({ enquiry: enq, action: 'APPROVE' });
-                            }}
-                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors"
-                          >
-                            Approve Enquiry
-                          </button>
-                        </div>
-                      )}
-                    </div>
                   </div>
+
+                  {/* Fixed Modal Actions Footer */}
+                  <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-3 p-4 md:px-8 bg-slate-50 border-t border-slate-100 shrink-0 rounded-b-3xl">
+                    <button
+                      onClick={() => setEnquiryDetailModal(null)}
+                      className="w-full sm:w-auto px-4 py-2 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-100 transition-colors bg-white shadow-2xs"
+                    >
+                      Close
+                    </button>
+
+                    {enquiryDetailModal.status === 'SUBMITTED' && (
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button
+                          onClick={() => {
+                            const enq = enquiryDetailModal;
+                            setEnquiryDetailModal(null);
+                            setEnquiryReviewModal({ enquiry: enq, action: 'REJECT' });
+                          }}
+                          className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+                        >
+                          Reject
+                        </button>
+                        <button
+                          onClick={() => {
+                            const enq = enquiryDetailModal;
+                            setEnquiryDetailModal(null);
+                            setEnquiryReviewModal({ enquiry: enq, action: 'REQUEST_CHANGES' });
+                          }}
+                          className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+                        >
+                          Request Scope Changes
+                        </button>
+                        <button
+                          onClick={() => {
+                            const enq = enquiryDetailModal;
+                            setEnquiryDetailModal(null);
+                            setEnquiryReviewModal({ enquiry: enq, action: 'APPROVE' });
+                          }}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors"
+                        >
+                          Approve Enquiry
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 )}
               </ModalPortal>
             </div>
