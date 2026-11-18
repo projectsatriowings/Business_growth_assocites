@@ -76,9 +76,7 @@ export const AccountsPortal: React.FC = () => {
   // Detail Modals & Action Modals
   const [paymentDetailModal, setPaymentDetailModal] = useState<any | null>(null);
   const [workOrderDetailModal, setWorkOrderDetailModal] = useState<any | null>(null);
-  const [releaseModal, setReleaseModal] = useState<{ workOrder: any } | null>(null);
-  const [releaseNotes, setReleaseNotes] = useState('');
-  const [holdModal, setHoldModal] = useState<{ workOrder: any; action: 'HOLD' | 'REQUEST_CLARIFICATION' } | null>(null);
+  const [holdModal, setHoldModal] = useState<{ workOrder: any; action: 'HOLD' | 'REQUEST_CLARIFICATION' | 'RESUME' } | null>(null);
   const [holdNotes, setHoldNotes] = useState('');
   const [requestInfoModal, setRequestInfoModal] = useState<{ payment: any } | null>(null);
   const [requestInfoNotes, setRequestInfoNotes] = useState('');
@@ -199,17 +197,21 @@ export const AccountsPortal: React.FC = () => {
     const verifiedPaymentsAmount = payments
       .filter((p) => p.status === 'VERIFIED')
       .reduce((sum, p) => sum + (p.amount || 0), 0);
-    const pendingWorkOrdersCount = workOrders.filter((w) => !w.handoverApproved).length;
-    const eligibleForReleaseCount = workOrders.filter((w) => w.advanceVerified && !w.handoverApproved).length;
-    const releasedWorkOrdersCount = workOrders.filter((w) => w.handoverApproved).length;
+    const awaitingAdvanceCount = workOrders.filter(
+      (w) => !w.advanceVerified && !w.payments?.some((p: any) => p.status === 'PENDING_VERIFICATION')
+    ).length;
+    const awaitingVerificationCount = workOrders.filter(
+      (w) => !w.advanceVerified && w.payments?.some((p: any) => p.status === 'PENDING_VERIFICATION')
+    ).length;
+    const inProductionCount = workOrders.filter((w) => Boolean(w.handoverApproved)).length;
 
     return {
       pendingPaymentsCount,
       verifiedPaymentsCount,
       verifiedPaymentsAmount,
-      pendingWorkOrdersCount,
-      eligibleForReleaseCount,
-      releasedWorkOrdersCount,
+      awaitingAdvanceCount,
+      awaitingVerificationCount,
+      inProductionCount,
     };
   }, [payments, workOrders]);
 
@@ -246,12 +248,12 @@ export const AccountsPortal: React.FC = () => {
       const matchService = workOrderServiceFilter === 'ALL' || w.serviceCategory === workOrderServiceFilter;
 
       let matchEligibility = true;
-      if (workOrderEligibilityFilter === 'ELIGIBLE_FOR_RELEASE') {
-        matchEligibility = w.advanceVerified && !w.handoverApproved;
+      if (workOrderEligibilityFilter === 'AWAITING_ADVANCE') {
+        matchEligibility = !w.advanceVerified && !w.payments?.some((p: any) => p.status === 'PENDING_VERIFICATION');
+      } else if (workOrderEligibilityFilter === 'AWAITING_VERIFICATION') {
+        matchEligibility = !w.advanceVerified && Boolean(w.payments?.some((p: any) => p.status === 'PENDING_VERIFICATION'));
       } else if (workOrderEligibilityFilter === 'RELEASED') {
         matchEligibility = Boolean(w.handoverApproved);
-      } else if (workOrderEligibilityFilter === 'AWAITING_ADVANCE') {
-        matchEligibility = !w.advanceVerified;
       } else if (workOrderEligibilityFilter === 'ON_HOLD') {
         matchEligibility = w.handoverStatus === 'ON_HOLD' || w.handoverStatus === 'CLARIFICATION_REQUESTED';
       }
@@ -266,26 +268,6 @@ export const AccountsPortal: React.FC = () => {
     setCopiedUtr(utr);
     toast.success(`Copied UTR "${utr}" to clipboard`);
     setTimeout(() => setCopiedUtr(null), 2500);
-  };
-
-  // Authorize & Release Work Order to Technical
-  const confirmReleaseWorkOrder = async () => {
-    if (!releaseModal) return;
-    setModalSubmitting(true);
-    try {
-      const res = await apiRequest(`/api/accounts/work-orders/${releaseModal.workOrder.id}/release`, {
-        method: 'POST',
-        body: JSON.stringify({ notes: releaseNotes.trim() }),
-      });
-      toast.success(res.message || 'Work order released to Technical Department successfully!');
-      setReleaseModal(null);
-      setReleaseNotes('');
-      loadData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to release work order');
-    } finally {
-      setModalSubmitting(false);
-    }
   };
 
   // Hold or Request Clarification for Work Order
@@ -507,9 +489,9 @@ export const AccountsPortal: React.FC = () => {
                 <Briefcase className="w-4 h-4 text-[#80DED9]" />
                 <span>Work Orders</span>
               </div>
-              {summaryCounts.eligibleForReleaseCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold">
-                  {summaryCounts.eligibleForReleaseCount}
+              {summaryCounts.awaitingVerificationCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold" title="Work orders awaiting payment verification">
+                  {summaryCounts.awaitingVerificationCount}
                 </span>
               )}
             </button>
@@ -1589,7 +1571,7 @@ export const AccountsPortal: React.FC = () => {
                     </span>
                   </div>
                   <div className="mt-2 text-2xl font-black text-amber-700">
-                    {workOrders.filter((w) => !w.advanceVerified).length}
+                    {summaryCounts.awaitingAdvanceCount}
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
                     <span>Pending client advance</span>
@@ -1597,28 +1579,28 @@ export const AccountsPortal: React.FC = () => {
                   </p>
                 </div>
 
-                {/* 3. Eligible for Release */}
+                {/* 3. Awaiting Verification */}
                 <div
                   onClick={() => {
-                    setWorkOrderEligibilityFilter('ELIGIBLE_FOR_RELEASE');
+                    setWorkOrderEligibilityFilter('AWAITING_VERIFICATION');
                   }}
                   className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                    workOrderEligibilityFilter === 'ELIGIBLE_FOR_RELEASE'
+                    workOrderEligibilityFilter === 'AWAITING_VERIFICATION'
                       ? 'bg-blue-50/70 border-blue-300 shadow-sm ring-2 ring-blue-400/20'
                       : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50/30'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Awaiting Release</span>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Awaiting Verification</span>
                     <span className="p-2 rounded-xl bg-blue-100 text-blue-700">
                       <AlertTriangle className="w-4 h-4" />
                     </span>
                   </div>
                   <div className="mt-2 text-2xl font-black text-blue-700">
-                    {summaryCounts.eligibleForReleaseCount}
+                    {summaryCounts.awaitingVerificationCount}
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
-                    <span>Advance verified & ready</span>
+                    <span>Recorded, pending audit</span>
                     <ChevronRight className="w-3 h-3 text-blue-600" />
                   </p>
                 </div>
@@ -1641,10 +1623,10 @@ export const AccountsPortal: React.FC = () => {
                     </span>
                   </div>
                   <div className="mt-2 text-2xl font-black text-indigo-700">
-                    {summaryCounts.releasedWorkOrdersCount}
+                    {summaryCounts.inProductionCount}
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
-                    <span>Released to Technical</span>
+                    <span>Auto-released to Technical</span>
                     <ChevronRight className="w-3 h-3 text-indigo-600" />
                   </p>
                 </div>
@@ -1672,10 +1654,10 @@ export const AccountsPortal: React.FC = () => {
                         className="text-xs p-1.5 border border-slate-200 rounded-xl font-medium text-slate-700 bg-white"
                       >
                         <option value="ALL">All Release States</option>
-                        <option value="ELIGIBLE_FOR_RELEASE">Eligible for Technical Release</option>
-                        <option value="AWAITING_ADVANCE">Awaiting Advance Payment</option>
-                        <option value="RELEASED">Released to Technical</option>
-                        <option value="ON_HOLD">On Hold / Clarification</option>
+                        <option value="AWAITING_ADVANCE">Awaiting Advance</option>
+                        <option value="AWAITING_VERIFICATION">Awaiting Verification</option>
+                        <option value="RELEASED">In Production (Auto-Released)</option>
+                        <option value="ON_HOLD">On Hold</option>
                       </select>
 
                       <select
@@ -1720,8 +1702,9 @@ export const AccountsPortal: React.FC = () => {
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {filteredWorkOrders.map((w) => {
-                          const isEligibleForRelease = w.advanceVerified && !w.handoverApproved;
+                          const pendingPayment = w.payments?.find((p: any) => p.status === 'PENDING_VERIFICATION');
                           const isReleased = Boolean(w.handoverApproved);
+                          const isHeld = w.handoverStatus === 'ON_HOLD' || w.handoverStatus === 'CLARIFICATION_REQUESTED';
 
                           return (
                             <tr key={w.id} className="hover:bg-slate-50/60 transition-colors">
@@ -1752,7 +1735,9 @@ export const AccountsPortal: React.FC = () => {
                                   className={`px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 ${
                                     w.advanceVerified
                                       ? 'bg-emerald-100 text-emerald-800'
-                                      : 'bg-amber-100 text-amber-800'
+                                      : pendingPayment
+                                      ? 'bg-amber-100 text-amber-800'
+                                      : 'bg-slate-100 text-slate-600'
                                   }`}
                                 >
                                   {w.advanceVerified ? (
@@ -1760,9 +1745,14 @@ export const AccountsPortal: React.FC = () => {
                                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                                       ADVANCE VERIFIED
                                     </>
-                                  ) : (
+                                  ) : pendingPayment ? (
                                     <>
                                       <Clock className="w-3 h-3 text-amber-600" />
+                                      AWAITING AUDIT
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Clock className="w-3 h-3 text-slate-500" />
                                       AWAITING ADVANCE
                                     </>
                                   )}
@@ -1770,29 +1760,29 @@ export const AccountsPortal: React.FC = () => {
                               </td>
 
                               <td className="p-3.5">
-                                {isReleased ? (
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 inline-flex items-center gap-1">
-                                    <CheckCircle2 className="w-3 h-3 text-indigo-600" />
-                                    IN TECHNICAL PRODUCTION
-                                  </span>
-                                ) : w.handoverStatus === 'ON_HOLD' ? (
+                                {isHeld ? (
                                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 inline-flex items-center gap-1">
                                     <AlertCircle className="w-3 h-3 text-rose-600" />
                                     ON HOLD
                                   </span>
-                                ) : w.handoverStatus === 'CLARIFICATION_REQUESTED' ? (
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 inline-flex items-center gap-1">
-                                    <Clock className="w-3 h-3 text-amber-600" />
-                                    CLARIFICATION REQUESTED
+                                ) : isReleased ? (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 inline-flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3 text-indigo-600" />
+                                    IN TECHNICAL PRODUCTION
                                   </span>
-                                ) : isEligibleForRelease ? (
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 inline-flex items-center gap-1 animate-pulse">
-                                    <AlertTriangle className="w-3 h-3 text-blue-600" />
-                                    READY FOR RELEASE
+                                ) : pendingPayment ? (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 inline-flex items-center gap-1 animate-pulse">
+                                    <Clock className="w-3 h-3 text-amber-600" />
+                                    AWAITING VERIFICATION
+                                  </span>
+                                ) : !w.advanceVerified ? (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500">
+                                    AWAITING ADVANCE
                                   </span>
                                 ) : (
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500">
-                                    AWAITING ADVANCE CLEARANCE
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 inline-flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                    AUTOMATICALLY RELEASED
                                   </span>
                                 )}
                               </td>
@@ -1837,7 +1827,27 @@ export const AccountsPortal: React.FC = () => {
                                     <Eye className="w-3.5 h-3.5" />
                                   </button>
 
-                                  {!w.advanceVerified ? (
+                                  {pendingPayment ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        openVerifyModal({
+                                          id: pendingPayment.id,
+                                          transactionReference: pendingPayment.transactionReference,
+                                          amount: pendingPayment.amount,
+                                          workOrder: {
+                                            workOrderNumber: w.workOrderNumber,
+                                            client: w.client,
+                                          },
+                                        }, 'VERIFY');
+                                      }}
+                                      className="px-2.5 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-colors inline-flex items-center gap-1"
+                                      title="Verify client advance payment to trigger automatic routing to Technical Team"
+                                    >
+                                      <CheckCircle2 className="w-3 h-3" />
+                                      Verify Advance
+                                    </button>
+                                  ) : !w.advanceVerified ? (
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -1856,28 +1866,26 @@ export const AccountsPortal: React.FC = () => {
                                     >
                                       + Record Payment
                                     </button>
-                                  ) : isEligibleForRelease ? (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() => setReleaseModal({ workOrder: w })}
-                                        className="px-3 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-all inline-flex items-center gap-1"
-                                      >
-                                        <span>Release to Tech</span>
-                                        <ArrowRight className="w-3 h-3" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => setHoldModal({ workOrder: w, action: 'HOLD' })}
-                                        className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-medium transition-colors"
-                                      >
-                                        Hold
-                                      </button>
-                                    </>
+                                  ) : null}
+
+                                  {isHeld ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setHoldModal({ workOrder: w, action: 'RESUME' })}
+                                      className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg text-[11px] font-semibold transition-colors"
+                                      title="Resume work order execution"
+                                    >
+                                      Resume
+                                    </button>
                                   ) : (
-                                    <span className="text-[11px] font-semibold text-slate-400 px-2 py-0.5">
-                                      {isReleased ? 'Released ✓' : 'Awaiting Clearance'}
-                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setHoldModal({ workOrder: w, action: 'HOLD' })}
+                                      className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-medium transition-colors"
+                                      title="Put work order on hold"
+                                    >
+                                      Hold
+                                    </button>
                                   )}
                                 </div>
                               </td>
@@ -2200,7 +2208,26 @@ export const AccountsPortal: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2 shrink-0">
+                      <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0">
+                        <div>
+                          {workOrderDetailModal.handoverApproved ? (
+                            <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                              Auto-Released to Technical Department
+                            </span>
+                          ) : workOrderDetailModal.advanceVerified ? (
+                            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              Advance Verified • Queued for Technical Routing
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-amber-600" />
+                              Awaiting Advance Payment Verification
+                            </span>
+                          )}
+                        </div>
+
                         <button
                           type="button"
                           onClick={() => setWorkOrderDetailModal(null)}
@@ -2208,117 +2235,12 @@ export const AccountsPortal: React.FC = () => {
                         >
                           Close
                         </button>
-
-                        {workOrderDetailModal.advanceVerified && !workOrderDetailModal.handoverApproved && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const target = workOrderDetailModal;
-                              setWorkOrderDetailModal(null);
-                              setReleaseModal({ workOrder: target });
-                            }}
-                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md inline-flex items-center gap-1.5"
-                          >
-                            <span>Release to Technical</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        )}
                       </div>
                     </motion.div>
                 )}
               </ModalPortal>
 
-              {/* MODAL 3: RELEASE TO TECHNICAL MODAL */}
-              <ModalPortal
-                isOpen={!!releaseModal}
-                onClose={() => !modalSubmitting && setReleaseModal(null)}
-              >
-                {releaseModal && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    transition={{ duration: 0.2 }}
-                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600" />
-                      
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200 shrink-0">
-                              <Briefcase className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-slate-900">Authorize Technical Release</h3>
-                              <p className="text-xs text-slate-500 font-mono">
-                                Order: {releaseModal.workOrder.workOrderNumber}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => !modalSubmitting && setReleaseModal(null)}
-                            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-
-                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-xs space-y-1.5">
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Client:</span>
-                            <span className="font-semibold text-slate-800">{releaseModal.workOrder.client?.clientName}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Total Contract Value:</span>
-                            <span className="font-bold text-slate-900">₹{releaseModal.workOrder.totalValue?.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Advance Cleared:</span>
-                            <span className="font-bold text-emerald-700">₹{releaseModal.workOrder.advanceRequired?.toLocaleString()} ✓</span>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                            Handover & Technical Instructions Notes (Optional)
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={releaseNotes}
-                            onChange={(e) => setReleaseNotes(e.target.value)}
-                            placeholder="Add any specific client handover instructions or timeline constraints for Technical Lead..."
-                            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 resize-none transition-all"
-                          />
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            type="button"
-                            disabled={modalSubmitting}
-                            onClick={() => setReleaseModal(null)}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            disabled={modalSubmitting}
-                            onClick={confirmReleaseWorkOrder}
-                            className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-                          >
-                            {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
-                            {modalSubmitting ? 'Releasing...' : 'Confirm Release to Technical'}
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                )}
-              </ModalPortal>
-
-              {/* MODAL 4: HOLD WORK ORDER MODAL */}
+              {/* MODAL 3: HOLD / RESUME WORK ORDER MODAL */}
               <ModalPortal
                 isOpen={!!holdModal}
                 onClose={() => !modalSubmitting && setHoldModal(null)}
@@ -2332,16 +2254,18 @@ export const AccountsPortal: React.FC = () => {
                     className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
                     onClick={(e) => e.stopPropagation()}
                   >
-                      <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 to-rose-500" />
+                      <div className={`h-1.5 w-full ${holdModal.action === 'RESUME' ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 'bg-gradient-to-r from-amber-500 to-rose-500'}`} />
                       
                       <div className="p-6 space-y-4">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200 shrink-0">
-                              <AlertTriangle className="w-5 h-5 text-amber-600" />
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 ${holdModal.action === 'RESUME' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
+                              {holdModal.action === 'RESUME' ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <AlertTriangle className="w-5 h-5 text-amber-600" />}
                             </div>
                             <div>
-                              <h3 className="text-base font-bold text-slate-900">Hold Work Order</h3>
+                              <h3 className="text-base font-bold text-slate-900">
+                                {holdModal.action === 'RESUME' ? 'Resume Work Order' : 'Hold Work Order'}
+                              </h3>
                               <p className="text-xs text-slate-500 font-mono">
                                 Order: {holdModal.workOrder.workOrderNumber}
                               </p>
@@ -2358,13 +2282,13 @@ export const AccountsPortal: React.FC = () => {
 
                         <div>
                           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                            Reason for Hold / Clarification Query <span className="text-rose-500">*</span>
+                            {holdModal.action === 'RESUME' ? 'Resume Notes (Optional)' : <>Reason for Hold / Clarification Query <span className="text-rose-500">*</span></>}
                           </label>
                           <textarea
                             rows={3}
                             value={holdNotes}
                             onChange={(e) => setHoldNotes(e.target.value)}
-                            placeholder="Enter the reason why this work order is placed on hold or what clarification is needed..."
+                            placeholder={holdModal.action === 'RESUME' ? 'Optional reason or note regarding resuming execution...' : 'Enter the reason why this work order is placed on hold or what clarification is needed...'}
                             className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none transition-all"
                           />
                         </div>
@@ -2380,12 +2304,16 @@ export const AccountsPortal: React.FC = () => {
                           </button>
                           <button
                             type="button"
-                            disabled={modalSubmitting || !holdNotes.trim()}
+                            disabled={modalSubmitting || (holdModal.action !== 'RESUME' && !holdNotes.trim())}
                             onClick={confirmHoldWorkOrder}
-                            className="px-5 py-2 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                            className={`px-5 py-2 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50 ${
+                              holdModal.action === 'RESUME'
+                                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700'
+                                : 'bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700'
+                            }`}
                           >
-                            {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-                            {modalSubmitting ? 'Saving...' : 'Place Order on Hold'}
+                            {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : holdModal.action === 'RESUME' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+                            {modalSubmitting ? 'Processing...' : holdModal.action === 'RESUME' ? 'Resume Work Order' : 'Place Order on Hold'}
                           </button>
                         </div>
                       </div>

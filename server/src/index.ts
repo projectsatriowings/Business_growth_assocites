@@ -113,6 +113,13 @@ if (process.env.NODE_ENV !== 'test') {
     }).catch((err) => {
       console.warn(`⚠️ [SMTP Notice] Initial check:`, err.message);
     });
+
+    // Reconcile and auto-release any existing advance-verified work orders
+    import('./utils/autoRelease').then(({ reconcileEligibleWorkOrders }) => {
+      reconcileEligibleWorkOrders().catch((err) => {
+        console.warn(`⚠️ [AutoRelease Notice] Startup reconciliation:`, err.message);
+      });
+    });
   });
 
   server.on('error', (err: any) => {

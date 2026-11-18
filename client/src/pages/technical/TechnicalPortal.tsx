@@ -42,6 +42,30 @@ export const TechnicalPortal: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
+  const [teamFilter, setTeamFilter] = useState<'ALL' | 'SOFTWARE_DEVELOPMENT' | 'DIGITAL_MARKETING'>('ALL');
+
+  const isDigitalMarketing = (cat?: string, team?: string) => {
+    if (team === 'DIGITAL_MARKETING') return true;
+    if (team === 'SOFTWARE_DEVELOPMENT') return false;
+    const c = String(cat || '').toUpperCase();
+    return (
+      c.includes('DIGITAL') ||
+      c.includes('MARKETING') ||
+      c.includes('SEO') ||
+      c.includes('SOCIAL') ||
+      c.includes('SMM') ||
+      c.includes('ADS')
+    );
+  };
+
+  const softDevProjectsCount = projects.filter((p) => !isDigitalMarketing(p.serviceCategory, p.assignedTeam)).length;
+  const digMktgProjectsCount = projects.filter((p) => isDigitalMarketing(p.serviceCategory, p.assignedTeam)).length;
+
+  const filteredProjects = projects.filter((p) => {
+    if (teamFilter === 'ALL') return true;
+    const isDm = isDigitalMarketing(p.serviceCategory, p.assignedTeam);
+    return teamFilter === 'DIGITAL_MARKETING' ? isDm : !isDm;
+  });
 
   // New Milestone Modal
   const [milestoneModal, setMilestoneModal] = useState<boolean>(false);
@@ -404,71 +428,142 @@ export const TechnicalPortal: React.FC = () => {
             <div className="space-y-6">
               {!selectedProject ? (
                 <>
-                  <div className="bg-white p-4 rounded-xl border border-slate-200">
-                    <h2 className="text-base font-bold text-slate-900">Active Technical Projects</h2>
-                    <p className="text-xs text-slate-500">
-                      Projects authorized for execution following advance payment verification and Admin technical handover approval. Click any project to open execution workspace.
-                    </p>
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-base font-bold text-slate-900">Active Technical Projects</h2>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Projects automatically routed for execution upon verified advance payment. Select any project to open its execution workspace.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setTeamFilter('ALL')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          teamFilter === 'ALL'
+                            ? 'bg-[#3066BE] text-white shadow-sm'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        All Projects ({projects.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTeamFilter('SOFTWARE_DEVELOPMENT')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          teamFilter === 'SOFTWARE_DEVELOPMENT'
+                            ? 'bg-[#3066BE] text-white shadow-sm'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        Software Development ({softDevProjectsCount})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTeamFilter('DIGITAL_MARKETING')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          teamFilter === 'DIGITAL_MARKETING'
+                            ? 'bg-[#3066BE] text-white shadow-sm'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        Digital Marketing ({digMktgProjectsCount})
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {projects.map((p) => (
-                      <div
-                        key={p.id}
-                        onClick={() => setSelectedProject(p)}
-                        className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-amber-400 transition-all cursor-pointer flex flex-col justify-between"
-                      >
-                        <div>
-                          <div className="flex justify-between items-start border-b border-slate-100 pb-2">
-                            <div>
-                              <span className="font-mono text-xs font-bold text-slate-500">{p.projectNumber}</span>
-                              <h3 className="text-sm font-bold text-slate-900 mt-0.5">{p.client?.clientName}</h3>
-                              <span className="text-xs text-amber-700 font-semibold">{p.serviceCategory}</span>
+                    {filteredProjects.map((p) => {
+                      const isDm = isDigitalMarketing(p.serviceCategory, p.assignedTeam);
+                      const isNewProject = p.status === 'READY_TO_START';
+
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => setSelectedProject(p)}
+                          className={`bg-white p-5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                            isNewProject
+                              ? 'border-emerald-300 ring-2 ring-emerald-500/20 shadow-md hover:border-emerald-400'
+                              : 'border-slate-200 shadow-sm hover:border-amber-400'
+                          }`}
+                        >
+                          <div>
+                            {isNewProject && (
+                              <div className="mb-3 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold flex items-center justify-between">
+                                <span className="flex items-center gap-1.5">
+                                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                                  ✨ NEW PROJECT • READY TO START
+                                </span>
+                                <span className="text-[10px] uppercase tracking-wider text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded font-mono">
+                                  Auto-Released
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="flex justify-between items-start border-b border-slate-100 pb-2">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-xs font-bold text-slate-500">{p.projectNumber}</span>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                                    {isDm ? 'Digital Marketing Team' : 'Software Development Team'}
+                                  </span>
+                                </div>
+                                <h3 className="text-sm font-bold text-slate-900 mt-1">{p.client?.clientName}</h3>
+                                <span className="text-xs text-amber-700 font-semibold">{p.serviceCategory}</span>
+                              </div>
+
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                p.status === 'COMPLETED'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : p.status === 'IN_PROGRESS'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : p.status === 'CORRECTION_REQUIRED'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300'
+                              }`}>
+                                {p.status === 'READY_TO_START' ? 'Ready to Start' : p.status}
+                              </span>
                             </div>
 
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                              p.status === 'COMPLETED'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : p.status === 'IN_PROGRESS'
-                                ? 'bg-amber-100 text-amber-800'
-                                : p.status === 'CORRECTION_REQUIRED'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-blue-100 text-blue-800'
-                            }`}>
-                              {p.status}
-                            </span>
+                            <div className="mt-3">
+                              <div className="flex justify-between text-xs text-slate-600 mb-1">
+                                <span>Completion Progress</span>
+                                <span className="font-bold">{p.progressPercentage}%</span>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-2">
+                                <div
+                                  className="bg-amber-600 h-2 rounded-full transition-all"
+                                  style={{ width: `${p.progressPercentage}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="mt-3 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 line-clamp-2">
+                              <strong>Approved Scope:</strong> {p.approvedScope}
+                            </div>
+                            {p.workOrder?.bga && (
+                              <div className="mt-2 text-[11px] text-slate-500 flex justify-between">
+                                <span>BGA: <strong className="text-slate-700">{p.workOrder.bga.name}</strong></span>
+                                <span className="text-emerald-700 font-semibold">✓ Handover Authorized</span>
+                              </div>
+                            )}
                           </div>
 
-                          <div className="mt-3">
-                            <div className="flex justify-between text-xs text-slate-600 mb-1">
-                              <span>Completion Progress</span>
-                              <span className="font-bold">{p.progressPercentage}%</span>
-                            </div>
-                            <div className="w-full bg-slate-100 rounded-full h-2">
-                              <div
-                                className="bg-amber-600 h-2 rounded-full transition-all"
-                                style={{ width: `${p.progressPercentage}%` }}
-                              />
-                            </div>
+                          <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
+                            <span>{p.milestones?.length || 0} Milestones • {p.deliverables?.length || 0} Deliverables</span>
+                            <span className="font-bold text-amber-700">Open Workspace →</span>
                           </div>
-
-                          <div className="mt-3 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 line-clamp-2">
-                            <strong>Approved Scope:</strong> {p.approvedScope}
-                          </div>
-                          {p.workOrder?.bga && (
-                            <div className="mt-2 text-[11px] text-slate-500 flex justify-between">
-                              <span>BGA: <strong className="text-slate-700">{p.workOrder.bga.name}</strong></span>
-                              <span className="text-emerald-700 font-semibold">✓ Handover Authorized</span>
-                            </div>
-                          )}
                         </div>
+                      );
+                    })}
 
-                        <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
-                          <span>{p.milestones?.length || 0} Milestones • {p.deliverables?.length || 0} Deliverables</span>
-                          <span className="font-bold text-amber-700">Open Workspace →</span>
-                        </div>
+                    {filteredProjects.length === 0 && (
+                      <div className="col-span-full p-8 text-center bg-white rounded-xl border border-slate-200 text-slate-400">
+                        <Layers className="w-8 h-8 mx-auto text-slate-300 mb-2" />
+                        <p className="font-semibold text-slate-600">No projects found in this department.</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </>
               ) : (
@@ -531,25 +626,68 @@ export const TechnicalPortal: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        <strong className="block text-slate-800 mb-1">Approved Requirements & Scope:</strong>
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                      {/* Box 1: Requirements & Scope */}
+                      <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5">
+                        <strong className="block text-slate-800 font-bold mb-1">Approved Requirements & Scope:</strong>
                         <p className="text-slate-600 leading-relaxed">{selectedProject.approvedScope}</p>
+                        <div className="pt-2 border-t border-slate-200/60 mt-2 text-[11px]">
+                          <span className="text-slate-500">Service Category: </span>
+                          <span className="font-semibold text-slate-800">{selectedProject.serviceCategory}</span>
+                        </div>
+                        <div className="text-[11px]">
+                          <span className="text-slate-500">Assigned Team: </span>
+                          <span className="font-bold text-indigo-700">
+                            {isDigitalMarketing(selectedProject.serviceCategory, selectedProject.assignedTeam)
+                              ? 'Digital Marketing Team'
+                              : 'Software Development Team'}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        <strong className="block text-slate-800 mb-1">Handover & Assignment:</strong>
-                        <div className="text-slate-700">WO: <span className="font-mono font-bold text-slate-900">{selectedProject.workOrder?.workOrderNumber || 'N/A'}</span></div>
-                        <div className="text-slate-700 mt-1">BGA: <span className="font-bold text-slate-900">{selectedProject.workOrder?.bga?.name || 'N/A'}</span></div>
-                        <div className="text-emerald-700 font-semibold mt-1 flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          Handover Authorized
+                      {/* Box 2: Client & BGA Details */}
+                      <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+                        <strong className="block text-slate-800 font-bold">Client & Associate Information:</strong>
+                        <div>
+                          <div className="font-semibold text-slate-800">{selectedProject.client?.clientName}</div>
+                          {selectedProject.client?.businessName && (
+                            <div className="text-slate-500 text-[11px]">{selectedProject.client.businessName}</div>
+                          )}
+                          {selectedProject.client?.email && (
+                            <div className="text-slate-600 text-[11px] font-mono">{selectedProject.client.email}</div>
+                          )}
+                          {selectedProject.client?.phone && (
+                            <div className="text-slate-600 text-[11px]">{selectedProject.client.phone}</div>
+                          )}
                         </div>
-                        {selectedProject.workOrder?.handoverApprovedAt && (
-                          <div className="text-[10px] text-slate-400 mt-0.5">
-                            Auth Date: {new Date(selectedProject.workOrder.handoverApprovedAt).toLocaleDateString()}
-                          </div>
-                        )}
+                        <div className="pt-2 border-t border-slate-200/60 text-[11px]">
+                          <span className="text-slate-500">BGA: </span>
+                          <span className="font-bold text-slate-900">{selectedProject.workOrder?.bga?.name || 'Assigned'}</span>
+                          {selectedProject.workOrder?.bga?.email && (
+                            <div className="text-slate-600 font-mono">{selectedProject.workOrder.bga.email}</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Box 3: Handover, Quotation & Verified Advance */}
+                      <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5">
+                        <strong className="block text-slate-800 font-bold">Quotation & Advance Clearance:</strong>
+                        <div className="text-slate-700">
+                          WO: <span className="font-mono font-bold text-slate-900">{selectedProject.workOrder?.workOrderNumber || 'N/A'}</span>
+                        </div>
+                        <div className="text-slate-700">
+                          Quotation: <span className="font-mono font-bold text-slate-900">{selectedProject.workOrder?.quotationNumber || selectedProject.workOrder?.quotation?.quotationNumber || 'Approved'}</span>
+                        </div>
+                        <div className="text-slate-700">
+                          Total Value: <span className="font-bold text-slate-900">₹{(selectedProject.workOrder?.totalValue || selectedProject.workOrder?.quotation?.totalAmount || 0)?.toLocaleString()}</span>
+                        </div>
+                        <div className="text-emerald-700 font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Verified Advance: ₹{(selectedProject.workOrder?.advancePaid || selectedProject.workOrder?.advanceRequired || 0)?.toLocaleString()} ✓
+                        </div>
+                        <div className="text-indigo-700 font-semibold text-[11px] pt-1">
+                          ✓ Auto-Released to Technical Department
+                        </div>
                       </div>
                     </div>
                   </div>

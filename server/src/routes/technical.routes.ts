@@ -95,9 +95,11 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
   }
 });
 
-// 2. Assigned Projects (Only authorized after Admin Handover Approval)
+// 2. Assigned Projects (Auto-routed following Advance Payment Verification)
 router.get('/projects', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const { team } = req.query;
+
     const projects = await prisma.technicalProject.findMany({
       where: {
         workOrder: {
@@ -122,10 +124,14 @@ router.get('/projects', async (req: AuthRequest, res: Response): Promise<void> =
             id: true,
             workOrderNumber: true,
             advanceVerified: true,
+            advancePaid: true,
+            advanceRequired: true,
+            totalValue: true,
             handoverApproved: true,
             handoverApprovedAt: true,
             handoverNotes: true,
             status: true,
+            agreedScope: true,
             bgaId: true,
             bga: {
               select: {
@@ -133,6 +139,22 @@ router.get('/projects', async (req: AuthRequest, res: Response): Promise<void> =
                 name: true,
                 email: true,
                 mobile: true,
+              },
+            },
+            quotation: {
+              select: {
+                id: true,
+                quotationNumber: true,
+                totalAmount: true,
+                serviceScope: true,
+                createdAt: true,
+                enquiry: {
+                  select: {
+                    id: true,
+                    requirements: true,
+                    attachmentUrl: true,
+                  },
+                },
               },
             },
           },
@@ -174,7 +196,22 @@ router.get('/projects', async (req: AuthRequest, res: Response): Promise<void> =
       }
     }
 
-    res.json({ projects });
+    let teamResolvedProjects = projects.map((p) => {
+      const isMarketing = p.serviceCategory === 'DIGITAL_MARKETING';
+      const assignedTeam = isMarketing ? 'DIGITAL_MARKETING' : 'SOFTWARE_DEVELOPMENT';
+      const assignedTeamName = isMarketing ? 'Digital Marketing Team' : 'Software Development Team';
+      return {
+        ...p,
+        assignedTeam,
+        assignedTeamName,
+      };
+    });
+
+    if (team && typeof team === 'string' && team !== 'ALL') {
+      teamResolvedProjects = teamResolvedProjects.filter((p) => p.assignedTeam === team);
+    }
+
+    res.json({ projects: teamResolvedProjects });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load projects' });
   }

@@ -16,6 +16,7 @@ import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotificat
 import { appCache } from '../utils/cache';
 import { validateBankUtr } from '../utils/utrValidator';
 import { hydrateQuotationVersions } from '../utils/quotationVersion';
+import { autoReleaseWorkOrderToTechnical } from '../utils/autoRelease';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -313,18 +314,15 @@ router.get('/work-orders', async (req: AuthRequest, res: Response): Promise<void
   }
 });
 
-// Release Work Order to Technical Department (Accounts Authorization)
+// Release Work Order to Technical Department (Delegates to Automated Release Engine)
 router.post('/work-orders/:id/release', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { notes } = req.body;
 
     const workOrder = await prisma.workOrder.findUnique({
       where: { id },
       include: {
-        client: true,
-        bga: true,
-        quotation: true,
+        payments: true,
         project: true,
       },
     });
@@ -334,102 +332,29 @@ router.post('/work-orders/:id/release', async (req: AuthRequest, res: Response):
       return;
     }
 
-    // Eligibility check: Advance payment must be verified by Accounts
-    if (!workOrder.advanceVerified) {
-      res.status(400).json({
-        error: 'Eligibility Requirement Unfulfilled: Work order cannot be released to Technical Department until advance payment has been verified.',
-      });
+    if (workOrder.handoverStatus === 'ON_HOLD') {
+      res.status(400).json({ error: 'Work order is on hold. Please resolve or resume hold before release.' });
       return;
     }
 
-    // Prevent duplicate release
-    if (workOrder.handoverApproved) {
-      res.status(400).json({ error: 'Work order has already been released to the Technical Department.' });
+    const releaseResult = await autoReleaseWorkOrderToTechnical(workOrder.id, req.user!.id, req.ip);
+
+    if (!releaseResult.released) {
+      if (releaseResult.reason === 'INSUFFICIENT_ADVANCE') {
+        res.status(400).json({
+          error: 'Eligibility Requirement Unfulfilled: Work order requires verified advance payment before technical release.',
+        });
+        return;
+      }
+      res.status(400).json({ error: `Automatic release could not proceed: ${releaseResult.reason}` });
       return;
     }
-
-    const updatedWorkOrder = await prisma.workOrder.update({
-      where: { id },
-      data: {
-        handoverApproved: true,
-        handoverStatus: 'APPROVED',
-        handoverApprovedAt: new Date(),
-        handoverApprovedById: req.user!.id,
-        handoverNotes: notes || 'Released to Technical by Accounts',
-        status: WorkOrderStatus.IN_PRODUCTION,
-      },
-    });
-
-    // Activate or create Technical Project
-    let project = workOrder.project;
-    if (!project) {
-      const projectNumber = `PRJ-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
-      project = await prisma.technicalProject.create({
-        data: {
-          projectNumber,
-          workOrderId: workOrder.id,
-          clientId: workOrder.clientId,
-          serviceCategory: workOrder.serviceCategory,
-          approvedScope: workOrder.agreedScope,
-          status: ProjectStatus.READY_TO_START,
-          progressPercentage: 0,
-          startDate: new Date(),
-        },
-      });
-
-      // Seed 5 standard technical milestones
-      await prisma.projectMilestone.createMany({
-        data: [
-          { projectId: project.id, title: 'Project Kick-off & Requirement Deep Dive', status: 'TODO' },
-          { projectId: project.id, title: 'Architecture / Wireframes / Design Approval', status: 'TODO' },
-          { projectId: project.id, title: 'Core Implementation & Deliverable Build', status: 'TODO' },
-          { projectId: project.id, title: 'Quality Assurance & Client Review', status: 'TODO' },
-          { projectId: project.id, title: 'Final Handover & Project Sign-off', status: 'TODO' },
-        ],
-      });
-    }
-
-    // Notify Technical team
-    const techUsers = await prisma.user.findMany({ where: { role: Role.TECHNICAL } });
-    for (const t of techUsers) {
-      await createNotification(
-        t.id,
-        'Work Order Released - Ready for Technical Execution',
-        `Accounts released work order ${workOrder.workOrderNumber} for ${workOrder.client.clientName} (${workOrder.serviceCategory}). Project is now active.`,
-        'ACTION_REQUIRED',
-        '/technical/projects'
-      );
-    }
-
-    // Notify BGA
-    await createNotification(
-      workOrder.bgaId,
-      'Work Order Released to Technical',
-      `Accounts has verified payments and officially released the work order for ${workOrder.client.clientName} to engineering execution.`,
-      'SUCCESS',
-      '/bga/projects'
-    );
-
-    appCache.invalidatePrefix('accounts:');
-    appCache.invalidatePrefix('admin:');
-    appCache.invalidatePrefix('technical:');
-    appCache.invalidatePrefix('bga:');
-
-    await logAudit(
-      req.user!.id,
-      req.user!.email,
-      req.user!.role,
-      'WORK_ORDER_RELEASED_TO_TECHNICAL',
-      'WORK_ORDER',
-      workOrder.id,
-      { workOrderNumber: workOrder.workOrderNumber, notes },
-      req.ip
-    );
 
     res.json({
-      message: 'Work order successfully released. Technical project is now active.',
-      workOrder: updatedWorkOrder,
-      project,
+      message: `Work order successfully released and routed to ${releaseResult.teamName}. Technical project is now active.`,
+      project: releaseResult.project,
+      routedTeam: releaseResult.team,
+      teamName: releaseResult.teamName,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to release work order' });
@@ -452,15 +377,25 @@ router.post('/work-orders/:id/hold', async (req: AuthRequest, res: Response): Pr
       return;
     }
 
-    const handoverStatus = action === 'REQUEST_CLARIFICATION' ? 'CLARIFICATION_REQUESTED' : 'ON_HOLD';
+    const isResume = action === 'RESUME' || action === 'CLEAR_HOLD';
+    const handoverStatus = isResume
+      ? (workOrder.handoverApproved ? 'APPROVED' : 'PENDING')
+      : action === 'REQUEST_CLARIFICATION'
+      ? 'CLARIFICATION_REQUESTED'
+      : 'ON_HOLD';
 
     const updated = await prisma.workOrder.update({
       where: { id },
       data: {
         handoverStatus,
-        handoverNotes: reason || 'Action taken by Accounts Department',
+        handoverNotes: reason || (isResume ? 'Hold removed by Accounts' : 'Action taken by Accounts Department'),
       },
     });
+
+    if (isResume) {
+      // Re-evaluate automatic release if advance is fulfilled
+      await autoReleaseWorkOrderToTechnical(workOrder.id, req.user!.id, req.ip);
+    }
 
     await logAudit(
       req.user!.id,
@@ -546,7 +481,7 @@ router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response)
     const adAmount = parseFloat(adBudgetAmount) || 0;
     const netFee = Math.max(0, payAmount - adAmount);
 
-    // Payments recorded by Accounts are verified immediately upon recording
+    // Payments recorded by Accounts are saved as PENDING_VERIFICATION until authorized & audited
     const payment = await prisma.payment.create({
       data: {
         workOrderId: id,
@@ -558,129 +493,19 @@ router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response)
         transactionReference: utrValidation.formattedUtr,
         paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
         proofAttachmentUrl: proofAttachmentUrl || null,
-        status: PaymentStatus.VERIFIED,
-        verifiedById: req.user!.id,
-        verifiedAt: new Date(),
-        verificationNotes: 'Recorded and verified directly by Accounts upon bank receipt',
+        status: PaymentStatus.PENDING_VERIFICATION,
+        verificationNotes: 'Recorded by Accounts. Awaiting payment audit and verification.',
       },
     });
 
-    // 1. Advance Payment Verification Handling -> Moves to Admin for Technical Handover!
-    if (paymentType === PaymentType.ADVANCE) {
-      const newAdvancePaid = workOrder.advancePaid + payAmount;
-      const isAdvanceFulfilled = newAdvancePaid >= workOrder.advanceRequired;
-
-      await prisma.workOrder.update({
-        where: { id: workOrder.id },
-        data: {
-          advancePaid: newAdvancePaid,
-          advanceVerified: isAdvanceFulfilled,
-          handoverStatus: isAdvanceFulfilled ? 'PENDING' : workOrder.handoverStatus,
-          status: isAdvanceFulfilled ? WorkOrderStatus.ADVANCE_VERIFIED : workOrder.status,
-        },
-      });
-
-      if (isAdvanceFulfilled) {
-        // Notify Admin to review and authorize Technical Handover
-        const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
-        for (const a of admins) {
-          await createNotification(
-            a.id,
-            'Advance Payment Verified - Technical Handover Required',
-            `Accounts verified advance payment (Rs. ${payAmount.toLocaleString('en-IN')}) for ${workOrder.client.clientName}. Please review and authorize Technical Handover.`,
-            'ACTION_REQUIRED',
-            '/admin/work-orders'
-          );
-        }
-
-        // Notify BGA that payment is verified and waiting for Admin handover authorization
-        await createNotification(
-          workOrder.bgaId,
-          'Advance Payment Verified',
-          `Accounts verified advance payment for ${workOrder.client.clientName}. Awaiting Admin Technical Handover authorization.`,
-          'SUCCESS',
-          '/bga/projects'
-        );
-      }
-    }
-
-    // 2. Commission Calculation Engine
-    // Digital Marketing Monthly Payment: Commission calculated per monthly verified payment
-    if (workOrder.serviceCategory === ServiceCategoryType.DIGITAL_MARKETING) {
-      const commissionableAmount = Math.max(0, payAmount - adAmount);
-      const dmSetting = await prisma.systemSetting.findUnique({ where: { key: 'dm_commission_rate' } });
-      const rate = dmSetting ? parseFloat(dmSetting.value) : 15;
-      const calculatedCommission = (commissionableAmount * rate) / 100;
-
-      await prisma.commission.create({
-        data: {
-          bgaId: workOrder.bgaId,
-          clientId: workOrder.clientId,
-          workOrderId: workOrder.id,
-          paymentId: payment.id,
-          serviceCategory: workOrder.serviceCategory,
-          billingType: 'MONTHLY_RECURRING',
-          grossAmount: payAmount,
-          excludedAdSpend: adAmount,
-          commissionableAmount,
-          commissionRate: rate,
-          calculatedCommission,
-          eligibilityStatus: CommissionEligibility.ELIGIBLE,
-          approvalStatus: CommissionApproval.PENDING_APPROVAL,
-          payoutStatus: CommissionPayout.UNPAID,
-          notes: `Monthly recurring DM commission. Ad spend of Rs. ${adAmount} strictly excluded.`,
-        },
-      });
-
-      const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
-      for (const a of admins) {
-        await createNotification(
-          a.id,
-          'New Commission Awaiting Approval',
-          `Eligible commission of Rs. ${calculatedCommission.toLocaleString()} for BGA ${workOrder.bga.name} (Client: ${workOrder.client.clientName}).`,
-          'ACTION_REQUIRED',
-          '/admin/commissions'
-        );
-      }
-    } else if (paymentType === PaymentType.FINAL) {
-      // Website, Mobile App, Software: Commission on project completion and final payment verification
-      const isProjectCompleted = workOrder.project?.status === ProjectStatus.COMPLETED;
-      let rateKey = 'website_commission_rate';
-      if (workOrder.serviceCategory === ServiceCategoryType.MOBILE_APPLICATION_DEVELOPMENT) {
-        rateKey = 'mobile_commission_rate';
-      } else if (workOrder.serviceCategory === ServiceCategoryType.SOFTWARE_DEVELOPMENT) {
-        rateKey = 'software_commission_rate';
-      }
-
-      const rateSetting = await prisma.systemSetting.findUnique({ where: { key: rateKey } });
-      const rate = rateSetting ? parseFloat(rateSetting.value) : 12;
-
-      const commissionableAmount = workOrder.quotation.serviceFee - workOrder.quotation.discount;
-      const calculatedCommission = (commissionableAmount * rate) / 100;
-
-      await prisma.commission.create({
-        data: {
-          bgaId: workOrder.bgaId,
-          clientId: workOrder.clientId,
-          workOrderId: workOrder.id,
-          paymentId: payment.id,
-          projectId: workOrder.project?.id || null,
-          serviceCategory: workOrder.serviceCategory,
-          billingType: 'PROJECT_BASED',
-          grossAmount: workOrder.totalValue,
-          excludedAdSpend: 0,
-          commissionableAmount,
-          commissionRate: rate,
-          calculatedCommission,
-          eligibilityStatus: isProjectCompleted ? CommissionEligibility.ELIGIBLE : CommissionEligibility.PENDING_CRITERIA,
-          approvalStatus: CommissionApproval.PENDING_APPROVAL,
-          payoutStatus: CommissionPayout.UNPAID,
-          notes: isProjectCompleted
-            ? `Project-based commission for ${workOrder.serviceCategory}. Verified upon final payment and project completion.`
-            : `Final payment verified. Commission will become ELIGIBLE once Technical marks project COMPLETED.`,
-        },
-      });
-    }
+    // Notify Accounts and Admin of new payment pending verification
+    await createNotification(
+      req.user!.id,
+      'Payment Recorded - Ready for Verification',
+      `Payment of ₹${payAmount.toLocaleString('en-IN')} (UTR: ${utrValidation.formattedUtr}) recorded for ${workOrder.client.clientName}. Ready for audit & verification.`,
+      'ACTION_REQUIRED',
+      '/accounts?tab=work-orders'
+    );
 
     // Invalidate caches
     appCache.invalidatePrefix('accounts:');
@@ -691,16 +516,18 @@ router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response)
       req.user!.id,
       req.user!.email,
       req.user!.role,
-      'PAYMENT_RECORDED_AND_VERIFIED',
+      'PAYMENT_RECORDED',
       'PAYMENT',
       payment.id,
-      { amount: payAmount, type: paymentType, utr: utrValidation.formattedUtr },
+      { amount: payAmount, paymentType, utr: utrValidation.formattedUtr },
       req.ip
     );
 
-    res.status(201).json({ message: 'Payment recorded and verified successfully. Work order advance cleared.', payment });
+    res.json({
+      message: 'Payment recorded successfully. Awaiting payment audit and verification.',
+      payment,
+    });
   } catch (error) {
-    console.error('Record payment error:', error);
     res.status(500).json({ error: 'Failed to record payment' });
   }
 });
@@ -743,45 +570,12 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
     });
 
     const workOrder = payment.workOrder;
+    let releaseResult: any = null;
 
     if (isVerified) {
-      // 1. Advance Payment Verification Handling -> Moves to Admin for Technical Handover!
+      // 1. Advance Payment Verification Handling -> Triggers Automatic Technical Release!
       if (payment.paymentType === PaymentType.ADVANCE) {
-        const newAdvancePaid = workOrder.advancePaid + payment.amount;
-        const isAdvanceFulfilled = newAdvancePaid >= workOrder.advanceRequired;
-
-        await prisma.workOrder.update({
-          where: { id: workOrder.id },
-          data: {
-            advancePaid: newAdvancePaid,
-            advanceVerified: isAdvanceFulfilled,
-            handoverStatus: isAdvanceFulfilled ? 'PENDING' : workOrder.handoverStatus,
-            status: isAdvanceFulfilled ? WorkOrderStatus.ADVANCE_VERIFIED : workOrder.status,
-          },
-        });
-
-        if (isAdvanceFulfilled) {
-          // Notify Admin to review and authorize Technical Handover
-          const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
-          for (const a of admins) {
-            await createNotification(
-              a.id,
-              'Advance Payment Verified - Technical Handover Required',
-              `Accounts verified advance payment (Rs. ${payment.amount.toLocaleString('en-IN')}) for ${workOrder.client.clientName}. Please review and authorize Technical Handover.`,
-              'ACTION_REQUIRED',
-              '/admin/work-orders'
-            );
-          }
-
-          // Notify BGA that payment is verified and waiting for Admin handover authorization
-          await createNotification(
-            workOrder.bgaId,
-            'Advance Payment Verified',
-            `Accounts verified advance payment for ${workOrder.client.clientName}. Awaiting Admin Technical Handover authorization.`,
-            'SUCCESS',
-            '/bga/projects'
-          );
-        }
+        releaseResult = await autoReleaseWorkOrderToTechnical(workOrder.id, req.user!.id, req.ip);
       }
 
       // 2. Commission Calculation Engine
@@ -888,7 +682,17 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
     appCache.invalidatePrefix('admin:');
     appCache.invalidatePrefix('bga:');
 
-    res.json({ message: `Payment successfully marked as ${isVerified ? 'VERIFIED' : 'REJECTED'}`, payment: updatedPayment });
+    res.json({
+      message: isVerified
+        ? releaseResult?.released
+          ? `Payment verified successfully. Work order has been automatically released to ${releaseResult.teamName}.`
+          : `Payment verified successfully.${releaseResult?.reason === 'WORK_ORDER_ON_HOLD' ? ' Project remains on hold.' : ' Awaiting remaining advance balance.'}`
+        : 'Payment successfully marked as REJECTED',
+      payment: updatedPayment,
+      autoReleased: releaseResult?.released || false,
+      routedTeam: releaseResult?.team,
+      teamName: releaseResult?.teamName,
+    });
   } catch (error: any) {
     console.error('Payment verification error:', error);
     res.status(500).json({ error: 'Failed to verify payment' });
