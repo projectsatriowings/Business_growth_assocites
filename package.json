@@ -3,13 +3,17 @@
   "version": "1.0.0",
   "description": "Business Growth Associates Management System - Four Role-Based Portals",
   "scripts": {
+    "install:all": "cd client && npm install && cd ../server && npm install",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",
+    "build:client": "cd client && npx vite build",
+    "build:server": "cd server && npx tsc",
     "build": "cd client && npx vite build && cd ../server && npx tsc",
     "start": "cd server && node dist/index.js",
     "seed": "cd server && npx tsx src/seed.ts",
-    "clean:port": "powershell -Command \"Stop-Process -Id (Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue).OwningProcess -Force -ErrorAction SilentlyContinue\"",
-    "test:e2e": "npx tsx tests/e2e.test.ts"
+    "clean:port": "node scripts/free-port.js",
+    "prestart": "node scripts/free-port.js",
+    "test:e2e": "cd server && npx tsx tests/e2e.test.ts"
   },
   "keywords": [
     "bga",
