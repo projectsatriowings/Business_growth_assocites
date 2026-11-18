@@ -332,7 +332,7 @@ export const BgaPortal: React.FC = () => {
           name: user?.name || 'BGA Associate',
           email: user?.email || '',
           phone: user?.mobile || '',
-          companyName: 'BGA Enterprise Associate Network',
+          companyName: 'Atriowings Growth Associate Network',
           subject: `[Associate Support - ${supportCategory}] from ${user?.name || 'Associate'}`,
           message: supportMessage.trim(),
         }),
@@ -998,13 +998,23 @@ export const BgaPortal: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
-      <PortalHeader title="BGA Associate Portal" subtitle="Client Management, Quotation Requests & Earnings" />
+      <PortalHeader title="Growth Associate Portal" subtitle="Client Management, Quotation Requests & Earnings" />
 
       <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
         {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
         <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
           <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-2">
+            {/* Parent Company & Portal Brand Identity */}
+            <div className="px-3 pt-1 pb-3 mb-2 border-b border-slate-800">
+              <span className="text-[10px] tracking-wider uppercase text-[#80DED9] font-bold block">
+                Atriowings Technologies
+              </span>
+              <span className="text-xs font-bold text-white block mt-0.5">
+                Growth Associate Portal
+              </span>
+            </div>
+
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1">
               Associate Workspace
             </div>
 
@@ -1093,9 +1103,14 @@ export const BgaPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 shrink-0">
-            Account Status:{' '}
-            <span className="text-[#80DED9] font-bold uppercase">{user?.status}</span>
+          <div className="pt-3 border-t border-slate-800 text-[11px] text-slate-500 shrink-0 space-y-1">
+            <div className="flex justify-between items-center">
+              <span>Account Status:</span>
+              <span className="text-[#80DED9] font-bold uppercase">{user?.status}</span>
+            </div>
+            <div className="text-[10px] text-slate-500 text-center pt-1.5 border-t border-slate-800/60">
+              © Atriowings Technologies
+            </div>
           </div>
         </aside>
 
@@ -1146,6 +1161,37 @@ export const BgaPortal: React.FC = () => {
               <BgaDashboardSkeleton />
             ) : (
               <div className="space-y-6">
+                {/* Welcome Brand Banner */}
+                <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-teal-50 text-[#119DA4] border border-[#119DA4]/20">
+                        Atriowings Technologies
+                      </span>
+                      <span className="text-xs text-slate-400 font-medium">• Growth Associate Network</span>
+                    </div>
+                    <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1.5">
+                      Welcome to Atriowings Growth Associate Portal
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Associate Partner: <strong className="text-slate-800">{user?.name}</strong> • Client Acquisitions, Quotations & IT Solution Commissions
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab('clients');
+                        setClientViewMode('add');
+                      }}
+                      className="px-4 py-2 bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#255299] hover:to-[#0e8288] text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      <span>Onboard New Client</span>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
                     <span className="text-xs text-slate-500 font-semibold uppercase">My Registered Clients</span>
@@ -3282,15 +3328,14 @@ export const BgaPortal: React.FC = () => {
                                               </a>
                                             </div>
                                           ) : (
-                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
-                                              isVid
+                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${isVid
                                                 ? 'bg-rose-50 text-rose-600 border-rose-200'
                                                 : isAud
-                                                ? 'bg-purple-50 text-purple-600 border-purple-200'
-                                                : isArch
-                                                ? 'bg-amber-50 text-amber-600 border-amber-200'
-                                                : 'bg-indigo-50 text-indigo-600 border-indigo-200'
-                                            }`}>
+                                                  ? 'bg-purple-50 text-purple-600 border-purple-200'
+                                                  : isArch
+                                                    ? 'bg-amber-50 text-amber-600 border-amber-200'
+                                                    : 'bg-indigo-50 text-indigo-600 border-indigo-200'
+                                              }`}>
                                               {isVid ? (
                                                 <Video className="w-5 h-5" />
                                               ) : isAud ? (
@@ -4274,1574 +4319,1582 @@ export const BgaPortal: React.FC = () => {
                   }))}
               </div>
 
-              {/* Revision Request Modal */}
+  {/* Revision Request Modal */ }
               <ModalPortal
                 isOpen={!!revisionModal}
                 onClose={() => !modalSubmitting && setRevisionModal(null)}
               >
-                {revisionModal && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    transition={{ duration: 0.2 }}
-                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600" />
-                    <div className="p-6 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
-                            <Edit3 className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <h3 className="text-base font-bold text-slate-900">
-                              Request Quotation Revision
-                            </h3>
-                            <p className="text-xs text-slate-500 font-mono">
-                              {revisionModal.quotationNumber}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => !modalSubmitting && setRevisionModal(null)}
-                          className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
+  { revisionModal && (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+      transition={{ duration: 0.2 }}
+      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600" />
+      <div className="p-6 space-y-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
+              <Edit3 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900">
+                Request Quotation Revision
+              </h3>
+              <p className="text-xs text-slate-500 font-mono">
+                {revisionModal.quotationNumber}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => !modalSubmitting && setRevisionModal(null)}
+            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-                      <p className="text-xs text-slate-600 leading-relaxed">
-                        Enter the requested scope modifications, commercial revisions, or client feedback. The Accounts Department will draft an updated quotation.
-                      </p>
+        <p className="text-xs text-slate-600 leading-relaxed">
+          Enter the requested scope modifications, commercial revisions, or client feedback. The Accounts Department will draft an updated quotation.
+        </p>
 
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                          Client Feedback / Revision Notes <span className="text-rose-500">*</span>
-                        </label>
-                        <textarea
-                          rows={3}
-                          value={revisionNotes}
-                          onChange={(e) => setRevisionNotes(e.target.value)}
-                          placeholder="e.g. Client requested a 10% commercial discount and inclusion of 2 additional landing pages..."
-                          className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none transition-all"
-                        />
-                      </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            Client Feedback / Revision Notes <span className="text-rose-500">*</span>
+          </label>
+          <textarea
+            rows={3}
+            value={revisionNotes}
+            onChange={(e) => setRevisionNotes(e.target.value)}
+            placeholder="e.g. Client requested a 10% commercial discount and inclusion of 2 additional landing pages..."
+            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none transition-all"
+          />
+        </div>
 
-                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                        <button
-                          type="button"
-                          disabled={modalSubmitting}
-                          onClick={() => setRevisionModal(null)}
-                          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          disabled={!revisionNotes.trim() || modalSubmitting}
-                          onClick={handleSubmitRevision}
-                          className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-                        >
-                          {modalSubmitting ? (
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Send className="w-3.5 h-3.5" />
-                          )}
-                          {modalSubmitting ? 'Sending...' : 'Send to Accounts'}
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
+        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button
+            type="button"
+            disabled={modalSubmitting}
+            onClick={() => setRevisionModal(null)}
+            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={!revisionNotes.trim() || modalSubmitting}
+            onClick={handleSubmitRevision}
+            className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+          >
+            {modalSubmitting ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Send className="w-3.5 h-3.5" />
+            )}
+            {modalSubmitting ? 'Sending...' : 'Send to Accounts'}
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  )}
               </ModalPortal>
 
-              {/* Client Acceptance Modal */}
+  {/* Client Acceptance Modal */ }
               <ModalPortal
                 isOpen={!!acceptanceModal}
                 onClose={() => !modalSubmitting && setAcceptanceModal(null)}
               >
-                {acceptanceModal && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    transition={{ duration: 0.2 }}
-                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-600" />
-                    <div className="p-6 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 border border-teal-200">
-                            <CheckCircle2 className="w-5 h-5 text-teal-600" />
-                          </div>
-                          <div>
-                            <h3 className="text-base font-bold text-slate-900">
-                              Record Client Acceptance
-                            </h3>
-                            <p className="text-xs text-slate-500 font-mono">
-                              {acceptanceModal.quotationNumber}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => !modalSubmitting && setAcceptanceModal(null)}
-                          className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
+  { acceptanceModal && (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+      transition={{ duration: 0.2 }}
+      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-600" />
+      <div className="p-6 space-y-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 border border-teal-200">
+              <CheckCircle2 className="w-5 h-5 text-teal-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900">
+                Record Client Acceptance
+              </h3>
+              <p className="text-xs text-slate-500 font-mono">
+                {acceptanceModal.quotationNumber}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => !modalSubmitting && setAcceptanceModal(null)}
+            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-                      <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-200/70 text-xs text-teal-900 leading-relaxed">
-                        Recording client acceptance automatically generates an official <strong>Work Order</strong> and notifies Accounts to collect and verify the required advance payment.
-                      </div>
+        <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-200/70 text-xs text-teal-900 leading-relaxed">
+          Recording client acceptance automatically generates an official <strong>Work Order</strong> and notifies Accounts to collect and verify the required advance payment.
+        </div>
 
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                          Acceptance Evidence / PO Reference Notes <span className="text-rose-500">*</span>
-                        </label>
-                        <textarea
-                          rows={3}
-                          value={acceptanceNotes}
-                          onChange={(e) => setAcceptanceNotes(e.target.value)}
-                          placeholder="e.g. Approved via email confirmation from MD on 17 Nov 2026. PO Ref: APEX-2026-PO99"
-                          className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 resize-none transition-all"
-                        />
-                      </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            Acceptance Evidence / PO Reference Notes <span className="text-rose-500">*</span>
+          </label>
+          <textarea
+            rows={3}
+            value={acceptanceNotes}
+            onChange={(e) => setAcceptanceNotes(e.target.value)}
+            placeholder="e.g. Approved via email confirmation from MD on 17 Nov 2026. PO Ref: APEX-2026-PO99"
+            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 resize-none transition-all"
+          />
+        </div>
 
-                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                        <button
-                          type="button"
-                          disabled={modalSubmitting}
-                          onClick={() => setAcceptanceModal(null)}
-                          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          disabled={!acceptanceNotes.trim() || modalSubmitting}
-                          onClick={handleClientAcceptance}
-                          className="px-5 py-2 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-                        >
-                          {modalSubmitting ? (
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          )}
-                          {modalSubmitting ? 'Confirming...' : 'Confirm Acceptance'}
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
+        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button
+            type="button"
+            disabled={modalSubmitting}
+            onClick={() => setAcceptanceModal(null)}
+            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={!acceptanceNotes.trim() || modalSubmitting}
+            onClick={handleClientAcceptance}
+            className="px-5 py-2 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+          >
+            {modalSubmitting ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            )}
+            {modalSubmitting ? 'Confirming...' : 'Confirm Acceptance'}
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  )}
               </ModalPortal>
             </div>
           )}
 
-          {/* TAB 7: WORK ORDERS & PROJECTS */}
-          {activeTab === 'projects' && (
-            <div className="space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200">
-                <h2 className="text-base font-bold text-slate-900">My Client Projects & Execution</h2>
-                <p className="text-xs text-slate-500">
-                  Track technical implementation progress and milestones for contracts accepted by your clients.
+{/* TAB 7: WORK ORDERS & PROJECTS */ }
+{
+  activeTab === 'projects' && (
+    <div className="space-y-4">
+      <div className="bg-white p-4 rounded-xl border border-slate-200">
+        <h2 className="text-base font-bold text-slate-900">My Client Projects & Execution</h2>
+        <p className="text-xs text-slate-500">
+          Track technical implementation progress and milestones for contracts accepted by your clients.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {!workOrdersLoaded || tabLoading ? (
+          <SkeletonTable rows={4} cols={5} />
+        ) : workOrders.length === 0 ? (
+          <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm">
+            <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <h3 className="text-sm font-bold text-slate-800">No active projects yet</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+              Projects will appear here once your clients accept commercial quotations and technical execution kicks off.
+            </p>
+          </div>
+        ) : (
+          workOrders.map((wo) => {
+            const prj = wo.project;
+            return (
+              <div key={wo.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-slate-900">{wo.workOrderNumber}</span>
+                      {prj && <span className="font-mono text-xs text-indigo-600 font-bold">({prj.projectNumber})</span>}
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 mt-0.5">{wo.client?.clientName}</h3>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${wo.advanceVerified ? 'bg-emerald-100 text-[#119DA4]' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                      Advance: {wo.advanceVerified ? 'VERIFIED' : 'AWAITING VERIFICATION'}
+                    </span>
+                    <span className="text-xs font-bold text-slate-800">
+                      Value: ₹{wo.totalValue?.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                {prj ? (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-xs text-slate-600 mb-1">
+                      <span>Technical Execution: <strong>{prj.status}</strong></span>
+                      <span className="font-bold">{prj.progressPercentage}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-2">
+                      <div
+                        className="bg-[#3066BE] h-2 rounded-full transition-all"
+                        style={{ width: `${prj.progressPercentage}%` }}
+                      />
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {prj.milestones?.map((m: any) => (
+                        <div key={m.id} className="p-2 rounded bg-slate-50 border border-slate-100 text-[11px]">
+                          <span className="font-semibold text-slate-800 block truncate">{m.title}</span>
+                          <span className={`text-[10px] font-bold ${m.status === 'COMPLETED' ? 'text-[#119DA4]' : 'text-slate-400'
+                            }`}>
+                            {m.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 p-3 rounded-lg bg-amber-50 text-amber-800 text-xs">
+                    ⏳ Waiting for Accounts to verify advance payment receipt before technical handover.
+                  </div>
+                )}
+              </div>
+            );
+          }))}
+      </div>
+    </div>
+  )
+}
+
+{/* TAB 8: MY EARNINGS & COMMISSIONS — COMPREHENSIVE PERFORMANCE DASHBOARD */ }
+{
+  activeTab === 'earnings' && (
+    <div className="space-y-6">
+      {/* Dashboard Header Bar */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+        <div>
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-[#119DA4]" />
+            My Earnings & Business Performance Dashboard
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Real-time commission tracking, business conversion funnel, service performance breakdown, and verified ledger.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => loadTabData('earnings')}
+          className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+        >
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh Dashboard
+        </button>
+      </div>
+
+      {!earningsData && tabLoading ? (
+        <div className="space-y-4">
+          <SkeletonStatsRow />
+          <SkeletonTable rows={5} cols={6} />
+        </div>
+      ) : (() => {
+        const summary = earningsData?.summary || {
+          totalClients: clients.length,
+          activeClients: clients.filter((c) => c.status === 'ACTIVE').length,
+          totalServiceRequests: clientRequests.length,
+          approvedRequests: clientRequests.filter((r) => r.adminApprovalStatus === 'APPROVED').length,
+          quotationsAccepted: quotations.filter((q) => q.status === 'ACCEPTED').length,
+          projectsInProgress: workOrders.filter((w) => w.project && w.project.status !== 'COMPLETED').length,
+          projectsCompleted: workOrders.filter((w) => w.project && w.project.status === 'COMPLETED').length,
+          totalEligibleRevenue: 0,
+          totalCommissionEarned: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
+          pendingCommission: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE' && c.payoutStatus === 'UNPAID').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
+          commissionPaid: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE' && c.payoutStatus === 'PROCESSED').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
+          commissionPipeline: commissions.filter((c) => c.eligibilityStatus === 'PENDING_CRITERIA').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
+        };
+
+        const breakdown = earningsData?.breakdown || {
+          earned: summary.totalCommissionEarned,
+          pending: summary.pendingCommission,
+          paid: summary.commissionPaid,
+          pipeline: summary.commissionPipeline || 0,
+        };
+
+        const servicePerf: any[] = earningsData?.servicePerformance || [];
+
+        // Filter commissions list
+        const filteredCommissions = commissions.filter((c) => {
+          const q = earningsSearch.toLowerCase().trim();
+          const matchesSearch =
+            !q ||
+            c.client?.clientName?.toLowerCase().includes(q) ||
+            c.client?.businessName?.toLowerCase().includes(q) ||
+            c.workOrder?.workOrderNumber?.toLowerCase().includes(q) ||
+            c.payment?.transactionReference?.toLowerCase().includes(q);
+
+          const matchesCat =
+            earningsCategoryFilter === 'ALL' || c.serviceCategory === earningsCategoryFilter;
+
+          const matchesStatus =
+            earningsStatusFilter === 'ALL' ||
+            c.eligibilityStatus === earningsStatusFilter ||
+            c.payoutStatus === earningsStatusFilter;
+
+          let matchesDate = true;
+          if (earningsDateFilter === 'THIS_MONTH') {
+            const cDate = new Date(c.createdAt);
+            const now = new Date();
+            matchesDate =
+              cDate.getMonth() === now.getMonth() && cDate.getFullYear() === now.getFullYear();
+          } else if (earningsDateFilter === 'LAST_90_DAYS') {
+            const diffDays =
+              (Date.now() - new Date(c.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+            matchesDate = diffDays <= 90;
+          } else if (earningsDateFilter === 'THIS_YEAR') {
+            matchesDate = new Date(c.createdAt).getFullYear() === new Date().getFullYear();
+          }
+
+          return matchesSearch && matchesCat && matchesStatus && matchesDate;
+        });
+
+        return (
+          <div className="space-y-6">
+            {/* 1. 11 PERFORMANCE SUMMARY CARDS */}
+            <div>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                Performance Summary (11 Core Metrics)
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                {/* 1. Total Clients */}
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total Clients</span>
+                  <div className="text-lg font-extrabold text-slate-900 mt-0.5">{summary.totalClients}</div>
+                  <span className="text-[10px] text-slate-500">Registered portfolio</span>
+                </div>
+
+                {/* 2. Active Clients */}
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Active Clients</span>
+                  <div className="text-lg font-extrabold text-teal-600 mt-0.5">{summary.activeClients}</div>
+                  <span className="text-[10px] text-slate-500">In engagement</span>
+                </div>
+
+                {/* 3. Total Requests */}
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total Requests</span>
+                  <div className="text-lg font-extrabold text-indigo-600 mt-0.5">{summary.totalServiceRequests}</div>
+                  <span className="text-[10px] text-slate-500">Enquiries logged</span>
+                </div>
+
+                {/* 4. Approved Requests */}
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Approved Requests</span>
+                  <div className="text-lg font-extrabold text-emerald-600 mt-0.5">{summary.approvedRequests}</div>
+                  <span className="text-[10px] text-slate-500">Admin validated</span>
+                </div>
+
+                {/* 5. Quotations Accepted */}
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Quotes Accepted</span>
+                  <div className="text-lg font-extrabold text-[#3066BE] mt-0.5">{summary.quotationsAccepted}</div>
+                  <span className="text-[10px] text-slate-500">Client approvals</span>
+                </div>
+
+                {/* 6. Projects In Progress */}
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">In Progress</span>
+                  <div className="text-lg font-extrabold text-amber-600 mt-0.5">{summary.projectsInProgress}</div>
+                  <span className="text-[10px] text-slate-500">Active tech delivery</span>
+                </div>
+
+                {/* 7. Projects Completed */}
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Completed</span>
+                  <div className="text-lg font-extrabold text-teal-600 mt-0.5">{summary.projectsCompleted}</div>
+                  <span className="text-[10px] text-slate-500">Delivered projects</span>
+                </div>
+
+                {/* 8. Total Eligible Revenue */}
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Eligible Revenue</span>
+                  <div className="text-lg font-extrabold text-emerald-700 mt-0.5">
+                    ₹{Number(summary.totalEligibleRevenue || 0).toLocaleString('en-IN')}
+                  </div>
+                  <span className="text-[10px] text-slate-500">Verified receipts</span>
+                </div>
+
+                {/* 9. Total Commission Earned */}
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Commission Earned</span>
+                  <div className="text-lg font-extrabold text-[#119DA4] mt-0.5">
+                    ₹{Number(summary.totalCommissionEarned || 0).toLocaleString('en-IN')}
+                  </div>
+                  <span className="text-[10px] text-slate-500">Total unlocked</span>
+                </div>
+
+                {/* 10. Pending Commission */}
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Pending Payout</span>
+                  <div className="text-lg font-extrabold text-amber-600 mt-0.5">
+                    ₹{Number(summary.pendingCommission || 0).toLocaleString('en-IN')}
+                  </div>
+                  <span className="text-[10px] text-slate-500">Awaiting cycle</span>
+                </div>
+
+                {/* 11. Commission Paid */}
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Commission Paid</span>
+                  <div className="text-lg font-extrabold text-[#3066BE] mt-0.5">
+                    ₹{Number(summary.commissionPaid || 0).toLocaleString('en-IN')}
+                  </div>
+                  <span className="text-[10px] text-slate-500">Disbursed to bank</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. 4 KEY FINANCIAL EARNINGS BREAKDOWN CARDS */}
+            <div>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                Financial Status Breakdown
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Card 1: Commission Earned */}
+                <div className="p-5 rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50/50 border border-teal-200/80 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-teal-800 uppercase tracking-wider">
+                      Commission Earned
+                    </span>
+                    <Award className="w-5 h-5 text-[#119DA4]" />
+                  </div>
+                  <div className="text-2xl font-black text-teal-900 mt-2">
+                    ₹{Number(breakdown.earned || 0).toLocaleString('en-IN')}
+                  </div>
+                  <p className="text-[11px] text-teal-700 mt-1">
+                    Total eligible commissions unlocked from verified client payments & completed deliverables.
+                  </p>
+                </div>
+
+                {/* Card 2: Commission Pending */}
+                <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50/50 border border-amber-200/80 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
+                      Commission Pending
+                    </span>
+                    <Clock className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div className="text-2xl font-black text-amber-900 mt-2">
+                    ₹{Number(breakdown.pending || 0).toLocaleString('en-IN')}
+                  </div>
+                  <p className="text-[11px] text-amber-700 mt-1">
+                    Approved commissions awaiting scheduled disbursement to your registered bank account.
+                  </p>
+                </div>
+
+                {/* Card 3: Commission Paid */}
+                <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/50 border border-blue-200/80 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">
+                      Commission Paid
+                    </span>
+                    <CheckCircle2 className="w-5 h-5 text-[#3066BE]" />
+                  </div>
+                  <div className="text-2xl font-black text-blue-900 mt-2">
+                    ₹{Number(breakdown.paid || 0).toLocaleString('en-IN')}
+                  </div>
+                  <p className="text-[11px] text-blue-700 mt-1">
+                    Disbursed payouts successfully transferred and cleared in your bank account.
+                  </p>
+                </div>
+
+                {/* Card 4: Commission Pipeline */}
+                <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Commission in Pipeline
+                    </span>
+                    <TrendingUp className="w-5 h-5 text-slate-500" />
+                  </div>
+                  <div className="text-2xl font-black text-slate-800 mt-2">
+                    ₹{Number(breakdown.pipeline || 0).toLocaleString('en-IN')}
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-1">
+                    Potential commissions awaiting project milestone completion or client payment verification.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. SERVICE-WISE BUSINESS PERFORMANCE (4 CORE CATEGORIES) */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-[#119DA4]" />
+                  Service-Wise Business Performance & Commission Rules
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Side-by-side performance breakdown across Digital Marketing, Website Dev, Mobile App Dev, and Custom Software.
                 </p>
               </div>
 
-              <div className="space-y-4">
-                {!workOrdersLoaded || tabLoading ? (
-                  <SkeletonTable rows={4} cols={5} />
-                ) : workOrders.length === 0 ? (
-                  <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm">
-                    <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <h3 className="text-sm font-bold text-slate-800">No active projects yet</h3>
-                    <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-                      Projects will appear here once your clients accept commercial quotations and technical execution kicks off.
-                    </p>
-                  </div>
-                ) : (
-                  workOrders.map((wo) => {
-                    const prj = wo.project;
-                    return (
-                      <div key={wo.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-xs font-bold text-slate-900">{wo.workOrderNumber}</span>
-                              {prj && <span className="font-mono text-xs text-indigo-600 font-bold">({prj.projectNumber})</span>}
-                            </div>
-                            <h3 className="text-sm font-bold text-slate-900 mt-0.5">{wo.client?.clientName}</h3>
-                          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  {
+                    key: 'DIGITAL_MARKETING',
+                    name: 'Digital Marketing',
+                    rate: '15% Commission',
+                    model: 'Monthly Subscription (excl. ad spend)',
+                    icon: TrendingUp,
+                    accent: 'border-teal-200 bg-teal-50/30',
+                  },
+                  {
+                    key: 'WEBSITE_DEVELOPMENT',
+                    name: 'Website Development',
+                    rate: '12% Commission',
+                    model: 'Project-based on delivery completion',
+                    icon: Globe,
+                    accent: 'border-blue-200 bg-blue-50/30',
+                  },
+                  {
+                    key: 'MOBILE_APPLICATION_DEVELOPMENT',
+                    name: 'Mobile Application',
+                    rate: '12% Commission',
+                    model: 'Milestone / Full completion delivery',
+                    icon: Smartphone,
+                    accent: 'border-indigo-200 bg-indigo-50/30',
+                  },
+                  {
+                    key: 'SOFTWARE_DEVELOPMENT',
+                    name: 'Custom Software / ERP',
+                    rate: '12% Commission',
+                    model: 'Enterprise milestones upon delivery',
+                    icon: Code2,
+                    accent: 'border-purple-200 bg-purple-50/30',
+                  },
+                ].map((cat) => {
+                  const stat = servicePerf.find((s) => s.category === cat.key) || {
+                    clientCount: 0,
+                    requestCount: 0,
+                    approvedRequests: 0,
+                    acceptedQuotations: 0,
+                    activeProjects: 0,
+                    completedProjects: 0,
+                    eligibleRevenue: 0,
+                    commissionEarned: 0,
+                    pendingCommission: 0,
+                  };
 
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${wo.advanceVerified ? 'bg-emerald-100 text-[#119DA4]' : 'bg-amber-100 text-amber-800'
-                              }`}>
-                              Advance: {wo.advanceVerified ? 'VERIFIED' : 'AWAITING VERIFICATION'}
-                            </span>
-                            <span className="text-xs font-bold text-slate-800">
-                              Value: ₹{wo.totalValue?.toLocaleString()}
-                            </span>
-                          </div>
+                  const IconComponent = cat.icon;
+
+                  return (
+                    <div
+                      key={cat.key}
+                      className={`p-4 rounded-xl border ${cat.accent} space-y-3 text-xs`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <strong className="text-sm text-slate-900 block">{cat.name}</strong>
+                          <span className="text-[10px] text-slate-500 block mt-0.5">{cat.model}</span>
                         </div>
-
-                        {prj ? (
-                          <div className="mt-3">
-                            <div className="flex justify-between text-xs text-slate-600 mb-1">
-                              <span>Technical Execution: <strong>{prj.status}</strong></span>
-                              <span className="font-bold">{prj.progressPercentage}%</span>
-                            </div>
-                            <div className="w-full bg-slate-100 rounded-full h-2">
-                              <div
-                                className="bg-[#3066BE] h-2 rounded-full transition-all"
-                                style={{ width: `${prj.progressPercentage}%` }}
-                              />
-                            </div>
-
-                            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {prj.milestones?.map((m: any) => (
-                                <div key={m.id} className="p-2 rounded bg-slate-50 border border-slate-100 text-[11px]">
-                                  <span className="font-semibold text-slate-800 block truncate">{m.title}</span>
-                                  <span className={`text-[10px] font-bold ${m.status === 'COMPLETED' ? 'text-[#119DA4]' : 'text-slate-400'
-                                    }`}>
-                                    {m.status}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="mt-3 p-3 rounded-lg bg-amber-50 text-amber-800 text-xs">
-                            ⏳ Waiting for Accounts to verify advance payment receipt before technical handover.
-                          </div>
-                        )}
+                        <span className="p-2 bg-white rounded-xl shadow-xs border border-slate-200">
+                          <IconComponent className="w-4 h-4 text-[#3066BE]" />
+                        </span>
                       </div>
-                    );
-                  }))}
+
+                      <div className="bg-white/80 p-2 rounded-lg border border-slate-200/60 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-500">Commission Rate</span>
+                        <span className="font-bold text-[#119DA4]">{cat.rate}</span>
+                      </div>
+
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex justify-between text-slate-600">
+                          <span>Clients Acquired:</span>
+                          <strong className="text-slate-900">{stat.clientCount}</strong>
+                        </div>
+                        <div className="flex justify-between text-slate-600">
+                          <span>Requests (Approved):</span>
+                          <strong className="text-slate-900">
+                            {stat.requestCount} ({stat.approvedRequests})
+                          </strong>
+                        </div>
+                        <div className="flex justify-between text-slate-600">
+                          <span>Quotations Accepted:</span>
+                          <strong className="text-slate-900">{stat.acceptedQuotations}</strong>
+                        </div>
+                        <div className="flex justify-between text-slate-600">
+                          <span>Active / Completed:</span>
+                          <strong className="text-slate-900">
+                            {stat.activeProjects} / {stat.completedProjects}
+                          </strong>
+                        </div>
+                        <div className="flex justify-between text-slate-600 pt-1 border-t border-slate-200/60">
+                          <span>Eligible Revenue:</span>
+                          <strong className="text-slate-900">₹{Number(stat.eligibleRevenue || 0).toLocaleString('en-IN')}</strong>
+                        </div>
+                        <div className="flex justify-between text-[#119DA4] font-bold">
+                          <span>Commission Earned:</span>
+                          <span>₹{Number(stat.commissionEarned || 0).toLocaleString('en-IN')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          )}
 
-          {/* TAB 8: MY EARNINGS & COMMISSIONS — COMPREHENSIVE PERFORMANCE DASHBOARD */}
-          {activeTab === 'earnings' && (
-            <div className="space-y-6">
-              {/* Dashboard Header Bar */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+            {/* 4. INTERACTIVE EARNINGS HISTORY TABLE WITH LIVE FILTERS */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-5">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
                 <div>
-                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-[#119DA4]" />
-                    My Earnings & Business Performance Dashboard
-                  </h2>
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-[#119DA4]" />
+                    Official Commission Ledger & Calculation History
+                  </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Real-time commission tracking, business conversion funnel, service performance breakdown, and verified ledger.
+                    Filter transactions, inspect calculation steps, and audit payment clearance.
                   </p>
+                </div>
+              </div>
+
+              {/* Filter Bar */}
+              <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
+                {/* Search */}
+                <div className="relative w-full lg:w-72">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    placeholder="Search client, work order #, transaction ref..."
+                    value={earningsSearch}
+                    onChange={(e) => setEarningsSearch(e.target.value)}
+                    className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                  />
+                </div>
+
+                {/* Filters */}
+                <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto text-xs">
+                  {/* Category Filter */}
+                  <select
+                    value={earningsCategoryFilter}
+                    onChange={(e) => setEarningsCategoryFilter(e.target.value)}
+                    className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                  >
+                    <option value="ALL">All Categories</option>
+                    <option value="DIGITAL_MARKETING">Digital Marketing</option>
+                    <option value="WEBSITE_DEVELOPMENT">Website Dev</option>
+                    <option value="MOBILE_APPLICATION_DEVELOPMENT">Mobile App Dev</option>
+                    <option value="SOFTWARE_DEVELOPMENT">Custom Software</option>
+                  </select>
+
+                  {/* Status Filter */}
+                  <select
+                    value={earningsStatusFilter}
+                    onChange={(e) => setEarningsStatusFilter(e.target.value)}
+                    className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                  >
+                    <option value="ALL">All Statuses</option>
+                    <option value="ELIGIBLE">Eligible</option>
+                    <option value="PENDING_CRITERIA">Pending Criteria</option>
+                    <option value="UNPAID">Pending Payout</option>
+                    <option value="PROCESSED">Paid / Disbursed</option>
+                  </select>
+
+                  {/* Date Filter */}
+                  <select
+                    value={earningsDateFilter}
+                    onChange={(e) => setEarningsDateFilter(e.target.value)}
+                    className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                  >
+                    <option value="ALL">All Time</option>
+                    <option value="THIS_MONTH">This Month</option>
+                    <option value="LAST_90_DAYS">Last 90 Days</option>
+                    <option value="THIS_YEAR">This Year</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Ledger Table */}
+              {filteredCommissions.length === 0 ? (
+                <div className="p-10 text-center rounded-xl bg-slate-50/70 border border-dashed border-slate-200 text-xs text-slate-500">
+                  <DollarSign className="w-10 h-10 text-slate-300 mx-auto mb-2.5" />
+                  {commissions.length === 0 ? (
+                    <div className="max-w-md mx-auto space-y-1">
+                      <p className="font-bold text-slate-700 text-sm">No Commissions Earned Yet</p>
+                      <p className="text-slate-500 text-xs leading-relaxed">
+                        Commission records are automatically generated when the Accounts department verifies an eligible client payment (monthly retainers for Digital Marketing, or final milestone payments upon project completion for Development projects).
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="font-semibold text-slate-700">No commission records match your filter criteria.</p>
+                      <p className="text-slate-400 mt-1">Try resetting the search keywords, category, status, or date range.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                      <tr>
+                        <th className="p-3.5">Client & Business</th>
+                        <th className="p-3.5">Service & Billing</th>
+                        <th className="p-3.5">Work Order & Project</th>
+                        <th className="p-3.5">Payment Base</th>
+                        <th className="p-3.5">Commission Amount</th>
+                        <th className="p-3.5">Eligibility</th>
+                        <th className="p-3.5">Payout Status</th>
+                        <th className="p-3.5 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredCommissions.map((c) => {
+                        const ratePct =
+                          c.serviceCategory === 'DIGITAL_MARKETING' ? '15%' : '12%';
+
+                        return (
+                          <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
+                            {/* Client & Business */}
+                            <td className="p-3.5">
+                              <div className="font-bold text-slate-900">{c.client?.clientName}</div>
+                              <div className="text-[11px] text-indigo-600 font-medium">
+                                {c.client?.businessName}
+                              </div>
+                            </td>
+
+                            {/* Service & Billing */}
+                            <td className="p-3.5">
+                              <span className="font-bold text-slate-800">
+                                {c.serviceCategory?.replace(/_/g, ' ')}
+                              </span>
+                              <span className="text-[10px] text-slate-400 block">{c.billingType}</span>
+                            </td>
+
+                            {/* Work Order & Project */}
+                            <td className="p-3.5 font-mono text-[11px]">
+                              <div className="text-slate-800 font-bold">
+                                {c.workOrder?.workOrderNumber || '—'}
+                              </div>
+                              {c.project && (
+                                <div className="text-[10px] text-slate-500 font-sans">
+                                  Proj: {c.project.projectNumber} ({c.project.status})
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Payment Base */}
+                            <td className="p-3.5">
+                              <div className="font-bold text-slate-900">
+                                ₹{Number(c.payment?.amount || c.workOrder?.totalValue || 0).toLocaleString('en-IN')}
+                              </div>
+                              {c.payment?.transactionReference && (
+                                <span className="text-[10px] text-slate-400 font-mono block">
+                                  Ref: {c.payment.transactionReference}
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Commission Amount */}
+                            <td className="p-3.5">
+                              <div className="text-sm font-black text-[#119DA4]">
+                                ₹{Number(c.calculatedCommission || 0).toLocaleString('en-IN')}
+                              </div>
+                              <span className="text-[10px] text-slate-400 font-semibold block">
+                                Rate: {ratePct}
+                              </span>
+                            </td>
+
+                            {/* Eligibility */}
+                            <td className="p-3.5">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.eligibilityStatus === 'ELIGIBLE'
+                                  ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
+                                  : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                  }`}
+                              >
+                                {c.eligibilityStatus}
+                              </span>
+                            </td>
+
+                            {/* Payout Status */}
+                            <td className="p-3.5">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.payoutStatus === 'PROCESSED'
+                                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                  : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                  }`}
+                              >
+                                {c.payoutStatus}
+                              </span>
+                              {c.payoutReference && (
+                                <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                  Ref: {c.payoutReference}
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Action */}
+                            <td className="p-3.5 text-right">
+                              <button
+                                type="button"
+                                onClick={() => setCalculationModal(c)}
+                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                                title="View Commission Calculation Breakdown"
+                              >
+                                <Calculator className="w-3.5 h-3.5" />
+                                Breakdown
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* CALCULATION BREAKDOWN MODAL */}
+      <ModalPortal
+        isOpen={!!calculationModal}
+        onClose={() => setCalculationModal(null)}
+      >
+        {calculationModal && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ duration: 0.2 }}
+            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-[#119DA4] to-[#3066BE]" />
+            <div className="p-6 space-y-4 text-xs">
+              <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-teal-50 rounded-xl border border-[#119DA4]/20">
+                    <Calculator className="w-5 h-5 text-[#119DA4]" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Commission Calculation Breakdown</h3>
+                    <p className="text-xs text-slate-500">
+                      Client: <strong className="text-slate-800">{calculationModal.client?.clientName}</strong>
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => loadTabData('earnings')}
-                  className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  onClick={() => setCalculationModal(null)}
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" /> Refresh Dashboard
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {!earningsData && tabLoading ? (
-                <div className="space-y-4">
-                  <SkeletonStatsRow />
-                  <SkeletonTable rows={5} cols={6} />
-                </div>
-              ) : (() => {
-                const summary = earningsData?.summary || {
-                  totalClients: clients.length,
-                  activeClients: clients.filter((c) => c.status === 'ACTIVE').length,
-                  totalServiceRequests: clientRequests.length,
-                  approvedRequests: clientRequests.filter((r) => r.adminApprovalStatus === 'APPROVED').length,
-                  quotationsAccepted: quotations.filter((q) => q.status === 'ACCEPTED').length,
-                  projectsInProgress: workOrders.filter((w) => w.project && w.project.status !== 'COMPLETED').length,
-                  projectsCompleted: workOrders.filter((w) => w.project && w.project.status === 'COMPLETED').length,
-                  totalEligibleRevenue: 0,
-                  totalCommissionEarned: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
-                  pendingCommission: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE' && c.payoutStatus === 'UNPAID').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
-                  commissionPaid: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE' && c.payoutStatus === 'PROCESSED').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
-                  commissionPipeline: commissions.filter((c) => c.eligibilityStatus === 'PENDING_CRITERIA').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
-                };
-
-                const breakdown = earningsData?.breakdown || {
-                  earned: summary.totalCommissionEarned,
-                  pending: summary.pendingCommission,
-                  paid: summary.commissionPaid,
-                  pipeline: summary.commissionPipeline || 0,
-                };
-
-                const servicePerf: any[] = earningsData?.servicePerformance || [];
-
-                // Filter commissions list
-                const filteredCommissions = commissions.filter((c) => {
-                  const q = earningsSearch.toLowerCase().trim();
-                  const matchesSearch =
-                    !q ||
-                    c.client?.clientName?.toLowerCase().includes(q) ||
-                    c.client?.businessName?.toLowerCase().includes(q) ||
-                    c.workOrder?.workOrderNumber?.toLowerCase().includes(q) ||
-                    c.payment?.transactionReference?.toLowerCase().includes(q);
-
-                  const matchesCat =
-                    earningsCategoryFilter === 'ALL' || c.serviceCategory === earningsCategoryFilter;
-
-                  const matchesStatus =
-                    earningsStatusFilter === 'ALL' ||
-                    c.eligibilityStatus === earningsStatusFilter ||
-                    c.payoutStatus === earningsStatusFilter;
-
-                  let matchesDate = true;
-                  if (earningsDateFilter === 'THIS_MONTH') {
-                    const cDate = new Date(c.createdAt);
-                    const now = new Date();
-                    matchesDate =
-                      cDate.getMonth() === now.getMonth() && cDate.getFullYear() === now.getFullYear();
-                  } else if (earningsDateFilter === 'LAST_90_DAYS') {
-                    const diffDays =
-                      (Date.now() - new Date(c.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-                    matchesDate = diffDays <= 90;
-                  } else if (earningsDateFilter === 'THIS_YEAR') {
-                    matchesDate = new Date(c.createdAt).getFullYear() === new Date().getFullYear();
-                  }
-
-                  return matchesSearch && matchesCat && matchesStatus && matchesDate;
-                });
+              {/* Calculation Steps */}
+              {(() => {
+                const isDM = calculationModal.serviceCategory === 'DIGITAL_MARKETING';
+                const ratePercent = isDM ? 15 : 12;
+                const rawPayment = Number(calculationModal.payment?.amount || calculationModal.workOrder?.totalValue || 0);
+                const adSpend = isDM ? Number(calculationModal.payment?.adBudgetAmount || 0) : 0;
+                const commissionableBase = Math.max(0, rawPayment - adSpend);
+                const calculatedCommission = Number(calculationModal.calculatedCommission || 0);
 
                 return (
-                  <div className="space-y-6">
-                    {/* 1. 11 PERFORMANCE SUMMARY CARDS */}
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                        Performance Summary (11 Core Metrics)
-                      </h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-                        {/* 1. Total Clients */}
-                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total Clients</span>
-                          <div className="text-lg font-extrabold text-slate-900 mt-0.5">{summary.totalClients}</div>
-                          <span className="text-[10px] text-slate-500">Registered portfolio</span>
-                        </div>
-
-                        {/* 2. Active Clients */}
-                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Active Clients</span>
-                          <div className="text-lg font-extrabold text-teal-600 mt-0.5">{summary.activeClients}</div>
-                          <span className="text-[10px] text-slate-500">In engagement</span>
-                        </div>
-
-                        {/* 3. Total Requests */}
-                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total Requests</span>
-                          <div className="text-lg font-extrabold text-indigo-600 mt-0.5">{summary.totalServiceRequests}</div>
-                          <span className="text-[10px] text-slate-500">Enquiries logged</span>
-                        </div>
-
-                        {/* 4. Approved Requests */}
-                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Approved Requests</span>
-                          <div className="text-lg font-extrabold text-emerald-600 mt-0.5">{summary.approvedRequests}</div>
-                          <span className="text-[10px] text-slate-500">Admin validated</span>
-                        </div>
-
-                        {/* 5. Quotations Accepted */}
-                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Quotes Accepted</span>
-                          <div className="text-lg font-extrabold text-[#3066BE] mt-0.5">{summary.quotationsAccepted}</div>
-                          <span className="text-[10px] text-slate-500">Client approvals</span>
-                        </div>
-
-                        {/* 6. Projects In Progress */}
-                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">In Progress</span>
-                          <div className="text-lg font-extrabold text-amber-600 mt-0.5">{summary.projectsInProgress}</div>
-                          <span className="text-[10px] text-slate-500">Active tech delivery</span>
-                        </div>
-
-                        {/* 7. Projects Completed */}
-                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Completed</span>
-                          <div className="text-lg font-extrabold text-teal-600 mt-0.5">{summary.projectsCompleted}</div>
-                          <span className="text-[10px] text-slate-500">Delivered projects</span>
-                        </div>
-
-                        {/* 8. Total Eligible Revenue */}
-                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Eligible Revenue</span>
-                          <div className="text-lg font-extrabold text-emerald-700 mt-0.5">
-                            ₹{Number(summary.totalEligibleRevenue || 0).toLocaleString('en-IN')}
-                          </div>
-                          <span className="text-[10px] text-slate-500">Verified receipts</span>
-                        </div>
-
-                        {/* 9. Total Commission Earned */}
-                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Commission Earned</span>
-                          <div className="text-lg font-extrabold text-[#119DA4] mt-0.5">
-                            ₹{Number(summary.totalCommissionEarned || 0).toLocaleString('en-IN')}
-                          </div>
-                          <span className="text-[10px] text-slate-500">Total unlocked</span>
-                        </div>
-
-                        {/* 10. Pending Commission */}
-                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Pending Payout</span>
-                          <div className="text-lg font-extrabold text-amber-600 mt-0.5">
-                            ₹{Number(summary.pendingCommission || 0).toLocaleString('en-IN')}
-                          </div>
-                          <span className="text-[10px] text-slate-500">Awaiting cycle</span>
-                        </div>
-
-                        {/* 11. Commission Paid */}
-                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase block">Commission Paid</span>
-                          <div className="text-lg font-extrabold text-[#3066BE] mt-0.5">
-                            ₹{Number(summary.commissionPaid || 0).toLocaleString('en-IN')}
-                          </div>
-                          <span className="text-[10px] text-slate-500">Disbursed to bank</span>
-                        </div>
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Service Category:</span>
+                        <strong className="text-slate-900">{calculationModal.serviceCategory?.replace(/_/g, ' ')}</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Billing Model:</span>
+                        <span className="font-semibold text-slate-800">{calculationModal.billingType}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Work Order Ref:</span>
+                        <span className="font-mono text-slate-800 font-bold">{calculationModal.workOrder?.workOrderNumber || '—'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Payment Status:</span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          {calculationModal.payment?.status || 'VERIFIED'}
+                        </span>
                       </div>
                     </div>
 
-                    {/* 2. 4 KEY FINANCIAL EARNINGS BREAKDOWN CARDS */}
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                        Financial Status Breakdown
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* Card 1: Commission Earned */}
-                        <div className="p-5 rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50/50 border border-teal-200/80 shadow-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-teal-800 uppercase tracking-wider">
-                              Commission Earned
-                            </span>
-                            <Award className="w-5 h-5 text-[#119DA4]" />
-                          </div>
-                          <div className="text-2xl font-black text-teal-900 mt-2">
-                            ₹{Number(breakdown.earned || 0).toLocaleString('en-IN')}
-                          </div>
-                          <p className="text-[11px] text-teal-700 mt-1">
-                            Total eligible commissions unlocked from verified client payments & completed deliverables.
-                          </p>
-                        </div>
-
-                        {/* Card 2: Commission Pending */}
-                        <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50/50 border border-amber-200/80 shadow-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
-                              Commission Pending
-                            </span>
-                            <Clock className="w-5 h-5 text-amber-600" />
-                          </div>
-                          <div className="text-2xl font-black text-amber-900 mt-2">
-                            ₹{Number(breakdown.pending || 0).toLocaleString('en-IN')}
-                          </div>
-                          <p className="text-[11px] text-amber-700 mt-1">
-                            Approved commissions awaiting scheduled disbursement to your registered bank account.
-                          </p>
-                        </div>
-
-                        {/* Card 3: Commission Paid */}
-                        <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/50 border border-blue-200/80 shadow-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">
-                              Commission Paid
-                            </span>
-                            <CheckCircle2 className="w-5 h-5 text-[#3066BE]" />
-                          </div>
-                          <div className="text-2xl font-black text-blue-900 mt-2">
-                            ₹{Number(breakdown.paid || 0).toLocaleString('en-IN')}
-                          </div>
-                          <p className="text-[11px] text-blue-700 mt-1">
-                            Disbursed payouts successfully transferred and cleared in your bank account.
-                          </p>
-                        </div>
-
-                        {/* Card 4: Commission Pipeline */}
-                        <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 shadow-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                              Commission in Pipeline
-                            </span>
-                            <TrendingUp className="w-5 h-5 text-slate-500" />
-                          </div>
-                          <div className="text-2xl font-black text-slate-800 mt-2">
-                            ₹{Number(breakdown.pipeline || 0).toLocaleString('en-IN')}
-                          </div>
-                          <p className="text-[11px] text-slate-600 mt-1">
-                            Potential commissions awaiting project milestone completion or client payment verification.
-                          </p>
-                        </div>
+                    <div className="p-4 rounded-xl bg-teal-50/50 border border-[#119DA4]/20 space-y-2">
+                      <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block">
+                        Step-by-Step Mathematical Computation
+                      </span>
+                      <div className="flex justify-between text-slate-700">
+                        <span>1. Base Payment Received:</span>
+                        <strong>₹{rawPayment.toLocaleString('en-IN')}</strong>
                       </div>
-                    </div>
-
-                    {/* 3. SERVICE-WISE BUSINESS PERFORMANCE (4 CORE CATEGORIES) */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                      <div className="border-b border-slate-100 pb-3">
-                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                          <BarChart3 className="w-4 h-4 text-[#119DA4]" />
-                          Service-Wise Business Performance & Commission Rules
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          Side-by-side performance breakdown across Digital Marketing, Website Dev, Mobile App Dev, and Custom Software.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {[
-                          {
-                            key: 'DIGITAL_MARKETING',
-                            name: 'Digital Marketing',
-                            rate: '15% Commission',
-                            model: 'Monthly Subscription (excl. ad spend)',
-                            icon: TrendingUp,
-                            accent: 'border-teal-200 bg-teal-50/30',
-                          },
-                          {
-                            key: 'WEBSITE_DEVELOPMENT',
-                            name: 'Website Development',
-                            rate: '12% Commission',
-                            model: 'Project-based on delivery completion',
-                            icon: Globe,
-                            accent: 'border-blue-200 bg-blue-50/30',
-                          },
-                          {
-                            key: 'MOBILE_APPLICATION_DEVELOPMENT',
-                            name: 'Mobile Application',
-                            rate: '12% Commission',
-                            model: 'Milestone / Full completion delivery',
-                            icon: Smartphone,
-                            accent: 'border-indigo-200 bg-indigo-50/30',
-                          },
-                          {
-                            key: 'SOFTWARE_DEVELOPMENT',
-                            name: 'Custom Software / ERP',
-                            rate: '12% Commission',
-                            model: 'Enterprise milestones upon delivery',
-                            icon: Code2,
-                            accent: 'border-purple-200 bg-purple-50/30',
-                          },
-                        ].map((cat) => {
-                          const stat = servicePerf.find((s) => s.category === cat.key) || {
-                            clientCount: 0,
-                            requestCount: 0,
-                            approvedRequests: 0,
-                            acceptedQuotations: 0,
-                            activeProjects: 0,
-                            completedProjects: 0,
-                            eligibleRevenue: 0,
-                            commissionEarned: 0,
-                            pendingCommission: 0,
-                          };
-
-                          const IconComponent = cat.icon;
-
-                          return (
-                            <div
-                              key={cat.key}
-                              className={`p-4 rounded-xl border ${cat.accent} space-y-3 text-xs`}
-                            >
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <strong className="text-sm text-slate-900 block">{cat.name}</strong>
-                                  <span className="text-[10px] text-slate-500 block mt-0.5">{cat.model}</span>
-                                </div>
-                                <span className="p-2 bg-white rounded-xl shadow-xs border border-slate-200">
-                                  <IconComponent className="w-4 h-4 text-[#3066BE]" />
-                                </span>
-                              </div>
-
-                              <div className="bg-white/80 p-2 rounded-lg border border-slate-200/60 flex items-center justify-between">
-                                <span className="text-[11px] text-slate-500">Commission Rate</span>
-                                <span className="font-bold text-[#119DA4]">{cat.rate}</span>
-                              </div>
-
-                              <div className="space-y-1.5 pt-1">
-                                <div className="flex justify-between text-slate-600">
-                                  <span>Clients Acquired:</span>
-                                  <strong className="text-slate-900">{stat.clientCount}</strong>
-                                </div>
-                                <div className="flex justify-between text-slate-600">
-                                  <span>Requests (Approved):</span>
-                                  <strong className="text-slate-900">
-                                    {stat.requestCount} ({stat.approvedRequests})
-                                  </strong>
-                                </div>
-                                <div className="flex justify-between text-slate-600">
-                                  <span>Quotations Accepted:</span>
-                                  <strong className="text-slate-900">{stat.acceptedQuotations}</strong>
-                                </div>
-                                <div className="flex justify-between text-slate-600">
-                                  <span>Active / Completed:</span>
-                                  <strong className="text-slate-900">
-                                    {stat.activeProjects} / {stat.completedProjects}
-                                  </strong>
-                                </div>
-                                <div className="flex justify-between text-slate-600 pt-1 border-t border-slate-200/60">
-                                  <span>Eligible Revenue:</span>
-                                  <strong className="text-slate-900">₹{Number(stat.eligibleRevenue || 0).toLocaleString('en-IN')}</strong>
-                                </div>
-                                <div className="flex justify-between text-[#119DA4] font-bold">
-                                  <span>Commission Earned:</span>
-                                  <span>₹{Number(stat.commissionEarned || 0).toLocaleString('en-IN')}</span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* 4. INTERACTIVE EARNINGS HISTORY TABLE WITH LIVE FILTERS */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-5">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                            <Layers className="w-4 h-4 text-[#119DA4]" />
-                            Official Commission Ledger & Calculation History
-                          </h3>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            Filter transactions, inspect calculation steps, and audit payment clearance.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Filter Bar */}
-                      <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
-                        {/* Search */}
-                        <div className="relative w-full lg:w-72">
-                          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                          <input
-                            type="text"
-                            placeholder="Search client, work order #, transaction ref..."
-                            value={earningsSearch}
-                            onChange={(e) => setEarningsSearch(e.target.value)}
-                            className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                          />
-                        </div>
-
-                        {/* Filters */}
-                        <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto text-xs">
-                          {/* Category Filter */}
-                          <select
-                            value={earningsCategoryFilter}
-                            onChange={(e) => setEarningsCategoryFilter(e.target.value)}
-                            className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                          >
-                            <option value="ALL">All Categories</option>
-                            <option value="DIGITAL_MARKETING">Digital Marketing</option>
-                            <option value="WEBSITE_DEVELOPMENT">Website Dev</option>
-                            <option value="MOBILE_APPLICATION_DEVELOPMENT">Mobile App Dev</option>
-                            <option value="SOFTWARE_DEVELOPMENT">Custom Software</option>
-                          </select>
-
-                          {/* Status Filter */}
-                          <select
-                            value={earningsStatusFilter}
-                            onChange={(e) => setEarningsStatusFilter(e.target.value)}
-                            className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                          >
-                            <option value="ALL">All Statuses</option>
-                            <option value="ELIGIBLE">Eligible</option>
-                            <option value="PENDING_CRITERIA">Pending Criteria</option>
-                            <option value="UNPAID">Pending Payout</option>
-                            <option value="PROCESSED">Paid / Disbursed</option>
-                          </select>
-
-                          {/* Date Filter */}
-                          <select
-                            value={earningsDateFilter}
-                            onChange={(e) => setEarningsDateFilter(e.target.value)}
-                            className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                          >
-                            <option value="ALL">All Time</option>
-                            <option value="THIS_MONTH">This Month</option>
-                            <option value="LAST_90_DAYS">Last 90 Days</option>
-                            <option value="THIS_YEAR">This Year</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Ledger Table */}
-                      {filteredCommissions.length === 0 ? (
-                        <div className="p-10 text-center rounded-xl bg-slate-50/70 border border-dashed border-slate-200 text-xs text-slate-500">
-                          <DollarSign className="w-10 h-10 text-slate-300 mx-auto mb-2.5" />
-                          {commissions.length === 0 ? (
-                            <div className="max-w-md mx-auto space-y-1">
-                              <p className="font-bold text-slate-700 text-sm">No Commissions Earned Yet</p>
-                              <p className="text-slate-500 text-xs leading-relaxed">
-                                Commission records are automatically generated when the Accounts department verifies an eligible client payment (monthly retainers for Digital Marketing, or final milestone payments upon project completion for Development projects).
-                              </p>
-                            </div>
-                          ) : (
-                            <div>
-                              <p className="font-semibold text-slate-700">No commission records match your filter criteria.</p>
-                              <p className="text-slate-400 mt-1">Try resetting the search keywords, category, status, or date range.</p>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto rounded-xl border border-slate-200">
-                          <table className="w-full text-left text-xs">
-                            <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                              <tr>
-                                <th className="p-3.5">Client & Business</th>
-                                <th className="p-3.5">Service & Billing</th>
-                                <th className="p-3.5">Work Order & Project</th>
-                                <th className="p-3.5">Payment Base</th>
-                                <th className="p-3.5">Commission Amount</th>
-                                <th className="p-3.5">Eligibility</th>
-                                <th className="p-3.5">Payout Status</th>
-                                <th className="p-3.5 text-right">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {filteredCommissions.map((c) => {
-                                const ratePct =
-                                  c.serviceCategory === 'DIGITAL_MARKETING' ? '15%' : '12%';
-
-                                return (
-                                  <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                                    {/* Client & Business */}
-                                    <td className="p-3.5">
-                                      <div className="font-bold text-slate-900">{c.client?.clientName}</div>
-                                      <div className="text-[11px] text-indigo-600 font-medium">
-                                        {c.client?.businessName}
-                                      </div>
-                                    </td>
-
-                                    {/* Service & Billing */}
-                                    <td className="p-3.5">
-                                      <span className="font-bold text-slate-800">
-                                        {c.serviceCategory?.replace(/_/g, ' ')}
-                                      </span>
-                                      <span className="text-[10px] text-slate-400 block">{c.billingType}</span>
-                                    </td>
-
-                                    {/* Work Order & Project */}
-                                    <td className="p-3.5 font-mono text-[11px]">
-                                      <div className="text-slate-800 font-bold">
-                                        {c.workOrder?.workOrderNumber || '—'}
-                                      </div>
-                                      {c.project && (
-                                        <div className="text-[10px] text-slate-500 font-sans">
-                                          Proj: {c.project.projectNumber} ({c.project.status})
-                                        </div>
-                                      )}
-                                    </td>
-
-                                    {/* Payment Base */}
-                                    <td className="p-3.5">
-                                      <div className="font-bold text-slate-900">
-                                        ₹{Number(c.payment?.amount || c.workOrder?.totalValue || 0).toLocaleString('en-IN')}
-                                      </div>
-                                      {c.payment?.transactionReference && (
-                                        <span className="text-[10px] text-slate-400 font-mono block">
-                                          Ref: {c.payment.transactionReference}
-                                        </span>
-                                      )}
-                                    </td>
-
-                                    {/* Commission Amount */}
-                                    <td className="p-3.5">
-                                      <div className="text-sm font-black text-[#119DA4]">
-                                        ₹{Number(c.calculatedCommission || 0).toLocaleString('en-IN')}
-                                      </div>
-                                      <span className="text-[10px] text-slate-400 font-semibold block">
-                                        Rate: {ratePct}
-                                      </span>
-                                    </td>
-
-                                    {/* Eligibility */}
-                                    <td className="p-3.5">
-                                      <span
-                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.eligibilityStatus === 'ELIGIBLE'
-                                          ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
-                                          : 'bg-amber-100 text-amber-800 border border-amber-200'
-                                          }`}
-                                      >
-                                        {c.eligibilityStatus}
-                                      </span>
-                                    </td>
-
-                                    {/* Payout Status */}
-                                    <td className="p-3.5">
-                                      <span
-                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.payoutStatus === 'PROCESSED'
-                                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                          : 'bg-slate-100 text-slate-700 border border-slate-200'
-                                          }`}
-                                      >
-                                        {c.payoutStatus}
-                                      </span>
-                                      {c.payoutReference && (
-                                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                          Ref: {c.payoutReference}
-                                        </div>
-                                      )}
-                                    </td>
-
-                                    {/* Action */}
-                                    <td className="p-3.5 text-right">
-                                      <button
-                                        type="button"
-                                        onClick={() => setCalculationModal(c)}
-                                        className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer"
-                                        title="View Commission Calculation Breakdown"
-                                      >
-                                        <Calculator className="w-3.5 h-3.5" />
-                                        Breakdown
-                                      </button>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
+                      {isDM && (
+                        <div className="flex justify-between text-amber-700">
+                          <span>2. Excluded Media Ad Spend:</span>
+                          <strong>- ₹{adSpend.toLocaleString('en-IN')}</strong>
                         </div>
                       )}
+                      <div className="flex justify-between text-slate-900 font-semibold pt-1 border-t border-teal-200/50">
+                        <span>{isDM ? '3.' : '2.'} Net Commissionable Service Fee:</span>
+                        <strong>₹{commissionableBase.toLocaleString('en-IN')}</strong>
+                      </div>
+                      <div className="flex justify-between text-slate-700">
+                        <span>{isDM ? '4.' : '3.'} Applicable Commission Rate:</span>
+                        <strong className="text-[#119DA4]">{ratePercent}%</strong>
+                      </div>
+                      <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-teal-200">
+                        <span>Final Calculated Commission:</span>
+                        <span className="text-[#119DA4]">₹{calculatedCommission.toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 space-y-1">
+                      <strong>Eligibility Rule:</strong>
+                      <p>
+                        {isDM
+                          ? 'Digital Marketing commissions unlock upon verification of monthly retainer payment (ad spend strictly excluded from commission base).'
+                          : 'Website, Mobile & Software commissions unlock upon 100% technical project completion and full client payment clearance.'}
+                      </p>
                     </div>
                   </div>
                 );
               })()}
 
-              {/* CALCULATION BREAKDOWN MODAL */}
-              <ModalPortal
-                isOpen={!!calculationModal}
-                onClose={() => setCalculationModal(null)}
-              >
-                {calculationModal && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    transition={{ duration: 0.2 }}
-                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-[#119DA4] to-[#3066BE]" />
-                    <div className="p-6 space-y-4 text-xs">
-                      <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2.5 bg-teal-50 rounded-xl border border-[#119DA4]/20">
-                            <Calculator className="w-5 h-5 text-[#119DA4]" />
-                          </div>
-                          <div>
-                            <h3 className="text-base font-bold text-slate-900">Commission Calculation Breakdown</h3>
-                            <p className="text-xs text-slate-500">
-                              Client: <strong className="text-slate-800">{calculationModal.client?.clientName}</strong>
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setCalculationModal(null)}
-                          className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-
-                      {/* Calculation Steps */}
-                      {(() => {
-                        const isDM = calculationModal.serviceCategory === 'DIGITAL_MARKETING';
-                        const ratePercent = isDM ? 15 : 12;
-                        const rawPayment = Number(calculationModal.payment?.amount || calculationModal.workOrder?.totalValue || 0);
-                        const adSpend = isDM ? Number(calculationModal.payment?.adBudgetAmount || 0) : 0;
-                        const commissionableBase = Math.max(0, rawPayment - adSpend);
-                        const calculatedCommission = Number(calculationModal.calculatedCommission || 0);
-
-                        return (
-                          <div className="space-y-3">
-                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Service Category:</span>
-                                <strong className="text-slate-900">{calculationModal.serviceCategory?.replace(/_/g, ' ')}</strong>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Billing Model:</span>
-                                <span className="font-semibold text-slate-800">{calculationModal.billingType}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Work Order Ref:</span>
-                                <span className="font-mono text-slate-800 font-bold">{calculationModal.workOrder?.workOrderNumber || '—'}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Payment Status:</span>
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  {calculationModal.payment?.status || 'VERIFIED'}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="p-4 rounded-xl bg-teal-50/50 border border-[#119DA4]/20 space-y-2">
-                              <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block">
-                                Step-by-Step Mathematical Computation
-                              </span>
-                              <div className="flex justify-between text-slate-700">
-                                <span>1. Base Payment Received:</span>
-                                <strong>₹{rawPayment.toLocaleString('en-IN')}</strong>
-                              </div>
-                              {isDM && (
-                                <div className="flex justify-between text-amber-700">
-                                  <span>2. Excluded Media Ad Spend:</span>
-                                  <strong>- ₹{adSpend.toLocaleString('en-IN')}</strong>
-                                </div>
-                              )}
-                              <div className="flex justify-between text-slate-900 font-semibold pt-1 border-t border-teal-200/50">
-                                <span>{isDM ? '3.' : '2.'} Net Commissionable Service Fee:</span>
-                                <strong>₹{commissionableBase.toLocaleString('en-IN')}</strong>
-                              </div>
-                              <div className="flex justify-between text-slate-700">
-                                <span>{isDM ? '4.' : '3.'} Applicable Commission Rate:</span>
-                                <strong className="text-[#119DA4]">{ratePercent}%</strong>
-                              </div>
-                              <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-teal-200">
-                                <span>Final Calculated Commission:</span>
-                                <span className="text-[#119DA4]">₹{calculatedCommission.toLocaleString('en-IN')}</span>
-                              </div>
-                            </div>
-
-                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 space-y-1">
-                              <strong>Eligibility Rule:</strong>
-                              <p>
-                                {isDM
-                                  ? 'Digital Marketing commissions unlock upon verification of monthly retainer payment (ad spend strictly excluded from commission base).'
-                                  : 'Website, Mobile & Software commissions unlock upon 100% technical project completion and full client payment clearance.'}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                      <div className="flex justify-end pt-3 border-t border-slate-100">
-                        <button
-                          type="button"
-                          onClick={() => setCalculationModal(null)}
-                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer"
-                        >
-                          Close Breakdown
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </ModalPortal>
-            </div>
-          )}
-
-          {/* TAB 8: RESOURCES & PITCH DECKS */}
-          {activeTab === 'resources' && (
-            <div className="space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200">
-                <h2 className="text-base font-bold text-slate-900">Approved Marketing & Presentation Decks</h2>
-                <p className="text-xs text-slate-500">Official resources authorized by management for presenting to prospects.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {resources.map((r) => (
-                  <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                    <div>
-                      <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">{r.category}</span>
-                      <h4 className="text-sm font-bold text-slate-900 mt-1">{r.title}</h4>
-                      <p className="text-xs text-slate-600 mt-1.5">{r.description}</p>
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
-                      <span className="font-mono text-slate-400">{r.fileType} Document</span>
-                      <button
-                        onClick={() => toast.info(`Downloading presentation: ${r.title}`)}
-                        className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded font-semibold hover:bg-indigo-100 flex items-center gap-1"
-                      >
-                        <Download className="w-3.5 h-3.5" /> Download
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 11: SUPPORT */}
-          {activeTab === 'support' && (
-            <div className="w-full space-y-6">
-              {/* Header Banner */}
-              <div className="bg-gradient-to-r from-slate-900 via-[#152544] to-[#3066BE] text-white p-6 sm:p-8 rounded-2xl border border-slate-800 shadow-md">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#80DED9] bg-[#119DA4]/20 px-3 py-1 rounded-full border border-[#80DED9]/30 inline-block mb-2">
-                      Associate Support & Headquarters Desk
-                    </span>
-                    <h3 className="text-xl sm:text-2xl font-black text-white">
-                      Connect with Atriowings Technologies
-                    </h3>
-                    <p className="text-xs text-slate-300 mt-1.5 max-w-2xl leading-relaxed">
-                      Have questions regarding quotation preparation, technical project feasibility, client onboarding, or commission disbursement? Reach our executive desk directly.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <a
-                      href="https://wa.me/918825948859"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-sm transition-all"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                      <span>WhatsApp Desk</span>
-                    </a>
-                    <a
-                      href="tel:+918825948859"
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold transition-all"
-                    >
-                      <Phone className="w-4 h-4 text-[#80DED9]" />
-                      <span>Call Now</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Information Cards (From Landing Page) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Corporate Office */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
-                  <div>
-                    <div className="w-10 h-10 rounded-xl bg-[#3066BE]/10 text-[#3066BE] flex items-center justify-center mb-3">
-                      <MapPin className="w-5 h-5" />
-                    </div>
-                    <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Corporate Office</span>
-                    <h4 className="font-bold text-slate-800 text-sm mt-0.5">Atriowings Technologies</h4>
-                    <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                      No. 1, Gurudev Complex, 57th St, Venkatraman Nagar, Korattur, Chennai, Tamil Nadu 600080.
-                    </p>
-                  </div>
-                  <a
-                    href="https://www.google.com/maps/search/?api=1&query=No.+1,+Gurudev+Complex,+57th+St,+Venkatraman+Nagar,+Korattur,+Chennai,+Tamil+Nadu+600080"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-[#3066BE] font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
-                  >
-                    <span>Google Maps Directions</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-
-                {/* Telephone Support */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
-                  <div>
-                    <div className="w-10 h-10 rounded-xl bg-[#119DA4]/10 text-[#119DA4] flex items-center justify-center mb-3">
-                      <Phone className="w-5 h-5" />
-                    </div>
-                    <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Direct Phone Helpline</span>
-                    <h4 className="font-bold text-slate-800 text-sm mt-0.5">Associate Line</h4>
-                    <a
-                      href="tel:+918825948859"
-                      className="text-base font-extrabold text-[#3066BE] hover:underline block mt-2"
-                    >
-                      +91 8825948859
-                    </a>
-                    <span className="text-xs text-slate-500 mt-1 block">
-                      Mon – Sat, 9:00 AM – 7:00 PM IST
-                    </span>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Live Desk Active</span>
-                  </div>
-                </div>
-
-                {/* Official Email */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
-                  <div>
-                    <div className="w-10 h-10 rounded-xl bg-[#6D96C5]/10 text-[#3066BE] flex items-center justify-center mb-3">
-                      <Mail className="w-5 h-5" />
-                    </div>
-                    <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Official Email Address</span>
-                    <h4 className="font-bold text-slate-800 text-sm mt-0.5">Corporate & Support Desk</h4>
-                    <a
-                      href="mailto:info@atriowings.in"
-                      className="text-sm font-bold text-[#3066BE] hover:underline block mt-2 break-all"
-                    >
-                      info@atriowings.in
-                    </a>
-                    <span className="text-xs text-slate-500 mt-1 block">
-                      Guaranteed response within 2–4 hours
-                    </span>
-                  </div>
-                  <a
-                    href="mailto:info@atriowings.in"
-                    className="inline-flex items-center gap-1.5 text-xs text-[#3066BE] font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
-                  >
-                    <span>Send Email to Desk</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-
-                {/* WhatsApp & Web */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
-                  <div>
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
-                      <MessageSquare className="w-5 h-5" />
-                    </div>
-                    <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Direct WhatsApp & Web</span>
-                    <h4 className="font-bold text-slate-800 text-sm mt-0.5">Atriowings Corporate Portal</h4>
-                    <a
-                      href="https://wa.me/918825948859"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-bold text-emerald-600 hover:underline block mt-2"
-                    >
-                      WhatsApp: +91 8825948859
-                    </a>
-                    <a
-                      href="https://atriowings.in/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-semibold text-slate-600 hover:text-[#3066BE] flex items-center gap-1 mt-1.5"
-                    >
-                      <span>https://atriowings.in</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                  <a
-                    href="https://wa.me/918825948859"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
-                  >
-                    <span>Instant WhatsApp Chat</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-              </div>
-
-              {/* Two Column Layout: Support Department Directory + In-Portal Support Ticket Form */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Left: Department Operations Directory */}
-                <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-4">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h4 className="text-sm font-bold text-slate-900">Specialized Department Desks</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">Route your queries to the appropriate management desk for faster turnaround:</p>
-                  </div>
-
-                  <div className="space-y-3 text-xs">
-                    <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900">Commercial & Quotation Desk</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">Accounts</span>
-                      </div>
-                      <p className="text-slate-600 text-[11px]">
-                        For quotation approvals, customized milestone billing terms, and official commercial pricing.
-                      </p>
-                      <a href="mailto:info@atriowings.in?subject=Commercial%20Quotation%20Desk%20Inquiry" className="text-[#3066BE] font-semibold hover:underline block pt-1">
-                        info@atriowings.in
-                      </a>
-                    </div>
-
-                    <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900">Technical Feasibility & Architecture</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-bold">Technical</span>
-                      </div>
-                      <p className="text-slate-600 text-[11px]">
-                        Technical scoping, requirement analysis, tech stack validation, and project delivery schedules.
-                      </p>
-                      <a href="mailto:info@atriowings.in?subject=Technical%20Feasibility%20Desk%20Inquiry" className="text-[#119DA4] font-semibold hover:underline block pt-1">
-                        info@atriowings.in
-                      </a>
-                    </div>
-
-                    <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900">Commission & Payout Reconciliation</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">Finance</span>
-                      </div>
-                      <p className="text-slate-600 text-[11px]">
-                        Commission disbursements, bank NEFT/IMPS confirmations, TDS records, and milestone payout releases.
-                      </p>
-                      <a href="mailto:info@atriowings.in?subject=Commission%20Payout%20Desk%20Inquiry" className="text-emerald-700 font-semibold hover:underline block pt-1">
-                        info@atriowings.in
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right: In-Portal Support Ticket Form */}
-                <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs">
-                  <div className="border-b border-slate-100 pb-3 mb-4">
-                    <h4 className="text-sm font-bold text-slate-900">Submit a Support Request</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">Send a message directly to Atriowings management from your associate workspace:</p>
-                  </div>
-
-                  {supportSuccess && (
-                    <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>{supportSuccess}</span>
-                    </div>
-                  )}
-
-                  {supportError && (
-                    <div className="mb-4 p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                      <span>{supportError}</span>
-                    </div>
-                  )}
-
-                  <form onSubmit={handleSupportSubmit} className="space-y-3.5 text-xs">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Associate Name</label>
-                        <input
-                          type="text"
-                          value={user?.name || ''}
-                          readOnly
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Registered Email</label>
-                        <input
-                          type="email"
-                          value={user?.email || ''}
-                          readOnly
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Contact Number</label>
-                        <input
-                          type="text"
-                          value={user?.mobile || '+91 8825948859'}
-                          readOnly
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Query Department *</label>
-                        <select
-                          value={supportCategory}
-                          onChange={(e) => setSupportCategory(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3066BE]"
-                        >
-                          <option value="Quotation & Commercial Inquiries">Quotation & Commercial Inquiries</option>
-                          <option value="Technical Project Feasibility">Technical Project Feasibility</option>
-                          <option value="Commission & Bank Payout">Commission & Bank Payout</option>
-                          <option value="Client Registration & Ownership">Client Registration & Ownership</option>
-                          <option value="KYC & Bank Verification">KYC & Bank Verification</option>
-                          <option value="General Support">General Support</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Message & Request Details *</label>
-                      <textarea
-                        rows={4}
-                        value={supportMessage}
-                        onChange={(e) => setSupportMessage(e.target.value)}
-                        placeholder="Please describe your enquiry, client ID, quotation reference, or questions in detail..."
-                        className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3066BE]"
-                        required
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-[11px] text-slate-400">
-                        Dispatched directly to Atriowings Executive Operations
-                      </span>
-                      <button
-                        type="submit"
-                        disabled={supportSending}
-                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
-                      >
-                        {supportSending ? (
-                          <>
-                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Sending...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Send className="w-3.5 h-3.5" />
-                            <span>Submit Request</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* CLIENT CONSULTATION & FOLLOW-UP MODAL (ADMIN SCOPE CHANGE & REJECTION RESOLUTION) */}
-          <AnimatePresence>
-            {followUpModal && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
-                onClick={() => !submittingFollowUp && setFollowUpModal(null)}
-              >
-                <motion.div
-                  initial={{ scale: 0.95, opacity: 0, y: 10 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.95, opacity: 0, y: 10 }}
-                  className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto my-auto"
-                  onClick={(e) => e.stopPropagation()}
+              <div className="flex justify-end pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setCalculationModal(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer"
                 >
-                  <div className="flex justify-between items-start border-b border-slate-100 pb-4 mb-4">
-                    <div>
-                      <span
-                        className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${followUpForm.isRejection
-                          ? 'text-rose-700 bg-rose-50 border-rose-200'
-                          : 'text-amber-600 bg-amber-50 border-amber-200'
-                          }`}
-                      >
-                        {followUpForm.isRejection ? '⚠️ Rejection Consultation & Alert' : 'Client Consultation Follow-up'}
-                      </span>
-                      <h3 className="text-base font-bold text-slate-900 mt-1">
-                        {followUpForm.isRejection
-                          ? 'Inform Client of Management Rejection'
-                          : 'Record Client Discussion & Resubmit'}
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        Enquiry <strong className="text-slate-800">{followUpModal.id}</strong> • Client:{' '}
-                        <strong className="text-slate-800">{followUpModal.client?.clientName || followUpModal.clientName || 'Client'}</strong>
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={submittingFollowUp}
-                      onClick={() => setFollowUpModal(null)}
-                      className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50 cursor-pointer"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
+                  Close Breakdown
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </ModalPortal>
+    </div>
+  )
+}
 
-                  {followUpModal.adminNotes && (
-                    <div
-                      className={`mb-4 p-3 rounded-xl border text-xs ${followUpForm.isRejection
-                        ? 'bg-rose-50 border-rose-200 text-rose-950'
-                        : 'bg-amber-50 border-amber-200 text-amber-900'
-                        }`}
-                    >
-                      <span className="font-bold block mb-0.5">
-                        {followUpForm.isRejection ? 'Management Rejection Remarks:' : 'Admin Scope Change Note:'}
-                      </span>
-                      <span className="text-slate-800 block">{followUpModal.adminNotes}</span>
-                      {followUpForm.isRejection && (
-                        <span className="text-[11px] text-rose-700 mt-1.5 block font-medium">
-                          Guidance: Communicate this rejection reason clearly to the client and capture their response below.
-                        </span>
-                      )}
-                    </div>
-                  )}
+{/* TAB 8: RESOURCES & PITCH DECKS */ }
+{
+  activeTab === 'resources' && (
+    <div className="space-y-4">
+      <div className="bg-white p-4 rounded-xl border border-slate-200">
+        <h2 className="text-base font-bold text-slate-900">Approved Marketing & Presentation Decks</h2>
+        <p className="text-xs text-slate-500">Official resources authorized by management for presenting to prospects.</p>
+      </div>
 
-                  <form onSubmit={handleSubmitFollowUp} className="space-y-4 text-xs">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">
-                          Consultation Date & Time <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="datetime-local"
-                          required
-                          value={followUpForm.consultationDate}
-                          onChange={(e) => setFollowUpForm({ ...followUpForm, consultationDate: e.target.value })}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">
-                          Communication Channel <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          value={followUpForm.contactMethod}
-                          onChange={(e) => setFollowUpForm({ ...followUpForm, contactMethod: e.target.value })}
-                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                        >
-                          <option value="Phone Call">Phone Call (Direct)</option>
-                          <option value="WhatsApp Message">WhatsApp Message</option>
-                          <option value="In-person Meeting">In-person Meeting</option>
-                          <option value="Official Email">Official Email</option>
-                        </select>
-                      </div>
-                    </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {resources.map((r) => (
+          <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">{r.category}</span>
+              <h4 className="text-sm font-bold text-slate-900 mt-1">{r.title}</h4>
+              <p className="text-xs text-slate-600 mt-1.5">{r.description}</p>
+            </div>
 
-                    <div>
-                      <label className="block text-slate-700 font-semibold mb-1">
-                        Client Consultation Discussion Notes <span className="text-red-500">*</span>
-                      </label>
-                      <textarea
-                        rows={4}
-                        required
-                        value={followUpForm.consultationNotes}
-                        onChange={(e) => setFollowUpForm({ ...followUpForm, consultationNotes: e.target.value })}
-                        placeholder={
-                          followUpForm.isRejection
-                            ? 'Detail what you communicated to the client regarding the rejection, how the client reacted, and what was agreed upon...'
-                            : 'Detail what was discussed with the client regarding the scope, payment/budget agreed upon, and client confirmation...'
-                        }
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                      />
-                    </div>
+            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+              <span className="font-mono text-slate-400">{r.fileType} Document</span>
+              <button
+                onClick={() => toast.info(`Downloading presentation: ${r.title}`)}
+                className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded font-semibold hover:bg-indigo-100 flex items-center gap-1"
+              >
+                <Download className="w-3.5 h-3.5" /> Download
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
-                    {followUpForm.isRejection ? (
-                      <div className="space-y-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <div>
-                          <label className="block text-slate-700 font-semibold mb-1">
-                            Client Response Outcome <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            value={followUpForm.clientOutcome}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              const shouldResubmit = val.includes('Re-evaluation');
-                              setFollowUpForm({
-                                ...followUpForm,
-                                clientOutcome: val,
-                                resubmit: shouldResubmit,
-                              });
-                            }}
-                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                          >
-                            <option value="Client Informed - Acknowledged Rejection & Closed">
-                              Client Informed - Acknowledged Rejection & Enquiry Closed
-                            </option>
-                            <option value="Client Wants Alternate Proposal / Different Service">
-                              Client Wants Alternate Proposal / Different Service
-                            </option>
-                            <option value="Client Agrees to Revised Payment / Scope (Request Re-evaluation)">
-                              Client Agrees to Revised Payment / Scope (Request Re-evaluation)
-                            </option>
-                          </select>
-                        </div>
+{/* TAB 11: SUPPORT */ }
+{
+  activeTab === 'support' && (
+    <div className="w-full space-y-6">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-[#152544] to-[#3066BE] text-white p-6 sm:p-8 rounded-2xl border border-slate-800 shadow-md">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#80DED9] bg-[#119DA4]/20 px-3 py-1 rounded-full border border-[#80DED9]/30 inline-block mb-2">
+              Associate Support & Headquarters Desk
+            </span>
+            <h3 className="text-xl sm:text-2xl font-black text-white">
+              Connect with Atriowings Technologies
+            </h3>
+            <p className="text-xs text-slate-300 mt-1.5 max-w-2xl leading-relaxed">
+              Have questions regarding quotation preparation, technical project feasibility, client onboarding, or commission disbursement? Reach our executive desk directly.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <a
+              href="https://wa.me/918825948859"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-sm transition-all"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>WhatsApp Desk</span>
+            </a>
+            <a
+              href="tel:+918825948859"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold transition-all"
+            >
+              <Phone className="w-4 h-4 text-[#80DED9]" />
+              <span>Call Now</span>
+            </a>
+          </div>
+        </div>
+      </div>
 
-                        {followUpForm.resubmit && (
-                          <div className="space-y-3 pt-2 border-t border-slate-200">
-                            <div>
-                              <label className="block text-slate-700 font-semibold mb-1">
-                                Agreed Revised Expected Budget (₹)
-                              </label>
-                              <input
-                                type="number"
-                                min="0"
-                                step="1000"
-                                value={followUpForm.revisedBudget}
-                                onChange={(e) => setFollowUpForm({ ...followUpForm, revisedBudget: e.target.value })}
-                                placeholder="e.g. 150000"
-                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-slate-700 font-semibold mb-1">
-                                Revised Scope / Requirements
-                              </label>
-                              <textarea
-                                rows={2}
-                                value={followUpForm.revisedRequirements}
-                                onChange={(e) => setFollowUpForm({ ...followUpForm, revisedRequirements: e.target.value })}
-                                placeholder="Describe agreed revised scope..."
-                                className="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-slate-700 font-semibold mb-1">
-                              Agreed Expected Budget (₹)
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="1000"
-                              value={followUpForm.revisedBudget}
-                              onChange={(e) => setFollowUpForm({ ...followUpForm, revisedBudget: e.target.value })}
-                              placeholder="e.g. 100000"
-                              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-slate-700 font-semibold mb-1">
-                              Resubmit Status
-                            </label>
-                            <div className="h-[38px] flex items-center px-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] font-semibold">
-                              ✓ Send to Admin for Approval
-                            </div>
-                          </div>
-                        </div>
+      {/* Contact Information Cards (From Landing Page) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Corporate Office */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div className="w-10 h-10 rounded-xl bg-[#3066BE]/10 text-[#3066BE] flex items-center justify-center mb-3">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Corporate Office</span>
+            <h4 className="font-bold text-slate-800 text-sm mt-0.5">Atriowings Technologies</h4>
+            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+              No. 1, Gurudev Complex, 57th St, Venkatraman Nagar, Korattur, Chennai, Tamil Nadu 600080.
+            </p>
+          </div>
+          <a
+            href="https://www.google.com/maps/search/?api=1&query=No.+1,+Gurudev+Complex,+57th+St,+Venkatraman+Nagar,+Korattur,+Chennai,+Tamil+Nadu+600080"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-[#3066BE] font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
+          >
+            <span>Google Maps Directions</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
 
-                        <div>
-                          <label className="block text-slate-700 font-semibold mb-1">
-                            Updated Project Scope / Requirements (Optional)
-                          </label>
-                          <textarea
-                            rows={2}
-                            value={followUpForm.revisedRequirements}
-                            onChange={(e) => setFollowUpForm({ ...followUpForm, revisedRequirements: e.target.value })}
-                            placeholder="Update scope details if changed based on client discussion..."
-                            className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                          />
-                        </div>
-                      </>
-                    )}
+        {/* Telephone Support */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div className="w-10 h-10 rounded-xl bg-[#119DA4]/10 text-[#119DA4] flex items-center justify-center mb-3">
+              <Phone className="w-5 h-5" />
+            </div>
+            <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Direct Phone Helpline</span>
+            <h4 className="font-bold text-slate-800 text-sm mt-0.5">Associate Line</h4>
+            <a
+              href="tel:+918825948859"
+              className="text-base font-extrabold text-[#3066BE] hover:underline block mt-2"
+            >
+              +91 8825948859
+            </a>
+            <span className="text-xs text-slate-500 mt-1 block">
+              Mon – Sat, 9:00 AM – 7:00 PM IST
+            </span>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Live Desk Active</span>
+          </div>
+        </div>
 
-                    <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                      <button
-                        type="button"
-                        disabled={submittingFollowUp}
-                        onClick={() => setFollowUpModal(null)}
-                        className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors disabled:opacity-50 cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={submittingFollowUp}
-                        className={`px-5 py-2 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer ${followUpForm.isRejection
-                          ? 'bg-rose-600 hover:bg-rose-700'
-                          : 'bg-[#3066BE] hover:bg-[#255299]'
-                          }`}
-                      >
-                        {submittingFollowUp ? (
-                          <>
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            <span>Submitting...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Send className="w-3.5 h-3.5" />
-                            <span>
-                              {followUpForm.isRejection
-                                ? followUpForm.resubmit
-                                  ? 'Save & Resubmit to Admin'
-                                  : 'Save & Send Follow-up to Admin'
-                                : 'Save & Resubmit to Admin'}
-                            </span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                </motion.div>
-              </motion.div>
+        {/* Official Email */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div className="w-10 h-10 rounded-xl bg-[#6D96C5]/10 text-[#3066BE] flex items-center justify-center mb-3">
+              <Mail className="w-5 h-5" />
+            </div>
+            <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Official Email Address</span>
+            <h4 className="font-bold text-slate-800 text-sm mt-0.5">Corporate & Support Desk</h4>
+            <a
+              href="mailto:info@atriowings.in"
+              className="text-sm font-bold text-[#3066BE] hover:underline block mt-2 break-all"
+            >
+              info@atriowings.in
+            </a>
+            <span className="text-xs text-slate-500 mt-1 block">
+              Guaranteed response within 2–4 hours
+            </span>
+          </div>
+          <a
+            href="mailto:info@atriowings.in"
+            className="inline-flex items-center gap-1.5 text-xs text-[#3066BE] font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
+          >
+            <span>Send Email to Desk</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </a>
+        </div>
+
+        {/* WhatsApp & Web */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+            <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Direct WhatsApp & Web</span>
+            <h4 className="font-bold text-slate-800 text-sm mt-0.5">Atriowings Corporate Portal</h4>
+            <a
+              href="https://wa.me/918825948859"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold text-emerald-600 hover:underline block mt-2"
+            >
+              WhatsApp: +91 8825948859
+            </a>
+            <a
+              href="https://atriowings.in/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-semibold text-slate-600 hover:text-[#3066BE] flex items-center gap-1 mt-1.5"
+            >
+              <span>https://atriowings.in</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+          <a
+            href="https://wa.me/918825948859"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
+          >
+            <span>Instant WhatsApp Chat</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
+      </div>
+
+      {/* Two Column Layout: Support Department Directory + In-Portal Support Ticket Form */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left: Department Operations Directory */}
+        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-4">
+          <div className="border-b border-slate-100 pb-3">
+            <h4 className="text-sm font-bold text-slate-900">Specialized Department Desks</h4>
+            <p className="text-xs text-slate-500 mt-0.5">Route your queries to the appropriate management desk for faster turnaround:</p>
+          </div>
+
+          <div className="space-y-3 text-xs">
+            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-900">Commercial & Quotation Desk</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">Accounts</span>
+              </div>
+              <p className="text-slate-600 text-[11px]">
+                For quotation approvals, customized milestone billing terms, and official commercial pricing.
+              </p>
+              <a href="mailto:info@atriowings.in?subject=Commercial%20Quotation%20Desk%20Inquiry" className="text-[#3066BE] font-semibold hover:underline block pt-1">
+                info@atriowings.in
+              </a>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-900">Technical Feasibility & Architecture</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-bold">Technical</span>
+              </div>
+              <p className="text-slate-600 text-[11px]">
+                Technical scoping, requirement analysis, tech stack validation, and project delivery schedules.
+              </p>
+              <a href="mailto:info@atriowings.in?subject=Technical%20Feasibility%20Desk%20Inquiry" className="text-[#119DA4] font-semibold hover:underline block pt-1">
+                info@atriowings.in
+              </a>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-900">Commission & Payout Reconciliation</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">Finance</span>
+              </div>
+              <p className="text-slate-600 text-[11px]">
+                Commission disbursements, bank NEFT/IMPS confirmations, TDS records, and milestone payout releases.
+              </p>
+              <a href="mailto:info@atriowings.in?subject=Commission%20Payout%20Desk%20Inquiry" className="text-emerald-700 font-semibold hover:underline block pt-1">
+                info@atriowings.in
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: In-Portal Support Ticket Form */}
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs">
+          <div className="border-b border-slate-100 pb-3 mb-4">
+            <h4 className="text-sm font-bold text-slate-900">Submit a Support Request</h4>
+            <p className="text-xs text-slate-500 mt-0.5">Send a message directly to Atriowings management from your associate workspace:</p>
+          </div>
+
+          {supportSuccess && (
+            <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{supportSuccess}</span>
+            </div>
+          )}
+
+          {supportError && (
+            <div className="mb-4 p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>{supportError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSupportSubmit} className="space-y-3.5 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Associate Name</label>
+                <input
+                  type="text"
+                  value={user?.name || ''}
+                  readOnly
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Registered Email</label>
+                <input
+                  type="email"
+                  value={user?.email || ''}
+                  readOnly
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Contact Number</label>
+                <input
+                  type="text"
+                  value={user?.mobile || '+91 8825948859'}
+                  readOnly
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Query Department *</label>
+                <select
+                  value={supportCategory}
+                  onChange={(e) => setSupportCategory(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3066BE]"
+                >
+                  <option value="Quotation & Commercial Inquiries">Quotation & Commercial Inquiries</option>
+                  <option value="Technical Project Feasibility">Technical Project Feasibility</option>
+                  <option value="Commission & Bank Payout">Commission & Bank Payout</option>
+                  <option value="Client Registration & Ownership">Client Registration & Ownership</option>
+                  <option value="KYC & Bank Verification">KYC & Bank Verification</option>
+                  <option value="General Support">General Support</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Message & Request Details *</label>
+              <textarea
+                rows={4}
+                value={supportMessage}
+                onChange={(e) => setSupportMessage(e.target.value)}
+                placeholder="Please describe your enquiry, client ID, quotation reference, or questions in detail..."
+                className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3066BE]"
+                required
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[11px] text-slate-400">
+                Dispatched directly to Atriowings Executive Operations
+              </span>
+              <button
+                type="submit"
+                disabled={supportSending}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {supportSending ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Submit Request</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+{/* CLIENT CONSULTATION & FOLLOW-UP MODAL (ADMIN SCOPE CHANGE & REJECTION RESOLUTION) */ }
+<AnimatePresence>
+  {followUpModal && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+      onClick={() => !submittingFollowUp && setFollowUpModal(null)}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0, y: 10 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0, y: 10 }}
+        className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-start border-b border-slate-100 pb-4 mb-4">
+          <div>
+            <span
+              className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${followUpForm.isRejection
+                ? 'text-rose-700 bg-rose-50 border-rose-200'
+                : 'text-amber-600 bg-amber-50 border-amber-200'
+                }`}
+            >
+              {followUpForm.isRejection ? '⚠️ Rejection Consultation & Alert' : 'Client Consultation Follow-up'}
+            </span>
+            <h3 className="text-base font-bold text-slate-900 mt-1">
+              {followUpForm.isRejection
+                ? 'Inform Client of Management Rejection'
+                : 'Record Client Discussion & Resubmit'}
+            </h3>
+            <p className="text-xs text-slate-500">
+              Enquiry <strong className="text-slate-800">{followUpModal.id}</strong> • Client:{' '}
+              <strong className="text-slate-800">{followUpModal.client?.clientName || followUpModal.clientName || 'Client'}</strong>
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={submittingFollowUp}
+            onClick={() => setFollowUpModal(null)}
+            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {followUpModal.adminNotes && (
+          <div
+            className={`mb-4 p-3 rounded-xl border text-xs ${followUpForm.isRejection
+              ? 'bg-rose-50 border-rose-200 text-rose-950'
+              : 'bg-amber-50 border-amber-200 text-amber-900'
+              }`}
+          >
+            <span className="font-bold block mb-0.5">
+              {followUpForm.isRejection ? 'Management Rejection Remarks:' : 'Admin Scope Change Note:'}
+            </span>
+            <span className="text-slate-800 block">{followUpModal.adminNotes}</span>
+            {followUpForm.isRejection && (
+              <span className="text-[11px] text-rose-700 mt-1.5 block font-medium">
+                Guidance: Communicate this rejection reason clearly to the client and capture their response below.
+              </span>
             )}
-          </AnimatePresence>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmitFollowUp} className="space-y-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1">
+                Consultation Date & Time <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="datetime-local"
+                required
+                value={followUpForm.consultationDate}
+                onChange={(e) => setFollowUpForm({ ...followUpForm, consultationDate: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1">
+                Communication Channel <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={followUpForm.contactMethod}
+                onChange={(e) => setFollowUpForm({ ...followUpForm, contactMethod: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+              >
+                <option value="Phone Call">Phone Call (Direct)</option>
+                <option value="WhatsApp Message">WhatsApp Message</option>
+                <option value="In-person Meeting">In-person Meeting</option>
+                <option value="Official Email">Official Email</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-slate-700 font-semibold mb-1">
+              Client Consultation Discussion Notes <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              rows={4}
+              required
+              value={followUpForm.consultationNotes}
+              onChange={(e) => setFollowUpForm({ ...followUpForm, consultationNotes: e.target.value })}
+              placeholder={
+                followUpForm.isRejection
+                  ? 'Detail what you communicated to the client regarding the rejection, how the client reacted, and what was agreed upon...'
+                  : 'Detail what was discussed with the client regarding the scope, payment/budget agreed upon, and client confirmation...'
+              }
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+            />
+          </div>
+
+          {followUpForm.isRejection ? (
+            <div className="space-y-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  Client Response Outcome <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={followUpForm.clientOutcome}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const shouldResubmit = val.includes('Re-evaluation');
+                    setFollowUpForm({
+                      ...followUpForm,
+                      clientOutcome: val,
+                      resubmit: shouldResubmit,
+                    });
+                  }}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                >
+                  <option value="Client Informed - Acknowledged Rejection & Closed">
+                    Client Informed - Acknowledged Rejection & Enquiry Closed
+                  </option>
+                  <option value="Client Wants Alternate Proposal / Different Service">
+                    Client Wants Alternate Proposal / Different Service
+                  </option>
+                  <option value="Client Agrees to Revised Payment / Scope (Request Re-evaluation)">
+                    Client Agrees to Revised Payment / Scope (Request Re-evaluation)
+                  </option>
+                </select>
+              </div>
+
+              {followUpForm.resubmit && (
+                <div className="space-y-3 pt-2 border-t border-slate-200">
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      Agreed Revised Expected Budget (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={followUpForm.revisedBudget}
+                      onChange={(e) => setFollowUpForm({ ...followUpForm, revisedBudget: e.target.value })}
+                      placeholder="e.g. 150000"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      Revised Scope / Requirements
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={followUpForm.revisedRequirements}
+                      onChange={(e) => setFollowUpForm({ ...followUpForm, revisedRequirements: e.target.value })}
+                      placeholder="Describe agreed revised scope..."
+                      className="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">
+                    Agreed Expected Budget (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={followUpForm.revisedBudget}
+                    onChange={(e) => setFollowUpForm({ ...followUpForm, revisedBudget: e.target.value })}
+                    placeholder="e.g. 100000"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">
+                    Resubmit Status
+                  </label>
+                  <div className="h-[38px] flex items-center px-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] font-semibold">
+                    ✓ Send to Admin for Approval
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  Updated Project Scope / Requirements (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={followUpForm.revisedRequirements}
+                  onChange={(e) => setFollowUpForm({ ...followUpForm, revisedRequirements: e.target.value })}
+                  placeholder="Update scope details if changed based on client discussion..."
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              disabled={submittingFollowUp}
+              onClick={() => setFollowUpModal(null)}
+              className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submittingFollowUp}
+              className={`px-5 py-2 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer ${followUpForm.isRejection
+                ? 'bg-rose-600 hover:bg-rose-700'
+                : 'bg-[#3066BE] hover:bg-[#255299]'
+                }`}
+            >
+              {submittingFollowUp ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5" />
+                  <span>
+                    {followUpForm.isRejection
+                      ? followUpForm.resubmit
+                        ? 'Save & Resubmit to Admin'
+                        : 'Save & Send Follow-up to Admin'
+                      : 'Save & Resubmit to Admin'}
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
         </main>
       </div>
     </div>

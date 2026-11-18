@@ -257,7 +257,7 @@ export async function sendBgaWelcomeEmail(associate: {
   const loginUrl = `${clientUrl}/login`;
 
   const content = `
-    <h2 style="font-size: 18px; color: #0f172a; margin-top: 0;">Welcome to BGA Enterprise, ${associate.name}!</h2>
+    <h2 style="font-size: 18px; color: #0f172a; margin-top: 0;">Welcome to Atriowings Growth Associate Portal, ${associate.name}!</h2>
     <p>Congratulations on registering as an authorized <strong>Business Growth Associate (BGA)</strong> with Atriowings Technologies.</p>
     
     <div class="card">
@@ -299,7 +299,7 @@ export async function sendBgaWelcomeEmail(associate: {
 
   await sendEmail({
     to: associate.email,
-    subject: `Welcome to Atriowings BGA Enterprise - Account Created`,
+    subject: `Welcome to Atriowings Growth Associate Portal - Account Created`,
     html: wrapEmailHtml(content, `Your BGA Associate Account has been created`),
   });
 }
