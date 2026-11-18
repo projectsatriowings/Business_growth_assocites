@@ -79,6 +79,7 @@ import { ModalPortal } from '../../components/ModalPortal';
 import { MediaUploader, MediaUploadResult } from '../../components/MediaUploader';
 import { QuotationHistoryTimeline } from '../../components/QuotationHistoryTimeline';
 import { isExternalWebLink, downloadFile } from '../../utils/fileDownload';
+import { FinalPaymentFollowUpModal } from '../../components/FinalPaymentFollowUpModal';
 
 export const BgaPortal: React.FC = () => {
   const { user } = useAuth();
@@ -312,6 +313,10 @@ export const BgaPortal: React.FC = () => {
   const [bgaFeedbackType, setBgaFeedbackType] = useState<'CLIENT_FEEDBACK' | 'INTERNAL_NOTE'>('CLIENT_FEEDBACK');
   const [bgaClientDecision, setBgaClientDecision] = useState<'APPROVED' | 'CHANGES_REQUESTED'>('APPROVED');
   const [bgaFeedbackSubmitting, setBgaFeedbackSubmitting] = useState(false);
+
+  // Stage 2: Final Payment Follow-up Modal State
+  const [followUpProjectModal, setFollowUpProjectModal] = useState<{ project: any; clientName: string } | null>(null);
+  const [expandedFollowUpWoId, setExpandedFollowUpWoId] = useState<string | null>(null);
 
   // Associate Support Desk State
   const [supportCategory, setSupportCategory] = useState('Quotation & Commercial Inquiries');
@@ -5025,6 +5030,146 @@ export const BgaPortal: React.FC = () => {
                         </div>
                       </div>
                     )}
+
+                    {/* STAGE 2: FINAL PAYMENT FOLLOW-UP DESK */}
+                    <div className={`mt-3 p-3.5 rounded-xl border ${
+                      prj.status === 'COMPLETED'
+                        ? 'bg-gradient-to-br from-indigo-50/90 via-blue-50/50 to-emerald-50/40 border-indigo-200 shadow-xs'
+                        : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="p-1 rounded-md bg-indigo-100 text-indigo-700">
+                              <Phone className="w-3.5 h-3.5" />
+                            </span>
+                            <h4 className="text-xs font-bold text-slate-900">
+                              Final Client Payment Follow-up
+                            </h4>
+                            {prj.status === 'COMPLETED' && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 animate-pulse">
+                                ★ Technical Project Completed
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            Follow up with {wo.client?.clientName} for final balance settlement to unlock commission clearance.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setFollowUpProjectModal({ project: prj, clientName: wo.client?.clientName || 'Client' })}
+                            className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            Record Follow-up
+                          </button>
+                          {prj.finalPaymentFollowUps && prj.finalPaymentFollowUps.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setExpandedFollowUpWoId(expandedFollowUpWoId === wo.id ? null : wo.id)}
+                              className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold inline-flex items-center gap-1 transition-colors"
+                            >
+                              <History className="w-3 h-3 text-slate-500" />
+                              <span>{prj.finalPaymentFollowUps.length} Logs</span>
+                              <ChevronDown className={`w-3 h-3 transition-transform ${expandedFollowUpWoId === wo.id ? 'rotate-180' : ''}`} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Latest follow-up status summary badge */}
+                      {prj.finalPaymentFollowUps && prj.finalPaymentFollowUps.length > 0 ? (
+                        <div className="mt-2.5 pt-2 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-slate-500">Latest Status:</span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              prj.finalPaymentFollowUps[0].status === 'PAYMENT_PROMISED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                              prj.finalPaymentFollowUps[0].status === 'PAYMENT_DELAYED' ? 'bg-amber-100 text-amber-800' :
+                              prj.finalPaymentFollowUps[0].status === 'CLIENT_DISPUTED' ? 'bg-rose-100 text-rose-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {prj.finalPaymentFollowUps[0].status?.replace(/_/g, ' ')}
+                            </span>
+                            {prj.finalPaymentFollowUps[0].expectedPaymentDate && (
+                              <span className="text-[11px] text-slate-600 flex items-center gap-1">
+                                <Calendar className="w-3 h-3 text-slate-400" />
+                                Expected: <strong>{new Date(prj.finalPaymentFollowUps[0].expectedPaymentDate).toLocaleDateString('en-IN')}</strong>
+                              </span>
+                            )}
+                            {prj.finalPaymentFollowUps[0].expectedAmount && (
+                              <span className="text-[11px] font-bold text-emerald-700">
+                                ₹{Number(prj.finalPaymentFollowUps[0].expectedAmount).toLocaleString('en-IN')}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400">
+                            Logged {new Date(prj.finalPaymentFollowUps[0].createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="mt-2 text-[11px] text-slate-500 italic">
+                          No follow-up entries yet. Log client communication regarding final payment.
+                        </div>
+                      )}
+
+                      {/* Expandable chronological follow-up history */}
+                      {expandedFollowUpWoId === wo.id && prj.finalPaymentFollowUps && prj.finalPaymentFollowUps.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-slate-200 space-y-2">
+                          <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                            Follow-up Timeline & Client Commitments
+                          </span>
+                          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                            {prj.finalPaymentFollowUps.map((f: any) => (
+                              <div key={f.id} className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs space-y-1 shadow-2xs">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-semibold text-slate-800">{f.bga?.name || 'Associate'}</span>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold uppercase">
+                                      via {f.contactMethod}
+                                    </span>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                                      f.status === 'PAYMENT_PROMISED' ? 'bg-emerald-50 text-emerald-700' :
+                                      f.status === 'PAYMENT_DELAYED' ? 'bg-amber-50 text-amber-700' :
+                                      f.status === 'CLIENT_DISPUTED' ? 'bg-rose-50 text-rose-700' :
+                                      'bg-blue-50 text-blue-700'
+                                    }`}>
+                                      {f.status?.replace(/_/g, ' ')}
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] text-slate-400">
+                                    {new Date(f.createdAt).toLocaleDateString('en-IN', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </span>
+                                </div>
+                                {f.clientResponse && (
+                                  <div className="text-[11px] text-slate-600">
+                                    <strong className="text-slate-700">Client Response:</strong> {f.clientResponse}
+                                  </div>
+                                )}
+                                <p className="text-slate-700 text-xs leading-relaxed">{f.notes}</p>
+                                {(f.expectedPaymentDate || f.expectedAmount) && (
+                                  <div className="flex items-center gap-3 pt-1 text-[11px] text-slate-500 font-medium">
+                                    {f.expectedPaymentDate && (
+                                      <span>Promise Date: <strong className="text-slate-800">{new Date(f.expectedPaymentDate).toLocaleDateString('en-IN')}</strong></span>
+                                    )}
+                                    {f.expectedAmount && (
+                                      <span>Committed Amount: <strong className="text-emerald-700">₹{Number(f.expectedAmount).toLocaleString('en-IN')}</strong></span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="mt-3 p-3 rounded-lg bg-amber-50 text-amber-800 text-xs">
@@ -6700,6 +6845,17 @@ export const BgaPortal: React.FC = () => {
     </motion.div>
   )}
 </AnimatePresence>
+
+          {/* Final Payment Follow-up Modal */}
+          {followUpProjectModal && (
+            <FinalPaymentFollowUpModal
+              isOpen={!!followUpProjectModal}
+              onClose={() => setFollowUpProjectModal(null)}
+              project={followUpProjectModal.project}
+              clientName={followUpProjectModal.clientName}
+              onSuccess={() => loadTabData('projects')}
+            />
+          )}
         </main>
       </div>
     </div>

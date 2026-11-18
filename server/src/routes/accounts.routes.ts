@@ -17,6 +17,7 @@ import { appCache } from '../utils/cache';
 import { validateBankUtr } from '../utils/utrValidator';
 import { hydrateQuotationVersions } from '../utils/quotationVersion';
 import { autoReleaseWorkOrderToTechnical } from '../utils/autoRelease';
+import { resolveCommissionRate, computeCommissionBaseAndAmount } from '../services/commission.service';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -578,68 +579,23 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
         releaseResult = await autoReleaseWorkOrderToTechnical(workOrder.id, req.user!.id, req.ip);
       }
 
-      // 2. Commission Calculation Engine
-      // Digital Marketing Monthly Payment: Commission calculated per monthly verified payment
-      if (workOrder.serviceCategory === ServiceCategoryType.DIGITAL_MARKETING) {
-        // Exclude advertisement spend!
-        const commissionableAmount = Math.max(0, payment.amount - payment.adBudgetAmount);
+      // 2. Commission Calculation Engine (Dynamic Hierarchy: Project > Client > System)
+      try {
+        const resolved = await resolveCommissionRate(
+          workOrder.clientId,
+          workOrder.project?.id,
+          workOrder.serviceCategory
+        );
+        const rate = resolved.rate;
+        const rateSource = resolved.source;
 
-        // Fetch configured commission rate
-        const dmSetting = await prisma.systemSetting.findUnique({ where: { key: 'dm_commission_rate' } });
-        const rate = dmSetting ? parseFloat(dmSetting.value) : 15;
-        const calculatedCommission = (commissionableAmount * rate) / 100;
-
-        await prisma.commission.create({
-          data: {
-            bgaId: workOrder.bgaId,
-            clientId: workOrder.clientId,
-            workOrderId: workOrder.id,
-            paymentId: payment.id,
-            serviceCategory: workOrder.serviceCategory,
-            billingType: 'MONTHLY_RECURRING',
-            grossAmount: payment.amount,
-            excludedAdSpend: payment.adBudgetAmount,
-            commissionableAmount,
-            commissionRate: rate,
-            calculatedCommission,
-            eligibilityStatus: CommissionEligibility.ELIGIBLE,
-            approvalStatus: CommissionApproval.PENDING_APPROVAL,
-            payoutStatus: CommissionPayout.UNPAID,
-            notes: `Monthly recurring DM commission. Ad spend of Rs. ${payment.adBudgetAmount} strictly excluded.`,
-          },
-        });
-
-        // Notify Admin for commission payout approval
-        const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
-        for (const a of admins) {
-          await createNotification(
-            a.id,
-            'New Commission Awaiting Approval',
-            `Eligible commission of Rs. ${calculatedCommission.toLocaleString()} for BGA ${workOrder.bga.name} (Client: ${workOrder.client.clientName}).`,
-            'ACTION_REQUIRED',
-            '/admin/commissions'
+        if (workOrder.serviceCategory === ServiceCategoryType.DIGITAL_MARKETING) {
+          // Exclude advertisement spend!
+          const { commissionableAmount, calculatedCommission } = computeCommissionBaseAndAmount(
+            workOrder.serviceCategory,
+            rate,
+            { paymentAmount: payment.amount, adBudgetAmount: payment.adBudgetAmount }
           );
-        }
-      } else {
-        // Website, Mobile App, Software: Commission on project completion and final payment verification
-        if (payment.paymentType === PaymentType.FINAL) {
-          // Check if project is completed
-          const isProjectCompleted = workOrder.project?.status === ProjectStatus.COMPLETED;
-
-          // Fetch configured rate
-          let rateKey = 'website_commission_rate';
-          if (workOrder.serviceCategory === ServiceCategoryType.MOBILE_APPLICATION_DEVELOPMENT) {
-            rateKey = 'mobile_commission_rate';
-          } else if (workOrder.serviceCategory === ServiceCategoryType.SOFTWARE_DEVELOPMENT) {
-            rateKey = 'software_commission_rate';
-          }
-
-          const rateSetting = await prisma.systemSetting.findUnique({ where: { key: rateKey } });
-          const rate = rateSetting ? parseFloat(rateSetting.value) : 12;
-
-          // Calculate on total contract value excluding taxes/discounts
-          const commissionableAmount = workOrder.quotation.serviceFee - workOrder.quotation.discount;
-          const calculatedCommission = (commissionableAmount * rate) / 100;
 
           await prisma.commission.create({
             data: {
@@ -649,20 +605,103 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
               paymentId: payment.id,
               projectId: workOrder.project?.id || null,
               serviceCategory: workOrder.serviceCategory,
-              billingType: 'PROJECT_BASED',
-              grossAmount: workOrder.totalValue,
-              excludedAdSpend: 0,
+              billingType: 'MONTHLY_RECURRING',
+              grossAmount: payment.amount,
+              excludedAdSpend: payment.adBudgetAmount,
               commissionableAmount,
               commissionRate: rate,
               calculatedCommission,
-              eligibilityStatus: isProjectCompleted ? CommissionEligibility.ELIGIBLE : CommissionEligibility.PENDING_CRITERIA,
+              eligibilityStatus: CommissionEligibility.ELIGIBLE,
               approvalStatus: CommissionApproval.PENDING_APPROVAL,
               payoutStatus: CommissionPayout.UNPAID,
-              notes: isProjectCompleted
-                ? `Project-based commission for ${workOrder.serviceCategory}. Verified upon final payment and project completion.`
-                : `Final payment verified. Commission will become ELIGIBLE once Technical marks project COMPLETED.`,
+              rateSource,
+              notes: `Monthly recurring DM commission. Ad spend of Rs. ${payment.adBudgetAmount} strictly excluded. Rate: ${rate}% (${rateSource}).`,
             },
           });
+
+          // Notify Admin for commission payout approval
+          const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+          for (const a of admins) {
+            await createNotification(
+              a.id,
+              'New Commission Awaiting Approval',
+              `Eligible commission of ₹${calculatedCommission.toLocaleString('en-IN')} (${rate}% via ${rateSource}) for BGA ${workOrder.bga.name} (Client: ${workOrder.client.clientName}).`,
+              'ACTION_REQUIRED',
+              '/admin?tab=commissions'
+            );
+          }
+        } else {
+          // Development Projects: Website, Mobile App, Software
+          if (payment.paymentType === PaymentType.FINAL) {
+            const isProjectCompleted = workOrder.project?.status === ProjectStatus.COMPLETED;
+            const { commissionableAmount, calculatedCommission } = computeCommissionBaseAndAmount(
+              workOrder.serviceCategory,
+              rate,
+              {
+                quotationServiceFee: workOrder.quotation.serviceFee,
+                quotationDiscount: workOrder.quotation.discount,
+                totalValue: workOrder.totalValue,
+              }
+            );
+
+            await prisma.commission.create({
+              data: {
+                bgaId: workOrder.bgaId,
+                clientId: workOrder.clientId,
+                workOrderId: workOrder.id,
+                paymentId: payment.id,
+                projectId: workOrder.project?.id || null,
+                serviceCategory: workOrder.serviceCategory,
+                billingType: 'PROJECT_BASED',
+                grossAmount: workOrder.totalValue,
+                excludedAdSpend: 0,
+                commissionableAmount,
+                commissionRate: rate,
+                calculatedCommission,
+                eligibilityStatus: isProjectCompleted ? CommissionEligibility.ELIGIBLE : CommissionEligibility.PENDING_CRITERIA,
+                approvalStatus: CommissionApproval.PENDING_APPROVAL,
+                payoutStatus: CommissionPayout.UNPAID,
+                rateSource,
+                notes: isProjectCompleted
+                  ? `Project-based commission for ${workOrder.serviceCategory}. Verified upon final payment and project completion. Rate: ${rate}% (${rateSource}).`
+                  : `Final payment verified. Commission will become ELIGIBLE once Technical marks project COMPLETED. Rate: ${rate}% (${rateSource}).`,
+              },
+            });
+
+            // Stage 4 Notification: Notify Admin
+            const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+            for (const a of admins) {
+              await createNotification(
+                a.id,
+                'Final Payment Received and Verified',
+                `Accounts verified final payment of ₹${payment.amount.toLocaleString('en-IN')} for project ${workOrder.project?.projectNumber || workOrder.workOrderNumber} (${workOrder.client.clientName}, BGA: ${workOrder.bga.name}). Commission request generated: ₹${calculatedCommission.toLocaleString('en-IN')} (${rate}% via ${rateSource}) awaiting approval.`,
+                'ACTION_REQUIRED',
+                '/admin?tab=commissions'
+              );
+            }
+
+            // Stage 4 Notification: Notify Assigned BGA
+            await createNotification(
+              workOrder.bgaId,
+              'Final Payment Received and Verified',
+              `Final client payment of ₹${payment.amount.toLocaleString('en-IN')} verified by Accounts for ${workOrder.client.clientName}. Your commission of ₹${calculatedCommission.toLocaleString('en-IN')} (${rate}%) is now awaiting Admin approval.`,
+              'SUCCESS',
+              '/bga?tab=earnings'
+            );
+          }
+        }
+      } catch (rateErr: any) {
+        console.error('Commission rate resolution failed:', rateErr.message);
+        // If commission configuration is missing, alert Admin to configure rate!
+        const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+        for (const a of admins) {
+          await createNotification(
+            a.id,
+            'Commission Rate Configuration Required',
+            `Final payment verified for ${workOrder.client.clientName} (WO: ${workOrder.workOrderNumber}), but no commission rate is configured. Please configure commission in Admin Commission Settings.`,
+            'WARNING',
+            '/admin?tab=commission-settings'
+          );
         }
       }
     }
@@ -778,6 +817,224 @@ router.get('/commissions', async (req: AuthRequest, res: Response): Promise<void
     res.json({ commissions });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load commissions' });
+  }
+});
+
+// 7. Final Payment Verification Desk (Stage 3)
+router.get('/final-payments', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const projects = await prisma.technicalProject.findMany({
+      where: {
+        status: { in: [ProjectStatus.COMPLETED, ProjectStatus.UNDER_REVIEW, ProjectStatus.IN_PROGRESS] },
+      },
+      include: {
+        client: true,
+        workOrder: {
+          include: {
+            payments: { orderBy: { paymentDate: 'desc' } },
+            quotation: true,
+            bga: { select: { id: true, name: true, email: true, mobile: true, bankAccountNumber: true, bankIfsc: true, status: true } },
+          },
+        },
+        finalPaymentFollowUps: {
+          orderBy: { createdAt: 'desc' },
+          include: { bga: { select: { id: true, name: true } } },
+        },
+        commissions: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    res.json({ projects });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch final payment projects' });
+  }
+});
+
+// 8. Commission Payouts Desk for Accounts (Stage 5)
+router.get('/commission-payouts', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const commissions = await prisma.commission.findMany({
+      where: {
+        approvalStatus: CommissionApproval.APPROVED,
+      },
+      include: {
+        client: true,
+        bga: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            mobile: true,
+            bankName: true,
+            bankAccountHolder: true,
+            bankAccountNumber: true,
+            bankIfsc: true,
+            bankVerified: true,
+            status: true,
+          },
+        },
+        workOrder: {
+          select: {
+            id: true,
+            workOrderNumber: true,
+            totalValue: true,
+            advancePaid: true,
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            projectNumber: true,
+            status: true,
+            closureStatus: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ commissions });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch commission payouts' });
+  }
+});
+
+// 9. Accounts Records Actual Commission Payout (Stage 5 & Stage 6 Closure)
+router.post('/commissions/:id/payout', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { transactionReference, paymentMethod, transferDate, receiptUrl, payoutNotes } = req.body;
+
+    if (!transactionReference || !transactionReference.trim()) {
+      res.status(400).json({ error: 'Bank transaction reference / UTR is required' });
+      return;
+    }
+
+    const comm = await prisma.commission.findUnique({
+      where: { id },
+      include: {
+        bga: true,
+        client: true,
+        workOrder: { include: { payments: true } },
+        project: true,
+      },
+    });
+
+    if (!comm) {
+      res.status(404).json({ error: 'Commission record not found' });
+      return;
+    }
+
+    if (comm.approvalStatus !== CommissionApproval.APPROVED) {
+      res.status(400).json({ error: 'Cannot process payout: Commission has not been approved by Admin.' });
+      return;
+    }
+
+    if (comm.payoutStatus === CommissionPayout.PROCESSED) {
+      res.status(400).json({
+        error: `Commission already disbursed on ${comm.payoutDate ? new Date(comm.payoutDate).toLocaleDateString() : 'earlier date'}.`,
+      });
+      return;
+    }
+
+    // Payout Security Check: Associate bank details verified
+    if (!comm.bga.bankVerified) {
+      res.status(400).json({
+        error: 'Cannot process payout: Associate bank account is pending verification by Admin. Review bank details before disbursement.',
+      });
+      return;
+    }
+
+    const utrVal = validateBankUtr(transactionReference.trim(), paymentMethod || 'NEFT');
+    if (!utrVal.isValid) {
+      res.status(400).json({ error: utrVal.error, hint: utrVal.hint });
+      return;
+    }
+
+    const updated = await prisma.commission.update({
+      where: { id },
+      data: {
+        payoutStatus: CommissionPayout.PROCESSED,
+        payoutReference: utrVal.formattedUtr,
+        payoutDate: transferDate ? new Date(transferDate) : new Date(),
+        payoutMethod: paymentMethod || 'BANK_TRANSFER',
+        payoutReceiptUrl: receiptUrl || null,
+        payoutProcessedById: req.user!.id,
+        notes: payoutNotes ? `${comm.notes || ''} | Payout: ${payoutNotes.trim()}` : comm.notes,
+      },
+    });
+
+    // Stage 6: Client & Project Closure Check
+    // If technical project is COMPLETED and work order is fully paid, mark closureStatus: 'COMPLETED_AND_SETTLED'
+    if (comm.project && comm.project.status === ProjectStatus.COMPLETED) {
+      const totalPaid = comm.workOrder.payments
+        .filter((p) => p.status === PaymentStatus.VERIFIED)
+        .reduce((sum, p) => sum + p.amount, 0);
+
+      if (totalPaid >= comm.workOrder.totalValue) {
+        await prisma.technicalProject.update({
+          where: { id: comm.project.id },
+          data: {
+            closureStatus: 'COMPLETED_AND_SETTLED',
+            closedAt: new Date(),
+            closedById: req.user!.id,
+          },
+        });
+
+        // Notify Admin, BGA, Accounts of Project Settlement
+        const closureMsg = `Project ${comm.project.projectNumber} (${comm.client.clientName}) has achieved full closure: Technical completion verified, final payment cleared, and BGA commission settled.`;
+        await createNotification(comm.bgaId, 'Project Workflow Settled & Closed', closureMsg, 'SUCCESS', '/bga?tab=projects');
+        await createNotification(req.user!.id, 'Project Workflow Settled & Closed', closureMsg, 'SUCCESS', '/accounts?tab=work-orders');
+        const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+        for (const a of admins) {
+          await createNotification(a.id, 'Project Workflow Settled & Closed', closureMsg, 'SUCCESS', '/admin?tab=technical');
+        }
+      }
+    }
+
+    // Automatic Notification: Notify BGA (Stage 5)
+    await createNotification(
+      comm.bgaId,
+      'Commission Received',
+      `Your commission payment of ₹${comm.calculatedCommission.toLocaleString('en-IN')} (${comm.commissionRate}%) for ${comm.client.clientName} has been recorded successfully. Ref #${utrVal.formattedUtr}.`,
+      'SUCCESS',
+      '/bga?tab=earnings'
+    );
+
+    // Notify Admin
+    const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+    for (const a of admins) {
+      await createNotification(
+        a.id,
+        'Commission Payout Completed',
+        `Accounts disbursed commission of ₹${comm.calculatedCommission.toLocaleString('en-IN')} to BGA ${comm.bga.name} (Ref: ${utrVal.formattedUtr}).`,
+        'INFO',
+        '/admin?tab=commissions'
+      );
+    }
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'COMMISSION_PAYOUT_DISBURSED',
+      'COMMISSION',
+      id,
+      { amount: comm.calculatedCommission, payoutReference: utrVal.formattedUtr, paymentMethod },
+      req.ip
+    );
+
+    appCache.invalidatePrefix('accounts:');
+    appCache.invalidatePrefix('bga:');
+    appCache.invalidatePrefix('admin:');
+
+    res.json({ message: 'Commission payout recorded successfully', commission: updated });
+  } catch (error) {
+    console.error('Payout error:', error);
+    res.status(500).json({ error: 'Failed to record payout' });
   }
 });
 

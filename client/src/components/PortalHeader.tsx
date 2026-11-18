@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Bell, ShieldCheck, UserCheck, AlertCircle, LogOut, CheckCircle2, KeyRound } from 'lucide-react';
+import { Bell, ShieldCheck, UserCheck, AlertCircle, LogOut, CheckCircle2, KeyRound, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../utils/api';
 import { ChangePasswordModal } from './ChangePasswordModal';
@@ -13,6 +13,21 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
   const [showNotifs, setShowNotifs] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setShowNotifs(false);
+      }
+    };
+    if (showNotifs) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifs]);
 
   useEffect(() => {
     const updateHeight = () => {
@@ -124,7 +139,7 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
 
         <div className="flex items-center space-x-4">
           {/* Notifications Dropdown */}
-          <div className="relative">
+          <div className="relative" ref={notifRef}>
             <button
               onClick={() => setShowNotifs(!showNotifs)}
               className="p-2.5 rounded-xl text-slate-600 hover:text-[#3066BE] hover:bg-[#edf4fc] relative transition-colors"
@@ -138,18 +153,29 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
 
             {showNotifs && (
               <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200 py-2.5 z-50 animate-fadeIn">
-                <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+                <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between gap-2">
                   <span className="font-bold text-sm text-slate-900">
                     Notifications {unreadCount > 0 && <span className="text-[#119DA4]">({unreadCount} new)</span>}
                   </span>
-                  {unreadCount > 0 && (
+                  <div className="flex items-center gap-2">
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllRead}
+                        className="text-xs text-[#3066BE] hover:underline font-bold"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
                     <button
-                      onClick={markAllRead}
-                      className="text-xs text-[#3066BE] hover:underline font-bold"
+                      type="button"
+                      onClick={() => setShowNotifs(false)}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                      title="Close"
+                      aria-label="Close"
                     >
-                      Mark all as read
+                      <X className="w-4 h-4" />
                     </button>
-                  )}
+                  </div>
                 </div>
 
                 <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">

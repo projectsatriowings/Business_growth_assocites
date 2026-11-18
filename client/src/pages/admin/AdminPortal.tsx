@@ -42,6 +42,7 @@ import {
   Music,
   Archive,
   History,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
@@ -57,6 +58,7 @@ import { X } from 'lucide-react';
 import { ModalPortal } from '../../components/ModalPortal';
 import { MediaUploader } from '../../components/MediaUploader';
 import { QuotationHistoryTimeline } from '../../components/QuotationHistoryTimeline';
+import { CommissionSettingsPanel } from '../../components/CommissionSettingsPanel';
 
 // Formats client structured location JSON or legacy location string
 const formatClientLocation = (locStr?: string | null): string => {
@@ -192,6 +194,12 @@ export const AdminPortal: React.FC = () => {
   const [enquiryDetailModal, setEnquiryDetailModal] = useState<any | null>(null);
   const [quotationDetailModal, setQuotationDetailModal] = useState<any | null>(null);
   const [projectDetailModal, setProjectDetailModal] = useState<any | null>(null);
+
+  // Commission Sub-Tab & Rejection Modal State
+  const [adminCommissionSubTab, setAdminCommissionSubTab] = useState<'LEDGER' | 'SETTINGS'>('LEDGER');
+  const [commissionRejectModal, setCommissionRejectModal] = useState<{ id: string; bgaName?: string; amount?: number } | null>(null);
+  const [commissionRejectReason, setCommissionRejectReason] = useState('');
+  const [rejectSubmitting, setRejectSubmitting] = useState(false);
   const [payoutModal, setPayoutModal] = useState<{ commissionId: string; amount: number; bgaName: string } | null>(null);
   const [payoutReferenceInput, setPayoutReferenceInput] = useState('');
 
@@ -402,17 +410,30 @@ export const AdminPortal: React.FC = () => {
     }
   };
 
-  // Handle Commission Approval
-  const handleCommissionAction = async (id: string, action: string) => {
+  // Handle Commission Approval / Rejection
+  const handleCommissionAction = async (id: string, action: string, reason?: string) => {
+    if (action === 'REJECT' && (!reason || !reason.trim())) {
+      toast.error('Rejection reason is mandatory');
+      return;
+    }
+    setRejectSubmitting(true);
     try {
       await apiRequest(`/api/admin/commissions/${id}/approve`, {
         method: 'POST',
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action, reason }),
       });
-      toast.success(`Commission ${action.toLowerCase()} processed successfully.`);
+      toast.success(
+        action === 'APPROVE'
+          ? 'Commission approved and routed to Accounts for payout!'
+          : 'Commission rejected with audit reason logged.'
+      );
+      setCommissionRejectModal(null);
+      setCommissionRejectReason('');
       loadData();
     } catch (e: any) {
       toast.error(e.message || 'Failed to update commission');
+    } finally {
+      setRejectSubmitting(false);
     }
   };
 
@@ -3497,148 +3518,222 @@ export const AdminPortal: React.FC = () => {
           {/* TAB 10: COMMISSIONS & PAYOUTS */}
           {activeTab === 'commissions' && (
             <div className="space-y-4 w-full">
-              <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm w-full">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">Commission Ledger & Associate Payouts</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Separating Digital Marketing monthly subscriptions from project-based commissions with strict eligibility verification.
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <div className="flex rounded-xl bg-slate-100 p-1">
-                    {[
-                      { id: 'ALL', label: 'All Commissions' },
-                      { id: 'DM_SUBSCRIPTION', label: 'DM Subscriptions' },
-                      { id: 'PROJECT_BASED', label: 'Project-Based' },
-                    ].map((tab) => (
-                      <button
-                        key={tab.id}
-                        onClick={() => setCommissionTypeTab(tab.id as any)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                          commissionTypeTab === tab.id
-                            ? 'bg-[#3066BE] text-white shadow-sm font-bold shadow-sm'
-                            : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="relative w-full sm:w-56">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                    <input
-                      type="text"
-                      placeholder="Search associate, client..."
-                      value={commissionSearch}
-                      onChange={(e) => setCommissionSearch(e.target.value)}
-                      className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                    />
-                  </div>
-                </div>
+              {/* Sub-tab Navigation: Commission Approvals vs Commission Percentage Settings */}
+              <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setAdminCommissionSubTab('LEDGER')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    adminCommissionSubTab === 'LEDGER'
+                      ? 'bg-[#3066BE] text-white shadow-sm'
+                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                  }`}
+                >
+                  <DollarSign className="w-3.5 h-3.5" />
+                  <span>Stage 4: Commission Approvals & Ledger</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminCommissionSubTab('SETTINGS')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    adminCommissionSubTab === 'SETTINGS'
+                      ? 'bg-[#3066BE] text-white shadow-sm'
+                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                  }`}
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>Section 8: Commission Percentage Settings</span>
+                </button>
               </div>
 
-              {!loadedTabs['commissions'] || (tabLoading && commissions.length === 0) ? (
-                <SkeletonTable rows={5} cols={5} />
-              ) : filteredCommissions.length === 0 ? (
-                <EmptyState
-                  icon={DollarSign}
-                  title="No commission records available yet"
-                  description="Eligible commissions will appear after the required payment and completion conditions are met. Verified subscription payments unlock DM commissions; project completion unlocks Web/App commissions."
-                  actionText="Refresh Commission Ledger"
-                  onAction={loadData}
-                />
-              ) : (
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto shadow-sm w-full">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                      <tr>
-                        <th className="p-3.5">Associate & Bank</th>
-                        <th className="p-3.5">Client & Service</th>
-                        <th className="p-3.5">Calculation Breakdown</th>
-                        <th className="p-3.5">Approval Status</th>
-                        <th className="p-3.5">Disbursement</th>
-                        <th className="p-3.5 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredCommissions.map((c) => (
-                        <tr key={c.id} className="hover:bg-slate-50/50">
-                          <td className="p-3.5">
-                            <div className="font-bold text-slate-900 text-sm">{c.bga?.name}</div>
-                            <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                              {c.bga?.bankAccountNumber ? '••••••••' + c.bga.bankAccountNumber.slice(-4) : 'Bank details pending'} ({c.bga?.bankIfsc || 'IFSC'})
-                            </div>
-                          </td>
-                          <td className="p-3.5">
-                            <div className="font-semibold text-slate-800 text-sm">{c.client?.clientName}</div>
-                            <div className="text-[11px] text-indigo-600 font-semibold">{c.serviceCategory}</div>
-                            <div className="text-[10px] text-slate-400">{c.billingType}</div>
-                          </td>
-                          <td className="p-3.5">
-                            <div className="text-emerald-700 font-extrabold text-sm">
-                              ₹{(c.calculatedCommission || 0).toLocaleString()}
-                            </div>
-                            <div className="text-[10px] text-slate-500 mt-0.5">
-                              Net Fee: ₹{(c.commissionableAmount || 0).toLocaleString()} @ {c.commissionRate}%
-                            </div>
-                            {c.excludedAdSpend > 0 && (
-                              <div className="text-[10px] text-slate-400">
-                                (Ad budget ₹{c.excludedAdSpend} excluded)
-                              </div>
-                            )}
-                          </td>
-                          <td className="p-3.5">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                              c.approvalStatus === 'APPROVED'
-                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                : 'bg-amber-100 text-amber-800 border border-amber-200'
-                            }`}>
-                              {c.approvalStatus}
-                            </span>
-                          </td>
-                          <td className="p-3.5">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                              c.payoutStatus === 'PROCESSED'
-                                ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                : 'bg-slate-100 text-slate-700'
-                            }`}>
-                              {c.payoutStatus}
-                            </span>
-                            {c.payoutReference && (
-                              <div className="text-[10px] text-slate-500 font-mono mt-1">Ref: {c.payoutReference}</div>
-                            )}
-                          </td>
-                          <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
-                            {c.approvalStatus !== 'APPROVED' ? (
-                              <button
-                                onClick={() => handleCommissionAction(c.id, 'APPROVE')}
-                                className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm"
-                              >
-                                Approve Payout
-                              </button>
-                            ) : c.payoutStatus !== 'PROCESSED' ? (
-                              <button
-                                onClick={() =>
-                                  setPayoutModal({
-                                    commissionId: c.id,
-                                    amount: c.calculatedCommission,
-                                    bgaName: c.bga?.name,
-                                  })
-                                }
-                                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 shadow-sm"
-                              >
-                                Mark Disbursed
-                              </button>
-                            ) : (
-                              <span className="text-emerald-600 text-xs font-bold">Disbursed ✓</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              {adminCommissionSubTab === 'SETTINGS' && (
+                <CommissionSettingsPanel />
+              )}
+
+              {adminCommissionSubTab === 'LEDGER' && (
+                <div className="space-y-4 w-full">
+                  <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm w-full">
+                    <div>
+                      <h2 className="text-base font-bold text-slate-900">Commission Ledger & Associate Payouts</h2>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Separating Digital Marketing monthly subscriptions from project-based commissions with strict eligibility verification.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <div className="flex rounded-xl bg-slate-100 p-1">
+                        {[
+                          { id: 'ALL', label: 'All Commissions' },
+                          { id: 'DM_SUBSCRIPTION', label: 'DM Subscriptions' },
+                          { id: 'PROJECT_BASED', label: 'Project-Based' },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            onClick={() => setCommissionTypeTab(tab.id as any)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                              commissionTypeTab === tab.id
+                                ? 'bg-[#3066BE] text-white shadow-sm font-bold shadow-sm'
+                                : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="relative w-full sm:w-56">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input
+                          type="text"
+                          placeholder="Search associate, client..."
+                          value={commissionSearch}
+                          onChange={(e) => setCommissionSearch(e.target.value)}
+                          className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {!loadedTabs['commissions'] || (tabLoading && commissions.length === 0) ? (
+                    <SkeletonTable rows={5} cols={5} />
+                  ) : filteredCommissions.length === 0 ? (
+                    <EmptyState
+                      icon={DollarSign}
+                      title="No commission records available yet"
+                      description="Eligible commissions will appear after the required payment and completion conditions are met. Verified subscription payments unlock DM commissions; project completion unlocks Web/App commissions."
+                      actionText="Refresh Commission Ledger"
+                      onAction={loadData}
+                    />
+                  ) : (
+                    <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto shadow-sm w-full">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                          <tr>
+                            <th className="p-3.5">Associate & Bank</th>
+                            <th className="p-3.5">Client & Service</th>
+                            <th className="p-3.5">Calculation Breakdown</th>
+                            <th className="p-3.5">Approval Status</th>
+                            <th className="p-3.5">Disbursement</th>
+                            <th className="p-3.5 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {filteredCommissions.map((c) => (
+                            <tr key={c.id} className="hover:bg-slate-50/50">
+                              <td className="p-3.5">
+                                <div className="font-bold text-slate-900 text-sm">{c.bga?.name}</div>
+                                <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                                  {c.bga?.bankAccountNumber ? '••••••••' + c.bga.bankAccountNumber.slice(-4) : 'Bank details pending'} ({c.bga?.bankIfsc || 'IFSC'})
+                                </div>
+                              </td>
+                              <td className="p-3.5">
+                                <div className="font-semibold text-slate-800 text-sm">{c.client?.clientName}</div>
+                                <div className="text-[11px] text-indigo-600 font-semibold">{c.serviceCategory}</div>
+                                <div className="text-[10px] text-slate-400">{c.billingType}</div>
+                              </td>
+                              <td className="p-3.5">
+                                <div className="text-emerald-700 font-extrabold text-sm">
+                                  ₹{(c.calculatedCommission || 0).toLocaleString()}
+                                </div>
+                                <div className="text-[10px] text-slate-500 mt-0.5">
+                                  Net Fee: ₹{(c.commissionableAmount || 0).toLocaleString()} @ {c.commissionRate}%
+                                </div>
+                                {c.rateSource && (
+                                  <div className="mt-1">
+                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                      c.rateSource === 'PROJECT_OVERRIDE' ? 'bg-indigo-100 text-indigo-700' :
+                                      c.rateSource === 'CLIENT_DEFAULT' ? 'bg-blue-100 text-blue-700' :
+                                      'bg-slate-100 text-slate-600'
+                                    }`}>
+                                      [{c.rateSource.replace(/_/g, ' ')}]
+                                    </span>
+                                  </div>
+                                )}
+                                {c.excludedAdSpend > 0 && (
+                                  <div className="text-[10px] text-slate-400 mt-0.5">
+                                    (Ad budget ₹{c.excludedAdSpend} excluded)
+                                  </div>
+                                )}
+                              </td>
+                              <td className="p-3.5">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                  c.approvalStatus === 'APPROVED'
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : c.approvalStatus === 'REJECTED'
+                                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                }`}>
+                                  {c.approvalStatus}
+                                </span>
+                                {c.rejectionReason && (
+                                  <div className="text-[10px] text-rose-600 mt-1 max-w-xs truncate" title={c.rejectionReason}>
+                                    Reason: {c.rejectionReason}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="p-3.5">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                  c.payoutStatus === 'PROCESSED'
+                                    ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                    : 'bg-slate-100 text-slate-700'
+                                }`}>
+                                  {c.payoutStatus}
+                                </span>
+                                {c.payoutReference && (
+                                  <div className="text-[10px] text-slate-500 font-mono mt-1">Ref: {c.payoutReference}</div>
+                                )}
+                              </td>
+                              <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
+                                {c.approvalStatus !== 'APPROVED' && c.approvalStatus !== 'REJECTED' ? (
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      onClick={() => handleCommissionAction(c.id, 'APPROVE')}
+                                      className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm cursor-pointer"
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setCommissionRejectModal({ id: c.id, bgaName: c.bga?.name, amount: c.calculatedCommission });
+                                        setCommissionRejectReason('');
+                                      }}
+                                      className="px-2.5 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold hover:bg-rose-100 cursor-pointer"
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                ) : c.approvalStatus === 'APPROVED' ? (
+                                  c.payoutStatus !== 'PROCESSED' ? (
+                                    <div className="flex items-center justify-end gap-1.5">
+                                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                                        Approved ✓ (Pending Accounts Payout)
+                                      </span>
+                                      <button
+                                        onClick={() =>
+                                          setPayoutModal({
+                                            commissionId: c.id,
+                                            amount: c.calculatedCommission,
+                                            bgaName: c.bga?.name,
+                                          })
+                                        }
+                                        className="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold hover:bg-blue-100"
+                                      >
+                                        Disburse
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-emerald-600 text-xs font-bold">Disbursed ✓</span>
+                                  )
+                                ) : (
+                                  <span className="text-rose-600 text-xs font-bold">Rejected ✗</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -3715,6 +3810,78 @@ export const AdminPortal: React.FC = () => {
                         className="px-4 py-2 rounded-lg text-xs font-bold bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white hover:bg-blue-700 shadow-sm"
                       >
                         Confirm Disbursement
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </ModalPortal>
+
+              {/* Commission Rejection Modal with Mandatory Reason */}
+              <ModalPortal
+                isOpen={!!commissionRejectModal}
+                onClose={() => !rejectSubmitting && setCommissionRejectModal(null)}
+              >
+                {commissionRejectModal && (
+                  <div
+                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-200 shrink-0">
+                          <XCircle className="w-5 h-5 text-rose-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-bold text-slate-900">Reject Commission Request</h3>
+                          <p className="text-xs text-slate-500">
+                            {commissionRejectModal.bgaName} • ₹{commissionRejectModal.amount?.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={rejectSubmitting}
+                        onClick={() => setCommissionRejectModal(null)}
+                        className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Mandatory Rejection Reason <span className="text-rose-500">*</span>
+                      </label>
+                      <textarea
+                        rows={3}
+                        required
+                        value={commissionRejectReason}
+                        onChange={(e) => setCommissionRejectReason(e.target.value)}
+                        placeholder="State clear commercial or verification grounds for rejection (audit logged)..."
+                        className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 resize-none"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        This reason is recorded in the permanent audit ledger and sent to Accounts & BGA.
+                      </p>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        disabled={rejectSubmitting}
+                        onClick={() => setCommissionRejectModal(null)}
+                        className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={rejectSubmitting || !commissionRejectReason.trim()}
+                        onClick={() => handleCommissionAction(commissionRejectModal.id, 'REJECT', commissionRejectReason)}
+                        className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 disabled:opacity-40 text-white hover:bg-rose-700 shadow-sm flex items-center gap-1.5 cursor-pointer"
+                      >
+                        {rejectSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                        <span>Confirm Rejection</span>
                       </button>
                     </div>
                   </div>

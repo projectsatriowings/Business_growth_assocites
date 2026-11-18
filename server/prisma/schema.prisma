@@ -155,6 +155,8 @@ model User {
   assignedProjects TechnicalProject[] @relation("LeadProjects")
   quotationReminders QuotationReminder[]
   passwordResetTokens PasswordResetToken[]
+  commissionConfigs CommissionRateConfig[] @relation("BgaCommissionConfigs")
+  finalPaymentFollowUps FinalPaymentFollowUp[] @relation("BgaFinalPaymentFollowUps")
 
   @@index([role, status])
   @@index([role, createdAt])
@@ -222,6 +224,9 @@ model Client {
   commissions      Commission[]
   technicalProjects TechnicalProject[]
   contactActivities ContactActivity[]
+  commissionConfigs CommissionRateConfig[]
+  commissionRateHistories CommissionRateHistory[]
+  finalPaymentFollowUps FinalPaymentFollowUp[]
 
   @@unique([mobile])
   @@unique([email])
@@ -393,6 +398,12 @@ model TechnicalProject {
   deliverables         ProjectDeliverable[]
   feedback             ProjectFeedback[]
   commissions          Commission[]
+  closureStatus        String?            @default("OPEN") // OPEN, COMPLETED_AND_SETTLED, CLOSED
+  closedAt             DateTime?
+  closedById           String?
+  commissionConfig     CommissionRateConfig?
+  commissionRateHistories CommissionRateHistory[]
+  finalPaymentFollowUps FinalPaymentFollowUp[]
 
   @@index([clientId])
   @@index([assignedLeadId])
@@ -498,6 +509,11 @@ model Commission {
   payoutStatus        CommissionPayout      @default(UNPAID)
   payoutReference     String?
   payoutDate          DateTime?
+  payoutMethod        String?               // NEFT, RTGS, IMPS, UPI
+  payoutReceiptUrl    String?
+  payoutProcessedById String?
+  rateSource          String?               // PROJECT_OVERRIDE, CLIENT_DEFAULT, SYSTEM_DEFAULT
+  rejectionReason     String?
   notes               String?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
@@ -586,6 +602,73 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([tokenHash])
+}
+
+model CommissionRateConfig {
+  id                   String            @id @default(cuid())
+  clientId             String
+  client               Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectId            String?           @unique
+  project              TechnicalProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  bgaId                String?
+  bga                  User?             @relation("BgaCommissionConfigs", fields: [bgaId], references: [id])
+  commissionPercentage Float
+  effectiveDate        DateTime          @default(now())
+  expiryDate           DateTime?
+  internalNotes        String?
+  status               String            @default("ACTIVE") // ACTIVE, INACTIVE, EXPIRED
+  createdById          String?
+  updatedById          String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  history              CommissionRateHistory[]
+
+  @@index([clientId])
+  @@index([projectId])
+  @@index([status])
+}
+
+model CommissionRateHistory {
+  id              String                @id @default(cuid())
+  configId        String?
+  config          CommissionRateConfig? @relation(fields: [configId], references: [id], onDelete: SetNull)
+  clientId        String
+  client          Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectId       String?
+  project         TechnicalProject?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  previousRate    Float?
+  newRate         Float
+  changedById     String?
+  changedByName   String?
+  reason          String
+  createdAt       DateTime              @default(now())
+
+  @@index([clientId])
+  @@index([projectId])
+  @@index([configId])
+}
+
+model FinalPaymentFollowUp {
+  id                  String           @id @default(cuid())
+  projectId           String
+  project             TechnicalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  clientId            String
+  client              Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  bgaId               String
+  bga                 User             @relation("BgaFinalPaymentFollowUps", fields: [bgaId], references: [id])
+  followUpDate        DateTime         @default(now())
+  contactMethod       String           // CALL, WHATSAPP, EMAIL, MEETING, OTHER
+  clientResponse      String?
+  notes               String
+  expectedPaymentDate DateTime?
+  expectedAmount      Float?
+  status              String           @default("CLIENT_CONTACTED") // FOLLOW_UP_PENDING, CLIENT_CONTACTED, PAYMENT_PROMISED, PAYMENT_DELAYED, DISPUTED, FOLLOW_UP_REQUIRED
+  createdAt           DateTime         @default(now())
+
+  @@index([projectId])
+  @@index([clientId])
+  @@index([bgaId])
 }
 
 
