@@ -473,28 +473,7 @@ export async function generateQuotationPdf(
   const fileName = `Quotation-${data.quotationNumber}-v${data.version}.pdf`;
   const storagePath = getQuotationStoragePath(data.quotationNumber, data.version);
 
-  // Check if already stored on disk to preserve document integrity
-  if (fs.existsSync(storagePath)) {
-    try {
-      const stat = fs.statSync(storagePath);
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Length', stat.size);
-      res.setHeader('Content-Disposition', `${isDownload ? 'attachment' : 'inline'}; filename="${fileName}"`);
-      const stream = fs.createReadStream(storagePath);
-      stream.on('error', (err) => {
-        console.error('[PDF Stream Error]:', err);
-        if (!res.headersSent) {
-          res.status(500).json({ error: 'Failed to read PDF stream' });
-        }
-      });
-      stream.pipe(res);
-      return;
-    } catch (readErr) {
-      console.warn('[PDF Storage Read Error], generating dynamically:', readErr);
-    }
-  }
-
-  // Generate, store securely, and stream
+  // Always generate fresh PDF buffer from latest database data to ensure GST and totals stay 100% in sync
   const pdfBuffer = await generateQuotationPdfBuffer(data);
   try {
     fs.writeFileSync(storagePath, pdfBuffer);
