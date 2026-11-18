@@ -13,6 +13,8 @@ import {
   ArrowLeft,
   Mail,
   Send,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useAuth, UserRole } from '../context/AuthContext';
 import { Navbar } from '../components/Navbar';
@@ -82,6 +84,7 @@ export const LoginPage: React.FC = () => {
   const [selectedDemoRole, setSelectedDemoRole] = useState<UserRole | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -472,17 +475,28 @@ export const LoginPage: React.FC = () => {
                         Forgot Password?
                       </button>
                     </div>
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setConfirmationMessage(null);
-                      }}
-                      placeholder="Enter password"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setConfirmationMessage(null);
+                        }}
+                        placeholder="Enter password"
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 focus:outline-none transition-colors"
+                        title={showPassword ? 'Hide password' : 'Show password'}
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <button
@@ -491,17 +505,7 @@ export const LoginPage: React.FC = () => {
                     className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <Lock className="w-4 h-4" />
-                    <span>
-                      {loading
-                        ? 'Authenticating...'
-                        : selectedDemoRole === 'ADMIN'
-                          ? 'Login to Atriowings Admin Portal'
-                          : selectedDemoRole === 'ACCOUNTS'
-                            ? 'Login to Atriowings Accounts Portal'
-                            : selectedDemoRole === 'TECHNICAL'
-                              ? 'Login to Atriowings Technical Portal'
-                              : 'Sign In to Atriowings Growth Portal'}
-                    </span>
+                    <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
                   </button>
                 </form>
 

@@ -533,9 +533,9 @@ router.post('/reset-password', async (req: Request, res: Response): Promise<void
       return;
     }
 
-    // Password Complexity Rules: minimum 8 characters, upper, lower, number, special char
-    if (newPassword.length < 8) {
-      res.status(400).json({ error: 'Password must be at least 8 characters long.' });
+    // Password Complexity Rules: minimum 6 characters, upper, lower, number, special char
+    if (newPassword.length < 6) {
+      res.status(400).json({ error: 'Password must be at least 6 characters long.' });
       return;
     }
 
@@ -631,8 +631,8 @@ router.post('/change-password', authenticateJWT, async (req: AuthRequest, res: R
     }
 
     // Password Complexity
-    if (newPassword.length < 8) {
-      res.status(400).json({ error: 'New password must be at least 8 characters long.' });
+    if (newPassword.length < 6) {
+      res.status(400).json({ error: 'New password must be at least 6 characters long.' });
       return;
     }
 

@@ -35,7 +35,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
   if (!isOpen) return null;
 
   // Validation Rules
-  const hasMinLength = newPassword.length >= 8;
+  const hasMinLength = newPassword.length >= 6;
   const hasUpper = /[A-Z]/.test(newPassword);
   const hasLower = /[a-z]/.test(newPassword);
   const hasNumber = /[0-9]/.test(newPassword);
@@ -224,7 +224,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
                 <div className="grid grid-cols-2 gap-1 text-[11px]">
                   <div className={`flex items-center gap-1.5 ${hasMinLength ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
                     {hasMinLength ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                    <span>8+ characters</span>
+                    <span>6+ characters</span>
                   </div>
                   <div className={`flex items-center gap-1.5 ${hasUpper ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
                     {hasUpper ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}

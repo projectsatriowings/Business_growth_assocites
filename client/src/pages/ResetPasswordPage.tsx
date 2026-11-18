@@ -84,7 +84,7 @@ export const ResetPasswordPage: React.FC = () => {
   }, [token]);
 
   // Password Validation Criteria
-  const hasMinLength = newPassword.length >= 8;
+  const hasMinLength = newPassword.length >= 6;
   const hasUpper = /[A-Z]/.test(newPassword);
   const hasLower = /[a-z]/.test(newPassword);
   const hasNumber = /[0-9]/.test(newPassword);
@@ -138,26 +138,21 @@ export const ResetPasswordPage: React.FC = () => {
         <div className="w-full max-w-md mx-auto">
           {/* Header Branding */}
           <div className="text-center mb-8">
-            <Link to="/" className="inline-flex flex-col sm:flex-row items-center gap-3.5 mb-5 group">
+            <Link to="/" className="inline-flex items-center gap-2.5 mb-3 group justify-center">
               <img
-                src="/img/atriowings-official-logo.png"
+                src="/favicon.png"
                 alt="Atriowings Technologies"
-                className="h-12 sm:h-14 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                className="w-8 h-8 rounded-lg object-contain transition-transform duration-200 group-hover:scale-105"
               />
-              <div className="text-center sm:text-left">
-                <span className="text-xl font-extrabold text-slate-900 block leading-tight">
-                  Atriowings Technologies
-                </span>
-                <span className="text-[10px] tracking-widest text-[#119DA4] font-bold uppercase block mt-0.5">
-                  ENTERPRISE ACCOUNT SECURITY
-                </span>
-              </div>
+              <span className="text-base font-bold text-slate-800 tracking-tight">
+                Atriowings Technologies
+              </span>
             </Link>
 
-            <h1 className="text-2xl font-extrabold text-slate-900">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Reset Your Password
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1.5">
               Create a strong, new password for your enterprise account
             </p>
           </div>
@@ -342,7 +337,7 @@ export const ResetPasswordPage: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px]">
                       <div className={`flex items-center gap-1.5 ${hasMinLength ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
                         {hasMinLength ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                        <span>At least 8 characters</span>
+                        <span>At least 6 characters</span>
                       </div>
                       <div className={`flex items-center gap-1.5 ${hasUpper ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
                         {hasUpper ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
