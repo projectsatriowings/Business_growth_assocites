@@ -77,6 +77,7 @@ import { getQuotationPdfUrl } from '../../utils/downloadPdf';
 import { BUSINESS_CATEGORIES } from '../../constants/categories';
 import { ModalPortal } from '../../components/ModalPortal';
 import { MediaUploader, MediaUploadResult } from '../../components/MediaUploader';
+import { QuotationHistoryTimeline } from '../../components/QuotationHistoryTimeline';
 
 export const BgaPortal: React.FC = () => {
   const { user } = useAuth();
@@ -4380,72 +4381,8 @@ export const BgaPortal: React.FC = () => {
                           </div>
                         )}
 
-                        {/* VERSION 1 AUDIT PROOF & BASELINE (Embedded inside v2 / revision quotation) */}
-                        {q.previousVersion && (
-                          <div className="bg-slate-50/90 border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200 pb-2">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold text-[11px] border border-blue-200 flex items-center gap-1">
-                                  <FileText className="w-3 h-3 text-blue-700" />
-                                  Version 1 (v1) Baseline & Proof
-                                </span>
-                                <span className="font-mono font-bold text-slate-800 text-xs">
-                                  {q.previousVersion.quotationNumber}
-                                </span>
-                                <span className="text-[11px] text-slate-500">
-                                  • Drafted on {new Date(q.previousVersion.createdAt).toLocaleDateString()}
-                                </span>
-                              </div>
-                              <a
-                                href={getQuotationPdfUrl(q.previousVersion.id)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-blue-200 hover:bg-blue-50 text-blue-700 rounded-lg text-xs font-bold transition-all shadow-2xs"
-                                title="View original Version 1 quotation PDF for client and admin clarification"
-                              >
-                                <Download className="w-3.5 h-3.5 text-blue-600" />
-                                <span>View v1 PDF Proof</span>
-                              </a>
-                            </div>
-
-                            {/* Financial Delta & Comparison */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-                              <div className="bg-white p-2.5 rounded-lg border border-slate-200/80 shadow-2xs">
-                                <span className="text-slate-400 block text-[10px] font-medium uppercase">v1 Service Fee</span>
-                                <span className="font-bold text-slate-800 text-xs">₹{(q.previousVersion.serviceFee || 0).toLocaleString()}</span>
-                                {q.serviceFee !== q.previousVersion.serviceFee && (
-                                  <span className="text-[10px] text-blue-600 block font-semibold mt-0.5">
-                                    ➔ v2: ₹{q.serviceFee?.toLocaleString()}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="bg-white p-2.5 rounded-lg border border-slate-200/80 shadow-2xs">
-                                <span className="text-slate-400 block text-[10px] font-medium uppercase">v1 GST ({q.previousVersion.taxRate || 18}%)</span>
-                                <span className="font-bold text-slate-800 text-xs">₹{(q.previousVersion.taxAmount || 0).toLocaleString()}</span>
-                              </div>
-                              <div className="bg-white p-2.5 rounded-lg border border-slate-200/80 shadow-2xs">
-                                <span className="text-slate-400 block text-[10px] font-medium uppercase">v1 Total Contract</span>
-                                <span className="font-bold text-slate-800 text-xs">₹{(q.previousVersion.totalAmount || 0).toLocaleString()}</span>
-                                {q.totalAmount !== q.previousVersion.totalAmount && (
-                                  <span className={`text-[10px] block font-bold mt-0.5 ${q.totalAmount > q.previousVersion.totalAmount ? 'text-indigo-600' : 'text-emerald-600'}`}>
-                                    ➔ v2: ₹{q.totalAmount?.toLocaleString()} ({q.totalAmount > q.previousVersion.totalAmount ? '+' : ''}₹{(q.totalAmount - q.previousVersion.totalAmount).toLocaleString()})
-                                  </span>
-                                )}
-                              </div>
-                              <div className="bg-white p-2.5 rounded-lg border border-slate-200/80 shadow-2xs">
-                                <span className="text-slate-400 block text-[10px] font-medium uppercase">v1 Advance ({q.previousVersion.advanceRequiredPercent || 50}%)</span>
-                                <span className="font-bold text-slate-800 text-xs">₹{(q.previousVersion.advanceRequiredAmount || 0).toLocaleString()}</span>
-                              </div>
-                            </div>
-
-                            {/* v1 Scope baseline */}
-                            {q.previousVersion.serviceScope && (
-                              <div className="text-[11px] text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200/80 shadow-2xs">
-                                <strong className="text-slate-700">v1 Original Scope:</strong> {q.previousVersion.serviceScope}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        {/* Quotation Full Lifecycle History & Revision Audit Trail */}
+                        <QuotationHistoryTimeline currentQuotation={q} defaultExpanded={false} />
 
                         {q.serviceScope && (
                           <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100">

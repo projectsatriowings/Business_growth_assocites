@@ -54,6 +54,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { ModalPortal } from '../../components/ModalPortal';
 import { MediaUploader } from '../../components/MediaUploader';
+import { QuotationHistoryTimeline } from '../../components/QuotationHistoryTimeline';
 
 // Formats client structured location JSON or legacy location string
 const formatClientLocation = (locStr?: string | null): string => {
@@ -2935,9 +2936,12 @@ export const AdminPortal: React.FC = () => {
                     <div className="text-xs">
                       <strong className="block text-slate-700 mb-1">Approved Commercial Terms & Scope:</strong>
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-slate-800 whitespace-pre-wrap leading-relaxed">
-                        {quotationDetailModal.scopeOfWork || 'Scope details configured in quotation line items.'}
+                        {quotationDetailModal.scopeOfWork || quotationDetailModal.serviceScope || 'Scope details configured in quotation line items.'}
                       </div>
                     </div>
+
+                    {/* Complete Version History, Rejections & Audit Trail */}
+                    <QuotationHistoryTimeline currentQuotation={quotationDetailModal} defaultExpanded={true} />
 
                     <div className="flex justify-end pt-2">
                       <button
@@ -2976,6 +2980,8 @@ export const AdminPortal: React.FC = () => {
                       <strong>{quotationReviewModal.quotation?.client?.clientName}</strong>. Total Value: ₹
                       {(quotationReviewModal.quotation?.totalAmount || 0).toLocaleString()}.
                     </p>
+
+                    <QuotationHistoryTimeline currentQuotation={quotationReviewModal.quotation} defaultExpanded={false} />
 
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 mb-1">

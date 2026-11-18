@@ -43,6 +43,7 @@ import { useToast } from '../../context/ToastContext';
 import { getQuotationPdfUrl, downloadQuotationPdf } from '../../utils/downloadPdf';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ModalPortal } from '../../components/ModalPortal';
+import { QuotationHistoryTimeline } from '../../components/QuotationHistoryTimeline';
 
 export const AccountsPortal: React.FC = () => {
   const { user } = useAuth();
@@ -1194,48 +1195,6 @@ export const AccountsPortal: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Version 1 Baseline & Audit Proof */}
-                    {q.previousVersion && (
-                      <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3 text-xs space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-blue-900 flex items-center gap-1.5 text-[11px]">
-                            <FileText className="w-3.5 h-3.5 text-blue-700" />
-                            Version 1 Baseline Proof ({q.previousVersion.quotationNumber})
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => downloadQuotationPdf(q.previousVersion.id, q.previousVersion.quotationNumber)}
-                            className="px-2 py-0.5 bg-white border border-blue-300 hover:bg-blue-100 text-blue-800 rounded text-[11px] font-bold inline-flex items-center gap-1"
-                          >
-                            <Download className="w-3 h-3 text-blue-600" /> v1 PDF Proof
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-                          <div className="bg-white p-2 rounded border border-blue-100">
-                            <span className="text-slate-400 block text-[10px]">v1 Fee</span>
-                            <span className="font-bold text-slate-800">₹{(q.previousVersion.serviceFee || 0).toLocaleString()}</span>
-                          </div>
-                          <div className="bg-white p-2 rounded border border-blue-100">
-                            <span className="text-slate-400 block text-[10px]">v1 Total</span>
-                            <span className="font-bold text-slate-800">₹{(q.previousVersion.totalAmount || 0).toLocaleString()}</span>
-                          </div>
-                          <div className="bg-white p-2 rounded border border-blue-100">
-                            <span className="text-slate-400 block text-[10px]">v1 Advance</span>
-                            <span className="font-bold text-slate-800">₹{(q.previousVersion.advanceRequiredAmount || 0).toLocaleString()}</span>
-                          </div>
-                          <div className="bg-white p-2 rounded border border-blue-100">
-                            <span className="text-slate-400 block text-[10px]">v1 Issued</span>
-                            <span className="font-semibold text-slate-700">{new Date(q.previousVersion.createdAt).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                        {q.previousVersion.serviceScope && (
-                          <div className="text-[11px] text-slate-600 bg-white p-2 rounded border border-blue-100">
-                            <strong className="text-slate-700">v1 Scope:</strong> {q.previousVersion.serviceScope}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
                     <div className="py-2 text-xs text-slate-700 space-y-1">
                       <div>
                         <strong>Service Category:</strong> {q.serviceCategory}
@@ -1243,47 +1202,23 @@ export const AccountsPortal: React.FC = () => {
                       <div>
                         <strong>Service Scope:</strong> {q.serviceScope}
                       </div>
-                      {q.reminderCount > 0 && (
-                        <div className="p-3 bg-amber-50 rounded-xl border border-amber-300 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mt-2">
-                          <div className="flex items-center gap-2">
-                            <Bell className="w-4 h-4 text-amber-700 animate-pulse shrink-0" />
-                            <div>
-                              <strong className="text-amber-950 font-bold block">
-                                Quotation Preparation Reminder ({q.reminderCount} {q.reminderCount === 1 ? 'time' : 'times'}):
-                              </strong>
-                              <span className="text-amber-900 mt-0.5 block">
-                                BGA <strong>{q.bga?.name}</strong> has sent a reminder requesting immediate preparation of this official quotation for client <strong>{q.client?.clientName}</strong>.
-                              </span>
-                            </div>
-                          </div>
-                          {q.lastReminderSentAt && (
-                            <span className="text-[10px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-mono shrink-0">
-                              Reminder sent: {new Date(q.lastReminderSentAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                            </span>
-                          )}
-                        </div>
-                      )}
                       {q.revisionNotes && (
                         <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 mt-2">
                           <strong>Client Revision Feedback:</strong> {q.revisionNotes}
                         </div>
                       )}
-                      {q.adminNotes && (
-                        <div className={`p-3 rounded-xl border text-xs mt-2 ${
-                          q.status === 'REJECTED'
-                            ? 'bg-rose-50 border-rose-300 text-rose-950'
-                            : 'bg-purple-50 border-purple-200 text-purple-900'
-                        }`}>
+                      {(q.status === 'REJECTED' || q.status === 'REVISION_REQUESTED') && q.adminNotes && (
+                        <div className="p-3 rounded-xl border text-xs mt-2 bg-rose-50 border-rose-300 text-rose-950">
                           <div className="flex items-center gap-1.5 font-bold mb-1">
-                            <AlertCircle className={`w-4 h-4 shrink-0 ${q.status === 'REJECTED' ? 'text-rose-600' : 'text-purple-600'}`} />
+                            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
                             <span>
                               {q.status === 'REJECTED'
-                                ? 'Admin Rejection Guidance (Needed Corrections):'
+                                ? 'Admin Rejection Guidance (Corrections Needed):'
                                 : 'Admin Guidance / Revision Instructions:'}
                             </span>
                           </div>
-                          <div className="pl-5 text-slate-800 font-medium leading-relaxed">
-                            {q.adminNotes}
+                          <div className="pl-5 text-slate-900 font-semibold leading-relaxed">
+                            "{q.adminNotes}"
                           </div>
                           <div className="pl-5 text-[11px] text-rose-700 mt-1 font-semibold">
                             ⚠️ Admin has returned this quotation for corrections. Update the quotation properly and resubmit for executive approval.
@@ -1291,6 +1226,9 @@ export const AccountsPortal: React.FC = () => {
                         </div>
                       )}
                     </div>
+
+                    {/* Quotation Full Lifecycle History & Revision Audit Trail */}
+                    <QuotationHistoryTimeline currentQuotation={q} defaultExpanded={false} />
 
                     <div className="pt-3 border-t border-slate-100 flex justify-between items-center text-xs flex-wrap gap-2">
                       <span className="font-bold text-slate-800">
