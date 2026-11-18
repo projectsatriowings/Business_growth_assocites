@@ -10,6 +10,41 @@ import { sendBgaWelcomeEmail, sendBgaRegistrationAdminAlert, sendPasswordResetEm
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'bga_super_secret_jwt_key_2026_growth_portal_secure_auth';
 
+/**
+ * Generate sequential professional Associate ID: AT-BGA-1001, AT-BGA-1002, etc.
+ */
+async function getNextAssociateId(): Promise<string> {
+  const START_ID = 1001;
+  const bgasWithCustomId = await prisma.user.findMany({
+    where: {
+      id: {
+        startsWith: 'AT-BGA-',
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  let maxSeq = START_ID - 1;
+  for (const b of bgasWithCustomId) {
+    const match = b.id.match(/^AT-BGA-(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > maxSeq) {
+        maxSeq = num;
+      }
+    }
+  }
+
+  if (maxSeq < START_ID) {
+    const count = await prisma.user.count({ where: { role: Role.BGA } });
+    return `AT-BGA-${START_ID + count}`;
+  }
+
+  return `AT-BGA-${maxSeq + 1}`;
+}
+
 // 1. Unified Multi-Role Login
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -196,9 +231,13 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
+    // Generate sequential professional Associate ID (e.g. AT-BGA-1001)
+    const associateId = await getNextAssociateId();
+
     // Initial Registration Workflow Status: SUBMITTED
     const newBga = await prisma.user.create({
       data: {
+        id: associateId,
         name: fullName.trim(),
         email: normalizedEmail,
         mobile: normalizedMobile,

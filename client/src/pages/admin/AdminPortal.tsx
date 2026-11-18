@@ -1302,7 +1302,7 @@ export const AdminPortal: React.FC = () => {
                               </div>
                               <div className="text-slate-500 text-[11px] mt-0.5">{b.email} • {b.mobile}</div>
                               <div className="text-[10px] text-slate-400 mt-1 font-mono">
-                                ID: {b.id.slice(0, 10)}... • Clients: <strong className="text-slate-700">{b._count?.clients || 0}</strong>
+                                ID: {b.id.length > 15 ? `${b.id.slice(0, 10)}...` : b.id} • Clients: <strong className="text-slate-700">{b._count?.clients || 0}</strong>
                               </div>
                             </td>
                             <td className="p-4">
