@@ -105,7 +105,7 @@ const EmptyState: React.FC<{
 export const AdminPortal: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'bgas' | 'services' | 'resources' | 'clients' | 'enquiries' | 'quotations' | 'workorders' | 'technical' | 'commissions' | 'settings'
+    'dashboard' | 'bgas' | 'resources' | 'clients' | 'enquiries' | 'quotations' | 'workorders' | 'technical' | 'commissions' | 'settings'
   >('dashboard');
 
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(null);
@@ -121,7 +121,6 @@ export const AdminPortal: React.FC = () => {
     setActiveTab(tab);
   };
   const [bgas, setBgas] = useState<any[]>([]);
-  const [services, setServices] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [enquiries, setEnquiries] = useState<any[]>([]);
@@ -141,8 +140,6 @@ export const AdminPortal: React.FC = () => {
 
   const [clientSearch, setClientSearch] = useState('');
   const [clientBgaFilter, setClientBgaFilter] = useState('ALL');
-
-  const [serviceCategoryTab, setServiceCategoryTab] = useState('ALL');
 
   const [resourceSearch, setResourceSearch] = useState('');
   const [resourceCategoryFilter, setResourceCategoryFilter] = useState('ALL');
@@ -227,9 +224,6 @@ export const AdminPortal: React.FC = () => {
       if (tab === 'bgas') {
         const res = await apiRequest(`/api/admin/bgas?status=${filter}&search=${encodeURIComponent(search)}`);
         setBgas(res.bgas || []);
-      } else if (tab === 'services') {
-        const res = await apiRequest('/api/admin/services');
-        setServices(res.services || []);
       } else if (tab === 'resources') {
         const res = await apiRequest('/api/admin/resources');
         setResources(res.resources || []);
@@ -299,8 +293,6 @@ export const AdminPortal: React.FC = () => {
       setActiveTab('technical');
     } else if (path.includes('/admin/clients')) {
       setActiveTab('clients');
-    } else if (path.includes('/admin/services')) {
-      setActiveTab('services');
     } else if (path.includes('/admin/resources')) {
       setActiveTab('resources');
     } else if (path.includes('/admin/settings') || path.includes('/admin/audit')) {
@@ -563,13 +555,6 @@ export const AdminPortal: React.FC = () => {
     });
   }, [clients, clientSearch, clientBgaFilter]);
 
-  // Filtered Services
-  const filteredServices = useMemo(() => {
-    return services.filter((s) => {
-      return serviceCategoryTab === 'ALL' || s.category === serviceCategoryTab;
-    });
-  }, [services, serviceCategoryTab]);
-
   // Filtered Resources
   const filteredResources = useMemo(() => {
     return resources.filter((r) => {
@@ -747,16 +732,6 @@ export const AdminPortal: React.FC = () => {
             >
               <UserCheck className="w-4 h-4 text-[#80DED9]" />
               <span>Clients & Ownership</span>
-            </button>
-
-            <button
-              onClick={() => switchTab('services')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'services' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
-            >
-              <Layers className="w-4 h-4 text-[#80DED9]" />
-              <span>Services & Pricing</span>
             </button>
 
             <button
@@ -1186,7 +1161,6 @@ export const AdminPortal: React.FC = () => {
                     { label: 'BGA Management', tab: 'bgas', icon: Users, desc: 'Approve & manage associates', badge: stats?.bgas?.pendingApprovals },
                     { label: 'Enquiry Approvals', tab: 'enquiries', icon: CheckSquare, desc: 'Review client requirements', badge: stats?.enquiries?.pending },
                     { label: 'Clients & Ownership', tab: 'clients', icon: UserCheck, desc: 'Client registry & transfers' },
-                    { label: 'Services & Pricing', tab: 'services', icon: Layers, desc: 'Commission rates & prices' },
                     { label: 'Company Resources', tab: 'resources', icon: FileText, desc: 'Presentations & brochures' },
                     { label: 'Quotation Monitoring', tab: 'quotations', icon: CreditCard, desc: 'Official quote tracking', badge: pendingQuotationApprovalsCount },
                     { label: 'Work Orders', tab: 'workorders', icon: Briefcase, desc: 'Contract & payment tracking' },
@@ -2292,87 +2266,7 @@ export const AdminPortal: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 5: SERVICES & PRICING */}
-          {activeTab === 'services' && (
-            <div className="space-y-4 w-full">
-              <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm w-full">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">Official Service Catalog & Base Pricing</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Authorized across the 4 core business sectors: Digital Marketing, Website Dev, Mobile App Dev, Software Dev.
-                  </p>
-                </div>
 
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { id: 'ALL', label: 'All Services' },
-                    { id: 'DIGITAL_MARKETING', label: 'Digital Marketing' },
-                    { id: 'WEBSITE_DEVELOPMENT', label: 'Website Dev' },
-                    { id: 'MOBILE_APP_DEVELOPMENT', label: 'Mobile Apps' },
-                    { id: 'SOFTWARE_DEVELOPMENT', label: 'Custom Software' },
-                  ].map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setServiceCategoryTab(cat.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                        serviceCategoryTab === cat.id
-                          ? 'bg-[#3066BE] text-white shadow-sm shadow-sm font-bold'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {!loadedTabs['services'] || (tabLoading && services.length === 0) ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <SkeletonCard key={i} />
-                  ))}
-                </div>
-              ) : filteredServices.length === 0 ? (
-                <EmptyState
-                  icon={Layers}
-                  title="No services configured yet"
-                  description="Official service pricing and commission rates configured in the master schema will appear here."
-                  actionText="Reload Services"
-                  onAction={loadData}
-                />
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {filteredServices.map((svc) => (
-                    <div key={svc.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                            {svc.category}
-                          </span>
-                          <h4 className="text-base font-bold text-slate-900 mt-1">{svc.name}</h4>
-                          <span className="text-xs font-mono text-slate-400">Code: {svc.code}</span>
-                        </div>
-                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          {svc.defaultCommissionRate}% Commission
-                        </span>
-                      </div>
-
-                      <p className="text-xs text-slate-600 leading-relaxed">{svc.description}</p>
-
-                      <div className="pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
-                        <span className="text-slate-500">
-                          Base Price: <strong className="text-slate-900 text-sm">₹{svc.basePrice?.toLocaleString()}</strong>
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700">
-                          {svc.isMonthly ? 'Monthly Retainer' : 'One-time Project'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* TAB 6: COMPANY RESOURCES */}
           {activeTab === 'resources' && (
