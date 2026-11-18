@@ -36,6 +36,10 @@ import {
   Megaphone,
   Clock,
   Sparkles,
+  Image as ImageIcon,
+  Video,
+  Music,
+  Archive,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { AssociateProfileView } from './AssociateProfileView';
@@ -1992,6 +1996,73 @@ export const AdminPortal: React.FC = () => {
                           {enquiryDetailModal.requirements || 'No specific requirements entered.'}
                         </div>
                       </div>
+
+                      {/* Attached Client Media / Document */}
+                      {enquiryDetailModal.attachmentUrl && (() => {
+                        const fileUrl = enquiryDetailModal.attachmentUrl;
+                        const isImg = fileUrl.match(/\.(png|jpg|jpeg|webp|gif|svg)$/i);
+                        const isVid = fileUrl.match(/\.(mp4|webm|mov)$/i) || fileUrl.includes('loom.com') || fileUrl.includes('youtube.com');
+                        const isAud = fileUrl.match(/\.(mp3|wav|m4a|ogg)$/i);
+                        const isArch = fileUrl.match(/\.(zip|rar|tar|gz)$/i);
+
+                        return (
+                          <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              {isImg ? (
+                                <div className="w-12 h-12 rounded-lg border border-indigo-200 overflow-hidden bg-slate-900 shrink-0 relative group">
+                                  <img src={fileUrl} alt="Attached client brief" className="w-full h-full object-cover" />
+                                  <a
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                                  >
+                                    <Eye className="w-4 h-4 text-white" />
+                                  </a>
+                                </div>
+                              ) : (
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
+                                  isVid
+                                    ? 'bg-rose-50 text-rose-600 border-rose-200'
+                                    : isAud
+                                    ? 'bg-purple-50 text-purple-600 border-purple-200'
+                                    : isArch
+                                    ? 'bg-amber-50 text-amber-600 border-amber-200'
+                                    : 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                                }`}>
+                                  {isVid ? (
+                                    <Video className="w-5 h-5" />
+                                  ) : isAud ? (
+                                    <Music className="w-5 h-5" />
+                                  ) : isArch ? (
+                                    <Archive className="w-5 h-5" />
+                                  ) : (
+                                    <FileText className="w-5 h-5" />
+                                  )}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 text-xs block">
+                                  Client-Provided Requirement Attachment
+                                </span>
+                                <span className="text-[11px] text-indigo-700 font-medium block">
+                                  {isImg ? 'Screenshot / Design File' : isVid ? 'Video Demo / Walkthrough' : isAud ? 'Voice Note / Audio Brief' : isArch ? 'Source Zip Archive' : 'Requirement Specification Document'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <a
+                              href={fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shrink-0 shadow-xs"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              View / Download
+                            </a>
+                          </div>
+                        );
+                      })()}
 
                       {/* Discussion Notes & Follow-up Date (from Client Meeting) */}
                       {(enquiryDetailModal.discussionNotes || enquiryDetailModal.followUpDate) && (

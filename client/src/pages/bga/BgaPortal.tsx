@@ -265,7 +265,21 @@ export const BgaPortal: React.FC = () => {
     expectedBudget: '',
     requirements: '',
     discussionNotes: '',
+    attachmentUrl: '',
+    attachmentFileType: 'DOCUMENT',
+    attachmentFileName: '',
+    attachmentFileSize: undefined as number | undefined,
   });
+
+  // Client Media & Documents Upload Modal
+  const [clientMediaModal, setClientMediaModal] = useState<{ clientId: string; clientName: string } | null>(null);
+  const [clientMediaTitle, setClientMediaTitle] = useState('');
+  const [clientMediaCategory, setClientMediaCategory] = useState('REQUIREMENTS_DOC');
+  const [clientMediaNotes, setClientMediaNotes] = useState('');
+  const [clientMediaUrl, setClientMediaUrl] = useState('');
+  const [clientMediaFileType, setClientMediaFileType] = useState('DOCUMENT');
+  const [clientMediaFileName, setClientMediaFileName] = useState('');
+  const [clientMediaFileSize, setClientMediaFileSize] = useState<number | undefined>(undefined);
 
   // Quotation Revision Modal
   const [revisionModal, setRevisionModal] = useState<{ quotationId: string; quotationNumber: string } | null>(null);
@@ -844,6 +858,7 @@ export const BgaPortal: React.FC = () => {
         body: JSON.stringify({
           clientId: newEnquiryModal.clientId,
           ...enquiryForm,
+          attachmentUrl: enquiryForm.attachmentUrl || undefined,
         }),
       });
       toast.success('Enquiry submitted successfully and forwarded to Admin for approval.', 'Enquiry Created');
@@ -854,10 +869,61 @@ export const BgaPortal: React.FC = () => {
         expectedBudget: '',
         requirements: '',
         discussionNotes: '',
+        attachmentUrl: '',
+        attachmentFileType: 'DOCUMENT',
+        attachmentFileName: '',
+        attachmentFileSize: undefined,
       });
       loadData();
     } catch (err: any) {
       toast.error(err.message || 'Failed to submit enquiry', 'Enquiry Submission Failed');
+    } finally {
+      setModalSubmitting(false);
+    }
+  };
+
+  // Handle Upload Client Media / Document / Audio / Video
+  const handleUploadClientMedia = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clientMediaModal || !clientMediaTitle.trim() || !clientMediaUrl || modalSubmitting) return;
+
+    setModalSubmitting(true);
+    try {
+      await apiRequest(`/api/bga/clients/${clientMediaModal.clientId}/media`, {
+        method: 'POST',
+        body: JSON.stringify({
+          title: clientMediaTitle.trim(),
+          fileUrl: clientMediaUrl,
+          fileType: clientMediaFileType,
+          fileSize: clientMediaFileSize,
+          notes: clientMediaNotes.trim() || undefined,
+          category: clientMediaCategory,
+        }),
+      });
+      toast.success('Client media recorded and attached successfully!', 'Media Uploaded');
+      const targetClientId = clientMediaModal.clientId;
+      setClientMediaModal(null);
+      setClientMediaTitle('');
+      setClientMediaNotes('');
+      setClientMediaUrl('');
+      setClientMediaFileType('DOCUMENT');
+      setClientMediaFileName('');
+      setClientMediaFileSize(undefined);
+      loadData();
+
+      // If client details workspace is open, refresh its contact activities
+      try {
+        const actRes = await apiRequest(`/api/bga/clients/${targetClientId}/activities`);
+        setSelectedClientDetails((prev: any) =>
+          prev && prev.id === targetClientId
+            ? { ...prev, contactActivities: actRes.activities || [] }
+            : prev
+        );
+      } catch (err) {
+        // ignore
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload client media', 'Upload Failed');
     } finally {
       setModalSubmitting(false);
     }
@@ -2835,6 +2901,20 @@ export const BgaPortal: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
+                            setClientMediaModal({
+                              clientId: selectedClientDetails.id,
+                              clientName: selectedClientDetails.clientName,
+                            });
+                          }}
+                          className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                          title="Upload Client Media, Documents or Audio Notes"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          Upload Media / Files
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
                             const c = selectedClientDetails;
                             setSelectedClientDetails(null);
                             handleOpenEditClient(c);
@@ -3049,6 +3129,25 @@ export const BgaPortal: React.FC = () => {
                                   </div>
                                 )}
 
+                                {enq.attachmentUrl && (
+                                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between p-2.5 bg-indigo-50/60 rounded-lg border border-indigo-100">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
+                                      <span className="text-xs font-semibold text-slate-800 truncate">
+                                        Client Brief / Attached Requirement Document
+                                      </span>
+                                    </div>
+                                    <a
+                                      href={enq.attachmentUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center gap-1 shrink-0 underline"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" /> View File
+                                    </a>
+                                  </div>
+                                )}
+
                                 {enq.discussionNotes && (
                                   <div>
                                     <span className="text-[10px] text-slate-400 font-semibold uppercase block mb-1">
@@ -3115,6 +3214,145 @@ export const BgaPortal: React.FC = () => {
                           </div>
                         </div>
                       )}
+
+                      {/* Section 5: Client Documents, Screenshots & Media Assets */}
+                      {(() => {
+                        const mediaActivities = (selectedClientDetails.contactActivities || []).filter(
+                          (a: any) =>
+                            a.contactMethod === 'CLIENT_MEDIA' ||
+                            (a.followUpNotes && a.followUpNotes.includes('[ASSET_METADATA]:'))
+                        );
+
+                        return (
+                          <div>
+                            <div className="flex justify-between items-center mb-3">
+                              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                                <Upload className="w-4 h-4 text-[#119DA4]" />
+                                Client Media & Requirement Documents ({mediaActivities.length})
+                              </h4>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setClientMediaModal({
+                                    clientId: selectedClientDetails.id,
+                                    clientName: selectedClientDetails.clientName,
+                                  });
+                                }}
+                                className="px-2.5 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                              >
+                                <Plus className="w-3 h-3" /> Upload Media
+                              </button>
+                            </div>
+
+                            {mediaActivities.length > 0 ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {mediaActivities.map((act: any) => {
+                                  let meta: any = null;
+                                  if (act.followUpNotes && act.followUpNotes.includes('[ASSET_METADATA]:')) {
+                                    try {
+                                      const raw = act.followUpNotes.split('[ASSET_METADATA]:')[1];
+                                      meta = JSON.parse(raw);
+                                    } catch { }
+                                  }
+
+                                  const fileUrl = meta?.fileUrl || '#';
+                                  const fileType = meta?.fileType || 'DOCUMENT';
+                                  const title = meta?.title || act.discussionSummary?.replace('Client Media Upload: ', '') || 'Client Document';
+                                  const isImg = fileType === 'IMAGE' || fileUrl.match(/\.(png|jpg|jpeg|webp|gif|svg)$/i);
+                                  const isVid = fileType === 'VIDEO' || fileUrl.match(/\.(mp4|webm|mov)$/i) || fileUrl.includes('loom.com') || fileUrl.includes('youtube.com');
+                                  const isAud = fileType === 'AUDIO' || fileUrl.match(/\.(mp3|wav|m4a|ogg)$/i);
+                                  const isArch = fileType === 'ARCHIVE' || fileUrl.match(/\.(zip|rar|tar|gz)$/i);
+
+                                  return (
+                                    <div
+                                      key={act.id}
+                                      className="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors shadow-xs flex flex-col justify-between"
+                                    >
+                                      <div>
+                                        <div className="flex items-start gap-2.5">
+                                          {isImg ? (
+                                            <div className="w-12 h-12 rounded-lg border border-slate-200 overflow-hidden bg-slate-900 shrink-0 relative group">
+                                              <img src={fileUrl} alt={title} className="w-full h-full object-cover" />
+                                              <a
+                                                href={fileUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                                              >
+                                                <Eye className="w-4 h-4 text-white" />
+                                              </a>
+                                            </div>
+                                          ) : (
+                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
+                                              isVid
+                                                ? 'bg-rose-50 text-rose-600 border-rose-200'
+                                                : isAud
+                                                ? 'bg-purple-50 text-purple-600 border-purple-200'
+                                                : isArch
+                                                ? 'bg-amber-50 text-amber-600 border-amber-200'
+                                                : 'bg-indigo-50 text-indigo-600 border-indigo-200'
+                                            }`}>
+                                              {isVid ? (
+                                                <Video className="w-5 h-5" />
+                                              ) : isAud ? (
+                                                <Music className="w-5 h-5" />
+                                              ) : isArch ? (
+                                                <Archive className="w-5 h-5" />
+                                              ) : (
+                                                <FileText className="w-5 h-5" />
+                                              )}
+                                            </div>
+                                          )}
+
+                                          <div className="min-w-0 flex-1">
+                                            <span className="font-bold text-slate-900 block truncate" title={title}>
+                                              {title}
+                                            </span>
+                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                              <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-slate-100 text-slate-700">
+                                                {fileType}
+                                              </span>
+                                              {meta?.fileSize && (
+                                                <span className="text-[10px] text-slate-400">
+                                                  {(meta.fileSize / (1024 * 1024)).toFixed(1)} MB
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {act.followUpNotes && !act.followUpNotes.startsWith('[ASSET_METADATA]:') && (
+                                          <p className="text-[11px] text-slate-600 mt-2 bg-slate-50 p-2 rounded line-clamp-2">
+                                            {act.followUpNotes.split('\n\n[ASSET_METADATA]:')[0]}
+                                          </p>
+                                        )}
+                                      </div>
+
+                                      <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                                        <span className="text-slate-400">
+                                          {new Date(act.createdAt).toLocaleDateString()}
+                                        </span>
+                                        <a
+                                          href={fileUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 underline"
+                                        >
+                                          <Download className="w-3 h-3" /> View / Download
+                                        </a>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center text-xs text-slate-400">
+                                No client documents or media uploaded yet. Click above to attach client files, audio briefs, or screenshots.
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50 rounded-b-2xl">
@@ -3219,6 +3457,36 @@ export const BgaPortal: React.FC = () => {
                           />
                         </div>
 
+                        <div>
+                          <MediaUploader
+                            value={enquiryForm.attachmentUrl}
+                            fileType={enquiryForm.attachmentFileType}
+                            fileName={enquiryForm.attachmentFileName}
+                            fileSize={enquiryForm.attachmentFileSize}
+                            onChange={(res) => {
+                              if (res) {
+                                setEnquiryForm({
+                                  ...enquiryForm,
+                                  attachmentUrl: res.url,
+                                  attachmentFileType: res.fileType,
+                                  attachmentFileName: res.originalName,
+                                  attachmentFileSize: res.size,
+                                });
+                              } else {
+                                setEnquiryForm({
+                                  ...enquiryForm,
+                                  attachmentUrl: '',
+                                  attachmentFileType: 'DOCUMENT',
+                                  attachmentFileName: '',
+                                  attachmentFileSize: undefined,
+                                });
+                              }
+                            }}
+                            label="Client Brief Media & Documents (Optional)"
+                            helperText="Attach client brief documents, voice notes, video briefings, or reference screenshots (Max 100MB)"
+                          />
+                        </div>
+
                         <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                           <button
                             type="button"
@@ -3235,6 +3503,139 @@ export const BgaPortal: React.FC = () => {
                           >
                             {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                             {modalSubmitting ? 'Submitting...' : 'Submit Enquiry'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </motion.div>
+                )}
+              </ModalPortal>
+
+              {/* Client Media & Documents Upload Modal */}
+              <ModalPortal
+                isOpen={!!clientMediaModal}
+                onClose={() => !modalSubmitting && setClientMediaModal(null)}
+              >
+                {clientMediaModal && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
+                            <Upload className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">
+                              Upload Client Media & Documents
+                            </h3>
+                            <p className="text-xs text-slate-500">
+                              Client: <strong className="text-slate-800">{clientMediaModal.clientName}</strong>
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => !modalSubmitting && setClientMediaModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleUploadClientMedia} className="space-y-3.5 text-xs">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">
+                            Media Title / Label <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={clientMediaTitle}
+                            onChange={(e) => setClientMediaTitle(e.target.value)}
+                            placeholder="e.g. Requirement Specification PDF, Client Voice Brief, App Flow Screenshot"
+                            className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Category</label>
+                          <select
+                            value={clientMediaCategory}
+                            onChange={(e) => setClientMediaCategory(e.target.value)}
+                            className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 bg-white"
+                          >
+                            <option value="REQUIREMENTS_DOC">Client Requirement Document (PDF/Doc/Excel)</option>
+                            <option value="SCREENSHOT_DESIGN">UI / Wireframe / Screenshot Reference</option>
+                            <option value="VOICE_AUDIO_BRIEF">Client Voice Note / Audio Brief</option>
+                            <option value="VIDEO_WALKTHROUGH">Video Walkthrough / Loom Screen Recording</option>
+                            <option value="BRAND_ASSET">Brand Logo / Artwork / Archive</option>
+                            <option value="OTHER">Other Client Attachment</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <MediaUploader
+                            value={clientMediaUrl}
+                            fileType={clientMediaFileType}
+                            fileName={clientMediaFileName}
+                            fileSize={clientMediaFileSize}
+                            onChange={(res) => {
+                              if (res) {
+                                setClientMediaUrl(res.url);
+                                setClientMediaFileType(res.fileType);
+                                setClientMediaFileName(res.originalName);
+                                setClientMediaFileSize(res.size);
+                                if (!clientMediaTitle) {
+                                  setClientMediaTitle(res.originalName);
+                                }
+                              } else {
+                                setClientMediaUrl('');
+                                setClientMediaFileType('DOCUMENT');
+                                setClientMediaFileName('');
+                                setClientMediaFileSize(undefined);
+                              }
+                            }}
+                            label="Upload Media File or Paste External Link"
+                            helperText="Supports images, video, audio, PDFs, documents and archives up to 100MB"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Notes / Client Context (Optional)</label>
+                          <textarea
+                            rows={2}
+                            value={clientMediaNotes}
+                            onChange={(e) => setClientMediaNotes(e.target.value)}
+                            placeholder="Add any discussion notes or instructions given by the client..."
+                            className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none"
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            disabled={modalSubmitting}
+                            onClick={() => setClientMediaModal(null)}
+                            className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={modalSubmitting || !clientMediaUrl || !clientMediaTitle.trim()}
+                            className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                          >
+                            {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                            {modalSubmitting ? 'Uploading...' : 'Save & Attach to Client'}
                           </button>
                         </div>
                       </form>
