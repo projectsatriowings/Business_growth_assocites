@@ -35,6 +35,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
+import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import { SkeletonStatsRow, SkeletonTable, AccountsDashboardSkeleton } from '../../components/Skeleton';
 import { validateBankUtr, getUtrPlaceholderAndHint, UtrValidationResult } from '../../utils/utrValidator';
@@ -44,6 +45,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ModalPortal } from '../../components/ModalPortal';
 
 export const AccountsPortal: React.FC = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<
     'dashboard' | 'quotation-requests' | 'payments-work-orders' | 'commissions'
@@ -456,16 +458,6 @@ export const AccountsPortal: React.FC = () => {
         {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
         <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
           <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
-            {/* Parent Company & Portal Brand Identity */}
-            <div className="px-3 pt-1 pb-3 mb-2 border-b border-slate-800">
-              <span className="text-[10px] tracking-wider uppercase text-[#80DED9] font-bold block">
-                Atriowings Technologies
-              </span>
-              <span className="text-xs font-bold text-white block mt-0.5">
-                Commercial Accounts Portal
-              </span>
-            </div>
-
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1">
               Financial Modules
             </div>
@@ -530,13 +522,10 @@ export const AccountsPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-3 border-t border-slate-800 text-[10px] text-slate-500 shrink-0 space-y-1">
-            <div className="flex justify-between items-center">
+          <div className="pt-3 border-t border-slate-800 text-[10px] text-slate-500 shrink-0">
+            <div className="flex justify-between items-center px-1">
               <span>Accounts Clearance:</span>
               <span className="text-[#80DED9] font-bold">AUTHORIZED</span>
-            </div>
-            <div className="text-[9px] text-slate-500 text-center pt-1.5 border-t border-slate-800/60">
-              © Atriowings Technologies
             </div>
           </div>
         </aside>
@@ -549,23 +538,16 @@ export const AccountsPortal: React.FC = () => {
               <AccountsDashboardSkeleton />
             ) : (
               <div className="space-y-6">
-                {/* 1. WELCOME & OPERATIONS BANNER */}
+                {/* 1. WELCOME GREETING BANNER */}
                 <div className="bg-gradient-to-r from-slate-900 via-[#1E293B] to-[#0F172A] p-6 rounded-3xl text-white shadow-lg relative overflow-hidden">
                   <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-[#3066BE]/25 to-transparent pointer-events-none" />
                   <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="px-2.5 py-0.5 rounded-full bg-[#80DED9]/20 text-[#80DED9] text-[10px] font-bold tracking-wide uppercase border border-[#80DED9]/30 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#80DED9] animate-pulse" />
-                          Atriowings Technologies • Financial Command Center
-                        </span>
-                        <span className="text-[11px] text-slate-400">Accounts Clearance</span>
-                      </div>
                       <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">
-                        Atriowings Accounts Operations & Clearance Hub
+                        Welcome back, {user?.name || 'Accounts Officer'}
                       </h1>
                       <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
-                        Reconcile corporate bank receipts, audit client payment UTRs, prepare official client quotations with 18% GST, and release verified work orders for technical production.
+                        Reconcile bank receipts, audit client payment UTRs, prepare official quotations, and release verified work orders.
                       </p>
                     </div>
                     <div className="flex items-center gap-2.5 shrink-0 flex-wrap">

@@ -399,3 +399,66 @@ export async function sendKycStatusEmail(associate: {
     html: wrapEmailHtml(content, `KYC status update for ${associate.name}`),
   });
 }
+
+/**
+ * 6. Global Password Reset Email
+ */
+export async function sendPasswordResetEmail(data: {
+  name: string;
+  email: string;
+  resetLink: string;
+  ip?: string;
+}): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const content = `
+    <div style="margin-bottom: 20px;">
+      <span style="display: inline-block; background-color: #fee2e2; color: #991b1b; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.5px;">
+        Account Security Action
+      </span>
+    </div>
+
+    <h2 style="font-size: 20px; color: #0f172a; margin-top: 0; font-weight: 800;">Password Reset Request</h2>
+    <p>Dear ${data.name},</p>
+    <p>
+      We received an authorized request to reset the password for your account associated with 
+      <strong>${data.email}</strong> on the Atriowings Enterprise Platform.
+    </p>
+
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="${data.resetLink}" class="btn" style="background-color: #3066BE; color: #ffffff !important; padding: 14px 28px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(48, 102, 190, 0.3);">
+        Reset Account Password &rarr;
+      </a>
+    </div>
+
+    <div class="card" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin: 20px 0;">
+      <p style="margin: 0 0 8px; font-size: 12px; color: #64748b; font-weight: 600;">
+        If the button above does not work, copy and paste this direct link into your browser:
+      </p>
+      <p style="margin: 0; font-size: 11px; word-break: break-all; color: #3066BE; font-family: monospace;">
+        ${data.resetLink}
+      </p>
+    </div>
+
+    <div class="card" style="border-left: 4px solid #f59e0b; background-color: #fffbeb; padding: 14px; margin-top: 20px;">
+      <strong style="color: #92400e; font-size: 12px; text-transform: uppercase; display: block; margin-bottom: 4px;">
+        Security Notice &amp; Expiration
+      </strong>
+      <ul style="margin: 4px 0 0; padding-left: 18px; color: #78350f; font-size: 12px; line-height: 1.6;">
+        <li>This password recovery link is strictly <strong>single-use</strong> and will automatically expire in <strong>30 minutes</strong>.</li>
+        <li>Once used, or if a new link is requested, any prior reset links become completely invalid.</li>
+        <li>If you did not initiate this request, you can safely ignore this email. Your current password remains completely secure and unchanged.</li>
+      </ul>
+    </div>
+
+    <p style="margin-top: 24px; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 14px;">
+      Request Origin IP: ${data.ip || 'Remote IP Registered'}<br>
+      Timestamp: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
+    </p>
+  `;
+
+  return await sendEmail({
+    to: data.email,
+    subject: 'Action Required: Reset Your Atriowings Account Password',
+    html: wrapEmailHtml(content, `Password reset instructions for ${data.name}`),
+  });
+}
+

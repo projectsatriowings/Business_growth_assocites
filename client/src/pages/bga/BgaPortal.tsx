@@ -1004,16 +1004,6 @@ export const BgaPortal: React.FC = () => {
         {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
         <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
           <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
-            {/* Parent Company & Portal Brand Identity */}
-            <div className="px-3 pt-1 pb-3 mb-2 border-b border-slate-800">
-              <span className="text-[10px] tracking-wider uppercase text-[#80DED9] font-bold block">
-                Atriowings Technologies
-              </span>
-              <span className="text-xs font-bold text-white block mt-0.5">
-                Growth Associate Portal
-              </span>
-            </div>
-
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1">
               Associate Workspace
             </div>
@@ -1103,13 +1093,10 @@ export const BgaPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-3 border-t border-slate-800 text-[11px] text-slate-500 shrink-0 space-y-1">
-            <div className="flex justify-between items-center">
+          <div className="pt-3 border-t border-slate-800 text-[11px] text-slate-500 shrink-0">
+            <div className="flex justify-between items-center px-1">
               <span>Account Status:</span>
               <span className="text-[#80DED9] font-bold uppercase">{user?.status}</span>
-            </div>
-            <div className="text-[10px] text-slate-500 text-center pt-1.5 border-t border-slate-800/60">
-              © Atriowings Technologies
             </div>
           </div>
         </aside>
@@ -1161,20 +1148,14 @@ export const BgaPortal: React.FC = () => {
               <BgaDashboardSkeleton />
             ) : (
               <div className="space-y-6">
-                {/* Welcome Brand Banner */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                {/* Dashboard Greeting Banner */}
+                <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-teal-50 text-[#119DA4] border border-[#119DA4]/20">
-                        Atriowings Technologies
-                      </span>
-                      <span className="text-xs text-slate-400 font-medium">• Growth Associate Network</span>
-                    </div>
-                    <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1.5">
-                      Welcome to Atriowings Growth Associate Portal
+                    <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">
+                      Welcome back, {user?.name || 'Associate'}
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Associate Partner: <strong className="text-slate-800">{user?.name}</strong> • Client Acquisitions, Quotations & IT Solution Commissions
+                      Client acquisitions, quotation requests, and IT solution commissions.
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

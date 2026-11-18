@@ -9,6 +9,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
 const RegisterBgaPage = lazy(() => import('./pages/RegisterBgaPage').then((m) => ({ default: m.RegisterBgaPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })));
 const AdminPortal = lazy(() => import('./pages/admin/AdminPortal').then((m) => ({ default: m.AdminPortal })));
 const BgaPortal = lazy(() => import('./pages/bga/BgaPortal').then((m) => ({ default: m.BgaPortal })));
 const AccountsPortal = lazy(() => import('./pages/accounts/AccountsPortal').then((m) => ({ default: m.AccountsPortal })));
@@ -73,6 +74,7 @@ export function App() {
               <Route path="/register" element={<RegisterBgaPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/login/:role" element={<LoginPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* Admin Protected Routes */}
               <Route

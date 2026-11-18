@@ -26,10 +26,12 @@ import {
   X,
   History,
   FileCheck,
+  KeyRound,
 } from 'lucide-react';
 import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { ChangePasswordModal } from '../../components/ChangePasswordModal';
 
 export const BgaProfileView: React.FC = () => {
   const { user: authUser, refreshUser } = useAuth();
@@ -47,6 +49,7 @@ export const BgaProfileView: React.FC = () => {
   // Security Toggles
   const [revealBankAcc, setRevealBankAcc] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   // Modals
   const [editPersonalModal, setEditPersonalModal] = useState(false);
@@ -1124,8 +1127,35 @@ export const BgaProfileView: React.FC = () => {
               <span className="text-[10px] text-slate-400">Database synchronization timestamp</span>
             </div>
           </div>
+
+          {/* Account Security & Password Management */}
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-50 to-indigo-50/40 border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#3066BE]" />
+                <h3 className="text-sm font-bold text-slate-900">Account Credentials & Security</h3>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-lg">
+                Update your login password securely. Changes apply instantly across the Growth Associate portal and company systems.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPasswordModal(true)}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#3066BE] hover:bg-[#25549e] text-white text-xs font-bold shadow-md shadow-[#3066BE]/20 transition-all shrink-0"
+            >
+              <KeyRound className="w-4 h-4" />
+              <span>Change Password</span>
+            </button>
+          </div>
         </div>
       )}
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+      />
 
       {/* TAB 6: AGREEMENTS & CONSENT */}
       {profileTab === 'agreements' && (
