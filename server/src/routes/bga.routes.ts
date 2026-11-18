@@ -726,6 +726,9 @@ router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> =>
     const clients = await prisma.client.findMany({
       where: { bgaId: req.user!.id },
       include: {
+        contactActivities: {
+          orderBy: { createdAt: 'desc' },
+        },
         enquiries: {
           select: {
             id: true,
@@ -762,7 +765,7 @@ router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> =>
           },
           orderBy: { createdAt: 'desc' },
         },
-        _count: { select: { workOrders: true, enquiries: true, quotations: true } },
+        _count: { select: { workOrders: true, enquiries: true, quotations: true, contactActivities: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -1530,6 +1533,9 @@ router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
     const refreshedClient = await prisma.client.findUnique({
       where: { id: updatedClient.id },
       include: {
+        contactActivities: {
+          orderBy: { createdAt: 'desc' },
+        },
         enquiries: {
           select: {
             id: true,
@@ -1566,7 +1572,7 @@ router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
           },
           orderBy: { createdAt: 'desc' },
         },
-        _count: { select: { workOrders: true, enquiries: true, quotations: true } },
+        _count: { select: { workOrders: true, enquiries: true, quotations: true, contactActivities: true } },
       },
     });
 
@@ -1695,6 +1701,7 @@ router.post('/enquiries/:id/follow-up', async (req: AuthRequest, res: Response):
     const {
       consultationNotes,
       consultationDate,
+      nextFollowUpDate,
       contactMethod,
       clientOutcome,
       revisedBudget,
@@ -1754,7 +1761,7 @@ router.post('/enquiries/:id/follow-up', async (req: AuthRequest, res: Response):
 
     const updateData: any = {
       discussionNotes: updatedDiscussionNotes,
-      followUpDate: dateObj,
+      followUpDate: nextFollowUpDate ? new Date(nextFollowUpDate) : null,
     };
 
     if (revisedBudget !== undefined && !isNaN(Number(revisedBudget)) && Number(revisedBudget) > 0) {
@@ -1795,6 +1802,7 @@ router.post('/enquiries/:id/follow-up', async (req: AuthRequest, res: Response):
             : `Consultation on Enquiry ${enquiry.id}: ${consultationNotes.trim().slice(0, 180)}`,
           followUpNotes: consultationNotes.trim(),
           outcome: clientOutcome || 'CONNECTED',
+          nextFollowUpDate: nextFollowUpDate ? new Date(nextFollowUpDate) : null,
           createdBy: req.user!.name,
           createdAt: dateObj,
         },
