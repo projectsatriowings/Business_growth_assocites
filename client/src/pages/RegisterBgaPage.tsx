@@ -144,13 +144,13 @@ export const RegisterBgaPage: React.FC = () => {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#edf4fc] border border-[#6D96C5]/30 text-[#3066BE] text-xs font-bold mb-3 uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5 text-[#119DA4]" />
-            <span>Official Associate Onboarding</span>
+            <span>Atriowings Technologies • Official Associate Onboarding</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Become a Business Growth Associate
+            Become an Atriowings Growth Associate
           </h1>
           <p className="text-sm text-slate-500 mt-2 max-w-xl mx-auto font-normal">
-            Complete the 4-step registration to start referring enterprise clients and earning predictable commissions.
+            Complete the 4-step registration to start referring enterprise clients and earning predictable commissions with Atriowings Technologies.
           </p>
         </div>
 
@@ -192,7 +192,7 @@ export const RegisterBgaPage: React.FC = () => {
                 onClick={() => navigate('/login')}
                 className="px-7 py-3.5 rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all"
               >
-                Go to BGA Portal Login
+                Go to Atriowings Growth Portal
               </button>
               <Link
                 to="/"

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Bell, ShieldCheck, UserCheck, AlertCircle, LogOut, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../utils/api';
@@ -97,10 +97,27 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
 
   return (
     <header ref={headerRef} className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-subtle shrink-0">
-      <div className="px-6 py-3.5 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">{title}</h1>
-          {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+      <div className="px-6 py-3 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5 min-w-0">
+          <Link
+            to="/"
+            className="flex items-center shrink-0 group py-0.5"
+            title="Atriowings Technologies"
+          >
+            <img
+              src="/img/atriowings-official-logo.png"
+              alt="Atriowings Technologies"
+              className="h-8 sm:h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+            />
+          </Link>
+          <div className="h-7 w-px bg-slate-200 hidden sm:block shrink-0" />
+          <div className="min-w-0">
+            <span className="text-[10px] font-extrabold tracking-wider uppercase text-[#3066BE] block truncate leading-none mb-1">
+              Atriowings Technologies
+            </span>
+            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight truncate">{title}</h1>
+            {subtitle && <p className="text-[11px] text-slate-500 mt-0.5 truncate hidden md:block">{subtitle}</p>}
+          </div>
         </div>
 
         <div className="flex items-center space-x-4">

@@ -18,6 +18,11 @@ import {
   Send,
   Eye,
   ShieldCheck,
+  Image as ImageIcon,
+  Video,
+  Music,
+  Archive,
+  Download,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { apiRequest } from '../../utils/api';
@@ -25,6 +30,7 @@ import { SkeletonStatsRow, SkeletonTable, TechnicalDashboardSkeleton } from '../
 import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ModalPortal } from '../../components/ModalPortal';
+import { MediaUploader, MediaUploadResult } from '../../components/MediaUploader';
 
 export const TechnicalPortal: React.FC = () => {
   const { toast } = useToast();
@@ -45,6 +51,9 @@ export const TechnicalPortal: React.FC = () => {
   const [deliverableTitle, setDeliverableTitle] = useState('');
   const [deliverableDesc, setDeliverableDesc] = useState('');
   const [deliverableUrl, setDeliverableUrl] = useState('');
+  const [deliverableFileType, setDeliverableFileType] = useState<string>('OTHER');
+  const [deliverableFileName, setDeliverableFileName] = useState<string>('');
+  const [deliverableFileSize, setDeliverableFileSize] = useState<number | undefined>(undefined);
   const [deliverableVersion, setDeliverableVersion] = useState('1.0');
   const [deliverableMilestoneId, setDeliverableMilestoneId] = useState('');
 
@@ -197,7 +206,7 @@ export const TechnicalPortal: React.FC = () => {
     }
   };
 
-  // Handle Add Deliverable (With Milestone Link & BGA Review Notification)
+  // Handle Add Deliverable (With Milestone Link, Media Upload & BGA Review Notification)
   const handleAddDeliverable = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProject || !deliverableTitle) return;
@@ -209,6 +218,8 @@ export const TechnicalPortal: React.FC = () => {
           title: deliverableTitle,
           description: deliverableDesc || undefined,
           fileUrl: deliverableUrl || 'https://deliverables.bga.com/release-v1.zip',
+          fileType: deliverableFileType || undefined,
+          fileSize: deliverableFileSize || undefined,
           version: deliverableVersion,
           milestoneId: deliverableMilestoneId || undefined,
         }),
@@ -218,6 +229,9 @@ export const TechnicalPortal: React.FC = () => {
       setDeliverableTitle('');
       setDeliverableDesc('');
       setDeliverableUrl('');
+      setDeliverableFileType('OTHER');
+      setDeliverableFileName('');
+      setDeliverableFileSize(undefined);
       setDeliverableVersion('1.0');
       setDeliverableMilestoneId('');
       loadData(true);
@@ -267,13 +281,23 @@ export const TechnicalPortal: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
-      <PortalHeader title="Technical Portal" subtitle="Engineering Architecture, Milestone Delivery & Handover" />
+      <PortalHeader title="Technical & IT Solutions Portal" subtitle="Software Engineering, Milestone Delivery & Handover" />
 
       <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
         {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
         <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
           <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-2">
+            {/* Parent Company & Portal Brand Identity */}
+            <div className="px-3 pt-1 pb-3 mb-2 border-b border-slate-800">
+              <span className="text-[10px] tracking-wider uppercase text-[#80DED9] font-bold block">
+                Atriowings Technologies
+              </span>
+              <span className="text-xs font-bold text-white block mt-0.5">
+                Technical & IT Solutions
+              </span>
+            </div>
+
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1">
               Engineering Workspace
             </div>
 
@@ -303,8 +327,14 @@ export const TechnicalPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 shrink-0">
-            Privacy Scope: <span className="text-[#80DED9] font-bold">FINANCIAL DATA ISOLATED</span>
+          <div className="pt-3 border-t border-slate-800 text-[10px] text-slate-500 shrink-0 space-y-1">
+            <div className="flex justify-between items-center">
+              <span>Security Scope:</span>
+              <span className="text-[#80DED9] font-bold">FINANCIAL DATA ISOLATED</span>
+            </div>
+            <div className="text-[9px] text-slate-500 text-center pt-1.5 border-t border-slate-800/60">
+              © Atriowings Technologies
+            </div>
           </div>
         </aside>
 
@@ -316,6 +346,23 @@ export const TechnicalPortal: React.FC = () => {
               <TechnicalDashboardSkeleton />
             ) : (
               <div className="space-y-6">
+                {/* Engineering Brand Welcome Banner */}
+                <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        Atriowings Technologies
+                      </span>
+                      <span className="text-xs text-slate-400 font-medium">• Software & IT Solutions Engineering</span>
+                    </div>
+                    <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1.5">
+                      Welcome to Atriowings Technical & IT Solutions Portal
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Engineering Team • Milestone Execution, Deliverables & Client Feedback Revisions
+                    </p>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
                   <span className="text-xs text-slate-500 font-semibold uppercase">Total Projects</span>
@@ -501,8 +548,8 @@ export const TechnicalPortal: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 md:col-span-2">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <strong className="block text-slate-800 mb-1">Approved Requirements & Scope:</strong>
                         <p className="text-slate-600 leading-relaxed">{selectedProject.approvedScope}</p>
                       </div>
@@ -521,82 +568,61 @@ export const TechnicalPortal: React.FC = () => {
                           </div>
                         )}
                       </div>
-
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between">
-                        <div>
-                          <strong className="block text-slate-800 mb-1">Execution Status:</strong>
-                          <div className="flex items-center justify-between">
-                            <span className="text-amber-800 font-bold uppercase">{selectedProject.status}</span>
-                            <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 text-[11px]">
-                              {selectedProject.progressPercentage || 0}%
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="mt-2.5">
-                          <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                            <div
-                              className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${Math.min(100, Math.max(0, selectedProject.progressPercentage || 0))}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
 
                   {/* Milestones Section */}
                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                      <h3 className="font-bold text-slate-900 text-sm">Project Milestones</h3>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm">Project Milestones</h3>
+                        <p className="text-[11px] text-slate-500">Track execution phases and mark milestones complete to auto-advance project progress.</p>
+                      </div>
                       <button
                         onClick={() => setMilestoneModal(true)}
-                        className="px-3 py-1 bg-amber-50 text-amber-800 hover:bg-amber-100 rounded text-xs font-bold flex items-center gap-1"
+                        className="px-3 py-1.5 bg-amber-50 text-amber-800 hover:bg-amber-100 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" /> Add Milestone
                       </button>
                     </div>
 
                     <div className="space-y-2">
-                      {selectedProject.milestones?.map((m: any) => (
-                        <div
-                          key={m.id}
-                          className="p-3 rounded-lg border border-slate-100 bg-slate-50/50 flex justify-between items-center text-xs"
-                        >
-                          <div>
-                            <span className="font-bold text-slate-800">{m.title}</span>
-                            {m.description && <p className="text-slate-500 text-[11px]">{m.description}</p>}
-                          </div>
+                      {(!selectedProject.milestones || selectedProject.milestones.length === 0) ? (
+                        <div className="text-xs text-slate-400 py-3 text-center">No milestones added yet. Add milestones to track progressive completion.</div>
+                      ) : (
+                        selectedProject.milestones.map((m: any) => (
+                          <div
+                            key={m.id}
+                            className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 flex justify-between items-center text-xs"
+                          >
+                            <div>
+                              <span className="font-bold text-slate-800">{m.title}</span>
+                              {m.description && <p className="text-slate-500 text-[11px] mt-0.5">{m.description}</p>}
+                            </div>
 
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              m.status === 'COMPLETED'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : m.status === 'IN_PROGRESS'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-slate-200 text-slate-700'
-                            }`}>
-                              {m.status}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                m.status === 'COMPLETED'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : m.status === 'IN_PROGRESS'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-slate-200 text-slate-700'
+                              }`}>
+                                {m.status}
+                              </span>
 
-                            {m.status !== 'COMPLETED' ? (
-                              <button
-                                onClick={() => handleMilestoneStatus(m.id, 'COMPLETED')}
-                                className="px-2 py-1 bg-emerald-600 text-white rounded text-[11px] font-semibold hover:bg-emerald-700"
-                              >
-                                Mark Done ✓
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleMilestoneStatus(m.id, 'IN_PROGRESS')}
-                                className="px-2 py-1 bg-slate-200 text-slate-700 rounded text-[11px] hover:bg-slate-300"
-                              >
-                                Reopen
-                              </button>
-                            )}
+                              {m.status !== 'COMPLETED' && (
+                                <button
+                                  onClick={() => handleMilestoneStatus(m.id, 'COMPLETED')}
+                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-semibold transition-colors cursor-pointer"
+                                >
+                                  Mark Complete
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </div>
 
@@ -606,12 +632,12 @@ export const TechnicalPortal: React.FC = () => {
                       <div>
                         <h3 className="font-bold text-slate-900 text-sm">Deliverables & Releases</h3>
                         <p className="text-[11px] text-slate-500">
-                          Upload project artifacts. Assigned BGA reviews and shares with client.
+                          Upload screenshots, demo videos, documentation, code archives, or release links. Assigned BGA reviews and shares with client.
                         </p>
                       </div>
                       <button
                         onClick={() => setDeliverableModal(true)}
-                        className="px-3 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        className="px-3.5 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm"
                       >
                         <Upload className="w-3.5 h-3.5" /> Upload / Register Deliverable
                       </button>
@@ -622,37 +648,104 @@ export const TechnicalPortal: React.FC = () => {
                         <div className="text-xs text-slate-400 py-4 text-center">No deliverables recorded yet. Click above to register deliverables for client review.</div>
                       ) : (
                         selectedProject.deliverables.map((d: any) => {
-                          const linkedMilestone = d.milestone || selectedProject.milestones?.find((m: any) => m.id === d.milestoneId);
+                          const isImg = d.fileType === 'IMAGE' || (d.fileUrl && d.fileUrl.match(/\.(png|jpg|jpeg|webp|gif|svg)$/i));
+                          const isVid = d.fileType === 'VIDEO' || (d.fileUrl && (d.fileUrl.match(/\.(mp4|webm|mov)$/i) || d.fileUrl.includes('loom.com') || d.fileUrl.includes('youtube.com')));
+                          const isAud = d.fileType === 'AUDIO' || (d.fileUrl && d.fileUrl.match(/\.(mp3|wav|m4a|ogg)$/i));
+                          const isArch = d.fileType === 'ARCHIVE' || (d.fileUrl && d.fileUrl.match(/\.(zip|rar|tar|gz)$/i));
+
                           return (
                             <div
                               key={d.id}
                               className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-xs"
                             >
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-slate-900">{d.title}</span>
-                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">v{d.version}</span>
-                                  {linkedMilestone && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
-                                      Milestone: {linkedMilestone.title}
+                              <div className="flex items-start gap-3 min-w-0">
+                                {/* Visual Thumbnail or Media Type Badge */}
+                                {isImg ? (
+                                  <div className="w-12 h-12 rounded-lg border border-slate-200 overflow-hidden bg-slate-900 shrink-0 relative group">
+                                    <img src={d.fileUrl} alt={d.title} className="w-full h-full object-cover" />
+                                    <a
+                                      href={d.fileUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                                      title="Click to view full image"
+                                    >
+                                      <Eye className="w-4 h-4 text-white" />
+                                    </a>
+                                  </div>
+                                ) : (
+                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
+                                    isVid
+                                      ? 'bg-rose-50 text-rose-600 border-rose-200'
+                                      : isAud
+                                      ? 'bg-purple-50 text-purple-600 border-purple-200'
+                                      : isArch
+                                      ? 'bg-amber-50 text-amber-600 border-amber-200'
+                                      : 'bg-indigo-50 text-indigo-600 border-indigo-200'
+                                  }`}>
+                                    {isVid ? (
+                                      <Video className="w-5 h-5" />
+                                    ) : isAud ? (
+                                      <Music className="w-5 h-5" />
+                                    ) : isArch ? (
+                                      <Archive className="w-5 h-5" />
+                                    ) : (
+                                      <FileText className="w-5 h-5" />
+                                    )}
+                                  </div>
+                                )}
+
+                                <div className="space-y-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-bold text-slate-900">{d.title}</span>
+                                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">v{d.version}</span>
+                                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                                      isImg
+                                        ? 'bg-indigo-100 text-indigo-800'
+                                        : isVid
+                                        ? 'bg-rose-100 text-rose-800'
+                                        : isAud
+                                        ? 'bg-purple-100 text-purple-800'
+                                        : isArch
+                                        ? 'bg-amber-100 text-amber-800'
+                                        : 'bg-slate-200 text-slate-700'
+                                    }`}>
+                                      {d.fileType || (isImg ? 'IMAGE' : isVid ? 'VIDEO' : isAud ? 'AUDIO' : 'DOCUMENT')}
                                     </span>
-                                  )}
-                                </div>
-                                {d.description && <p className="text-slate-600 text-[11px]">{d.description}</p>}
-                                <div className="flex items-center gap-3 text-slate-500 font-mono text-[11px]">
-                                  <a
-                                    href={d.fileUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1 font-semibold"
-                                  >
-                                    <ExternalLink className="w-3 h-3" /> Access Deliverable Artifact
-                                  </a>
-                                  <span className="text-slate-400">Uploaded {new Date(d.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                                  {d.description && <p className="text-slate-600 text-[11px] leading-relaxed">{d.description}</p>}
+                                  <div className="flex flex-wrap items-center gap-3 text-slate-500 font-mono text-[11px] pt-0.5">
+                                    <a
+                                      href={d.fileUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1 font-semibold"
+                                    >
+                                      {isImg ? (
+                                        <>
+                                          <Eye className="w-3 h-3" /> View Image Screenshot
+                                        </>
+                                      ) : isVid ? (
+                                        <>
+                                          <Play className="w-3 h-3" /> Play Video Demo
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ExternalLink className="w-3 h-3" /> Access Deliverable Artifact
+                                        </>
+                                      )}
+                                    </a>
+                                    {d.fileSize && (
+                                      <span className="text-slate-400">
+                                        ({(d.fileSize / (1024 * 1024)).toFixed(1)} MB)
+                                      </span>
+                                    )}
+                                    <span className="text-slate-400">Uploaded {new Date(d.createdAt).toLocaleDateString()}</span>
+                                  </div>
                                 </div>
                               </div>
 
-                              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                              <div className="flex flex-col items-end gap-1.5 shrink-0 self-start md:self-center">
                                 {d.status === 'SHARED_WITH_CLIENT' || d.isClientVisible ? (
                                   <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
                                     <CheckCircle2 className="w-3 h-3" /> Approved & Shared with Client
@@ -686,68 +779,48 @@ export const TechnicalPortal: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Three-Way Synchronized Feedback & Communication Thread */}
+                  {/* Client Feedback (Logged by BGA) & Technical Team Responses */}
                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
                       <div>
-                        <h3 className="font-bold text-slate-900 text-sm">Unified Communication & Feedback Thread</h3>
+                        <h3 className="font-bold text-slate-900 text-sm">Client Feedback & Engineering Responses</h3>
                         <p className="text-[11px] text-slate-500">
-                          Three-way discussion between Client, BGA, and Technical Team.
+                          Review feedback and revision requests submitted by BGA on behalf of the client and reply with technical solutions.
                         </p>
                       </div>
                       <button
                         onClick={() => setFeedbackModal(true)}
-                        className="px-3 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        className="px-3 py-1 bg-[#3066BE] hover:bg-[#255299] text-white rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" /> Post Technical Update / Reply
+                        <MessageSquare className="w-3.5 h-3.5" /> Post Technical Reply to BGA
                       </button>
                     </div>
 
                     <div className="space-y-3">
                       {(!selectedProject.feedback || selectedProject.feedback.length === 0) ? (
-                        <div className="text-xs text-slate-400 py-4 text-center">No feedback messages yet. Post an update or wait for client/BGA review comments.</div>
+                        <div className="text-xs text-slate-400 py-4 text-center">No feedback recorded yet. Client feedback submitted by BGA will appear here.</div>
                       ) : (
                         selectedProject.feedback.map((f: any) => {
-                          const isClient = f.authorRole === 'CLIENT' || f.authorRole === 'CLIENT_USER';
                           const isBga = f.authorRole === 'BGA' || f.authorRole === 'BGA_REPRESENTATIVE';
-                          const isInternal = f.visibility === 'INTERNAL' || f.feedbackType === 'INTERNAL_NOTE';
 
                           return (
                             <div
                               key={f.id}
                               className={`p-3.5 rounded-xl border text-xs ${
-                                isInternal
-                                  ? 'bg-amber-50/40 border-amber-200'
-                                  : isClient
-                                  ? 'bg-teal-50/40 border-teal-200'
-                                  : isBga
-                                  ? 'bg-blue-50/40 border-blue-200'
-                                  : 'bg-slate-50 border-slate-200'
+                                isBga
+                                  ? 'bg-blue-50/50 border-blue-200'
+                                  : 'bg-indigo-50/50 border-indigo-200'
                               }`}
                             >
                               <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-200/60">
                                 <div className="flex items-center gap-2">
-                                  {isClient ? (
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800">
-                                      👤 CLIENT: {f.authorName || 'Client'}
-                                    </span>
-                                  ) : isBga ? (
+                                  {isBga ? (
                                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
-                                      💼 BGA: {f.authorName || 'BGA Representative'}
+                                      🗣️ CLIENT FEEDBACK (Logged by BGA: {f.authorName || 'Associate'})
                                     </span>
                                   ) : (
                                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">
-                                      🛠️ TECHNICAL TEAM: {f.authorName || 'Engineer'}
-                                    </span>
-                                  )}
-
-                                  {isInternal ? (
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800">
-                                      🔒 Internal Note (Client Cannot See)
-                                    </span>
-                                  ) : (
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800">
-                                      🌐 Visible to Client
+                                      🛠️ TECHNICAL TEAM RESPONSE ({f.authorName || 'Engineer'})
                                     </span>
                                   )}
                                 </div>
@@ -756,18 +829,22 @@ export const TechnicalPortal: React.FC = () => {
                                   <span className="text-[10px] text-slate-400">
                                     {new Date(f.createdAt).toLocaleString()}
                                   </span>
-                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                    f.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
-                                  }`}>
-                                    {f.status}
-                                  </span>
-                                  {f.status !== 'RESOLVED' && (
-                                    <button
-                                      onClick={() => handleResolveFeedback(f.id)}
-                                      className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold cursor-pointer transition-colors"
-                                    >
-                                      Mark Resolved ✓
-                                    </button>
+                                  {isBga && (
+                                    <>
+                                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                        f.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                      }`}>
+                                        {f.status}
+                                      </span>
+                                      {f.status !== 'RESOLVED' && (
+                                        <button
+                                          onClick={() => handleResolveFeedback(f.id)}
+                                          className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold cursor-pointer transition-colors"
+                                        >
+                                          Mark Resolved ✓
+                                        </button>
+                                      )}
+                                    </>
                                   )}
                                 </div>
                               </div>
@@ -795,6 +872,9 @@ export const TechnicalPortal: React.FC = () => {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <h3 className="text-base font-bold text-slate-900">Add Project Milestone</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Define a structured milestone to track engineering progress toward completion.
+                    </p>
                     <form onSubmit={handleAddMilestone} className="mt-4 space-y-3 text-xs">
                       <div>
                         <label className="block text-slate-700 font-semibold mb-1">Milestone Title *</label>
@@ -817,17 +897,17 @@ export const TechnicalPortal: React.FC = () => {
                           className="w-full p-2 border border-slate-300 rounded"
                         />
                       </div>
-                      <div className="flex justify-end gap-2 pt-2">
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                         <button
                           type="button"
                           onClick={() => setMilestoneModal(false)}
-                          className="px-3 py-1.5 rounded text-slate-600 font-semibold"
+                          className="px-3 py-1.5 rounded text-slate-600 font-semibold hover:bg-slate-100 transition-colors"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="px-4 py-1.5 bg-[#3066BE] text-white shadow-sm rounded font-bold hover:bg-[#255299]"
+                          className="px-4 py-1.5 bg-[#3066BE] text-white shadow-sm rounded font-bold hover:bg-[#255299] transition-colors"
                         >
                           Add Milestone
                         </button>
@@ -844,14 +924,14 @@ export const TechnicalPortal: React.FC = () => {
               >
                 {deliverableModal && (
                   <div
-                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
+                    className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <h3 className="text-base font-bold text-slate-900">Register Project Deliverable</h3>
                     <p className="text-xs text-slate-500 mt-1">
-                      Deliverables will be forwarded to BGA for review before client release.
+                      Upload screenshots, video demo, audio walkthrough, or documents. Forwarded to BGA for review before client release.
                     </p>
-                    <form onSubmit={handleAddDeliverable} className="mt-4 space-y-3 text-xs">
+                    <form onSubmit={handleAddDeliverable} className="mt-4 space-y-3.5 text-xs">
                       <div>
                         <label className="block text-slate-700 font-semibold mb-1">Deliverable Title *</label>
                         <input
@@ -864,31 +944,47 @@ export const TechnicalPortal: React.FC = () => {
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Associated Milestone</label>
-                        <select
-                          value={deliverableMilestoneId}
-                          onChange={(e) => setDeliverableMilestoneId(e.target.value)}
-                          className="w-full p-2 border border-slate-300 rounded bg-white text-slate-800"
-                        >
-                          <option value="">-- General / No Milestone Attached --</option>
-                          {selectedProject?.milestones?.map((m: any) => (
-                            <option key={m.id} value={m.id}>
-                              {m.title} ({m.status})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      {selectedProject?.milestones && selectedProject.milestones.length > 0 && (
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">Associated Milestone</label>
+                          <select
+                            value={deliverableMilestoneId}
+                            onChange={(e) => setDeliverableMilestoneId(e.target.value)}
+                            className="w-full p-2 border border-slate-300 rounded bg-white text-slate-800"
+                          >
+                            <option value="">-- General / No Milestone Attached --</option>
+                            {selectedProject.milestones.map((m: any) => (
+                              <option key={m.id} value={m.id}>
+                                {m.title} ({m.status})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
 
+                      {/* Direct Media Upload (Images, Video, Audio, Docs) or URL Toggle */}
                       <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Artifact / Staging / Download Link *</label>
-                        <input
-                          type="text"
-                          required
+                        <MediaUploader
                           value={deliverableUrl}
-                          onChange={(e) => setDeliverableUrl(e.target.value)}
-                          placeholder="https://staging.domain.com or google drive / release URL"
-                          className="w-full p-2 border border-slate-300 rounded font-mono text-[11px]"
+                          fileType={deliverableFileType}
+                          fileName={deliverableFileName}
+                          fileSize={deliverableFileSize}
+                          onChange={(res) => {
+                            if (res) {
+                              setDeliverableUrl(res.url);
+                              setDeliverableFileType(res.fileType);
+                              setDeliverableFileName(res.originalName);
+                              setDeliverableFileSize(res.size);
+                            } else {
+                              setDeliverableUrl('');
+                              setDeliverableFileType('OTHER');
+                              setDeliverableFileName('');
+                              setDeliverableFileSize(undefined);
+                            }
+                          }}
+                          label="Deliverable Media / Files / Staging Artifact"
+                          helperText="Upload screenshots, demo video, source zip, or audio walkthrough (Max 100MB), or toggle link"
+                          required
                         />
                       </div>
 
@@ -900,7 +996,7 @@ export const TechnicalPortal: React.FC = () => {
                             value={deliverableVersion}
                             onChange={(e) => setDeliverableVersion(e.target.value)}
                             placeholder="1.0"
-                            className="w-full p-2 border border-slate-300 rounded"
+                            className="w-full p-2 border border-slate-300 rounded font-mono"
                           />
                         </div>
                       </div>
@@ -926,7 +1022,8 @@ export const TechnicalPortal: React.FC = () => {
                         </button>
                         <button
                           type="submit"
-                          className="px-4 py-1.5 bg-[#3066BE] text-white rounded font-bold hover:bg-[#255299] transition-colors"
+                          disabled={!deliverableUrl}
+                          className="px-4 py-1.5 bg-[#3066BE] text-white rounded font-bold hover:bg-[#255299] transition-colors disabled:opacity-50"
                         >
                           Upload & Submit for BGA Review
                         </button>
@@ -936,7 +1033,7 @@ export const TechnicalPortal: React.FC = () => {
                 )}
               </ModalPortal>
 
-              {/* Three-Way Feedback & Communication Modal */}
+              {/* Technical Reply Modal */}
               <ModalPortal
                 isOpen={feedbackModal}
                 onClose={() => setFeedbackModal(false)}
@@ -946,65 +1043,19 @@ export const TechnicalPortal: React.FC = () => {
                     className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <h3 className="text-base font-bold text-slate-900">Post Technical Update / Reply</h3>
+                    <h3 className="text-base font-bold text-slate-900">Post Technical Reply to BGA</h3>
                     <p className="text-xs text-slate-500 mt-1">
-                      Post response to client questions or coordinate internally with BGA.
+                      Post an engineering response, fix update, or clarification that the BGA can communicate back to the client.
                     </p>
                     <form onSubmit={handleAddFeedback} className="mt-4 space-y-3 text-xs">
                       <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Audience & Visibility *</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setFeedbackVisibility('CLIENT_VISIBLE')}
-                            className={`p-2.5 rounded-lg border text-left font-semibold transition-all ${
-                              feedbackVisibility === 'CLIENT_VISIBLE'
-                                ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
-                                : 'border-slate-200 bg-white text-slate-600'
-                            }`}
-                          >
-                            <span className="block font-bold">🌐 Client & BGA</span>
-                            <span className="text-[10px] font-normal text-slate-500">Visible to client in their portal</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFeedbackVisibility('INTERNAL')}
-                            className={`p-2.5 rounded-lg border text-left font-semibold transition-all ${
-                              feedbackVisibility === 'INTERNAL'
-                                ? 'border-amber-500 bg-amber-50 text-amber-900'
-                                : 'border-slate-200 bg-white text-slate-600'
-                            }`}
-                          >
-                            <span className="block font-bold">🔒 Internal Note</span>
-                            <span className="text-[10px] font-normal text-slate-500">Only BGA & Technical team see this</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Related Milestone (Optional)</label>
-                        <select
-                          value={feedbackMilestoneId}
-                          onChange={(e) => setFeedbackMilestoneId(e.target.value)}
-                          className="w-full p-2 border border-slate-300 rounded bg-white text-slate-800"
-                        >
-                          <option value="">-- General Project Communication --</option>
-                          {selectedProject?.milestones?.map((m: any) => (
-                            <option key={m.id} value={m.id}>
-                              {m.title}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Message / Response Content *</label>
+                        <label className="block text-slate-700 font-semibold mb-1">Technical Reply Details *</label>
                         <textarea
                           rows={4}
                           required
                           value={feedbackContent}
                           onChange={(e) => setFeedbackContent(e.target.value)}
-                          placeholder="Type technical update, answer client queries, or notify BGA..."
+                          placeholder="Describe the solution, deployed fix, or instructions for BGA to convey to client..."
                           className="w-full p-2 border border-slate-300 rounded"
                         />
                       </div>
@@ -1021,7 +1072,7 @@ export const TechnicalPortal: React.FC = () => {
                           type="submit"
                           className="px-4 py-1.5 bg-[#3066BE] text-white rounded font-bold hover:bg-[#255299] transition-colors"
                         >
-                          Send Message
+                          Send Reply to BGA
                         </button>
                       </div>
                     </form>

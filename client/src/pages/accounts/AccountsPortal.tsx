@@ -450,13 +450,23 @@ export const AccountsPortal: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
-      <PortalHeader title="Accounts Portal" subtitle="Quotation Drafting, Commercial Verification & Commission Processing" />
+      <PortalHeader title="Accounts Portal" subtitle="Commercial Quotations, Verification & Commission Processing" />
 
       <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
         {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
         <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
           <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-2">
+            {/* Parent Company & Portal Brand Identity */}
+            <div className="px-3 pt-1 pb-3 mb-2 border-b border-slate-800">
+              <span className="text-[10px] tracking-wider uppercase text-[#80DED9] font-bold block">
+                Atriowings Technologies
+              </span>
+              <span className="text-xs font-bold text-white block mt-0.5">
+                Commercial Accounts Portal
+              </span>
+            </div>
+
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1">
               Financial Modules
             </div>
 
@@ -520,8 +530,14 @@ export const AccountsPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 shrink-0">
-            Accounts Clearance: <span className="text-[#80DED9] font-bold">AUTHORIZED</span>
+          <div className="pt-3 border-t border-slate-800 text-[10px] text-slate-500 shrink-0 space-y-1">
+            <div className="flex justify-between items-center">
+              <span>Accounts Clearance:</span>
+              <span className="text-[#80DED9] font-bold">AUTHORIZED</span>
+            </div>
+            <div className="text-[9px] text-slate-500 text-center pt-1.5 border-t border-slate-800/60">
+              © Atriowings Technologies
+            </div>
           </div>
         </aside>
 
@@ -541,12 +557,12 @@ export const AccountsPortal: React.FC = () => {
                       <div className="flex items-center gap-2 mb-1.5">
                         <span className="px-2.5 py-0.5 rounded-full bg-[#80DED9]/20 text-[#80DED9] text-[10px] font-bold tracking-wide uppercase border border-[#80DED9]/30 flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#80DED9] animate-pulse" />
-                          Commercial & Financial Command Center
+                          Atriowings Technologies • Financial Command Center
                         </span>
-                        <span className="text-[11px] text-slate-400">Sunita Rao • Accounts Clearance</span>
+                        <span className="text-[11px] text-slate-400">Accounts Clearance</span>
                       </div>
                       <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">
-                        Accounts Operations & Clearance Hub
+                        Atriowings Accounts Operations & Clearance Hub
                       </h1>
                       <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
                         Reconcile corporate bank receipts, audit client payment UTRs, prepare official client quotations with 18% GST, and release verified work orders for technical production.

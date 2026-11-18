@@ -342,15 +342,19 @@ export const PageLoadingFallback: React.FC = () => {
         {/* Animated Glowing Logo */}
         <div className="relative mx-auto w-16 h-16">
           <div className="absolute -inset-2 rounded-2xl bg-gradient-to-tr from-indigo-500 via-teal-400 to-blue-500 opacity-60 blur-lg animate-pulse" />
-          <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-blue-500 flex items-center justify-center text-white shadow-2xl">
-            <Building2 className="w-8 h-8 animate-bounce" />
+          <div className="relative w-16 h-16 rounded-2xl bg-white p-2.5 flex items-center justify-center shadow-2xl">
+            <img
+              src="/img/atriowings-official-logo.png"
+              alt="Atriowings Technologies"
+              className="w-full h-full object-contain animate-pulse"
+            />
           </div>
         </div>
 
         {/* Title & Micro-Status */}
         <div className="space-y-1.5">
           <h2 className="text-lg font-extrabold text-white tracking-tight">
-            BGA Enterprise
+            Atriowings Technologies
           </h2>
           <p className="text-xs text-indigo-300 font-semibold uppercase tracking-wider">
             Growth Network & IT Solutions

@@ -1,5 +1,5 @@
 /**
- * Resolves the authentication token stored in localStorage for BGA Enterprise
+ * Resolves the authentication token stored in localStorage for Atriowings Growth Associate Portal
  */
 export function getAuthToken(): string {
   return localStorage.getItem('bga_auth_token') || localStorage.getItem('token') || '';

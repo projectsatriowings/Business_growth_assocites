@@ -551,15 +551,15 @@ export const LandingPage: React.FC = () => {
     {
       id: 'relationship',
       q: 'What is the relationship between Atriowings & BGA?',
-      userQ: 'What is the relationship between Atriowings Technologies and BGA Enterprise?',
-      a: 'Atriowings Technologies is the parent IT solutions enterprise that designs, engineers, and delivers web, mobile, custom software, and digital marketing solutions. BGA Enterprise is our official partner platform where independent Growth Associates register exclusive clients, request official commercial quotations, monitor live project stages, and earn guaranteed commissions.',
+      userQ: 'What is the relationship between Atriowings Technologies and the Growth Associate Portal?',
+      a: 'Atriowings Technologies is the parent IT solutions enterprise that designs, engineers, and delivers web, mobile, custom software, and digital marketing solutions. The Atriowings Growth Associate Portal (BGA Portal) is our official partner platform where independent Growth Associates register exclusive clients, request official commercial quotations, monitor live project stages, and earn guaranteed commissions.',
       followUpIds: ['client-ownership', 'commissions'],
     },
     {
       id: 'client-ownership',
       q: 'How does exclusive client ownership work?',
-      userQ: 'How does exclusive client ownership work in BGA Enterprise?',
-      a: 'Whenever you register a new prospective client with their verified phone number and email, BGA Enterprise creates a 100% exclusive ownership lock under your associate profile. Any duplicate submissions by other associates are automatically blocked by the system, guaranteeing that all future projects and recurring commissions from that client are permanently credited to you.',
+      userQ: 'How does exclusive client ownership work in the Atriowings BGA Portal?',
+      a: 'Whenever you register a new prospective client with their verified phone number and email, the Atriowings BGA Portal creates a 100% exclusive ownership lock under your associate profile. Any duplicate submissions by other associates are automatically blocked by the system, guaranteeing that all future projects and recurring commissions from that client are permanently credited to you.',
       followUpIds: ['quotations', 'registration-cost'],
     },
     {
@@ -693,7 +693,7 @@ export const LandingPage: React.FC = () => {
           {/* Dual Identity Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#119DA4]/20 border border-[#80DED9]/40 text-[#80DED9] text-xs font-bold mb-8 uppercase tracking-wider backdrop-blur-md shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-[#80DED9]" />
-            <span>Atriowings Technologies • BGA Enterprise Network</span>
+            <span>Atriowings Technologies • Growth Associate Network</span>
           </div>
 
           {/* Heading */}
@@ -706,7 +706,7 @@ export const LandingPage: React.FC = () => {
 
           {/* Subheading with Clear Dual Relationship */}
           <p className="mt-6 text-base sm:text-lg lg:text-xl text-slate-300 max-w-3xl mx-auto font-normal leading-relaxed">
-            <strong className="text-white font-semibold">Atriowings Technologies</strong> provides industry-leading digital and IT solutions. Through <strong className="text-white font-semibold">BGA Enterprise</strong>, Growth Associates register exclusive clients, coordinate quotations and projects, and earn guaranteed commercial commissions.
+            <strong className="text-white font-semibold">Atriowings Technologies</strong> provides industry-leading digital and IT solutions. Through our <strong className="text-white font-semibold">Growth Associate Platform</strong>, Growth Associates register exclusive clients, coordinate quotations and projects, and earn guaranteed commercial commissions.
           </p>
 
           {/* Call to Actions */}
@@ -838,7 +838,7 @@ export const LandingPage: React.FC = () => {
                     Operated Enterprise Platform
                   </span>
                   <span className="text-sm font-extrabold text-white">
-                    BGA Enterprise Management System
+                    Atriowings Technologies • Growth Associate Management System
                   </span>
                 </div>
               </div>
@@ -2075,7 +2075,7 @@ export const LandingPage: React.FC = () => {
                 </li>
                 <li>
                   <Link to="/login" className="hover:text-white transition-colors">
-                    BGA Portal Login
+                    Atriowings Growth Portal Login
                   </Link>
                 </li>
                 <li>

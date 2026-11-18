@@ -202,25 +202,27 @@ export const LoginPage: React.FC = () => {
         <div className="w-full max-w-lg mx-auto">
           {/* Header & Branding */}
           <div className="text-center mb-8">
-            <Link to="/" className="inline-flex items-center gap-3 mb-4 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform">
-                <Building2 className="w-6 h-6" />
-              </div>
-              <div className="text-left">
-                <span className="text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent block leading-tight">
-                  BGA Enterprise
+            <Link to="/" className="inline-flex flex-col sm:flex-row items-center gap-3.5 mb-5 group">
+              <img
+                src="/img/atriowings-official-logo.png"
+                alt="Atriowings Technologies"
+                className="h-12 sm:h-14 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+              />
+              <div className="text-center sm:text-left">
+                <span className="text-xl font-extrabold text-slate-900 block leading-tight">
+                  Atriowings Technologies
                 </span>
-                <span className="text-[10px] tracking-widest text-indigo-600 font-semibold uppercase block">
-                  Growth Network & IT Solutions
+                <span className="text-[10px] tracking-widest text-[#119DA4] font-bold uppercase block mt-0.5">
+                  GROWTH NETWORK & IT SOLUTIONS
                 </span>
               </div>
             </Link>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              BGA Portal Login
+              Atriowings Growth Associate Portal
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Sign in to your Business Growth Associate account
+            <p className="text-xs sm:text-sm text-slate-500 mt-1.5">
+              Sign in to your Atriowings Business Growth Associate account
             </p>
           </div>
 
@@ -310,12 +312,12 @@ export const LoginPage: React.FC = () => {
                   {loading
                     ? 'Authenticating...'
                     : selectedDemoRole === 'ADMIN'
-                      ? 'Login to Admin Portal'
+                      ? 'Login to Atriowings Admin Portal'
                       : selectedDemoRole === 'ACCOUNTS'
-                        ? 'Login to Accounts Portal'
+                        ? 'Login to Atriowings Accounts Portal'
                         : selectedDemoRole === 'TECHNICAL'
-                          ? 'Login to Technical Portal'
-                          : 'Login to BGA Portal'}
+                          ? 'Login to Atriowings Technical Portal'
+                          : 'Sign In to Atriowings Growth Portal'}
                 </span>
               </button>
             </form>

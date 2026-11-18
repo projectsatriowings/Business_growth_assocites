@@ -37,8 +37,13 @@ import {
   Megaphone,
   Clock,
   Sparkles,
+  Image as ImageIcon,
+  Video,
+  Music,
+  Archive,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
+import { useAuth } from '../../context/AuthContext';
 import { AssociateProfileView } from './AssociateProfileView';
 import { apiRequest } from '../../utils/api';
 import { SkeletonCard, SkeletonStatsRow, SkeletonTable, AdminDashboardSkeleton } from '../../components/Skeleton';
@@ -96,6 +101,7 @@ const EmptyState: React.FC<{
 );
 
 export const AdminPortal: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<
     'dashboard' | 'bgas' | 'services' | 'resources' | 'clients' | 'enquiries' | 'quotations' | 'workorders' | 'technical' | 'commissions' | 'settings'
   >('dashboard');
@@ -666,13 +672,23 @@ export const AdminPortal: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
-      <PortalHeader title="Admin Portal" subtitle="Central Company Management & Executive Controls" />
+      <PortalHeader title="Admin Portal" subtitle="Central Company Management, Associate Approvals & Operations" />
 
       <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
         {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
         <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
           <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-2">
+            {/* Parent Company & Portal Brand Identity */}
+            <div className="px-3 pt-1 pb-3 mb-2 border-b border-slate-800">
+              <span className="text-[10px] tracking-wider uppercase text-[#80DED9] font-bold block">
+                Atriowings Technologies
+              </span>
+              <span className="text-xs font-bold text-white block mt-0.5">
+                Executive Admin Portal
+              </span>
+            </div>
+
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1">
               Management Modules
             </div>
 
@@ -811,8 +827,14 @@ export const AdminPortal: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 shrink-0">
-            Database: <span className="text-emerald-400 font-semibold">Neon Cloud PostgreSQL</span>
+          <div className="pt-3 border-t border-slate-800 text-[10px] text-slate-500 shrink-0 space-y-1">
+            <div className="flex justify-between items-center">
+              <span>Database:</span>
+              <span className="text-emerald-400 font-semibold">PostgreSQL</span>
+            </div>
+            <div className="text-[9px] text-slate-500 text-center pt-1.5 border-t border-slate-800/60">
+              © Atriowings Technologies
+            </div>
           </div>
         </aside>
 
@@ -824,6 +846,23 @@ export const AdminPortal: React.FC = () => {
               <AdminDashboardSkeleton />
             ) : (
             <div className="space-y-6 w-full">
+              {/* Executive Brand Welcome Banner */}
+              <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-blue-50 text-[#3066BE] border border-[#3066BE]/20">
+                      Atriowings Technologies
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">• Central Executive Control</span>
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1.5">
+                    Welcome to Atriowings Admin Portal
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    System Administrator: <strong className="text-slate-800">{user?.name}</strong> • Associate Onboarding, Enquiries, Quotations & Financial Clearances
+                  </p>
+                </div>
+              </div>
               {/* Executive Overview Header */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -2059,6 +2098,73 @@ export const AdminPortal: React.FC = () => {
                           {enquiryDetailModal.requirements || 'No specific requirements entered.'}
                         </div>
                       </div>
+
+                      {/* Attached Client Media / Document */}
+                      {enquiryDetailModal.attachmentUrl && (() => {
+                        const fileUrl = enquiryDetailModal.attachmentUrl;
+                        const isImg = fileUrl.match(/\.(png|jpg|jpeg|webp|gif|svg)$/i);
+                        const isVid = fileUrl.match(/\.(mp4|webm|mov)$/i) || fileUrl.includes('loom.com') || fileUrl.includes('youtube.com');
+                        const isAud = fileUrl.match(/\.(mp3|wav|m4a|ogg)$/i);
+                        const isArch = fileUrl.match(/\.(zip|rar|tar|gz)$/i);
+
+                        return (
+                          <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              {isImg ? (
+                                <div className="w-12 h-12 rounded-lg border border-indigo-200 overflow-hidden bg-slate-900 shrink-0 relative group">
+                                  <img src={fileUrl} alt="Attached client brief" className="w-full h-full object-cover" />
+                                  <a
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                                  >
+                                    <Eye className="w-4 h-4 text-white" />
+                                  </a>
+                                </div>
+                              ) : (
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
+                                  isVid
+                                    ? 'bg-rose-50 text-rose-600 border-rose-200'
+                                    : isAud
+                                    ? 'bg-purple-50 text-purple-600 border-purple-200'
+                                    : isArch
+                                    ? 'bg-amber-50 text-amber-600 border-amber-200'
+                                    : 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                                }`}>
+                                  {isVid ? (
+                                    <Video className="w-5 h-5" />
+                                  ) : isAud ? (
+                                    <Music className="w-5 h-5" />
+                                  ) : isArch ? (
+                                    <Archive className="w-5 h-5" />
+                                  ) : (
+                                    <FileText className="w-5 h-5" />
+                                  )}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 text-xs block">
+                                  Client-Provided Requirement Attachment
+                                </span>
+                                <span className="text-[11px] text-indigo-700 font-medium block">
+                                  {isImg ? 'Screenshot / Design File' : isVid ? 'Video Demo / Walkthrough' : isAud ? 'Voice Note / Audio Brief' : isArch ? 'Source Zip Archive' : 'Requirement Specification Document'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <a
+                              href={fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shrink-0 shadow-xs"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              View / Download
+                            </a>
+                          </div>
+                        );
+                      })()}
 
                       {/* Discussion Notes & Follow-up Date (from Client Meeting) */}
                       {(enquiryDetailModal.discussionNotes || enquiryDetailModal.followUpDate) && (

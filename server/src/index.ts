@@ -12,7 +12,7 @@ import technicalRoutes from './routes/technical.routes';
 import notificationRoutes from './routes/notification.routes';
 import resourceRoutes from './routes/resource.routes';
 import contactRoutes from './routes/contact.routes';
-import clientProjectRoutes from './routes/clientProject.routes';
+import uploadRoutes from './routes/upload.routes';
 
 dotenv.config();
 
@@ -54,7 +54,7 @@ app.use('/api/technical', technicalRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/contact', contactRoutes);
-app.use('/api/client-portal', clientProjectRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Serve Frontend Build (client/dist)
 const clientDistPath = path.resolve(__dirname, '../../client/dist');
