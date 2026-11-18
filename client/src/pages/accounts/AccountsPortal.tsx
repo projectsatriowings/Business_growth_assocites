@@ -1158,28 +1158,34 @@ export const AccountsPortal: React.FC = () => {
                             ? 'REVISION REQUESTED BY ADMIN'
                             : q.status}
                         </span>
-                        <button
-                          type="button"
-                          disabled={downloadingPdfId === q.id}
-                          onClick={async () => {
-                            setDownloadingPdfId(q.id);
-                            try {
-                              await downloadQuotationPdf(q.id, q.quotationNumber);
-                            } catch (err: any) {
-                              toast.error(err.message || 'Failed to download quotation PDF');
-                            } finally {
-                              setDownloadingPdfId(null);
-                            }
-                          }}
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 rounded text-xs font-bold flex items-center gap-1 transition-colors disabled:opacity-50"
-                        >
-                          {downloadingPdfId === q.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Download className="w-3.5 h-3.5" />
-                          )}
-                          PDF
-                        </button>
+                        {q.status === 'REQUESTED' || !q.preparedById ? (
+                          <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded border border-slate-200" title="Drafting required before PDF can be generated">
+                            Awaiting Draft
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={downloadingPdfId === q.id}
+                            onClick={async () => {
+                              setDownloadingPdfId(q.id);
+                              try {
+                                await downloadQuotationPdf(q.id, q.quotationNumber);
+                              } catch (err: any) {
+                                toast.error(err.message || 'Failed to download quotation PDF');
+                              } finally {
+                                setDownloadingPdfId(null);
+                              }
+                            }}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 rounded text-xs font-bold flex items-center gap-1 transition-colors disabled:opacity-50"
+                          >
+                            {downloadingPdfId === q.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Download className="w-3.5 h-3.5" />
+                            )}
+                            PDF
+                          </button>
+                        )}
                       </div>
                     </div>
 

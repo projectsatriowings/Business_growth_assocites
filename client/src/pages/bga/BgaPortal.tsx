@@ -5390,13 +5390,25 @@ export const BgaPortal: React.FC = () => {
             </div>
 
             <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
-              <span className="font-mono text-slate-400">{r.fileType} Document</span>
-              <button
-                onClick={() => toast.info(`Downloading presentation: ${r.title}`)}
-                className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded font-semibold hover:bg-indigo-100 flex items-center gap-1"
-              >
-                <Download className="w-3.5 h-3.5" /> Download
-              </button>
+              <span className="font-mono text-slate-400">{r.fileType || 'DOCUMENT'} File</span>
+              {r.fileUrl ? (
+                <a
+                  href={r.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded font-semibold hover:bg-indigo-100 flex items-center gap-1 transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" /> Download
+                </a>
+              ) : (
+                <button
+                  onClick={() => toast.info(`Downloading presentation: ${r.title}`)}
+                  className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded font-semibold hover:bg-indigo-100 flex items-center gap-1"
+                >
+                  <Download className="w-3.5 h-3.5" /> Download
+                </button>
+              )}
             </div>
           </div>
         ))}

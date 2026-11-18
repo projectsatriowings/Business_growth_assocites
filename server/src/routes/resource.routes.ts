@@ -38,6 +38,14 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
       return;
     }
 
+    // Quotation must be drafted/prepared by Accounts before a PDF can be generated
+    if (quotation.status === QuotationStatus.REQUESTED || !quotation.preparedById) {
+      res.status(400).json({
+        error: 'This quotation request has not been prepared by the Accounts Department yet. Official PDF is only available after drafting.',
+      });
+      return;
+    }
+
     // For BGA role: Quotation must be authorized by Admin before client-facing PDF release
     const isApprovedForRelease =
       quotation.status === QuotationStatus.ADMIN_APPROVED ||
