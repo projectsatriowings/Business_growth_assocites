@@ -41,6 +41,7 @@ import {
   Video,
   Music,
   Archive,
+  History,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
@@ -146,6 +147,7 @@ export const AdminPortal: React.FC = () => {
 
   const [quotationSearch, setQuotationSearch] = useState('');
   const [quotationStatusFilter, setQuotationStatusFilter] = useState('ALL');
+  const [expandedQuotationHistoryIds, setExpandedQuotationHistoryIds] = useState<Record<string, boolean>>({});
 
   const [workOrderSearch, setWorkOrderSearch] = useState('');
   const [workOrderStatusFilter, setWorkOrderStatusFilter] = useState('ALL');
@@ -2679,117 +2681,191 @@ export const AdminPortal: React.FC = () => {
                           q.status === 'PENDING_ADMIN_APPROVAL' || (q.adminApprovalStatus === 'PENDING' && q.preparedById);
 
                         return (
-                          <tr key={q.id} className="hover:bg-slate-50/50">
-                            <td className="p-3.5">
-                              <span className="font-bold font-mono text-slate-900 text-sm block">
-                                {q.quotationNumber}
-                              </span>
-                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                <span className="text-[10px] text-[#3066BE] bg-blue-50/70 px-1.5 py-0.5 rounded font-bold border border-purple-100">
-                                  Version {q.version}
+                          <React.Fragment key={q.id}>
+                            <tr className={`hover:bg-slate-50/50 ${expandedQuotationHistoryIds[q.id] ? 'bg-indigo-50/30' : ''}`}>
+                              <td className="p-3.5">
+                                <span className="font-bold font-mono text-slate-900 text-sm block">
+                                  {q.quotationNumber}
                                 </span>
-                                {q.reminderCount > 0 && (
-                                  <span className="text-[10px] text-red-700 bg-red-50 px-1.5 py-0.5 rounded font-bold border border-red-200 flex items-center gap-1 animate-pulse">
-                                    ⚠️ {q.reminderCount} Reminder{q.reminderCount > 1 ? 's' : ''}
+                                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                  <span className="text-[10px] text-[#3066BE] bg-blue-50/70 px-1.5 py-0.5 rounded font-bold border border-purple-100">
+                                    Version {q.version}
                                   </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="p-3.5">
-                              <div className="font-semibold text-slate-800 text-sm">{q.client?.clientName}</div>
-                              <div className="text-[11px] text-slate-500">BGA: {q.bga?.name} ({q.bga?.email})</div>
-                            </td>
-                            <td className="p-3.5">
-                              <div className="text-slate-900 font-extrabold text-sm">
-                                ₹{(q.totalAmount || 0).toLocaleString()}
-                              </div>
-                              <div className="text-[10px] text-slate-500">{q.serviceCategory}</div>
-                            </td>
-                            <td className="p-3.5">
-                              <span className="font-bold text-indigo-700">
-                                ₹{(q.advanceRequiredAmount || 0).toLocaleString()}
-                              </span>
-                              <span className="text-slate-400 text-[10px] block">
-                                ({q.advanceRequiredPercent || 50}% mandatory)
-                              </span>
-                            </td>
-                            <td className="p-3.5">
-                              <span
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                  q.status === 'ACCEPTED'
-                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                    : q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA'
-                                    ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                    : q.status === 'PENDING_ADMIN_APPROVAL'
-                                    ? 'bg-purple-100 text-[#152544] border border-[#3066BE]/25'
-                                    : q.status === 'REVISION_REQUESTED'
-                                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                    : q.status === 'REJECTED'
-                                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                                    : 'bg-slate-100 text-slate-800 border border-slate-200'
-                                }`}
-                              >
-                                {q.status === 'PENDING_ADMIN_APPROVAL'
-                                  ? 'PENDING ADMIN APPROVAL'
-                                  : q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA'
-                                  ? 'APPROVED & SENT TO BGA'
-                                  : q.status === 'REJECTED'
-                                  ? 'REJECTED (AWAITING ACCOUNTS CORRECTION)'
-                                  : q.status === 'REVISION_REQUESTED'
-                                  ? 'REVISION REQUESTED FROM ACCOUNTS'
-                                  : q.status}
-                              </span>
-                              {q.adminNotes && (
-                                <div className="text-[10px] text-slate-500 mt-1 max-w-xs text-left">
-                                  <strong className="text-slate-700">Admin Note:</strong> {q.adminNotes}
+                                  {q.reminderCount > 0 && (
+                                    <span className="text-[10px] text-red-700 bg-red-50 px-1.5 py-0.5 rounded font-bold border border-red-200 flex items-center gap-1 animate-pulse">
+                                      ⚠️ {q.reminderCount} Reminder{q.reminderCount > 1 ? 's' : ''}
+                                    </span>
+                                  )}
                                 </div>
-                              )}
-                            </td>
-                            <td className="p-3.5 text-right space-y-1">
-                              <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                                {isPendingApproval ? (
-                                  <>
-                                    <button
-                                      onClick={() => setQuotationReviewModal({ quotation: q, action: 'APPROVE' })}
-                                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
-                                    >
-                                      Approve Quote
-                                    </button>
-                                    <button
-                                      onClick={() => setQuotationReviewModal({ quotation: q, action: 'REQUEST_REVISION' })}
-                                      className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-colors"
-                                    >
-                                      Revision
-                                    </button>
-                                    <button
-                                      onClick={() => setQuotationReviewModal({ quotation: q, action: 'REJECT' })}
-                                      className="px-2.5 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-xs font-bold transition-colors"
-                                    >
-                                      Reject
-                                    </button>
-                                  </>
-                                ) : (q.status === 'REJECTED' || q.status === 'REVISION_REQUESTED') ? (
-                                  <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                                    Awaiting Accounts Corrections
-                                  </span>
-                                ) : null}
-                                <button
-                                  onClick={() => setQuotationDetailModal(q)}
-                                  className="px-2.5 py-1 rounded-lg border border-slate-300 text-slate-700 hover:bg-[#AEECEF]/20 hover:text-[#3066BE] text-xs font-semibold"
+                                {((q.versionHistory && q.versionHistory.length > 1) || q.previousVersion || q.version > 1) && (
+                                  <button
+                                    onClick={() => setExpandedQuotationHistoryIds(prev => ({ ...prev, [q.id]: !prev[q.id] }))}
+                                    className={`mt-1.5 flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border transition-all ${
+                                      expandedQuotationHistoryIds[q.id]
+                                        ? 'bg-[#3066BE] text-white border-[#3066BE] shadow-xs'
+                                        : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+                                    }`}
+                                    title="Click to view Version 1 baseline, rejection notes, and follow-up history directly on this page"
+                                  >
+                                    <History className="w-3 h-3" />
+                                    <span>{expandedQuotationHistoryIds[q.id] ? 'Hide v1 History ▲' : 'Show v1 Baseline & History ▼'}</span>
+                                  </button>
+                                )}
+                              </td>
+                              <td className="p-3.5">
+                                <div className="font-semibold text-slate-800 text-sm">{q.client?.clientName}</div>
+                                <div className="text-[11px] text-slate-500">BGA: {q.bga?.name} ({q.bga?.email})</div>
+                              </td>
+                              <td className="p-3.5">
+                                <div className="text-slate-900 font-extrabold text-sm">
+                                  ₹{(q.totalAmount || 0).toLocaleString()}
+                                </div>
+                                <div className="text-[10px] text-slate-500">{q.serviceCategory}</div>
+                              </td>
+                              <td className="p-3.5">
+                                <span className="font-bold text-indigo-700">
+                                  ₹{(q.advanceRequiredAmount || 0).toLocaleString()}
+                                </span>
+                                <span className="text-slate-400 text-[10px] block">
+                                  ({q.advanceRequiredPercent || 50}% mandatory)
+                                </span>
+                              </td>
+                              <td className="p-3.5">
+                                <span
+                                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                    q.status === 'ACCEPTED'
+                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                      : q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA'
+                                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                      : q.status === 'PENDING_ADMIN_APPROVAL'
+                                      ? 'bg-purple-100 text-[#152544] border border-[#3066BE]/25'
+                                      : q.status === 'REVISION_REQUESTED'
+                                      ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                      : q.status === 'REJECTED'
+                                      ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                      : 'bg-slate-100 text-slate-800 border border-slate-200'
+                                  }`}
                                 >
-                                  Scope
-                                </button>
-                                <a
-                                  href={getQuotationPdfUrl(q.id)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-xs font-semibold inline-block hover:bg-slate-800"
-                                >
-                                  PDF
-                                </a>
-                              </div>
-                            </td>
-                          </tr>
+                                  {q.status === 'PENDING_ADMIN_APPROVAL'
+                                    ? 'PENDING ADMIN APPROVAL'
+                                    : q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA'
+                                    ? 'APPROVED & SENT TO BGA'
+                                    : q.status === 'REJECTED'
+                                    ? 'REJECTED (AWAITING ACCOUNTS CORRECTION)'
+                                    : q.status === 'REVISION_REQUESTED'
+                                    ? 'REVISION REQUESTED FROM ACCOUNTS'
+                                    : q.status}
+                                </span>
+                                {q.adminNotes && (
+                                  <div className="text-[10px] text-slate-500 mt-1 max-w-xs text-left">
+                                    <strong className="text-slate-700">Admin Note:</strong> {q.adminNotes}
+                                  </div>
+                                )}
+                                {q.previousVersion && (
+                                  <div className="mt-1.5 p-1.5 bg-slate-50 border border-slate-200 rounded text-[10px] space-y-0.5 text-left">
+                                    <div className="text-slate-600 font-medium">
+                                      Revised from <span className="font-bold text-slate-800">v{q.previousVersion.version}</span> (₹{(q.previousVersion.totalAmount || 0).toLocaleString()})
+                                    </div>
+                                    {q.previousVersion.adminNotes && (
+                                      <div className="text-amber-800 font-medium">
+                                        <strong className="text-amber-900">v{q.previousVersion.version} Rejection Reason:</strong> {q.previousVersion.adminNotes}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="p-3.5 text-right space-y-1">
+                                <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                  {isPendingApproval ? (
+                                    <>
+                                      <button
+                                        onClick={() => setQuotationReviewModal({ quotation: q, action: 'APPROVE' })}
+                                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                                      >
+                                        Approve Quote
+                                      </button>
+                                      <button
+                                        onClick={() => setQuotationReviewModal({ quotation: q, action: 'REQUEST_REVISION' })}
+                                        className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-colors"
+                                      >
+                                        Revision
+                                      </button>
+                                      <button
+                                        onClick={() => setQuotationReviewModal({ quotation: q, action: 'REJECT' })}
+                                        className="px-2.5 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-xs font-bold transition-colors"
+                                      >
+                                        Reject
+                                      </button>
+                                    </>
+                                  ) : (q.status === 'REJECTED' || q.status === 'REVISION_REQUESTED') ? (
+                                    <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                      Awaiting Accounts Corrections
+                                    </span>
+                                  ) : null}
+                                  {((q.versionHistory && q.versionHistory.length > 1) || q.previousVersion || q.version > 1) && (
+                                    <button
+                                      onClick={() => setExpandedQuotationHistoryIds(prev => ({ ...prev, [q.id]: !prev[q.id] }))}
+                                      className={`px-2.5 py-1 rounded-lg border text-xs font-semibold flex items-center gap-1 transition-all ${
+                                        expandedQuotationHistoryIds[q.id]
+                                          ? 'bg-[#3066BE] text-white border-[#3066BE]'
+                                          : 'border-indigo-300 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100'
+                                      }`}
+                                      title="View Version 1 & Version 2 history, rejection notes, and reminders directly inline"
+                                    >
+                                      <History className="w-3 h-3" />
+                                      <span>v1 & v2 History</span>
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => setQuotationDetailModal(q)}
+                                    className="px-2.5 py-1 rounded-lg border border-slate-300 text-slate-700 hover:bg-[#AEECEF]/20 hover:text-[#3066BE] text-xs font-semibold"
+                                  >
+                                    Scope
+                                  </button>
+                                  <a
+                                    href={getQuotationPdfUrl(q.id)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-xs font-semibold inline-block hover:bg-slate-800"
+                                  >
+                                    PDF
+                                  </a>
+                                </div>
+                              </td>
+                            </tr>
+                            {expandedQuotationHistoryIds[q.id] && (
+                              <tr className="bg-slate-50/90 border-b-2 border-indigo-200">
+                                <td colSpan={6} className="p-4 pl-6 pr-6">
+                                  <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+                                    <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <div className="w-6 h-6 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200">
+                                          <History className="w-3.5 h-3.5" />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-900">
+                                          Version 1 & Version 2 Quotation History & Rejection Audit
+                                        </span>
+                                        <span className="text-[10px] bg-blue-100 text-blue-800 font-extrabold px-2 py-0.5 rounded-full border border-blue-200">
+                                          {q.quotationNumber}
+                                        </span>
+                                        <span className="text-[11px] text-slate-500 font-medium">
+                                          Client: <strong className="text-slate-800">{q.client?.clientName}</strong> • BGA: <strong className="text-slate-800">{q.bga?.name}</strong>
+                                        </span>
+                                      </div>
+                                      <button
+                                        onClick={() => setExpandedQuotationHistoryIds(prev => ({ ...prev, [q.id]: false }))}
+                                        className="text-xs text-slate-400 hover:text-slate-700 font-bold px-2 py-1 rounded hover:bg-slate-100 transition-colors"
+                                      >
+                                        Close History ✕
+                                      </button>
+                                    </div>
+
+                                    <QuotationHistoryTimeline currentQuotation={q} defaultExpanded={true} />
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         );
                       })}
                     </tbody>
