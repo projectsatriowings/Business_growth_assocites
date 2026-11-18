@@ -48,6 +48,7 @@ import { useAuth } from '../../context/AuthContext';
 import { AssociateProfileView } from './AssociateProfileView';
 import { apiRequest } from '../../utils/api';
 import { SkeletonCard, SkeletonStatsRow, SkeletonTable, AdminDashboardSkeleton } from '../../components/Skeleton';
+import { isExternalWebLink, downloadFile } from '../../utils/fileDownload';
 import { validateBankUtr } from '../../utils/utrValidator';
 import { useToast } from '../../context/ToastContext';
 import { getQuotationPdfUrl } from '../../utils/downloadPdf';
@@ -3330,22 +3331,22 @@ export const AdminPortal: React.FC = () => {
                           <span className="font-bold text-slate-800">{p.assignedLead?.name || 'Unassigned'}</span>
                         </div>
                         <div className="p-2.5 bg-slate-50 rounded-xl">
-                          <span className="text-slate-400 block text-[10px]">Milestones Completed</span>
+                          <span className="text-slate-400 block text-[10px]">Deliverables</span>
                           <span className="font-bold text-slate-800">
-                            {p.milestones?.filter((m: any) => m.status === 'COMPLETED').length || 0} / {p.milestones?.length || 0} Done
+                            {p.deliverables?.length || 0} Files Uploaded
                           </span>
                         </div>
                       </div>
 
                       <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-xs">
                         <span className="text-slate-400">
-                          Deliverables: <strong>{p.deliverables?.length || 0} files</strong>
+                          Status: <strong className="text-slate-700">{p.status}</strong>
                         </span>
                         <button
                           onClick={() => setProjectDetailModal(p)}
                           className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-[#AEECEF]/20 hover:text-[#3066BE] font-semibold"
                         >
-                          View Milestones →
+                          View Deliverables & Scope →
                         </button>
                       </div>
                     </div>
@@ -3377,23 +3378,105 @@ export const AdminPortal: React.FC = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <strong className="text-xs text-slate-700 block">Project Milestones & Deliverables:</strong>
-                      {projectDetailModal.milestones && projectDetailModal.milestones.length > 0 ? (
-                        projectDetailModal.milestones.map((m: any, idx: number) => (
-                          <div key={m.id || idx} className="p-3 rounded-xl border border-slate-200 bg-slate-50 flex justify-between items-center text-xs">
+                      <div>
+                        <strong className="text-xs text-slate-700 block mb-1">Approved Requirements & Scope:</strong>
+                        <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200 leading-relaxed">
+                          {projectDetailModal.approvedScope || 'Standard approved project scope.'}
+                        </p>
+                      </div>
+
+                      {/* Client-Provided Requirement Document */}
+                      {projectDetailModal.workOrder?.quotation?.enquiry?.attachmentUrl && (
+                        <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileText className="w-4 h-4 text-indigo-700 shrink-0" />
                             <div>
-                              <span className="font-bold text-slate-800">{m.title}</span>
-                              <p className="text-[11px] text-slate-500 mt-0.5">{m.description || 'Sprint milestone'}</p>
+                              <span className="font-bold text-slate-900 text-xs block">
+                                Client-Provided Requirement Document / Brief
+                              </span>
+                              <span className="text-[11px] text-indigo-700">Attached by client during project enquiry</span>
                             </div>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              m.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                            }`}>
-                              {m.status}
-                            </span>
                           </div>
-                        ))
+                          <div className="flex items-center gap-2 shrink-0">
+                            {isExternalWebLink(projectDetailModal.workOrder.quotation.enquiry.attachmentUrl) ? (
+                              <a
+                                href={projectDetailModal.workOrder.quotation.enquiry.attachmentUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold text-xs flex items-center gap-1"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" /> Open Link
+                              </a>
+                            ) : (
+                              <>
+                                <a
+                                  href={projectDetailModal.workOrder.quotation.enquiry.attachmentUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold text-xs flex items-center gap-1"
+                                >
+                                  <Eye className="w-3.5 h-3.5" /> View
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => downloadFile(projectDetailModal.workOrder.quotation.enquiry.attachmentUrl, `${projectDetailModal.client?.clientName || 'client'}-brief`)}
+                                  className="px-2.5 py-1 bg-[#3066BE] hover:bg-[#255299] text-white rounded font-bold text-xs flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Download className="w-3.5 h-3.5" /> Download
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <strong className="text-xs text-slate-700 block pt-1">Registered Deliverables:</strong>
+                      {projectDetailModal.deliverables && projectDetailModal.deliverables.length > 0 ? (
+                        projectDetailModal.deliverables.map((d: any, idx: number) => {
+                          const isLink = isExternalWebLink(d.fileUrl);
+                          return (
+                            <div key={d.id || idx} className="p-3 rounded-xl border border-slate-200 bg-slate-50 flex justify-between items-center text-xs gap-3">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-800 block truncate">{d.title}</span>
+                                {d.description && <p className="text-[11px] text-slate-500 mt-0.5">{d.description}</p>}
+                              </div>
+                              {d.fileUrl && (
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {isLink ? (
+                                    <a
+                                      href={d.fileUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold flex items-center gap-1 transition-colors"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" /> Open Link
+                                    </a>
+                                  ) : (
+                                    <>
+                                      <a
+                                        href={d.fileUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold flex items-center gap-1 transition-colors"
+                                      >
+                                        <Eye className="w-3.5 h-3.5" /> View
+                                      </a>
+                                      <button
+                                        type="button"
+                                        onClick={() => downloadFile(d.fileUrl, d.title || 'deliverable')}
+                                        className="px-2.5 py-1 bg-[#3066BE] text-white rounded font-bold hover:bg-[#255299] flex items-center gap-1 transition-colors cursor-pointer"
+                                      >
+                                        <Download className="w-3.5 h-3.5" /> Download
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
                       ) : (
-                        <p className="text-xs text-slate-400">No milestones registered yet for this project.</p>
+                        <p className="text-xs text-slate-400">No deliverables uploaded yet for this project.</p>
                       )}
                     </div>
 

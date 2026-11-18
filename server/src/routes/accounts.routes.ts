@@ -180,7 +180,7 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
     const fee = parseFloat(serviceFee) || 0;
     const ad = parseFloat(adBudget) || 0;
     const disc = parseFloat(discount) || 0;
-    const rate = parseFloat(taxRate) !== undefined ? parseFloat(taxRate) : 18;
+    const rate = taxRate !== undefined && !isNaN(parseFloat(taxRate)) ? parseFloat(taxRate) : 18;
 
     const taxableAmount = Math.max(0, fee + ad - disc);
     const taxAmount = (taxableAmount * rate) / 100;
@@ -381,8 +381,8 @@ router.post('/work-orders/:id/hold', async (req: AuthRequest, res: Response): Pr
     const handoverStatus = isResume
       ? (workOrder.handoverApproved ? 'APPROVED' : 'PENDING')
       : action === 'REQUEST_CLARIFICATION'
-      ? 'CLARIFICATION_REQUESTED'
-      : 'ON_HOLD';
+        ? 'CLARIFICATION_REQUESTED'
+        : 'ON_HOLD';
 
     const updated = await prisma.workOrder.update({
       where: { id },

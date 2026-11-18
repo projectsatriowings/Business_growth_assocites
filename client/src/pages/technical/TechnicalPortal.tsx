@@ -32,6 +32,7 @@ import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ModalPortal } from '../../components/ModalPortal';
 import { MediaUploader, MediaUploadResult } from '../../components/MediaUploader';
+import { isExternalWebLink, extractUrls, downloadFile } from '../../utils/fileDownload';
 
 export const TechnicalPortal: React.FC = () => {
   const { user } = useAuth();
@@ -67,10 +68,9 @@ export const TechnicalPortal: React.FC = () => {
     return teamFilter === 'DIGITAL_MARKETING' ? isDm : !isDm;
   });
 
-  // New Milestone Modal
-  const [milestoneModal, setMilestoneModal] = useState<boolean>(false);
-  const [milestoneTitle, setMilestoneTitle] = useState('');
-  const [milestoneDesc, setMilestoneDesc] = useState('');
+  // Progress Update Modal
+  const [progressModal, setProgressModal] = useState<{ projectId: string; current: number } | null>(null);
+  const [progressInput, setProgressInput] = useState<number>(0);
 
   // New Deliverable Modal
   const [deliverableModal, setDeliverableModal] = useState<boolean>(false);
@@ -81,13 +81,11 @@ export const TechnicalPortal: React.FC = () => {
   const [deliverableFileName, setDeliverableFileName] = useState<string>('');
   const [deliverableFileSize, setDeliverableFileSize] = useState<number | undefined>(undefined);
   const [deliverableVersion, setDeliverableVersion] = useState('1.0');
-  const [deliverableMilestoneId, setDeliverableMilestoneId] = useState('');
 
   // Correction Request & Three-Way Communication Modal
   const [feedbackModal, setFeedbackModal] = useState<boolean>(false);
   const [feedbackContent, setFeedbackContent] = useState('');
   const [feedbackVisibility, setFeedbackVisibility] = useState<'CLIENT_VISIBLE' | 'INTERNAL'>('CLIENT_VISIBLE');
-  const [feedbackMilestoneId, setFeedbackMilestoneId] = useState('');
 
   const loadStats = async (bypass = false) => {
     try {
@@ -171,68 +169,7 @@ export const TechnicalPortal: React.FC = () => {
     }
   };
 
-  // Handle Add Milestone
-  const handleAddMilestone = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProject || !milestoneTitle) return;
-
-    try {
-      await apiRequest(`/api/technical/projects/${selectedProject.id}/milestones`, {
-        method: 'POST',
-        body: JSON.stringify({ title: milestoneTitle, description: milestoneDesc }),
-      });
-      toast.success('Milestone added successfully.');
-      setMilestoneModal(false);
-      setMilestoneTitle('');
-      setMilestoneDesc('');
-      loadData();
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to add milestone');
-    }
-  };
-
-  // Handle Milestone Status - Auto-recalculates project progress percentage
-  const handleMilestoneStatus = async (milestoneId: string, status: string) => {
-    try {
-      const res = await apiRequest(`/api/technical/milestones/${milestoneId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status }),
-      });
-      const newProgress = res.progressPercentage !== undefined ? res.progressPercentage : null;
-      toast.success(
-        newProgress !== null
-          ? `Milestone marked as ${status.toLowerCase()}. Progress updated to ${newProgress}%.`
-          : `Milestone marked as ${status.toLowerCase()}.`
-      );
-
-      // Instant optimistic update with recalculated progress
-      if (newProgress !== null) {
-        setSelectedProject((prev: any) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            progressPercentage: newProgress,
-            status: res.projectStatus || prev.status,
-            milestones: prev.milestones?.map((m: any) =>
-              m.id === milestoneId ? { ...m, status } : m
-            ),
-          };
-        });
-        setProjects((prev: any[]) =>
-          prev.map((p: any) =>
-            p.id === selectedProject?.id
-              ? { ...p, progressPercentage: newProgress, status: res.projectStatus || p.status }
-              : p
-          )
-        );
-      }
-      loadData(true);
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to update milestone status');
-    }
-  };
-
-  // Handle Add Deliverable (With Milestone Link, Media Upload & BGA Review Notification)
+  // Handle Add Deliverable (With Media Upload & BGA Review Notification)
   const handleAddDeliverable = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProject || !deliverableTitle) return;
@@ -247,7 +184,6 @@ export const TechnicalPortal: React.FC = () => {
           fileType: deliverableFileType || undefined,
           fileSize: deliverableFileSize || undefined,
           version: deliverableVersion,
-          milestoneId: deliverableMilestoneId || undefined,
         }),
       });
       toast.success('Deliverable uploaded & submitted to BGA for client sharing review.');
@@ -259,7 +195,6 @@ export const TechnicalPortal: React.FC = () => {
       setDeliverableFileName('');
       setDeliverableFileSize(undefined);
       setDeliverableVersion('1.0');
-      setDeliverableMilestoneId('');
       loadData(true);
     } catch (e: any) {
       toast.error(e.message || 'Failed to add deliverable');
@@ -279,13 +214,11 @@ export const TechnicalPortal: React.FC = () => {
           feedbackType: feedbackVisibility === 'INTERNAL' ? 'INTERNAL_NOTE' : 'TECHNICAL_RESPONSE',
           messageType: 'TECHNICAL_REPLY',
           visibility: feedbackVisibility,
-          milestoneId: feedbackMilestoneId || undefined,
         }),
       });
       toast.success('Response posted to project communication thread.');
       setFeedbackModal(false);
       setFeedbackContent('');
-      setFeedbackMilestoneId('');
       loadData(true);
     } catch (e: any) {
       toast.error(e.message || 'Failed to submit feedback');
@@ -307,7 +240,7 @@ export const TechnicalPortal: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
-      <PortalHeader title="Technical & IT Solutions Portal" subtitle="Software Engineering, Milestone Delivery & Handover" />
+      <PortalHeader title="Technical & IT Solutions Portal" subtitle="Software Engineering, Deliverables & Handover" />
 
       <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
         {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
@@ -366,7 +299,7 @@ export const TechnicalPortal: React.FC = () => {
                       Welcome back, {user?.name || 'Engineer'}
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Milestone execution, project deliverables, and client feedback revisions.
+                      Deliverables execution, client reviews, and project handover.
                     </p>
                   </div>
                 </div>
@@ -406,7 +339,7 @@ export const TechnicalPortal: React.FC = () => {
                 <h3 className="font-bold text-sm mb-1">Technical Department Security Boundary</h3>
                 <p className="leading-relaxed">
                   As per company role security guidelines, the Technical Department views strictly technical requirements,
-                  approved scopes, and milestones. Sensitive BGA commissions, personal banking data, and unrelated accounts
+                  approved scopes, and deliverables. Sensitive BGA commissions, personal banking data, and unrelated accounts
                   records are isolated and restricted from technical view.
                 </p>
               </div>
@@ -551,7 +484,7 @@ export const TechnicalPortal: React.FC = () => {
                           </div>
 
                           <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
-                            <span>{p.milestones?.length || 0} Milestones • {p.deliverables?.length || 0} Deliverables</span>
+                            <span>{p.deliverables?.length || 0} Deliverables Registered</span>
                             <span className="font-bold text-amber-700">Open Workspace →</span>
                           </div>
                         </div>
@@ -600,7 +533,7 @@ export const TechnicalPortal: React.FC = () => {
                         {selectedProject.status === 'IN_PROGRESS' && (
                           <button
                             onClick={() => handleUpdateStatus(selectedProject.id, 'UNDER_REVIEW', 90)}
-                            className="px-3 py-1.5 bg-[#119DA4] hover:bg-[#0e8389] text-white rounded-lg text-xs font-bold"
+                            className="px-3.5 py-2 bg-[#119DA4] hover:bg-[#0e8389] text-white rounded-lg text-xs font-bold cursor-pointer"
                           >
                             Submit for Client Review
                           </button>
@@ -643,6 +576,43 @@ export const TechnicalPortal: React.FC = () => {
                               : 'Software Development Team'}
                           </span>
                         </div>
+
+                        {/* Client Uploaded Brief / Requirements Document */}
+                        {selectedProject.workOrder?.quotation?.enquiry?.attachmentUrl && (
+                          <div className="pt-2 border-t border-slate-200/60 mt-2">
+                            <span className="text-slate-500 block mb-1 text-[11px] font-semibold">Client Uploaded Brief / Document:</span>
+                            <div className="flex items-center gap-2">
+                              {isExternalWebLink(selectedProject.workOrder.quotation.enquiry.attachmentUrl) ? (
+                                <a
+                                  href={selectedProject.workOrder.quotation.enquiry.attachmentUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-indigo-600 hover:text-indigo-800 font-bold underline flex items-center gap-1 text-[11px]"
+                                >
+                                  <ExternalLink className="w-3 h-3" /> Open Client Link
+                                </a>
+                              ) : (
+                                <div className="flex items-center gap-1.5">
+                                  <a
+                                    href={selectedProject.workOrder.quotation.enquiry.attachmentUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-2 py-0.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded font-semibold text-[11px] flex items-center gap-1"
+                                  >
+                                    <Eye className="w-3 h-3" /> View
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => downloadFile(selectedProject.workOrder.quotation.enquiry.attachmentUrl, `${selectedProject.client?.clientName || 'client'}-brief`)}
+                                    className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                                  >
+                                    <Download className="w-3 h-3" /> Download Doc
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Box 2: Client & BGA Details */}
@@ -689,61 +659,6 @@ export const TechnicalPortal: React.FC = () => {
                           ✓ Auto-Released to Technical Department
                         </div>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Milestones Section */}
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                    <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                      <div>
-                        <h3 className="font-bold text-slate-900 text-sm">Project Milestones</h3>
-                        <p className="text-[11px] text-slate-500">Track execution phases and mark milestones complete to auto-advance project progress.</p>
-                      </div>
-                      <button
-                        onClick={() => setMilestoneModal(true)}
-                        className="px-3 py-1.5 bg-amber-50 text-amber-800 hover:bg-amber-100 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Add Milestone
-                      </button>
-                    </div>
-
-                    <div className="space-y-2">
-                      {(!selectedProject.milestones || selectedProject.milestones.length === 0) ? (
-                        <div className="text-xs text-slate-400 py-3 text-center">No milestones added yet. Add milestones to track progressive completion.</div>
-                      ) : (
-                        selectedProject.milestones.map((m: any) => (
-                          <div
-                            key={m.id}
-                            className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 flex justify-between items-center text-xs"
-                          >
-                            <div>
-                              <span className="font-bold text-slate-800">{m.title}</span>
-                              {m.description && <p className="text-slate-500 text-[11px] mt-0.5">{m.description}</p>}
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                m.status === 'COMPLETED'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : m.status === 'IN_PROGRESS'
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : 'bg-slate-200 text-slate-700'
-                              }`}>
-                                {m.status}
-                              </span>
-
-                              {m.status !== 'COMPLETED' && (
-                                <button
-                                  onClick={() => handleMilestoneStatus(m.id, 'COMPLETED')}
-                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-semibold transition-colors cursor-pointer"
-                                >
-                                  Mark Complete
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      )}
                     </div>
                   </div>
 
@@ -836,26 +751,47 @@ export const TechnicalPortal: React.FC = () => {
                                   </div>
                                   {d.description && <p className="text-slate-600 text-[11px] leading-relaxed">{d.description}</p>}
                                   <div className="flex flex-wrap items-center gap-3 text-slate-500 font-mono text-[11px] pt-0.5">
-                                    <a
-                                      href={d.fileUrl}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1 font-semibold"
-                                    >
-                                      {isImg ? (
-                                        <>
-                                          <Eye className="w-3 h-3" /> View Image Screenshot
-                                        </>
-                                      ) : isVid ? (
-                                        <>
-                                          <Play className="w-3 h-3" /> Play Video Demo
-                                        </>
-                                      ) : (
-                                        <>
-                                          <ExternalLink className="w-3 h-3" /> Access Deliverable Artifact
-                                        </>
-                                      )}
-                                    </a>
+                                    {isExternalWebLink(d.fileUrl) ? (
+                                      <a
+                                        href={d.fileUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1 font-semibold"
+                                      >
+                                        <ExternalLink className="w-3 h-3" /> Access Deliverable Link
+                                      </a>
+                                    ) : (
+                                      <div className="flex items-center gap-2">
+                                        <a
+                                          href={d.fileUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1 font-semibold"
+                                        >
+                                          {isImg ? (
+                                            <>
+                                              <Eye className="w-3 h-3" /> View Image Screenshot
+                                            </>
+                                          ) : isVid ? (
+                                            <>
+                                              <Play className="w-3 h-3" /> Play Video Demo
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Eye className="w-3 h-3" /> View Deliverable Artifact
+                                            </>
+                                          )}
+                                        </a>
+                                        <button
+                                          type="button"
+                                          onClick={() => downloadFile(d.fileUrl, d.title || 'deliverable')}
+                                          className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                          title="Download deliverable"
+                                        >
+                                          <Download className="w-3 h-3 text-indigo-600" /> Download
+                                        </button>
+                                      </div>
+                                    )}
                                     {d.fileSize && (
                                       <span className="text-slate-400">
                                         ({(d.fileSize / (1024 * 1024)).toFixed(1)} MB)
@@ -973,6 +909,49 @@ export const TechnicalPortal: React.FC = () => {
                               <p className="text-slate-800 leading-relaxed font-normal whitespace-pre-wrap">
                                 {f.content}
                               </p>
+
+                              {/* Extract any attached docs/links in feedback */}
+                              {(() => {
+                                const urls = extractUrls(f.content);
+                                if (!urls.length) return null;
+                                return (
+                                  <div className="mt-2 pt-2 border-t border-slate-200/50 flex flex-wrap gap-2 items-center">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Attached Resources / Docs:</span>
+                                    {urls.map((u, i) => {
+                                      const isLink = isExternalWebLink(u);
+                                      return isLink ? (
+                                        <a
+                                          key={i}
+                                          href={u}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-xs text-indigo-600 hover:underline font-bold flex items-center gap-1"
+                                        >
+                                          <ExternalLink className="w-3 h-3" /> Open Link
+                                        </a>
+                                      ) : (
+                                        <div key={i} className="flex items-center gap-1">
+                                          <a
+                                            href={u}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-xs text-slate-600 hover:text-indigo-600 font-bold flex items-center gap-0.5"
+                                          >
+                                            <Eye className="w-3 h-3" /> View
+                                          </a>
+                                          <button
+                                            type="button"
+                                            onClick={() => downloadFile(u, 'feedback-attachment')}
+                                            className="px-2 py-0.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                          >
+                                            <Download className="w-3 h-3 text-indigo-600" /> Download Doc
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
                         })
@@ -981,62 +960,6 @@ export const TechnicalPortal: React.FC = () => {
                   </div>
                 </div>
               )}
-
-              {/* Add Milestone Modal */}
-              <ModalPortal
-                isOpen={milestoneModal}
-                onClose={() => setMilestoneModal(false)}
-              >
-                {milestoneModal && (
-                  <div
-                    className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <h3 className="text-base font-bold text-slate-900">Add Project Milestone</h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Define a structured milestone to track engineering progress toward completion.
-                    </p>
-                    <form onSubmit={handleAddMilestone} className="mt-4 space-y-3 text-xs">
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Milestone Title *</label>
-                        <input
-                          type="text"
-                          required
-                          value={milestoneTitle}
-                          onChange={(e) => setMilestoneTitle(e.target.value)}
-                          placeholder="e.g. Backend API Architecture & DB push"
-                          className="w-full p-2 border border-slate-300 rounded"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-700 font-semibold mb-1">Description</label>
-                        <textarea
-                          rows={2}
-                          value={milestoneDesc}
-                          onChange={(e) => setMilestoneDesc(e.target.value)}
-                          placeholder="Details of deliverables for this milestone..."
-                          className="w-full p-2 border border-slate-300 rounded"
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                        <button
-                          type="button"
-                          onClick={() => setMilestoneModal(false)}
-                          className="px-3 py-1.5 rounded text-slate-600 font-semibold hover:bg-slate-100 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-4 py-1.5 bg-[#3066BE] text-white shadow-sm rounded font-bold hover:bg-[#255299] transition-colors"
-                        >
-                          Add Milestone
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                )}
-              </ModalPortal>
 
               {/* Add Deliverable Modal */}
               <ModalPortal
@@ -1064,24 +987,6 @@ export const TechnicalPortal: React.FC = () => {
                           className="w-full p-2 border border-slate-300 rounded"
                         />
                       </div>
-
-                      {selectedProject?.milestones && selectedProject.milestones.length > 0 && (
-                        <div>
-                          <label className="block text-slate-700 font-semibold mb-1">Associated Milestone</label>
-                          <select
-                            value={deliverableMilestoneId}
-                            onChange={(e) => setDeliverableMilestoneId(e.target.value)}
-                            className="w-full p-2 border border-slate-300 rounded bg-white text-slate-800"
-                          >
-                            <option value="">-- General / No Milestone Attached --</option>
-                            {selectedProject.milestones.map((m: any) => (
-                              <option key={m.id} value={m.id}>
-                                {m.title} ({m.status})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
 
                       {/* Direct Media Upload (Images, Video, Audio, Docs) or URL Toggle */}
                       <div>

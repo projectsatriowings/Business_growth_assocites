@@ -144,9 +144,16 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
     const serviceFee = quotation.serviceFee || 0;
     const adBudget = quotation.adBudget || 0;
     const discount = quotation.discount || 0;
-    const taxRate = quotation.taxRate || 18;
-    const taxAmount = quotation.taxAmount || 0;
-    const totalAmount = quotation.totalAmount || (serviceFee + adBudget - discount + taxAmount);
+    const taxRate = quotation.taxRate !== undefined && !isNaN(quotation.taxRate) ? quotation.taxRate : 18;
+    const taxableAmount = Math.max(0, serviceFee + adBudget - discount);
+
+    // Ensure GST amount matches record or is calculated accurately if missing
+    let taxAmount = quotation.taxAmount || 0;
+    if ((!taxAmount || taxAmount === 0) && taxRate > 0 && taxableAmount > 0) {
+      taxAmount = (taxableAmount * taxRate) / 100;
+    }
+
+    const totalAmount = quotation.totalAmount || (taxableAmount + taxAmount);
     const advancePercent = quotation.advanceRequiredPercent || 50;
     const advanceAmount = quotation.advanceRequiredAmount || Math.round(totalAmount * (advancePercent / 100));
 

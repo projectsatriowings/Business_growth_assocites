@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import crypto from 'crypto';
-import { Role, BgaStatus, EnquiryStatus, QuotationStatus, WorkOrderStatus, ServiceCategoryType } from '@prisma/client';
+import { Role, BgaStatus, EnquiryStatus, QuotationStatus, WorkOrderStatus, ServiceCategoryType, ProjectStatus } from '@prisma/client';
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, checkBgaActive, AuthRequest, logAudit, createNotification } from '../middleware/auth';
 import { appCache } from '../utils/cache';
@@ -2411,7 +2411,17 @@ router.get('/work-orders', async (req: AuthRequest, res: Response): Promise<void
       where: { bgaId: req.user!.id },
       include: {
         client: true,
-        quotation: true,
+        quotation: {
+          include: {
+            enquiry: {
+              select: {
+                id: true,
+                requirements: true,
+                attachmentUrl: true,
+              },
+            },
+          },
+        },
         payments: true,
         project: {
           include: {
@@ -2540,7 +2550,7 @@ router.put('/deliverables/:id/review', async (req: AuthRequest, res: Response): 
 router.post('/projects/:id/feedback', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { content, messageType, visibility, milestoneId, deliverableId } = req.body;
+    const { content, messageType, visibility, milestoneId, deliverableId, clientDecision } = req.body;
 
     const project = await prisma.technicalProject.findUnique({
       where: { id },
@@ -2574,11 +2584,31 @@ router.post('/projects/:id/feedback', async (req: AuthRequest, res: Response): P
       },
     });
 
+    // If client requested corrections or approved, update project state accordingly
+    if (clientDecision === 'CHANGES_REQUESTED') {
+      await prisma.technicalProject.update({
+        where: { id },
+        data: { status: ProjectStatus.CORRECTION_REQUIRED },
+      });
+    } else if (clientDecision === 'APPROVED') {
+      await prisma.technicalProject.update({
+        where: { id },
+        data: { progressPercentage: 95 },
+      });
+    }
+
     // Notify Technical team
     const techUsers = await prisma.user.findMany({
       where: { role: { in: [Role.TECHNICAL, Role.ADMIN] } },
     });
-    const title = isInternal ? 'Internal Project Note from BGA' : 'Client Feedback Recorded by BGA';
+    const title =
+      clientDecision === 'CHANGES_REQUESTED'
+        ? 'Client Requested Corrections'
+        : clientDecision === 'APPROVED'
+          ? 'Client Approved Deliverables'
+          : isInternal
+            ? 'Internal Project Note from BGA'
+            : 'Client Feedback Recorded by BGA';
     const desc = `BGA ${req.user!.name} posted: "${content.trim().slice(0, 70)}..." on project ${project.projectNumber}`;
 
     for (const tech of techUsers) {

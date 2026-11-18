@@ -1235,17 +1235,6 @@ router.post('/handovers/:id/review', async (req: AuthRequest, res: Response): Pr
             startDate: new Date(),
           },
         });
-
-        // Seed 5 standard technical milestones
-        await prisma.projectMilestone.createMany({
-          data: [
-            { projectId: project.id, title: 'Project Kick-off & Requirement Deep Dive', status: 'TODO' },
-            { projectId: project.id, title: 'Architecture / Wireframes / Design Approval', status: 'TODO' },
-            { projectId: project.id, title: 'Core Implementation & Deliverable Build', status: 'TODO' },
-            { projectId: project.id, title: 'Quality Assurance & Client Review', status: 'TODO' },
-            { projectId: project.id, title: 'Final Handover & Project Sign-off', status: 'TODO' },
-          ],
-        });
       }
 
       // Notify Technical users

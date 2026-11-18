@@ -78,6 +78,7 @@ import { BUSINESS_CATEGORIES } from '../../constants/categories';
 import { ModalPortal } from '../../components/ModalPortal';
 import { MediaUploader, MediaUploadResult } from '../../components/MediaUploader';
 import { QuotationHistoryTimeline } from '../../components/QuotationHistoryTimeline';
+import { isExternalWebLink, downloadFile } from '../../utils/fileDownload';
 
 export const BgaPortal: React.FC = () => {
   const { user } = useAuth();
@@ -306,10 +307,10 @@ export const BgaPortal: React.FC = () => {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   // BGA Feedback / Three-Way Communication Modal
-  const [bgaFeedbackModal, setBgaFeedbackModal] = useState<{ project: any } | null>(null);
+  const [bgaFeedbackModal, setBgaFeedbackModal] = useState<{ project: any; clientName?: string } | null>(null);
   const [bgaFeedbackContent, setBgaFeedbackContent] = useState('');
   const [bgaFeedbackType, setBgaFeedbackType] = useState<'CLIENT_FEEDBACK' | 'INTERNAL_NOTE'>('CLIENT_FEEDBACK');
-  const [bgaFeedbackMilestoneId, setBgaFeedbackMilestoneId] = useState('');
+  const [bgaClientDecision, setBgaClientDecision] = useState<'APPROVED' | 'CHANGES_REQUESTED'>('APPROVED');
   const [bgaFeedbackSubmitting, setBgaFeedbackSubmitting] = useState(false);
 
   // Associate Support Desk State
@@ -396,17 +397,18 @@ export const BgaPortal: React.FC = () => {
           content: bgaFeedbackContent.trim(),
           feedbackType: bgaFeedbackType,
           visibility: bgaFeedbackType === 'INTERNAL_NOTE' ? 'INTERNAL' : 'CLIENT_VISIBLE',
-          milestoneId: bgaFeedbackMilestoneId || undefined,
+          clientDecision: bgaClientDecision,
         }),
       });
       toast.success(
         bgaFeedbackType === 'INTERNAL_NOTE'
           ? 'Internal note logged for Technical Team.'
-          : 'Client feedback recorded & dispatched to Technical Team.'
+          : bgaClientDecision === 'APPROVED'
+            ? 'Client approval recorded & dispatched to Technical Team.'
+            : 'Client revision request dispatched to Technical Team.'
       );
       setBgaFeedbackModal(null);
       setBgaFeedbackContent('');
-      setBgaFeedbackMilestoneId('');
       await loadTabData('projects');
     } catch (err: any) {
       toast.error(err.message || 'Failed to submit feedback');
@@ -1710,11 +1712,11 @@ export const BgaPortal: React.FC = () => {
                           setClientViewMode('list');
                           setActiveClientDetail(null);
                         }}
-                        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 mt-0.5"
-                        title="Back to My Clients"
+                        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors cursor-pointer shrink-0 mt-0.5 flex items-center justify-center"
+                        title="Back to Clients"
+                        aria-label="Back to Clients"
                       >
                         <ArrowLeft className="w-4 h-4" />
-                        <span>Clients</span>
                       </button>
                       <div>
                         <div className="flex items-center gap-2.5 flex-wrap">
@@ -3363,14 +3365,36 @@ export const BgaPortal: React.FC = () => {
                                         Client Brief / Attached Requirement Document
                                       </span>
                                     </div>
-                                    <a
-                                      href={enq.attachmentUrl}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center gap-1 shrink-0 underline"
-                                    >
-                                      <ExternalLink className="w-3.5 h-3.5" /> View File
-                                    </a>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      {isExternalWebLink(enq.attachmentUrl) ? (
+                                        <a
+                                          href={enq.attachmentUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center gap-1 underline"
+                                        >
+                                          <ExternalLink className="w-3.5 h-3.5" /> Open Link
+                                        </a>
+                                      ) : (
+                                        <>
+                                          <a
+                                            href={enq.attachmentUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center gap-1 underline"
+                                          >
+                                            <Eye className="w-3.5 h-3.5" /> View
+                                          </a>
+                                          <button
+                                            type="button"
+                                            onClick={() => downloadFile(enq.attachmentUrl, `${enq.client?.clientName || 'client'}-brief`)}
+                                            className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                          >
+                                            <Download className="w-3.5 h-3.5" /> Download
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
 
@@ -4766,29 +4790,241 @@ export const BgaPortal: React.FC = () => {
                 </div>
 
                 {prj ? (
-                  <div className="mt-3">
-                    <div className="flex justify-between text-xs text-slate-600 mb-1">
-                      <span>Technical Execution: <strong>{prj.status}</strong></span>
-                      <span className="font-bold">{prj.progressPercentage}%</span>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-2">
-                      <div
-                        className="bg-[#3066BE] h-2 rounded-full transition-all"
-                        style={{ width: `${prj.progressPercentage}%` }}
-                      />
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {prj.milestones?.map((m: any) => (
-                        <div key={m.id} className="p-2 rounded bg-slate-50 border border-slate-100 text-[11px]">
-                          <span className="font-semibold text-slate-800 block truncate">{m.title}</span>
-                          <span className={`text-[10px] font-bold ${m.status === 'COMPLETED' ? 'text-[#119DA4]' : 'text-slate-400'
-                            }`}>
-                            {m.status}
+                  <div className="mt-3 space-y-3">
+                    <div>
+                      <div className="flex justify-between items-center text-xs text-slate-600 mb-1">
+                        <div className="flex items-center gap-2">
+                          <span>Technical Execution:</span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            prj.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
+                            prj.status === 'CORRECTION_REQUIRED' ? 'bg-rose-100 text-rose-800' :
+                            prj.status === 'UNDER_REVIEW' ? 'bg-amber-100 text-amber-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {prj.status}
                           </span>
                         </div>
-                      ))}
+                        <span className="font-bold">{prj.progressPercentage}%</span>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-2">
+                        <div
+                          className="bg-[#3066BE] h-2 rounded-full transition-all"
+                          style={{ width: `${prj.progressPercentage}%` }}
+                        />
+                      </div>
                     </div>
+
+                    {/* Client Attached Requirement Document (if provided by client/enquiry) */}
+                    {wo.quotation?.enquiry?.attachmentUrl && (
+                      <div className="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 flex items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
+                          <div>
+                            <span className="font-bold text-slate-800 block truncate">
+                              Client Requirement Document / Specs
+                            </span>
+                            <span className="text-[10px] text-indigo-700">Client-provided brief from enquiry</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isExternalWebLink(wo.quotation.enquiry.attachmentUrl) ? (
+                            <a
+                              href={wo.quotation.enquiry.attachmentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2.5 py-1 rounded bg-white hover:bg-slate-50 text-[#3066BE] border border-slate-200 text-xs font-bold inline-flex items-center gap-1"
+                            >
+                              <ExternalLink className="w-3 h-3" /> Open Link
+                            </a>
+                          ) : (
+                            <>
+                              <a
+                                href={wo.quotation.enquiry.attachmentUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2 py-1 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold inline-flex items-center gap-1"
+                              >
+                                <Eye className="w-3 h-3" /> View
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => downloadFile(wo.quotation.enquiry.attachmentUrl, `${wo.client?.clientName || 'client'}-brief`)}
+                                className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                              >
+                                <Download className="w-3 h-3" /> Download
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Uploaded Deliverables Section */}
+                    {prj.deliverables && prj.deliverables.length > 0 && (
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <FileCheck className="w-3.5 h-3.5 text-[#119DA4]" />
+                            Uploaded Deliverables ({prj.deliverables.length})
+                          </span>
+                          <span className="text-[10px] text-slate-500">Inspect deliverables before submitting client feedback</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {prj.deliverables.map((d: any) => (
+                            <div key={d.id} className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs flex flex-col justify-between gap-2 shadow-2xs">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-bold text-slate-900 truncate">{d.title}</span>
+                                    {d.version && (
+                                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-mono font-bold">
+                                        v{d.version}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {d.notes && <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{d.notes}</p>}
+                                </div>
+                                {d.fileUrl && (
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    {isExternalWebLink(d.fileUrl) ? (
+                                      <a
+                                        href={d.fileUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-2 py-1 rounded bg-blue-50 text-[#3066BE] hover:bg-blue-100 font-bold text-[11px] inline-flex items-center gap-1"
+                                      >
+                                        <ExternalLink className="w-3 h-3" />
+                                        Open Link
+                                      </a>
+                                    ) : (
+                                      <>
+                                        <a
+                                          href={d.fileUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-[11px] inline-flex items-center gap-1"
+                                        >
+                                          <Eye className="w-3 h-3" />
+                                          View
+                                        </a>
+                                        <button
+                                          type="button"
+                                          onClick={() => downloadFile(d.fileUrl, d.title || 'deliverable')}
+                                          className="px-2 py-1 rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-colors"
+                                          title="Download deliverable"
+                                        >
+                                          <Download className="w-3 h-3 text-indigo-600" />
+                                          Download
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px]">
+                                <span className={`px-1.5 py-0.5 rounded font-semibold ${
+                                  d.bgaApprovalStatus === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' :
+                                  d.bgaApprovalStatus === 'CHANGES_REQUESTED' ? 'bg-amber-50 text-amber-700' :
+                                  'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {d.bgaApprovalStatus === 'APPROVED' ? '✓ Shared with Client' :
+                                   d.bgaApprovalStatus === 'CHANGES_REQUESTED' ? '⚠ Changes Requested' :
+                                   'Pending Review'}
+                                </span>
+                                {d.bgaApprovalStatus !== 'APPROVED' && (
+                                  <button
+                                    onClick={() => {
+                                      setDeliverableReviewModal({ deliverable: d, project: prj });
+                                      setReviewAction('APPROVE_AND_SHARE');
+                                      setReviewNotes('');
+                                    }}
+                                    className="text-[#119DA4] hover:text-[#0c7479] font-bold text-[11px] hover:underline"
+                                  >
+                                    Review Deliverable →
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Bar: Add Client Review & Feedback + Share Portal */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBgaFeedbackModal({ project: prj, clientName: wo.client?.clientName });
+                            setBgaClientDecision('APPROVED');
+                            setBgaFeedbackType('CLIENT_FEEDBACK');
+                            setBgaFeedbackContent('');
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>+ Add Client Review & Feedback</span>
+                        </button>
+
+                        {prj.clientAccessToken && (
+                          <button
+                            type="button"
+                            onClick={() => handleCopyClientPortalLink(prj.clientAccessToken, wo.client?.clientName)}
+                            className="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                            title="Copy direct portal link for client to review online"
+                          >
+                            <Share2 className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Copy Client Portal Link</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {prj.status === 'CORRECTION_REQUIRED' && (
+                        <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                          Technical Team notified: Revisions in progress
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Review & Feedback History Log */}
+                    {prj.feedback && prj.feedback.length > 0 && (
+                      <div className="mt-3 p-3 bg-slate-50/70 rounded-xl border border-slate-200/80 space-y-2">
+                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <History className="w-3.5 h-3.5 text-slate-500" />
+                          Client Reviews & Communication Log ({prj.feedback.length})
+                        </span>
+                        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                          {prj.feedback.map((f: any) => (
+                            <div key={f.id} className="p-2 rounded-lg bg-white border border-slate-200 text-xs space-y-1 shadow-2xs">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-bold text-slate-900">{f.authorName}</span>
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-semibold">
+                                    {f.authorRole || 'BGA'}
+                                  </span>
+                                  <span className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
+                                    f.feedbackType === 'INTERNAL_NOTE' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                                  }`}>
+                                    {f.feedbackType === 'INTERNAL_NOTE' ? 'Internal' : 'Client Review'}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] text-slate-400">
+                                  {new Date(f.createdAt).toLocaleDateString('en-IN', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              </div>
+                              <p className="text-slate-700 text-xs leading-relaxed whitespace-pre-wrap">{f.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="mt-3 p-3 rounded-lg bg-amber-50 text-amber-800 text-xs">
@@ -4799,6 +5035,322 @@ export const BgaPortal: React.FC = () => {
             );
           }))}
       </div>
+
+      {/* Deliverable Individual Review Modal */}
+      <ModalPortal
+        isOpen={!!deliverableReviewModal}
+        onClose={() => !reviewSubmitting && setDeliverableReviewModal(null)}
+      >
+        {deliverableReviewModal && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ duration: 0.2 }}
+            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500" />
+            <div className="p-6 space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#3066BE] flex items-center justify-center shrink-0 border border-blue-200">
+                    <FileCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">
+                      Review Deliverable
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      {deliverableReviewModal.deliverable.title} {deliverableReviewModal.deliverable.version ? `(v${deliverableReviewModal.deliverable.version})` : ''}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDeliverableReviewModal(null)}
+                  disabled={reviewSubmitting}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {deliverableReviewModal.deliverable.fileUrl && (
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2">
+                  <span className="text-xs text-slate-700 font-medium truncate max-w-xs">
+                    {deliverableReviewModal.deliverable.title}
+                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isExternalWebLink(deliverableReviewModal.deliverable.fileUrl) ? (
+                      <a
+                        href={deliverableReviewModal.deliverable.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold text-[#3066BE] hover:underline inline-flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Open Link
+                      </a>
+                    ) : (
+                      <>
+                        <a
+                          href={deliverableReviewModal.deliverable.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-bold text-[#3066BE] hover:underline inline-flex items-center gap-1"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          View
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => downloadFile(deliverableReviewModal.deliverable.fileUrl, deliverableReviewModal.deliverable.title || 'deliverable')}
+                          className="px-2.5 py-1 rounded bg-[#3066BE] text-white font-bold text-xs inline-flex items-center gap-1 cursor-pointer hover:bg-[#204482] transition-colors"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          Download
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleReviewDeliverable} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">
+                    Review Decision <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setReviewAction('APPROVE_AND_SHARE')}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        reviewAction === 'APPROVE_AND_SHARE'
+                          ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <CheckCircle2 className={`w-4 h-4 ${reviewAction === 'APPROVE_AND_SHARE' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                        <span className="text-xs font-bold text-slate-900">Approve & Share</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">Makes deliverable visible to client on portal</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setReviewAction('REQUEST_CHANGES')}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        reviewAction === 'REQUEST_CHANGES'
+                          ? 'border-amber-500 bg-amber-50/60 ring-2 ring-amber-500/20'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertTriangle className={`w-4 h-4 ${reviewAction === 'REQUEST_CHANGES' ? 'text-amber-600' : 'text-slate-400'}`} />
+                        <span className="text-xs font-bold text-slate-900">Request Changes</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">Sends correction request back to Technical team</p>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Review Notes / Instructions {reviewAction === 'REQUEST_CHANGES' && <span className="text-red-500">*</span>}
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={reviewNotes}
+                    onChange={(e) => setReviewNotes(e.target.value)}
+                    placeholder={
+                      reviewAction === 'REQUEST_CHANGES'
+                        ? 'Detail the changes or corrections needed from the Technical team...'
+                        : 'Optional approval notes or message for the client...'
+                    }
+                    required={reviewAction === 'REQUEST_CHANGES'}
+                    className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#3066BE]/20 focus:border-[#3066BE]"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setDeliverableReviewModal(null)}
+                    disabled={reviewSubmitting}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={reviewSubmitting || (reviewAction === 'REQUEST_CHANGES' && !reviewNotes.trim())}
+                    className="px-4 py-2 rounded-xl bg-[#3066BE] hover:bg-[#204482] text-white text-xs font-bold transition-all disabled:opacity-50"
+                  >
+                    {reviewSubmitting ? 'Submitting...' : 'Confirm Review'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+      </ModalPortal>
+
+      {/* BGA Client Review & Feedback Modal */}
+      <ModalPortal
+        isOpen={!!bgaFeedbackModal}
+        onClose={() => !bgaFeedbackSubmitting && setBgaFeedbackModal(null)}
+      >
+        {bgaFeedbackModal && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ duration: 0.2 }}
+            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="h-1.5 w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-emerald-500" />
+            <div className="p-6 space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
+                    <MessageSquare className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">
+                      Add Client Review & Feedback
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Project {bgaFeedbackModal.project.projectNumber} {bgaFeedbackModal.clientName ? `• ${bgaFeedbackModal.clientName}` : ''}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBgaFeedbackModal(null)}
+                  disabled={bgaFeedbackSubmitting}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handlePostBgaFeedback} className="space-y-4">
+                {/* Client Decision: Approved vs Changes Requested */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">
+                    Client Decision / Status <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setBgaClientDecision('APPROVED')}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        bgaClientDecision === 'APPROVED'
+                          ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <CheckCircle2 className={`w-4 h-4 ${bgaClientDecision === 'APPROVED' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                        <span className="text-xs font-bold text-slate-900">Client Approved</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">Client is satisfied with deliverables. Project advances to 95% completion.</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBgaClientDecision('CHANGES_REQUESTED')}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        bgaClientDecision === 'CHANGES_REQUESTED'
+                          ? 'border-amber-500 bg-amber-50/60 ring-2 ring-amber-500/20'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertTriangle className={`w-4 h-4 ${bgaClientDecision === 'CHANGES_REQUESTED' ? 'text-amber-600' : 'text-slate-400'}`} />
+                        <span className="text-xs font-bold text-slate-900">Changes Requested</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">Flags project as CORRECTION_REQUIRED and alerts Technical team to revise.</p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Communication Type */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Feedback Category
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBgaFeedbackType('CLIENT_FEEDBACK')}
+                      className={`flex-1 py-2 px-3 rounded-lg border text-xs font-semibold text-center transition-all ${
+                        bgaFeedbackType === 'CLIENT_FEEDBACK'
+                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      Client Review Feedback
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBgaFeedbackType('INTERNAL_NOTE')}
+                      className={`flex-1 py-2 px-3 rounded-lg border text-xs font-semibold text-center transition-all ${
+                        bgaFeedbackType === 'INTERNAL_NOTE'
+                          ? 'border-purple-600 bg-purple-50 text-purple-700 font-bold'
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      Internal Note (Technical Desk)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Client Review & Feedback Details <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={bgaFeedbackContent}
+                    onChange={(e) => setBgaFeedbackContent(e.target.value)}
+                    placeholder={
+                      bgaClientDecision === 'APPROVED'
+                        ? 'Enter client confirmation notes, appreciation, or final sign-off remarks...'
+                        : 'List the specific changes, edits, or corrections requested by the client...'
+                    }
+                    required
+                    className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setBgaFeedbackModal(null)}
+                    disabled={bgaFeedbackSubmitting}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={bgaFeedbackSubmitting || !bgaFeedbackContent.trim()}
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-bold transition-all disabled:opacity-50 shadow-sm"
+                  >
+                    {bgaFeedbackSubmitting ? 'Recording...' : 'Submit Client Review'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+      </ModalPortal>
     </div>
   )
 }
