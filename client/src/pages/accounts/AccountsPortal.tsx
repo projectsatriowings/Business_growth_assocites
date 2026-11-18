@@ -1121,6 +1121,11 @@ export const AccountsPortal: React.FC = () => {
                           <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                             v{q.version}
                           </span>
+                          {q.version > 1 && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                              Resubmitted (v{q.version})
+                            </span>
+                          )}
                           {q.reminderCount > 0 && (
                             <span className="text-[10px] text-red-700 bg-red-50 px-2 py-0.5 rounded font-bold border border-red-200 animate-pulse">
                               ⚠️ {q.reminderCount} BGA Reminder{q.reminderCount > 1 ? 's' : ''} Received
@@ -1219,22 +1224,55 @@ export const AccountsPortal: React.FC = () => {
                         <div className={`p-3 rounded-xl border text-xs mt-2 ${
                           q.status === 'REJECTED'
                             ? 'bg-rose-50 border-rose-300 text-rose-950'
-                            : 'bg-purple-50 border-purple-200 text-purple-900'
+                            : q.status === 'REVISION_REQUESTED'
+                            ? 'bg-amber-50 border-amber-300 text-amber-950'
+                            : q.status === 'PENDING_ADMIN_APPROVAL'
+                            ? 'bg-blue-50 border-blue-200 text-blue-900'
+                            : 'bg-emerald-50 border-emerald-200 text-emerald-950'
                         }`}>
                           <div className="flex items-center gap-1.5 font-bold mb-1">
-                            <AlertCircle className={`w-4 h-4 shrink-0 ${q.status === 'REJECTED' ? 'text-rose-600' : 'text-purple-600'}`} />
+                            {q.status === 'REJECTED' ? (
+                              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                            ) : q.status === 'REVISION_REQUESTED' ? (
+                              <Clock className="w-4 h-4 shrink-0 text-amber-600" />
+                            ) : q.status === 'PENDING_ADMIN_APPROVAL' ? (
+                              <Clock className="w-4 h-4 shrink-0 text-blue-600" />
+                            ) : (
+                              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                            )}
                             <span>
                               {q.status === 'REJECTED'
                                 ? 'Admin Rejection Guidance (Needed Corrections):'
-                                : 'Admin Guidance / Revision Instructions:'}
+                                : q.status === 'REVISION_REQUESTED'
+                                ? 'Admin Revision Instructions:'
+                                : q.status === 'PENDING_ADMIN_APPROVAL'
+                                ? 'Admin Previous Guidance:'
+                                : 'Admin Executive Approval Remarks:'}
                             </span>
                           </div>
                           <div className="pl-5 text-slate-800 font-medium leading-relaxed">
                             {q.adminNotes}
                           </div>
-                          <div className="pl-5 text-[11px] text-rose-700 mt-1 font-semibold">
-                            ⚠️ Admin has returned this quotation for corrections. Update the quotation properly and resubmit for executive approval.
-                          </div>
+                          {q.status === 'REJECTED' && (
+                            <div className="pl-5 text-[11px] text-rose-700 mt-1 font-semibold">
+                              ⚠️ Admin has returned this quotation for corrections. Update the quotation properly and resubmit for executive approval.
+                            </div>
+                          )}
+                          {q.status === 'REVISION_REQUESTED' && (
+                            <div className="pl-5 text-[11px] text-amber-700 mt-1 font-semibold">
+                              ⚠️ Admin has requested adjustments on this quotation. Update the draft and resubmit for executive approval.
+                            </div>
+                          )}
+                          {q.status === 'PENDING_ADMIN_APPROVAL' && (
+                            <div className="pl-5 text-[11px] text-blue-700 mt-1 font-semibold">
+                              ⏳ Corrected quotation submitted to Admin. Awaiting executive review and authorization.
+                            </div>
+                          )}
+                          {(q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA' || q.status === 'ACCEPTED') && (
+                            <div className="pl-5 text-[11px] text-emerald-700 mt-1 font-semibold">
+                              ✓ Quotation approved by Admin and released to BGA / Client{q.status === 'ACCEPTED' ? ' • Accepted by Client' : ''}.
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
