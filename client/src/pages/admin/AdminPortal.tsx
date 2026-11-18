@@ -48,6 +48,7 @@ import { useAuth } from '../../context/AuthContext';
 import { AssociateProfileView } from './AssociateProfileView';
 import { apiRequest } from '../../utils/api';
 import { SkeletonCard, SkeletonStatsRow, SkeletonTable, AdminDashboardSkeleton } from '../../components/Skeleton';
+import { isExternalWebLink, downloadFile } from '../../utils/fileDownload';
 import { validateBankUtr } from '../../utils/utrValidator';
 import { useToast } from '../../context/ToastContext';
 import { getQuotationPdfUrl } from '../../utils/downloadPdf';
@@ -3384,26 +3385,96 @@ export const AdminPortal: React.FC = () => {
                         </p>
                       </div>
 
-                      <strong className="text-xs text-slate-700 block pt-1">Registered Deliverables:</strong>
-                      {projectDetailModal.deliverables && projectDetailModal.deliverables.length > 0 ? (
-                        projectDetailModal.deliverables.map((d: any, idx: number) => (
-                          <div key={d.id || idx} className="p-3 rounded-xl border border-slate-200 bg-slate-50 flex justify-between items-center text-xs">
+                      {/* Client-Provided Requirement Document */}
+                      {projectDetailModal.workOrder?.quotation?.enquiry?.attachmentUrl && (
+                        <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileText className="w-4 h-4 text-indigo-700 shrink-0" />
                             <div>
-                              <span className="font-bold text-slate-800">{d.title}</span>
-                              {d.description && <p className="text-[11px] text-slate-500 mt-0.5">{d.description}</p>}
+                              <span className="font-bold text-slate-900 text-xs block">
+                                Client-Provided Requirement Document / Brief
+                              </span>
+                              <span className="text-[11px] text-indigo-700">Attached by client during project enquiry</span>
                             </div>
-                            {d.fileUrl && (
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {isExternalWebLink(projectDetailModal.workOrder.quotation.enquiry.attachmentUrl) ? (
                               <a
-                                href={d.fileUrl}
+                                href={projectDetailModal.workOrder.quotation.enquiry.attachmentUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="px-2.5 py-1 bg-[#3066BE] text-white rounded font-bold hover:bg-[#255299] transition-colors"
+                                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold text-xs flex items-center gap-1"
                               >
-                                View File
+                                <ExternalLink className="w-3.5 h-3.5" /> Open Link
                               </a>
+                            ) : (
+                              <>
+                                <a
+                                  href={projectDetailModal.workOrder.quotation.enquiry.attachmentUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold text-xs flex items-center gap-1"
+                                >
+                                  <Eye className="w-3.5 h-3.5" /> View
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => downloadFile(projectDetailModal.workOrder.quotation.enquiry.attachmentUrl, `${projectDetailModal.client?.clientName || 'client'}-brief`)}
+                                  className="px-2.5 py-1 bg-[#3066BE] hover:bg-[#255299] text-white rounded font-bold text-xs flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Download className="w-3.5 h-3.5" /> Download
+                                </button>
+                              </>
                             )}
                           </div>
-                        ))
+                        </div>
+                      )}
+
+                      <strong className="text-xs text-slate-700 block pt-1">Registered Deliverables:</strong>
+                      {projectDetailModal.deliverables && projectDetailModal.deliverables.length > 0 ? (
+                        projectDetailModal.deliverables.map((d: any, idx: number) => {
+                          const isLink = isExternalWebLink(d.fileUrl);
+                          return (
+                            <div key={d.id || idx} className="p-3 rounded-xl border border-slate-200 bg-slate-50 flex justify-between items-center text-xs gap-3">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-800 block truncate">{d.title}</span>
+                                {d.description && <p className="text-[11px] text-slate-500 mt-0.5">{d.description}</p>}
+                              </div>
+                              {d.fileUrl && (
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {isLink ? (
+                                    <a
+                                      href={d.fileUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold flex items-center gap-1 transition-colors"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" /> Open Link
+                                    </a>
+                                  ) : (
+                                    <>
+                                      <a
+                                        href={d.fileUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold flex items-center gap-1 transition-colors"
+                                      >
+                                        <Eye className="w-3.5 h-3.5" /> View
+                                      </a>
+                                      <button
+                                        type="button"
+                                        onClick={() => downloadFile(d.fileUrl, d.title || 'deliverable')}
+                                        className="px-2.5 py-1 bg-[#3066BE] text-white rounded font-bold hover:bg-[#255299] flex items-center gap-1 transition-colors cursor-pointer"
+                                      >
+                                        <Download className="w-3.5 h-3.5" /> Download
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
                       ) : (
                         <p className="text-xs text-slate-400">No deliverables uploaded yet for this project.</p>
                       )}

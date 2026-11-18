@@ -32,6 +32,7 @@ import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ModalPortal } from '../../components/ModalPortal';
 import { MediaUploader, MediaUploadResult } from '../../components/MediaUploader';
+import { isExternalWebLink, extractUrls, downloadFile } from '../../utils/fileDownload';
 
 export const TechnicalPortal: React.FC = () => {
   const { user } = useAuth();
@@ -575,6 +576,43 @@ export const TechnicalPortal: React.FC = () => {
                               : 'Software Development Team'}
                           </span>
                         </div>
+
+                        {/* Client Uploaded Brief / Requirements Document */}
+                        {selectedProject.workOrder?.quotation?.enquiry?.attachmentUrl && (
+                          <div className="pt-2 border-t border-slate-200/60 mt-2">
+                            <span className="text-slate-500 block mb-1 text-[11px] font-semibold">Client Uploaded Brief / Document:</span>
+                            <div className="flex items-center gap-2">
+                              {isExternalWebLink(selectedProject.workOrder.quotation.enquiry.attachmentUrl) ? (
+                                <a
+                                  href={selectedProject.workOrder.quotation.enquiry.attachmentUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-indigo-600 hover:text-indigo-800 font-bold underline flex items-center gap-1 text-[11px]"
+                                >
+                                  <ExternalLink className="w-3 h-3" /> Open Client Link
+                                </a>
+                              ) : (
+                                <div className="flex items-center gap-1.5">
+                                  <a
+                                    href={selectedProject.workOrder.quotation.enquiry.attachmentUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-2 py-0.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded font-semibold text-[11px] flex items-center gap-1"
+                                  >
+                                    <Eye className="w-3 h-3" /> View
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => downloadFile(selectedProject.workOrder.quotation.enquiry.attachmentUrl, `${selectedProject.client?.clientName || 'client'}-brief`)}
+                                    className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                                  >
+                                    <Download className="w-3 h-3" /> Download Doc
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Box 2: Client & BGA Details */}
@@ -713,26 +751,47 @@ export const TechnicalPortal: React.FC = () => {
                                   </div>
                                   {d.description && <p className="text-slate-600 text-[11px] leading-relaxed">{d.description}</p>}
                                   <div className="flex flex-wrap items-center gap-3 text-slate-500 font-mono text-[11px] pt-0.5">
-                                    <a
-                                      href={d.fileUrl}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1 font-semibold"
-                                    >
-                                      {isImg ? (
-                                        <>
-                                          <Eye className="w-3 h-3" /> View Image Screenshot
-                                        </>
-                                      ) : isVid ? (
-                                        <>
-                                          <Play className="w-3 h-3" /> Play Video Demo
-                                        </>
-                                      ) : (
-                                        <>
-                                          <ExternalLink className="w-3 h-3" /> Access Deliverable Artifact
-                                        </>
-                                      )}
-                                    </a>
+                                    {isExternalWebLink(d.fileUrl) ? (
+                                      <a
+                                        href={d.fileUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1 font-semibold"
+                                      >
+                                        <ExternalLink className="w-3 h-3" /> Access Deliverable Link
+                                      </a>
+                                    ) : (
+                                      <div className="flex items-center gap-2">
+                                        <a
+                                          href={d.fileUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1 font-semibold"
+                                        >
+                                          {isImg ? (
+                                            <>
+                                              <Eye className="w-3 h-3" /> View Image Screenshot
+                                            </>
+                                          ) : isVid ? (
+                                            <>
+                                              <Play className="w-3 h-3" /> Play Video Demo
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Eye className="w-3 h-3" /> View Deliverable Artifact
+                                            </>
+                                          )}
+                                        </a>
+                                        <button
+                                          type="button"
+                                          onClick={() => downloadFile(d.fileUrl, d.title || 'deliverable')}
+                                          className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                          title="Download deliverable"
+                                        >
+                                          <Download className="w-3 h-3 text-indigo-600" /> Download
+                                        </button>
+                                      </div>
+                                    )}
                                     {d.fileSize && (
                                       <span className="text-slate-400">
                                         ({(d.fileSize / (1024 * 1024)).toFixed(1)} MB)
@@ -850,6 +909,49 @@ export const TechnicalPortal: React.FC = () => {
                               <p className="text-slate-800 leading-relaxed font-normal whitespace-pre-wrap">
                                 {f.content}
                               </p>
+
+                              {/* Extract any attached docs/links in feedback */}
+                              {(() => {
+                                const urls = extractUrls(f.content);
+                                if (!urls.length) return null;
+                                return (
+                                  <div className="mt-2 pt-2 border-t border-slate-200/50 flex flex-wrap gap-2 items-center">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Attached Resources / Docs:</span>
+                                    {urls.map((u, i) => {
+                                      const isLink = isExternalWebLink(u);
+                                      return isLink ? (
+                                        <a
+                                          key={i}
+                                          href={u}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-xs text-indigo-600 hover:underline font-bold flex items-center gap-1"
+                                        >
+                                          <ExternalLink className="w-3 h-3" /> Open Link
+                                        </a>
+                                      ) : (
+                                        <div key={i} className="flex items-center gap-1">
+                                          <a
+                                            href={u}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-xs text-slate-600 hover:text-indigo-600 font-bold flex items-center gap-0.5"
+                                          >
+                                            <Eye className="w-3 h-3" /> View
+                                          </a>
+                                          <button
+                                            type="button"
+                                            onClick={() => downloadFile(u, 'feedback-attachment')}
+                                            className="px-2 py-0.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                          >
+                                            <Download className="w-3 h-3 text-indigo-600" /> Download Doc
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
                         })
