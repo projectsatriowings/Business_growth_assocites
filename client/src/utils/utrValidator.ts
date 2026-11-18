@@ -170,47 +170,68 @@ export function validateBankUtr(rawReference: string | undefined | null, payment
   }
 }
 
+export interface UtrConfig {
+  placeholder: string;
+  helper: string;
+  expectedLength: string;
+  minLength: number;
+  maxLength: number;
+}
+
 /**
  * Returns dynamic helper and placeholder details based on selected payment method
  */
-export function getUtrPlaceholderAndHint(paymentMethod: string): { placeholder: string; helper: string; expectedLength: string } {
+export function getUtrPlaceholderAndHint(paymentMethod: string): UtrConfig {
   const method = (paymentMethod || 'BANK_TRANSFER').toUpperCase();
   switch (method) {
     case 'UPI':
+    case 'UPI_QR':
       return {
         placeholder: 'e.g. 401234567890 (12-digit RRN)',
         helper: 'Enter the 12-digit UPI Reference Number / RRN from Google Pay, PhonePe, Paytm, or BHIM receipt.',
         expectedLength: '12 digits',
-      };
-    case 'NEFT':
-      return {
-        placeholder: 'e.g. AXISP26123456789 (16 chars)',
-        helper: 'Enter the 16-character alphanumeric NEFT UTR reference from your corporate bank debit advice.',
-        expectedLength: '12-18 chars',
-      };
-    case 'RTGS':
-      return {
-        placeholder: 'e.g. HDFCR520261117001234 (22 chars)',
-        helper: 'Enter the 22-character RBI RTGS Unique Transaction Reference Number.',
-        expectedLength: '16-22 chars',
+        minLength: 12,
+        maxLength: 12,
       };
     case 'IMPS':
       return {
         placeholder: 'e.g. 432198765432 (12 digits)',
         helper: 'Enter the 12-digit IMPS Reference Number / RRN from mobile or net banking confirmation.',
         expectedLength: '12 digits',
+        minLength: 12,
+        maxLength: 12,
+      };
+    case 'NEFT':
+      return {
+        placeholder: 'e.g. AXISP26123456789 (16 chars)',
+        helper: 'Enter the 16-character alphanumeric NEFT UTR reference from your corporate bank debit advice.',
+        expectedLength: '12-18 chars',
+        minLength: 12,
+        maxLength: 18,
+      };
+    case 'RTGS':
+      return {
+        placeholder: 'e.g. HDFCR520261117001234 (22 chars)',
+        helper: 'Enter the 22-character RBI RTGS Unique Transaction Reference Number.',
+        expectedLength: '16-22 chars',
+        minLength: 16,
+        maxLength: 22,
       };
     case 'CHEQUE':
       return {
         placeholder: 'e.g. 000123 (6 digits)',
         helper: 'Enter the 6-digit cheque number printed at the bottom of the cheque leaf.',
         expectedLength: '6-10 digits',
+        minLength: 6,
+        maxLength: 10,
       };
     default:
       return {
         placeholder: 'e.g. UTR123456789012',
         helper: 'Enter the official bank transaction reference or journal reference number.',
         expectedLength: '8-24 chars',
+        minLength: 8,
+        maxLength: 24,
       };
   }
 }

@@ -99,6 +99,7 @@ export const AccountsPortal: React.FC = () => {
 
   // Record Payment Modal
   const [paymentModal, setPaymentModal] = useState<{ workOrder: any } | null>(null);
+  const [utrTouched, setUtrTouched] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     paymentType: 'ADVANCE',
     amount: '',
@@ -174,10 +175,10 @@ export const AccountsPortal: React.FC = () => {
     }
   };
 
-  const loadData = async () => {
+  const loadData = async (bypassCache = true) => {
     setLoading(true);
     try {
-      await Promise.all([loadStats(), loadTabData()]);
+      await Promise.all([loadStats(bypassCache), loadTabData()]);
     } finally {
       setLoading(false);
     }
@@ -390,7 +391,7 @@ export const AccountsPortal: React.FC = () => {
 
     setModalSubmitting(true);
     try {
-      await apiRequest(`/api/accounts/work-orders/${paymentModal.workOrder.id}/payments`, {
+      const res = await apiRequest(`/api/accounts/work-orders/${paymentModal.workOrder.id}/payments`, {
         method: 'POST',
         body: JSON.stringify({
           ...paymentForm,
@@ -398,8 +399,9 @@ export const AccountsPortal: React.FC = () => {
         }),
       });
 
-      toast.success(`Payment recorded with UTR: ${validation.formattedUtr}. Awaiting Accounts verification.`);
+      toast.success(res.message || `Payment recorded and verified with UTR: ${validation.formattedUtr}.`);
       setPaymentModal(null);
+      setUtrTouched(false);
       setPaymentForm({
         paymentType: 'ADVANCE',
         amount: '',
@@ -906,6 +908,7 @@ export const AccountsPortal: React.FC = () => {
                                   <button
                                     onClick={() => {
                                       setPaymentModal({ workOrder: w });
+                                      setUtrTouched(false);
                                       setPaymentForm({
                                         paymentType: 'ADVANCE',
                                         amount: String(w.advanceRequired),
@@ -1105,7 +1108,7 @@ export const AccountsPortal: React.FC = () => {
                   </p>
                 </div>
                 <button
-                  onClick={loadData}
+                  onClick={() => loadData(true)}
                   className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
                 >
                   <RefreshCw className="w-3.5 h-3.5" /> Refresh Enquiries
@@ -1122,9 +1125,9 @@ export const AccountsPortal: React.FC = () => {
                           <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                             v{q.version}
                           </span>
-                          {q.previousVersion && (
+                          {q.version > 1 && (
                             <span className="text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-bold border border-blue-200">
-                              Revision of v{q.previousVersion.version}
+                              {q.previousVersion ? `Revision of v${q.previousVersion.version}` : `Resubmitted (v${q.version})`}
                             </span>
                           )}
                           {q.reminderCount > 0 && (
@@ -1207,22 +1210,59 @@ export const AccountsPortal: React.FC = () => {
                           <strong>Client Revision Feedback:</strong> {q.revisionNotes}
                         </div>
                       )}
-                      {(q.status === 'REJECTED' || q.status === 'REVISION_REQUESTED') && q.adminNotes && (
-                        <div className="p-3 rounded-xl border text-xs mt-2 bg-rose-50 border-rose-300 text-rose-950">
+                      {q.adminNotes && (
+                        <div className={`p-3 rounded-xl border text-xs mt-2 ${
+                          q.status === 'REJECTED'
+                            ? 'bg-rose-50 border-rose-300 text-rose-950'
+                            : q.status === 'REVISION_REQUESTED'
+                            ? 'bg-amber-50 border-amber-300 text-amber-950'
+                            : q.status === 'PENDING_ADMIN_APPROVAL'
+                            ? 'bg-blue-50 border-blue-200 text-blue-900'
+                            : 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                        }`}>
                           <div className="flex items-center gap-1.5 font-bold mb-1">
-                            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                            {q.status === 'REJECTED' ? (
+                              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                            ) : q.status === 'REVISION_REQUESTED' ? (
+                              <Clock className="w-4 h-4 shrink-0 text-amber-600" />
+                            ) : q.status === 'PENDING_ADMIN_APPROVAL' ? (
+                              <Clock className="w-4 h-4 shrink-0 text-blue-600" />
+                            ) : (
+                              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                            )}
                             <span>
                               {q.status === 'REJECTED'
-                                ? 'Admin Rejection Guidance (Corrections Needed):'
-                                : 'Admin Guidance / Revision Instructions:'}
+                                ? 'Admin Rejection Guidance (Needed Corrections):'
+                                : q.status === 'REVISION_REQUESTED'
+                                ? 'Admin Revision Instructions:'
+                                : q.status === 'PENDING_ADMIN_APPROVAL'
+                                ? 'Admin Previous Guidance:'
+                                : 'Admin Executive Approval Remarks:'}
                             </span>
                           </div>
                           <div className="pl-5 text-slate-900 font-semibold leading-relaxed">
                             "{q.adminNotes}"
                           </div>
-                          <div className="pl-5 text-[11px] text-rose-700 mt-1 font-semibold">
-                            ⚠️ Admin has returned this quotation for corrections. Update the quotation properly and resubmit for executive approval.
-                          </div>
+                          {q.status === 'REJECTED' && (
+                            <div className="pl-5 text-[11px] text-rose-700 mt-1 font-semibold">
+                              ⚠️ Admin has returned this quotation for corrections. Update the quotation properly and resubmit for executive approval.
+                            </div>
+                          )}
+                          {q.status === 'REVISION_REQUESTED' && (
+                            <div className="pl-5 text-[11px] text-amber-700 mt-1 font-semibold">
+                              ⚠️ Admin has requested adjustments on this quotation. Update the draft and resubmit for executive approval.
+                            </div>
+                          )}
+                          {q.status === 'PENDING_ADMIN_APPROVAL' && (
+                            <div className="pl-5 text-[11px] text-blue-700 mt-1 font-semibold">
+                              ⏳ Corrected quotation submitted to Admin. Awaiting executive review and authorization.
+                            </div>
+                          )}
+                          {(q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA' || q.status === 'ACCEPTED') && (
+                            <div className="pl-5 text-[11px] text-emerald-700 mt-1 font-semibold">
+                              ✓ Quotation approved by Admin and released to BGA / Client{q.status === 'ACCEPTED' ? ' • Accepted by Client' : ''}.
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1489,6 +1529,7 @@ export const AccountsPortal: React.FC = () => {
                       onClick={() => {
                         const firstPending = workOrders.find((w) => !w.advanceVerified) || workOrders[0];
                         setPaymentModal({ workOrder: firstPending });
+                        setUtrTouched(false);
                         setPaymentForm({
                           paymentType: 'ADVANCE',
                           amount: String(firstPending.advanceRequired || ''),
@@ -2047,6 +2088,7 @@ export const AccountsPortal: React.FC = () => {
                                       type="button"
                                       onClick={() => {
                                         setPaymentModal({ workOrder: w });
+                                        setUtrTouched(false);
                                         setPaymentForm({
                                           paymentType: 'ADVANCE',
                                           amount: String(w.advanceRequired),
@@ -2708,7 +2750,12 @@ export const AccountsPortal: React.FC = () => {
                         </div>
                         <button
                           type="button"
-                          onClick={() => !modalSubmitting && setPaymentModal(null)}
+                          onClick={() => {
+                            if (!modalSubmitting) {
+                              setPaymentModal(null);
+                              setUtrTouched(false);
+                            }
+                          }}
                           className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
                         >
                           <X className="w-5 h-5" />
@@ -2761,7 +2808,16 @@ export const AccountsPortal: React.FC = () => {
                             <label className="block text-slate-700 font-semibold mb-1">Payment Method <span className="text-rose-500">*</span></label>
                             <select
                               value={paymentForm.paymentMethod}
-                              onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}
+                              onChange={(e) => {
+                                const newMethod = e.target.value;
+                                const newConfig = getUtrPlaceholderAndHint(newMethod);
+                                setPaymentForm({
+                                  ...paymentForm,
+                                  paymentMethod: newMethod,
+                                  transactionReference: paymentForm.transactionReference.slice(0, newConfig.maxLength),
+                                });
+                                setUtrTouched(false);
+                              }}
                               className="w-full p-2.5 border border-slate-200 rounded-xl font-medium text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                             >
                               <option value="UPI">UPI / QR Code</option>
@@ -2782,9 +2838,9 @@ export const AccountsPortal: React.FC = () => {
                                   ? 'text-slate-400'
                                   : utrCheck.isValid
                                   ? 'text-emerald-600 font-bold'
-                                  : 'text-amber-600 font-semibold'
+                                  : 'text-slate-500 font-medium'
                               }`}>
-                                {paymentForm.transactionReference.length} chars • Req: {utrConfig.expectedLength}
+                                {paymentForm.transactionReference.length}/{utrConfig.maxLength} chars • Req: {utrConfig.expectedLength}
                               </span>
                             </div>
 
@@ -2792,9 +2848,15 @@ export const AccountsPortal: React.FC = () => {
                               <input
                                 type="text"
                                 required
+                                maxLength={utrConfig.maxLength}
                                 value={paymentForm.transactionReference}
+                                onFocus={() => setUtrTouched(false)}
+                                onBlur={() => setUtrTouched(true)}
                                 onChange={(e) => {
-                                  const val = e.target.value.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
+                                  let val = e.target.value.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
+                                  if (val.length > utrConfig.maxLength) {
+                                    val = val.slice(0, utrConfig.maxLength);
+                                  }
                                   setPaymentForm({ ...paymentForm, transactionReference: val });
                                 }}
                                 placeholder={utrConfig.placeholder}
@@ -2803,6 +2865,10 @@ export const AccountsPortal: React.FC = () => {
                                     ? 'border-slate-300 focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500'
                                     : utrCheck.isValid
                                     ? 'border-emerald-500 bg-emerald-50/20 text-emerald-900 focus:ring-2 focus:ring-emerald-500'
+                                    : utrTouched && paymentForm.transactionReference.length < utrConfig.minLength
+                                    ? 'border-amber-400 bg-amber-50/20 text-amber-900 focus:ring-2 focus:ring-amber-500'
+                                    : !utrTouched && paymentForm.transactionReference.length < utrConfig.minLength
+                                    ? 'border-slate-300 focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500'
                                     : 'border-red-400 bg-red-50/20 text-red-900 focus:ring-2 focus:ring-red-500'
                                 }`}
                               />
@@ -2810,6 +2876,12 @@ export const AccountsPortal: React.FC = () => {
                                 {paymentForm.transactionReference && (
                                   utrCheck.isValid ? (
                                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                  ) : !utrTouched && paymentForm.transactionReference.length < utrConfig.minLength ? (
+                                    <span className="text-[10px] font-semibold text-slate-400 font-mono">
+                                      {paymentForm.transactionReference.length}/{utrConfig.maxLength}
+                                    </span>
+                                  ) : utrTouched && paymentForm.transactionReference.length < utrConfig.minLength ? (
+                                    <AlertCircle className="w-4 h-4 text-amber-500" />
                                   ) : (
                                     <AlertCircle className="w-4 h-4 text-red-500" />
                                   )
@@ -2818,7 +2890,24 @@ export const AccountsPortal: React.FC = () => {
                             </div>
 
                             {/* Helper and Error feedback banner */}
-                            {paymentForm.transactionReference && !utrCheck.isValid ? (
+                            {paymentForm.transactionReference && utrCheck.isValid ? (
+                              <div className="mt-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-800 flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <span className="font-semibold">{utrCheck.hint || `Valid ${paymentForm.paymentMethod} transaction reference.`}</span>
+                              </div>
+                            ) : paymentForm.transactionReference && !utrTouched && paymentForm.transactionReference.length < utrConfig.minLength ? (
+                              <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                                <span>{utrConfig.helper}</span>
+                                <span className="text-emerald-600 font-semibold shrink-0 ml-2">
+                                  {utrConfig.minLength - paymentForm.transactionReference.length} more needed
+                                </span>
+                              </div>
+                            ) : paymentForm.transactionReference && utrTouched && paymentForm.transactionReference.length < utrConfig.minLength ? (
+                              <div className="mt-1.5 p-2 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex items-center gap-1.5">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                                <span>Incomplete reference: {paymentForm.transactionReference.length} of {utrConfig.expectedLength} entered. Need {utrConfig.minLength - paymentForm.transactionReference.length} more digit{utrConfig.minLength - paymentForm.transactionReference.length > 1 ? 's' : ''}.</span>
+                              </div>
+                            ) : paymentForm.transactionReference && !utrCheck.isValid ? (
                               <div className="mt-1.5 p-2 bg-red-50 border border-red-200 rounded-xl text-[11px] text-red-700 space-y-0.5">
                                 <div className="flex items-center gap-1.5 font-bold">
                                   <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600" />
@@ -2827,11 +2916,6 @@ export const AccountsPortal: React.FC = () => {
                                 {utrCheck.hint && (
                                   <p className="text-slate-600 pl-5">{utrCheck.hint}</p>
                                 )}
-                              </div>
-                            ) : paymentForm.transactionReference && utrCheck.isValid ? (
-                              <div className="mt-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-800 flex items-center gap-1.5">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span className="font-semibold">{utrCheck.hint || `Valid ${paymentForm.paymentMethod} transaction reference.`}</span>
                               </div>
                             ) : (
                               <p className="mt-1 text-[11px] text-slate-500">
@@ -2844,7 +2928,10 @@ export const AccountsPortal: React.FC = () => {
                             <button
                               type="button"
                               disabled={modalSubmitting}
-                              onClick={() => setPaymentModal(null)}
+                              onClick={() => {
+                                setPaymentModal(null);
+                                setUtrTouched(false);
+                              }}
                               className="px-4 py-2 rounded-xl text-slate-600 font-semibold hover:bg-slate-100 transition-colors disabled:opacity-50"
                             >
                               Cancel
