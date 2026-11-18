@@ -3521,14 +3521,15 @@ export const AdminPortal: React.FC = () => {
                           Bank Transaction / UTR Reference *
                         </label>
                         <span className="text-[10px] font-mono text-slate-500">
-                          {payoutReferenceInput.length} chars (8-24 req)
+                          {payoutReferenceInput.length}/24 chars (8-24 req)
                         </span>
                       </div>
                       <input
                         type="text"
                         required
+                        maxLength={24}
                         value={payoutReferenceInput}
-                        onChange={(e) => setPayoutReferenceInput(e.target.value.toUpperCase().replace(/[^A-Z0-9\-]/g, ''))}
+                        onChange={(e) => setPayoutReferenceInput(e.target.value.toUpperCase().replace(/[^A-Z0-9\-]/g, '').slice(0, 24))}
                         placeholder="e.g. AXISP26123456789 / NEFT-2026-X"
                         className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#3066BE] font-mono uppercase"
                       />
@@ -3538,6 +3539,11 @@ export const AdminPortal: React.FC = () => {
                           return v.isValid ? (
                             <p className="mt-1 text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5" /> Valid transaction reference format
+                            </p>
+                          ) : payoutReferenceInput.length < 8 ? (
+                            <p className="mt-1 text-[11px] text-slate-500 flex items-center justify-between">
+                              <span>Enter transaction reference (8-24 characters)</span>
+                              <span className="text-blue-600 font-medium shrink-0 ml-1">{8 - payoutReferenceInput.length} more needed</span>
                             </p>
                           ) : (
                             <p className="mt-1 text-[11px] text-red-600 flex items-center gap-1">
