@@ -1490,7 +1490,9 @@ export const AdminPortal: React.FC = () => {
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
                                   b.aadhaarVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
                                 }`}>
-                                  Aadhaar: {b.aadhaarMasked || 'Pending'} {b.aadhaarVerified ? '✓' : ''}
+                                  Aadhaar: {(b.aadhaarNumber && b.aadhaarNumber.replace(/\D/g, '').length === 12)
+                                    ? `${b.aadhaarNumber.replace(/\D/g, '').slice(0, 4)} ${b.aadhaarNumber.replace(/\D/g, '').slice(4, 8)} ${b.aadhaarNumber.replace(/\D/g, '').slice(8, 12)}`
+                                    : (b.aadhaarMasked || 'Pending')} {b.aadhaarVerified ? '✓' : ''}
                                 </span>
                               </div>
                             </td>

@@ -305,6 +305,7 @@ router.get('/bgas', async (req: AuthRequest, res: Response): Promise<void> => {
         panNumber: true,
         panVerified: true,
         panVerifiedAt: true,
+        aadhaarNumber: true,
         aadhaarMasked: true,
         aadhaarVerified: true,
         aadhaarVerifiedAt: true,
@@ -590,7 +591,19 @@ router.post('/bgas/:id/reset-password', async (req: AuthRequest, res: Response):
 router.post('/bgas/:id/status', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { action, status, reason, panVerified, aadhaarVerified, bankVerified } = req.body;
+    const {
+      action,
+      status,
+      reason,
+      panVerified,
+      aadhaarVerified,
+      bankVerified,
+      aadhaarNumber,
+      panDocumentUrl,
+      addressProofUrl,
+      bankProofUrl,
+      agreementDocumentUrl,
+    } = req.body;
 
     const bga = await prisma.user.findUnique({ where: { id } });
     if (!bga || bga.role !== Role.BGA) {
@@ -599,6 +612,25 @@ router.post('/bgas/:id/status', async (req: AuthRequest, res: Response): Promise
     }
 
     const updateData: any = {};
+
+    if (panDocumentUrl !== undefined) updateData.panDocumentUrl = panDocumentUrl ? String(panDocumentUrl).trim() : null;
+    if (addressProofUrl !== undefined) updateData.addressProofUrl = addressProofUrl ? String(addressProofUrl).trim() : null;
+    if (bankProofUrl !== undefined) updateData.bankProofUrl = bankProofUrl ? String(bankProofUrl).trim() : null;
+    if (agreementDocumentUrl !== undefined) updateData.agreementDocumentUrl = agreementDocumentUrl ? String(agreementDocumentUrl).trim() : null;
+
+    if (aadhaarNumber !== undefined) {
+      const cleanAadhaar = String(aadhaarNumber).replace(/\D/g, '');
+      if (cleanAadhaar.length === 12) {
+        updateData.aadhaarNumber = cleanAadhaar;
+        updateData.aadhaarMasked = `${cleanAadhaar.slice(0, 4)} ${cleanAadhaar.slice(4, 8)} ${cleanAadhaar.slice(8, 12)}`;
+      } else if (cleanAadhaar.length === 0) {
+        updateData.aadhaarNumber = null;
+        updateData.aadhaarMasked = null;
+      } else {
+        updateData.aadhaarNumber = cleanAadhaar;
+        updateData.aadhaarMasked = String(aadhaarNumber).trim();
+      }
+    }
 
     if (panVerified !== undefined) {
       updateData.panVerified = Boolean(panVerified);
@@ -1733,7 +1765,12 @@ router.post('/identity-corrections/:corrId/review', async (req: AuthRequest, res
         updateData.panVerified = true;
         updateData.panVerifiedAt = new Date();
       } else if (requestDetails.correctionType === 'AADHAAR') {
-        updateData.aadhaarMasked = requestDetails.proposedValue;
+        const cleanAadhaar = requestDetails.proposedValue.replace(/\D/g, '');
+        const formatted = cleanAadhaar.length === 12
+          ? `${cleanAadhaar.slice(0, 4)} ${cleanAadhaar.slice(4, 8)} ${cleanAadhaar.slice(8, 12)}`
+          : requestDetails.proposedValue;
+        updateData.aadhaarNumber = cleanAadhaar;
+        updateData.aadhaarMasked = formatted;
         updateData.aadhaarVerified = true;
         updateData.aadhaarVerifiedAt = new Date();
       } else if (requestDetails.correctionType === 'NAME') {

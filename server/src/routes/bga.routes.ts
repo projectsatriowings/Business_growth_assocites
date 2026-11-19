@@ -251,6 +251,7 @@ router.get('/profile', async (req: AuthRequest, res: Response): Promise<void> =>
         panNumber: true,
         panVerified: true,
         panVerifiedAt: true,
+        aadhaarNumber: true,
         aadhaarMasked: true,
         aadhaarVerified: true,
         aadhaarVerifiedAt: true,
@@ -401,7 +402,7 @@ router.put('/profile', async (req: AuthRequest, res: Response): Promise<void> =>
 
     // Reject attempt to modify restricted fields
     const restrictedFields = [
-      'panNumber', 'panVerified', 'aadhaarMasked', 'aadhaarVerified',
+      'panNumber', 'panVerified', 'aadhaarNumber', 'aadhaarMasked', 'aadhaarVerified',
       'role', 'status', 'bankVerified', 'id', 'createdAt', 'approvedAt'
     ];
     for (const field of restrictedFields) {
@@ -688,12 +689,12 @@ router.post('/identity-correction', async (req: AuthRequest, res: Response): Pro
         res.status(400).json({ error: 'Aadhaar must be a 12-digit number' });
         return;
       }
-      cleanProposed = `XXXX-XXXX-${cleanAadhaar.slice(-4)}`;
+      cleanProposed = `${cleanAadhaar.slice(0, 4)} ${cleanAadhaar.slice(4, 8)} ${cleanAadhaar.slice(8, 12)}`;
     }
 
     const currentMap: Record<string, string | null> = {
       PAN: currentUser.panNumber,
-      AADHAAR: currentUser.aadhaarMasked,
+      AADHAAR: (currentUser as any).aadhaarNumber || currentUser.aadhaarMasked,
       NAME: currentUser.name,
       DOB: currentUser.dob ? new Date(currentUser.dob).toISOString().slice(0, 10) : null,
     };
