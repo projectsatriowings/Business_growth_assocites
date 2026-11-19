@@ -131,12 +131,14 @@ export const AccountsPortal: React.FC = () => {
     paymentMethod: 'UPI',
     transactionReference: '',
     paymentDate: new Date().toISOString().slice(0, 10),
+    autoVerify: true,
   });
 
   // Verify / Audit Payment Modal (replaces browser prompt)
   const [verifyModal, setVerifyModal] = useState<{
     paymentId: string;
     action: 'VERIFY' | 'REJECT';
+    paymentType?: string;
     clientName?: string;
     workOrderNumber?: string;
     amount?: number;
@@ -275,7 +277,7 @@ export const AccountsPortal: React.FC = () => {
       (w) => !w.advanceVerified && !w.payments?.some((p: any) => p.status === 'PENDING_VERIFICATION')
     ).length;
     const awaitingVerificationCount = workOrders.filter(
-      (w) => !w.advanceVerified && w.payments?.some((p: any) => p.status === 'PENDING_VERIFICATION')
+      (w) => w.payments?.some((p: any) => p.status === 'PENDING_VERIFICATION')
     ).length;
     const inProductionCount = workOrders.filter((w) => Boolean(w.handoverApproved)).length;
 
@@ -325,11 +327,14 @@ export const AccountsPortal: React.FC = () => {
       if (workOrderEligibilityFilter === 'AWAITING_ADVANCE') {
         matchEligibility = !w.advanceVerified && !w.payments?.some((p: any) => p.status === 'PENDING_VERIFICATION');
       } else if (workOrderEligibilityFilter === 'AWAITING_VERIFICATION') {
-        matchEligibility = !w.advanceVerified && Boolean(w.payments?.some((p: any) => p.status === 'PENDING_VERIFICATION'));
+        matchEligibility = Boolean(w.payments?.some((p: any) => p.status === 'PENDING_VERIFICATION'));
       } else if (workOrderEligibilityFilter === 'RELEASED') {
         matchEligibility = Boolean(w.handoverApproved);
       } else if (workOrderEligibilityFilter === 'ON_HOLD') {
         matchEligibility = w.handoverStatus === 'ON_HOLD' || w.handoverStatus === 'CLARIFICATION_REQUESTED';
+      } else if (workOrderEligibilityFilter === 'FULLY_SETTLED') {
+        const verifiedPaid = (w.payments || []).filter((p: any) => p.status === 'VERIFIED').reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+        matchEligibility = (w.totalValue > 0 && verifiedPaid >= w.totalValue) || (w.payments || []).some((p: any) => p.paymentType === 'FINAL' && p.status === 'VERIFIED') || w.status === 'COMPLETED';
       }
 
       return matchSearch && matchStatus && matchService && matchEligibility;
@@ -455,7 +460,7 @@ export const AccountsPortal: React.FC = () => {
         }),
       });
 
-      toast.success(res.message || `Payment recorded and verified with UTR: ${validation.formattedUtr}.`);
+      toast.success(res.message || (paymentForm.autoVerify ? `Payment recorded and verified with UTR: ${validation.formattedUtr}.` : `Payment recorded as pending audit.`));
       setPaymentModal(null);
       setUtrTouched(false);
       setPaymentForm({
@@ -465,6 +470,7 @@ export const AccountsPortal: React.FC = () => {
         paymentMethod: 'UPI',
         transactionReference: '',
         paymentDate: new Date().toISOString().slice(0, 10),
+        autoVerify: true,
       });
       loadData();
     } catch (err: any) {
@@ -479,6 +485,7 @@ export const AccountsPortal: React.FC = () => {
     setVerifyModal({
       paymentId: payment.id,
       action,
+      paymentType: payment.paymentType,
       clientName: payment.workOrder?.client?.clientName,
       workOrderNumber: payment.workOrder?.workOrderNumber,
       amount: payment.amount,
@@ -1904,15 +1911,24 @@ export const AccountsPortal: React.FC = () => {
                           <th className="p-3.5">Work Order Ref</th>
                           <th className="p-3.5">Client & BGA</th>
                           <th className="p-3.5">Total Value</th>
-                          <th className="p-3.5">Advance Status</th>
+                          <th className="p-3.5">Payment Status</th>
                           <th className="p-3.5">Technical Release Status</th>
                           <th className="p-3.5 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {filteredWorkOrders.map((w) => {
-                          const pendingPayment = w.payments?.find((p: any) => p.status === 'PENDING_VERIFICATION');
-                          const isReleased = Boolean(w.handoverApproved || w.project || w.status === 'IN_PRODUCTION');
+                          const payments = w.payments || [];
+                          const verifiedPayments = payments.filter((p: any) => p.status === 'VERIFIED');
+                          const pendingPayments = payments.filter((p: any) => p.status === 'PENDING_VERIFICATION');
+                          const totalVerifiedPaid = verifiedPayments.reduce((acc: number, p: any) => acc + (p.amount || 0), 0);
+                          const totalVal = w.totalValue || 0;
+                          const isFullySettled = (totalVal > 0 && totalVerifiedPaid >= totalVal) || verifiedPayments.some((p: any) => p.paymentType === 'FINAL') || w.status === 'COMPLETED';
+                          const hasVerifiedAdvance = Boolean(w.advanceVerified || verifiedPayments.some((p: any) => p.paymentType === 'ADVANCE'));
+                          const pendingFinalPayment = pendingPayments.find((p: any) => p.paymentType === 'FINAL');
+                          const pendingAdvancePayment = pendingPayments.find((p: any) => p.paymentType === 'ADVANCE');
+                          const pendingPayment = pendingPayments[0];
+                          const isReleased = Boolean(w.handoverApproved || w.project || w.status === 'IN_PRODUCTION' || w.status === 'COMPLETED');
                           const isHeld = w.handoverStatus === 'ON_HOLD' || w.handoverStatus === 'CLARIFICATION_REQUESTED';
 
                           return (
@@ -1940,32 +1956,57 @@ export const AccountsPortal: React.FC = () => {
                               </td>
 
                               <td className="p-3.5">
-                                <span
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 ${
-                                    w.advanceVerified
-                                      ? 'bg-emerald-100 text-emerald-800'
-                                      : pendingPayment
-                                      ? 'bg-amber-100 text-amber-800'
-                                      : 'bg-slate-100 text-slate-600'
-                                  }`}
-                                >
-                                  {w.advanceVerified ? (
-                                    <>
+                                {isFullySettled ? (
+                                  <div className="space-y-0.5">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
                                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                      ADVANCE VERIFIED
-                                    </>
-                                  ) : pendingPayment ? (
-                                    <>
+                                      FINAL PAYMENT VERIFIED
+                                    </span>
+                                    <div className="text-[10px] font-semibold text-emerald-700">
+                                      100% Settled (₹{totalVerifiedPaid.toLocaleString('en-IN')})
+                                    </div>
+                                  </div>
+                                ) : pendingFinalPayment ? (
+                                  <div className="space-y-0.5">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-1 animate-pulse">
                                       <Clock className="w-3 h-3 text-amber-600" />
-                                      AWAITING AUDIT
-                                    </>
-                                  ) : (
-                                    <>
+                                      FINAL PAYMENT AWAITING AUDIT
+                                    </span>
+                                    <div className="text-[10px] text-amber-700">
+                                      ₹{pendingFinalPayment.amount?.toLocaleString('en-IN')} pending verification
+                                    </div>
+                                  </div>
+                                ) : hasVerifiedAdvance ? (
+                                  <div className="space-y-0.5">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200 inline-flex items-center gap-1">
+                                      <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                                      ADVANCE VERIFIED
+                                    </span>
+                                    <div className="text-[10px] text-slate-500">
+                                      Paid: ₹{totalVerifiedPaid.toLocaleString('en-IN')} / ₹{totalVal.toLocaleString('en-IN')}
+                                    </div>
+                                  </div>
+                                ) : pendingAdvancePayment || pendingPayment ? (
+                                  <div className="space-y-0.5">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-1 animate-pulse">
+                                      <Clock className="w-3 h-3 text-amber-600" />
+                                      ADVANCE AWAITING AUDIT
+                                    </span>
+                                    <div className="text-[10px] text-amber-700">
+                                      ₹{(pendingAdvancePayment || pendingPayment).amount?.toLocaleString('en-IN')} pending
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-0.5">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 inline-flex items-center gap-1">
                                       <Clock className="w-3 h-3 text-slate-500" />
                                       AWAITING ADVANCE
-                                    </>
-                                  )}
-                                </span>
+                                    </span>
+                                    <div className="text-[10px] text-slate-400">
+                                      Req: ₹{w.advanceRequired?.toLocaleString('en-IN')}
+                                    </div>
+                                  </div>
+                                )}
                               </td>
 
                               <td className="p-3.5">
@@ -1974,17 +2015,22 @@ export const AccountsPortal: React.FC = () => {
                                     <AlertCircle className="w-3 h-3 text-rose-600" />
                                     ON HOLD
                                   </span>
+                                ) : w.status === 'COMPLETED' ? (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 inline-flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                    PROJECT COMPLETED
+                                  </span>
                                 ) : isReleased ? (
                                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 inline-flex items-center gap-1">
                                     <CheckCircle2 className="w-3 h-3 text-indigo-600" />
                                     IN TECHNICAL PRODUCTION
                                   </span>
-                                ) : pendingPayment ? (
+                                ) : pendingAdvancePayment ? (
                                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 inline-flex items-center gap-1 animate-pulse">
                                     <Clock className="w-3 h-3 text-amber-600" />
                                     AWAITING VERIFICATION
                                   </span>
-                                ) : !w.advanceVerified ? (
+                                ) : !hasVerifiedAdvance ? (
                                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500">
                                     AWAITING ADVANCE
                                   </span>
@@ -2042,6 +2088,7 @@ export const AccountsPortal: React.FC = () => {
                                       onClick={() => {
                                         openVerifyModal({
                                           id: pendingPayment.id,
+                                          paymentType: pendingPayment.paymentType,
                                           transactionReference: pendingPayment.transactionReference,
                                           amount: pendingPayment.amount,
                                           workOrder: {
@@ -2051,12 +2098,17 @@ export const AccountsPortal: React.FC = () => {
                                         }, 'VERIFY');
                                       }}
                                       className="px-2.5 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-colors inline-flex items-center gap-1"
-                                      title="Verify client advance payment to trigger automatic routing to Technical Team"
+                                      title={pendingPayment.paymentType === 'FINAL' ? 'Verify final client payment against bank statement' : 'Verify client advance payment'}
                                     >
                                       <CheckCircle2 className="w-3 h-3" />
-                                      Verify Advance
+                                      {pendingPayment.paymentType === 'FINAL' ? 'Verify Final Payment' : 'Verify Advance'}
                                     </button>
-                                  ) : !w.advanceVerified ? (
+                                  ) : isFullySettled ? (
+                                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg inline-flex items-center gap-1">
+                                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                      Settled
+                                    </span>
+                                  ) : !hasVerifiedAdvance ? (
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -2069,13 +2121,36 @@ export const AccountsPortal: React.FC = () => {
                                           paymentMethod: 'UPI',
                                           transactionReference: '',
                                           paymentDate: new Date().toISOString().slice(0, 10),
+                                          autoVerify: true,
                                         });
                                       }}
                                       className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-colors"
                                     >
-                                      + Record Payment
+                                      + Record Advance
                                     </button>
-                                  ) : null}
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const balance = Math.max(0, totalVal - totalVerifiedPaid);
+                                        setPaymentModal({ workOrder: w });
+                                        setUtrTouched(false);
+                                        setPaymentForm({
+                                          paymentType: 'FINAL',
+                                          amount: String(balance),
+                                          adBudgetAmount: '0',
+                                          paymentMethod: 'UPI',
+                                          transactionReference: '',
+                                          paymentDate: new Date().toISOString().slice(0, 10),
+                                          autoVerify: true,
+                                        });
+                                      }}
+                                      className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-colors inline-flex items-center gap-1"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                      Record Final
+                                    </button>
+                                  )}
 
                                   {isHeld ? (
                                     <button
@@ -2289,33 +2364,66 @@ export const AccountsPortal: React.FC = () => {
 
                             {/* Action Bar */}
                             <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 flex-wrap">
-                              <div className="flex items-center gap-2">
-                                {balanceRemaining > 0 ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setPaymentModal({ workOrder: wo });
-                                      setUtrTouched(false);
-                                      setPaymentForm({
-                                        paymentType: 'FINAL',
-                                        amount: String(balanceRemaining),
-                                        adBudgetAmount: '0',
-                                        paymentMethod: 'UPI',
-                                        transactionReference: '',
-                                        paymentDate: new Date().toISOString().slice(0, 10),
-                                      });
-                                    }}
-                                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
-                                  >
-                                    <Plus className="w-3.5 h-3.5" />
-                                    Record & Verify Final Payment (₹{balanceRemaining.toLocaleString('en-IN')})
-                                  </button>
-                                ) : (
-                                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl inline-flex items-center gap-1">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                    All Project Payments Fully Verified
-                                  </span>
-                                )}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {(() => {
+                                  const pendingFinal = (wo?.payments || []).find((pay: any) => pay.status === 'PENDING_VERIFICATION');
+                                  if (pendingFinal) {
+                                    return (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          openVerifyModal({
+                                            id: pendingFinal.id,
+                                            paymentType: pendingFinal.paymentType || 'FINAL',
+                                            transactionReference: pendingFinal.transactionReference,
+                                            amount: pendingFinal.amount,
+                                            workOrder: {
+                                              workOrderNumber: wo?.workOrderNumber,
+                                              client: p.client,
+                                            },
+                                          }, 'VERIFY');
+                                        }}
+                                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer animate-pulse"
+                                        title="Audit bank credit and verify this final settlement payment"
+                                      >
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        Verify Final Payment (UTR: {pendingFinal.transactionReference} • ₹{pendingFinal.amount?.toLocaleString('en-IN')})
+                                      </button>
+                                    );
+                                  }
+
+                                  if (balanceRemaining > 0) {
+                                    return (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setPaymentModal({ workOrder: wo });
+                                          setUtrTouched(false);
+                                          setPaymentForm({
+                                            paymentType: 'FINAL',
+                                            amount: String(balanceRemaining),
+                                            adBudgetAmount: '0',
+                                            paymentMethod: 'UPI',
+                                            transactionReference: '',
+                                            paymentDate: new Date().toISOString().slice(0, 10),
+                                            autoVerify: true,
+                                          });
+                                        }}
+                                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                                      >
+                                        <Plus className="w-3.5 h-3.5" />
+                                        Record & Verify Final Payment (₹{balanceRemaining.toLocaleString('en-IN')})
+                                      </button>
+                                    );
+                                  }
+
+                                  return (
+                                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl inline-flex items-center gap-1">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                      All Project Payments Fully Verified
+                                    </span>
+                                  );
+                                })()}
                               </div>
 
                               <div className="flex items-center gap-2">
@@ -3051,6 +3159,22 @@ export const AccountsPortal: React.FC = () => {
                             )}
                           </div>
 
+                          <div className="p-3 bg-emerald-50/80 rounded-xl border border-emerald-200 flex items-start gap-2.5">
+                            <input
+                              type="checkbox"
+                              id="autoVerifyCheck"
+                              checked={paymentForm.autoVerify}
+                              onChange={(e) => setPaymentForm({ ...paymentForm, autoVerify: e.target.checked })}
+                              className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                            />
+                            <label htmlFor="autoVerifyCheck" className="text-xs text-emerald-950 font-medium cursor-pointer">
+                              <strong>Verify & Clear Immediately</strong>
+                              <p className="text-[11px] text-emerald-800">
+                                Confirms bank credit receipt and verifies the payment record in the official ledger in a single step.
+                              </p>
+                            </label>
+                          </div>
+
                           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
                             <button
                               type="button"
@@ -3069,7 +3193,7 @@ export const AccountsPortal: React.FC = () => {
                               className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2"
                             >
                               {modalSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                              <span>{modalSubmitting ? 'Saving...' : 'Save Payment Record'}</span>
+                              <span>{modalSubmitting ? 'Processing...' : paymentForm.autoVerify ? 'Record & Verify Payment' : 'Save as Pending Audit'}</span>
                             </button>
                           </div>
                         </form>
@@ -3104,7 +3228,11 @@ export const AccountsPortal: React.FC = () => {
                           </div>
                           <div>
                             <h3 className="text-base font-bold text-slate-900">
-                              {verifyModal.action === 'VERIFY' ? 'Verify Bank Credit' : 'Reject Payment Record'}
+                              {verifyModal.action === 'VERIFY'
+                                ? verifyModal.paymentType === 'FINAL'
+                                  ? 'Verify Final Payment Credit'
+                                  : 'Verify Advance Milestone Credit'
+                                : 'Reject Payment Record'}
                             </h3>
                             <p className="text-xs text-slate-500 font-mono">
                               UTR: {verifyModal.transactionReference}
@@ -3124,6 +3252,12 @@ export const AccountsPortal: React.FC = () => {
                         <div className="flex justify-between">
                           <span className="text-slate-500">Client:</span>
                           <span className="font-semibold text-slate-800">{verifyModal.clientName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Payment Stage:</span>
+                          <span className={`font-bold ${verifyModal.paymentType === 'FINAL' ? 'text-indigo-700' : 'text-blue-700'}`}>
+                            {verifyModal.paymentType === 'FINAL' ? 'Final Payment (100% Contract Balance)' : 'Advance Payment (Technical Release)'}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-slate-500">Amount Received:</span>

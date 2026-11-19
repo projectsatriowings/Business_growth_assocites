@@ -5001,9 +5001,14 @@ export const BgaPortal: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${wo.advanceVerified ? 'bg-emerald-100 text-[#119DA4]' : 'bg-amber-100 text-amber-800'
-                      }`}>
-                      Advance: {wo.advanceVerified ? 'VERIFIED' : 'AWAITING VERIFICATION'}
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      wo.status === 'COMPLETED'
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        : wo.advanceVerified
+                        ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {wo.status === 'COMPLETED' ? 'Final Payment: VERIFIED (100% Settled)' : wo.advanceVerified ? 'Advance: VERIFIED' : 'Advance: AWAITING VERIFICATION'}
                     </span>
                     <span className="text-xs font-bold text-slate-800">
                       Value: ₹{wo.totalValue?.toLocaleString()}

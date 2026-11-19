@@ -3239,14 +3239,19 @@ export const AdminPortal: React.FC = () => {
                               ₹{(w.totalValue || 0).toLocaleString()}
                             </td>
                             <td className="p-3.5">
-                              <span
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${w.advanceVerified
-                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
-                                  }`}
-                              >
-                                {w.advanceVerified ? 'VERIFIED' : 'PENDING RECEIPT'}
-                              </span>
+                              {verifiedPayments >= (w.totalValue || 0) && (w.totalValue || 0) > 0 || w.status === 'COMPLETED' ? (
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                  FULLY SETTLED
+                                </span>
+                              ) : w.advanceVerified ? (
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                  ADVANCE VERIFIED
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                  PENDING RECEIPT
+                                </span>
+                              )}
                             </td>
                             <td className="p-3.5 font-bold text-emerald-700">
                               ₹{verifiedPayments.toLocaleString()}
