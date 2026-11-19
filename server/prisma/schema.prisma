@@ -121,6 +121,7 @@ model User {
   panNumber        String?
   panVerified      Boolean      @default(false)
   panVerifiedAt    DateTime?
+  aadhaarNumber    String?
   aadhaarMasked    String?
   aadhaarVerified  Boolean      @default(false)
   aadhaarVerifiedAt DateTime?

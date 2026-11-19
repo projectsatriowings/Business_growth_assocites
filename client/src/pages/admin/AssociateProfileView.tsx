@@ -24,8 +24,11 @@ import {
   MapPin,
   ExternalLink,
   X,
+  Edit2,
+  Upload,
+  Loader2,
 } from 'lucide-react';
-import { apiRequest } from '../../utils/api';
+import { apiRequest, uploadFile } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -51,6 +54,9 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
   // Security & Masking states
   const [revealBankAcc, setRevealBankAcc] = useState(false);
   const [revealPan, setRevealPan] = useState(false);
+  const [isEditingAadhaar, setIsEditingAadhaar] = useState(false);
+  const [aadhaarInput, setAadhaarInput] = useState('');
+  const [savingAadhaar, setSavingAadhaar] = useState(false);
 
   // Modals & Action States
   const [actionModal, setActionModal] = useState<{
@@ -63,7 +69,29 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
 
   // Document Preview Modal
   const [previewDoc, setPreviewDoc] = useState<{ title: string; url: string; type: string } | null>(null);
+  const [adminUploadingDoc, setAdminUploadingDoc] = useState<string | null>(null);
   const [sendingReset, setSendingReset] = useState(false);
+
+  const handleAdminUploadDoc = async (
+    field: 'panDocumentUrl' | 'addressProofUrl' | 'bankProofUrl' | 'agreementDocumentUrl',
+    file: File
+  ) => {
+    setAdminUploadingDoc(field);
+    try {
+      const uploaded = await uploadFile(file);
+      await apiRequest(`/api/admin/bgas/${associateId}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ [field]: uploaded.url }),
+      });
+      toast.success('Document uploaded and saved successfully');
+      fetchProfile();
+      onRefreshList();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to upload document');
+    } finally {
+      setAdminUploadingDoc(null);
+    }
+  };
 
   const handleSendResetEmail = async () => {
     if (!associate?.id) return;
@@ -158,6 +186,45 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
     if (revealPan) return pan;
     if (pan.length <= 4) return pan;
     return '•••••' + pan.slice(-4);
+  };
+
+  const displayAadhaar = (num?: string | null, masked?: string | null) => {
+    const val = num || masked;
+    if (!val) return 'Not provided';
+    const clean = val.replace(/\D/g, '');
+    if (clean.length === 12) {
+      return `${clean.slice(0, 4)} ${clean.slice(4, 8)} ${clean.slice(8, 12)}`;
+    }
+    return val;
+  };
+
+  const handleStartEditAadhaar = () => {
+    const current = (associate?.aadhaarNumber || associate?.aadhaarMasked || '').replace(/\D/g, '');
+    setAadhaarInput(current.length === 12 ? current : '');
+    setIsEditingAadhaar(true);
+  };
+
+  const handleSaveAadhaar = async () => {
+    const clean = aadhaarInput.replace(/\D/g, '');
+    if (clean.length !== 12) {
+      toast.error('Aadhaar must be a 12-digit number');
+      return;
+    }
+    setSavingAadhaar(true);
+    try {
+      await apiRequest(`/api/admin/bgas/${associateId}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ aadhaarNumber: clean }),
+      });
+      toast.success('Aadhaar number updated successfully');
+      setIsEditingAadhaar(false);
+      fetchProfile();
+      onRefreshList();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update Aadhaar number');
+    } finally {
+      setSavingAadhaar(false);
+    }
   };
 
   const formatAddress = (addr?: string | null) => {
@@ -473,8 +540,10 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
 
                     <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
                       <div>
-                        <span className="font-semibold text-slate-800">Aadhaar Identity (Masked)</span>
-                        <p className="text-[11px] text-slate-500">{associate.aadhaarMasked || 'Not provided'}</p>
+                        <span className="font-semibold text-slate-800">Aadhaar Identity</span>
+                        <p className="text-[11px] text-slate-500 font-mono font-medium">
+                          {displayAadhaar(associate.aadhaarNumber, associate.aadhaarMasked)}
+                        </p>
                       </div>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${associate.aadhaarVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
                         }`}>
@@ -680,12 +749,52 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                   </div>
 
                   <div className="p-3 bg-white rounded-xl border border-slate-200">
-                    <span className="text-[10px] text-slate-400 block font-semibold">MASKED AADHAAR NUMBER</span>
-                    <span className="font-mono text-base font-bold text-slate-900">
-                      {associate.aadhaarMasked || 'Not provided'}
-                    </span>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-slate-400 block font-semibold">AADHAAR NUMBER (12 DIGITS)</span>
+                      {!isEditingAadhaar ? (
+                        <button
+                          onClick={handleStartEditAadhaar}
+                          className="text-[11px] text-[#3066BE] hover:text-[#204d94] font-medium flex items-center gap-1 hover:underline"
+                        >
+                          <Edit2 className="w-3 h-3" /> Edit
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setIsEditingAadhaar(false)}
+                          className="text-[11px] text-slate-400 hover:text-slate-600"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+
+                    {isEditingAadhaar ? (
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <input
+                          type="text"
+                          maxLength={12}
+                          value={aadhaarInput}
+                          onChange={(e) => setAadhaarInput(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                          placeholder="Enter 12-digit Aadhaar number"
+                          className="font-mono text-sm px-3 py-1.5 border border-slate-300 rounded-lg w-full focus:outline-none focus:ring-1 focus:ring-[#3066BE]"
+                          autoFocus
+                        />
+                        <button
+                          onClick={handleSaveAadhaar}
+                          disabled={savingAadhaar}
+                          className="px-3 py-1.5 bg-[#3066BE] text-white rounded-lg text-xs font-bold hover:bg-[#204d94] disabled:opacity-50 shrink-0"
+                        >
+                          {savingAadhaar ? 'Saving...' : 'Save'}
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="font-mono text-base font-bold text-slate-900 tracking-wider block">
+                        {displayAadhaar(associate.aadhaarNumber, associate.aadhaarMasked)}
+                      </span>
+                    )}
+
                     <p className="text-[10px] text-slate-400 mt-1">
-                      🔒 Raw 12-digit Aadhaar numbers and OTPs are never stored for regulatory compliance.
+                      12-digit Unique Identification Authority of India (UIDAI) registered number.
                     </p>
                   </div>
 
@@ -892,18 +1001,37 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                       Legally Binding Consent Verified ✓
                     </span>
                   </div>
-                  <button
-                    onClick={() =>
-                      setPreviewDoc({
-                        title: 'BGA Associate Agreement & Consent Terms',
-                        url: associate.agreementDocumentUrl || '/sample-agreement.pdf',
-                        type: 'PDF Document',
-                      })
-                    }
-                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
-                  >
-                    <Eye className="w-4 h-4" /> Preview
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        setPreviewDoc({
+                          title: 'BGA Associate Agreement & Consent Terms',
+                          url: associate.agreementDocumentUrl || '/sample-agreement.pdf',
+                          type: 'PDF Document',
+                        })
+                      }
+                      className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
+                    >
+                      <Eye className="w-4 h-4" /> Preview
+                    </button>
+                    <label className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer">
+                      {adminUploadingDoc === 'agreementDocumentUrl' ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[#3066BE]" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                      <span>{adminUploadingDoc === 'agreementDocumentUrl' ? 'Uploading...' : 'Attach'}</span>
+                      <input
+                        type="file"
+                        accept=".pdf,image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleAdminUploadDoc('agreementDocumentUrl', file);
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 {/* PAN Card Proof */}
@@ -918,18 +1046,37 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                       {associate.panVerified ? 'Verified' : 'Pending Verification'}
                     </span>
                   </div>
-                  <button
-                    onClick={() =>
-                      setPreviewDoc({
-                        title: 'PAN Card Verification Document',
-                        url: associate.panDocumentUrl || '/sample-pan.pdf',
-                        type: 'PDF',
-                      })
-                    }
-                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
-                  >
-                    <Eye className="w-4 h-4" /> Preview
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        setPreviewDoc({
+                          title: 'PAN Card Verification Document',
+                          url: associate.panDocumentUrl || '/sample-pan.pdf',
+                          type: 'PDF',
+                        })
+                      }
+                      className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
+                    >
+                      <Eye className="w-4 h-4" /> Preview
+                    </button>
+                    <label className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer">
+                      {adminUploadingDoc === 'panDocumentUrl' ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[#3066BE]" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                      <span>{adminUploadingDoc === 'panDocumentUrl' ? 'Uploading...' : 'Attach'}</span>
+                      <input
+                        type="file"
+                        accept=".pdf,image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleAdminUploadDoc('panDocumentUrl', file);
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 {/* Address Proof */}
@@ -943,18 +1090,37 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                       Verified Address Record
                     </span>
                   </div>
-                  <button
-                    onClick={() =>
-                      setPreviewDoc({
-                        title: 'Residential Address Proof',
-                        url: associate.addressProofUrl || '/sample-address.pdf',
-                        type: 'PDF',
-                      })
-                    }
-                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
-                  >
-                    <Eye className="w-4 h-4" /> Preview
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        setPreviewDoc({
+                          title: 'Residential Address Proof',
+                          url: associate.addressProofUrl || '/sample-address.pdf',
+                          type: 'PDF',
+                        })
+                      }
+                      className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
+                    >
+                      <Eye className="w-4 h-4" /> Preview
+                    </button>
+                    <label className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer">
+                      {adminUploadingDoc === 'addressProofUrl' ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[#3066BE]" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                      <span>{adminUploadingDoc === 'addressProofUrl' ? 'Uploading...' : 'Attach'}</span>
+                      <input
+                        type="file"
+                        accept=".pdf,image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleAdminUploadDoc('addressProofUrl', file);
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 {/* Bank Proof */}
@@ -969,18 +1135,37 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                       {associate.bankVerified ? 'Verified' : 'Pending Verification'}
                     </span>
                   </div>
-                  <button
-                    onClick={() =>
-                      setPreviewDoc({
-                        title: 'Bank Verification Document / Cheque',
-                        url: associate.bankProofUrl || '/sample-bank.pdf',
-                        type: 'PDF',
-                      })
-                    }
-                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
-                  >
-                    <Eye className="w-4 h-4" /> Preview
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        setPreviewDoc({
+                          title: 'Bank Verification Document / Cheque',
+                          url: associate.bankProofUrl || '/sample-bank.pdf',
+                          type: 'PDF',
+                        })
+                      }
+                      className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
+                    >
+                      <Eye className="w-4 h-4" /> Preview
+                    </button>
+                    <label className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer">
+                      {adminUploadingDoc === 'bankProofUrl' ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[#3066BE]" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                      <span>{adminUploadingDoc === 'bankProofUrl' ? 'Uploading...' : 'Attach'}</span>
+                      <input
+                        type="file"
+                        accept=".pdf,image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleAdminUploadDoc('bankProofUrl', file);
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1258,7 +1443,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
       {/* Document Secure Preview Modal */}
       {previewDoc && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-bold text-slate-900 text-base">{previewDoc.title}</h3>
@@ -1272,11 +1457,33 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
               </button>
             </div>
 
-            <div className="p-8 bg-slate-50 rounded-xl border border-slate-200 text-center space-y-3">
-              <FileText className="w-12 h-12 text-[#3066BE] mx-auto" />
-              <h4 className="font-bold text-slate-800 text-sm">{previewDoc.title}</h4>
-              <p className="text-xs text-slate-500 font-mono">Document Path: {previewDoc.url}</p>
-              <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200">
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-center flex-1 overflow-auto flex flex-col items-center justify-center min-h-[300px]">
+              {previewDoc.url && previewDoc.url.match(/\.(jpeg|jpg|png|webp|svg|gif)($|\?)/i) ? (
+                <div className="space-y-2 max-w-full">
+                  <img
+                    src={previewDoc.url}
+                    alt={previewDoc.title}
+                    className="max-h-[55vh] max-w-full rounded-lg border shadow-sm object-contain mx-auto"
+                  />
+                  <p className="text-xs text-slate-500 font-mono mt-2">Document: {previewDoc.url}</p>
+                </div>
+              ) : previewDoc.url && previewDoc.url.match(/\.pdf($|\?)/i) ? (
+                <div className="w-full h-full flex flex-col space-y-2">
+                  <iframe
+                    src={previewDoc.url}
+                    title={previewDoc.title}
+                    className="w-full h-[55vh] rounded-lg border bg-white"
+                  />
+                  <p className="text-xs text-slate-500 font-mono">Document: {previewDoc.url}</p>
+                </div>
+              ) : (
+                <div className="py-8 space-y-3">
+                  <FileText className="w-12 h-12 text-[#3066BE] mx-auto" />
+                  <h4 className="font-bold text-slate-800 text-sm">{previewDoc.title}</h4>
+                  <p className="text-xs text-slate-500 font-mono">Document Path: {previewDoc.url}</p>
+                </div>
+              )}
+              <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200 mt-3">
                 Authorized Admin Confidential Access
               </span>
             </div>
@@ -1289,10 +1496,13 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                 Close
               </button>
               <button
-                onClick={() => toast.info(`Initiating secure download of ${previewDoc.title}`)}
+                onClick={() => {
+                  window.open(previewDoc.url, '_blank');
+                  toast.success(`Opening ${previewDoc.title}`);
+                }}
                 className="px-4 py-2 rounded-lg text-xs font-bold bg-[#3066BE] hover:bg-[#255299] text-white flex items-center gap-1.5"
               >
-                <Download className="w-3.5 h-3.5" /> Download Document
+                <Download className="w-3.5 h-3.5" /> Open / Download File
               </button>
             </div>
           </div>

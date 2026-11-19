@@ -10,6 +10,8 @@ export interface User {
   role: UserRole;
   status: string;
   panVerified?: boolean;
+  aadhaarNumber?: string;
+  aadhaarMasked?: string;
   aadhaarVerified?: boolean;
   bankVerified?: boolean;
 }

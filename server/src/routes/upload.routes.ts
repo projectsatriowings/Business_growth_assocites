@@ -77,8 +77,39 @@ const upload = multer({
 });
 
 /**
+ * POST /api/upload/public
+ * Public file upload for BGA onboarding documents (PAN, Aadhaar, Bank Proof, Agreement)
+ */
+router.post('/public', upload.single('file'), (req: Request, res: Response): void => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: 'No file was uploaded' });
+      return;
+    }
+
+    const file = req.file;
+    const fileType = categorizeMimeType(file.mimetype, file.originalname);
+    const relativeUrl = `/uploads/${file.filename}`;
+
+    res.status(201).json({
+      success: true,
+      file: {
+        url: relativeUrl,
+        filename: file.filename,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        fileType,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'File upload failed' });
+  }
+});
+
+/**
  * POST /api/upload
- * Single file upload
+ * Single file upload (authenticated)
  */
 router.post('/', authenticateJWT, upload.single('file'), (req: AuthRequest, res: Response): void => {
   try {

@@ -441,7 +441,11 @@ export const BgaProfileView: React.FC = () => {
           <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
             <div>
               <span className="text-[11px] text-slate-500 block font-medium">Aadhaar Status</span>
-              <span className="text-xs font-bold text-slate-900 mt-0.5 block">{user?.aadhaarMasked || 'XXXX-XXXX-XXXX'}</span>
+              <span className="text-xs font-bold text-slate-900 mt-0.5 block">
+                {user?.aadhaarNumber && user.aadhaarNumber.replace(/\D/g, '').length === 12
+                  ? `${user.aadhaarNumber.replace(/\D/g, '').slice(0, 4)} ${user.aadhaarNumber.replace(/\D/g, '').slice(4, 8)} ${user.aadhaarNumber.replace(/\D/g, '').slice(8, 12)}`
+                  : (user?.aadhaarMasked || 'XXXX-XXXX-XXXX')}
+              </span>
             </div>
             <span
               className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
@@ -736,7 +740,7 @@ export const BgaProfileView: React.FC = () => {
                     UID
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-slate-900 block">Aadhaar Identification (Masked)</span>
+                    <span className="text-xs font-bold text-slate-900 block">Aadhaar Identification</span>
                     <span className="text-[10px] text-slate-400">Unique Identification Authority of India (UIDAI)</span>
                   </div>
                 </div>
@@ -750,16 +754,18 @@ export const BgaProfileView: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between py-2 border-y border-slate-200/60 text-xs">
-                <span className="text-slate-500 font-medium">Masked Number:</span>
+                <span className="text-slate-500 font-medium">Aadhaar Number:</span>
                 <span className="font-mono font-bold text-sm text-slate-900 tracking-wider">
-                  {user?.aadhaarMasked || 'XXXX-XXXX-XXXX'}
+                  {user?.aadhaarNumber && user.aadhaarNumber.replace(/\D/g, '').length === 12
+                    ? `${user.aadhaarNumber.replace(/\D/g, '').slice(0, 4)} ${user.aadhaarNumber.replace(/\D/g, '').slice(4, 8)} ${user.aadhaarNumber.replace(/\D/g, '').slice(8, 12)}`
+                    : (user?.aadhaarMasked || 'XXXX-XXXX-XXXX')}
                 </span>
               </div>
 
               <div className="text-[11px] text-slate-500 space-y-1">
                 <div className="flex justify-between">
                   <span>Privacy Compliance:</span>
-                  <span className="font-medium text-[#119DA4]">Full 12-digit number never stored</span>
+                  <span className="font-medium text-[#119DA4]">12-digit UIDAI registered</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Verification Status:</span>
@@ -1202,7 +1208,7 @@ export const BgaProfileView: React.FC = () => {
                   Identity Verification Consent (Aadhaar & PAN): GIVEN
                 </strong>
                 <p className="text-slate-600 leading-relaxed">
-                  Consent given for electronic identity validation and tax reporting. Full Aadhaar numbers are masked in compliance with data privacy regulations.
+                  Consent given for electronic identity validation and tax reporting in compliance with company onboarding norms.
                 </p>
               </div>
             </div>

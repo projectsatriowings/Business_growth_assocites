@@ -174,6 +174,10 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
       bankAccountNumber,
       bankIfsc,
       agreementAccepted,
+      panDocumentUrl,
+      addressProofUrl,
+      bankProofUrl,
+      agreementDocumentUrl,
     } = req.body;
 
     // Validations
@@ -235,12 +239,14 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
       }
     }
 
-    // Secure Aadhaar Masking - Never store full Aadhaar number or OTPs as per compliance
-    let maskedAadhaar = null;
+    // Aadhaar 12-digit UID validation & format
+    let validAadhaar: string | null = null;
+    let formattedAadhaar: string | null = null;
     if (aadhaarNumber) {
       const cleanAadhaar = aadhaarNumber.replace(/\D/g, '');
       if (cleanAadhaar.length === 12) {
-        maskedAadhaar = `XXXX-XXXX-${cleanAadhaar.slice(-4)}`;
+        validAadhaar = cleanAadhaar;
+        formattedAadhaar = `${cleanAadhaar.slice(0, 4)} ${cleanAadhaar.slice(4, 8)} ${cleanAadhaar.slice(8, 12)}`;
       } else {
         res.status(400).json({ error: 'Invalid Aadhaar number. Must be a 12-digit number.' });
         return;
@@ -271,7 +277,8 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
         pinCode: pinCode ? pinCode.trim() : null,
         panNumber: cleanPan,
         panVerified: false,
-        aadhaarMasked: maskedAadhaar,
+        aadhaarNumber: validAadhaar,
+        aadhaarMasked: formattedAadhaar || validAadhaar,
         aadhaarVerified: false, // Pending admin or authorized provider verification
         kycSubmittedAt: new Date(),
         bankName: bankName ? bankName.trim() : null,
@@ -281,10 +288,10 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
         bankVerified: false,
         agreementAccepted: true,
         agreementAcceptedAt: new Date(),
-        panDocumentUrl: cleanPan ? `/uploads/documents/pan-${normalizedMobile}.pdf` : null,
-        addressProofUrl: address ? `/uploads/documents/address-${normalizedMobile}.pdf` : null,
-        bankProofUrl: bankAccountNumber ? `/uploads/documents/bank-${normalizedMobile}.pdf` : null,
-        agreementDocumentUrl: `/uploads/documents/agreement-${normalizedMobile}.pdf`,
+        panDocumentUrl: panDocumentUrl ? panDocumentUrl.trim() : (cleanPan ? `/uploads/documents/pan-${normalizedMobile}.pdf` : null),
+        addressProofUrl: addressProofUrl ? addressProofUrl.trim() : (address ? `/uploads/documents/address-${normalizedMobile}.pdf` : null),
+        bankProofUrl: bankProofUrl ? bankProofUrl.trim() : (bankAccountNumber ? `/uploads/documents/bank-${normalizedMobile}.pdf` : null),
+        agreementDocumentUrl: agreementDocumentUrl ? agreementDocumentUrl.trim() : `/uploads/documents/agreement-${normalizedMobile}.pdf`,
       },
     });
 
@@ -325,7 +332,7 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
       'BGA_REGISTRATION_SUBMITTED',
       'USER',
       newBga.id,
-      { panNumber: cleanPan, maskedAadhaar },
+      { panNumber: cleanPan, aadhaarNumber: formattedAadhaar || validAadhaar },
       req.ip
     );
 
@@ -360,6 +367,7 @@ router.get('/me', authenticateJWT, async (req: AuthRequest, res: Response): Prom
         panNumber: true,
         panVerified: true,
         panVerifiedAt: true,
+        aadhaarNumber: true,
         aadhaarMasked: true,
         aadhaarVerified: true,
         aadhaarVerifiedAt: true,

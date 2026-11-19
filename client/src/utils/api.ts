@@ -133,3 +133,27 @@ export async function uploadFile(file: File): Promise<UploadedFileResponse> {
 
   return res.file;
 }
+
+/**
+ * Public document file upload (for registration onboarding proofs)
+ */
+export async function uploadPublicFile(file: File): Promise<UploadedFileResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch('/api/upload/public', {
+    method: 'POST',
+    body: formData,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to upload document');
+  }
+
+  if (!data.file) {
+    throw new Error('Upload succeeded but no file info was returned');
+  }
+
+  return data.file;
+}
