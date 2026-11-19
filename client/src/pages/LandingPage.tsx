@@ -635,7 +635,7 @@ export const LandingPage: React.FC = () => {
       id: 'commissions',
       q: 'How are partner commissions calculated?',
       userQ: 'How are commissions calculated for Marketing vs. Development projects?',
-      a: 'Commissions are determined on a project-by-project basis within Admin-configured ranges and approved by Executive Administration prior to quotation release. For recurring Digital Marketing engagements, Associates earn recurring monthly commissions on eligible retainer fees for the duration of the active subscription (third-party media spend excluded). For Website, Mobile App, and Custom Software projects, commissions are approved upfront and disbursed promptly upon verified client delivery and accounts payment clearance.',
+      a: 'Commissions are determined on a project-by-project basis within standard category ranges based on project scope and commercial terms. For recurring Digital Marketing engagements, Associates earn recurring monthly commissions on eligible retainer fees for the duration of the active subscription (third-party media spend excluded). For Website, Mobile App, and Custom Software projects, commissions are confirmed upfront in the quotation and disbursed promptly upon verified client delivery and payment clearance.',
       followUpIds: ['payouts', 'relationship'],
     },
     {
@@ -1180,17 +1180,17 @@ export const LandingPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-sm text-[#AEECEF]">Digital Marketing Model</span>
                     <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#119DA4]/30 text-[#80DED9] border border-[#80DED9]/30">
-                      {dmRange ? `${dmRange} Commission Range` : 'Approved Project Rate'}
+                      {dmRange ? `${dmRange} Commission Range` : 'Confirmed Project Rate'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-300 mt-2 leading-relaxed">
                     {dmRange ? (
                       <>
-                        Earn recurring monthly commissions within the Admin-approved <strong className="text-white">{dmRange}</strong> range on verified monthly service retainers. <strong className="text-white">Media advertisement spend is strictly excluded</strong> to keep margins predictable.
+                        Earn recurring monthly commissions within the active <strong className="text-white">{dmRange}</strong> range on verified monthly service retainers. <strong className="text-white">Media advertisement spend is strictly excluded</strong> to keep margins predictable.
                       </>
                     ) : (
                       <>
-                        Commission rates are determined based on individual client projects and Admin approval. <strong className="text-white">Media advertisement spend is strictly excluded</strong>.
+                        Commission rates are determined based on individual client projects and confirmed service scope. <strong className="text-white">Media advertisement spend is strictly excluded</strong>.
                       </>
                     )}
                   </p>
@@ -1200,17 +1200,17 @@ export const LandingPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-sm text-[#80DED9]">Website & Mobile App Projects</span>
                     <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#3066BE]/40 text-[#AEECEF] border border-[#3066BE]/40">
-                      {webMobileRange ? `${webMobileRange} Commission Range` : 'Approved Project Rate'}
+                      {webMobileRange ? `${webMobileRange} Commission Range` : 'Confirmed Project Rate'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-300 mt-2 leading-relaxed">
                     {webMobileRange ? (
                       <>
-                        Earn commissions within the Admin-approved <strong className="text-white">{webMobileRange}</strong> range on the agreed technical scope. Commission is disbursed <strong className="text-white">promptly upon final technical sign-off and accounts payment verification</strong>.
+                        Earn commissions within the active <strong className="text-white">{webMobileRange}</strong> range on the agreed technical scope. Commission is disbursed <strong className="text-white">promptly upon completed technical handover and payment verification</strong>.
                       </>
                     ) : (
                       <>
-                        Commission rates are determined based on individual client projects and Admin approval. Disbursed upon verified client handover and accounts payment clearance.
+                        Commission rates are determined based on individual client projects and confirmed service scope. Disbursed upon completed delivery milestones.
                       </>
                     )}
                   </p>
@@ -1220,17 +1220,17 @@ export const LandingPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-sm text-slate-200">Custom Enterprise Software</span>
                     <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-700 text-slate-300 border border-slate-600">
-                      {softwareRange ? `${softwareRange} Commission Range` : 'Approved Project Rate'}
+                      {softwareRange ? `${softwareRange} Commission Range` : 'Confirmed Project Rate'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-300 mt-2 leading-relaxed">
                     {softwareRange ? (
                       <>
-                        Earn commissions within the Admin-approved <strong className="text-white">{softwareRange}</strong> range on high-ticket cloud ERP, CRM, and bespoke software systems upon milestone completion and client sign-off.
+                        Earn commissions within the active <strong className="text-white">{softwareRange}</strong> range on high-ticket cloud ERP, CRM, and custom software systems upon milestone completion and client delivery.
                       </>
                     ) : (
                       <>
-                        Commission rates are determined based on individual client projects and Admin approval on custom enterprise implementations.
+                        Commission rates are determined based on individual client projects and custom enterprise requirements.
                       </>
                     )}
                   </p>
@@ -1238,21 +1238,21 @@ export const LandingPage: React.FC = () => {
 
                 <div className="p-3.5 rounded-xl bg-[#152544] border border-[#6D96C5]/30 text-xs text-slate-300 flex items-center gap-2.5">
                   <ShieldCheck className="w-4 h-4 text-[#80DED9] shrink-0" />
-                  <span>Commission rates are determined based on individual client projects and Admin approval.</span>
+                  <span>Commission rates are customized based on project scope and client requirements.</span>
                 </div>
               </div>
             </div>
 
-            {/* Informational Earnings Framework */}
+            {/* Associate Revenue & Partnership Model */}
             <div className="bg-[#1a365d] rounded-3xl p-7 sm:p-9 border border-[#6D96C5]/30 shadow-2xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h3 className="text-xl font-bold text-white">How Associate Earnings Work</h3>
-                    <p className="text-xs text-slate-400 mt-0.5">Dual-approved, verified revenue sharing framework</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Transparent, reliable partnership model</p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-[#119DA4]/20 text-[#80DED9] flex items-center justify-center">
-                    <ShieldCheck className="w-5 h-5" />
+                    <TrendingUp className="w-5 h-5" />
                   </div>
                 </div>
 
@@ -1271,30 +1271,30 @@ export const LandingPage: React.FC = () => {
                   <div className="p-3.5 rounded-xl bg-[#1e345e]/80 border border-slate-700/80">
                     <div className="font-bold text-white flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-[#3066BE]/40 text-[#80DED9] flex items-center justify-center text-[10px] font-extrabold">1</span>
-                      Official Dual Approval
+                      Upfront Agreed Rates
                     </div>
                     <p className="text-slate-300 text-[11px] mt-1 pl-7 leading-relaxed">
-                      Every client quotation and proposed associate commission percentage must both receive executive Admin approval before either is released to the associate.
+                      Commission rates and commercial terms are clearly defined and confirmed upfront in the client quotation before project kickoff.
                     </p>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-[#1e345e]/80 border border-slate-700/80">
                     <div className="font-bold text-white flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-[#119DA4]/40 text-[#80DED9] flex items-center justify-center text-[10px] font-extrabold">2</span>
-                      Service Fee Base Protection
+                      Transparent Revenue Base
                     </div>
                     <p className="text-slate-300 text-[11px] mt-1 pl-7 leading-relaxed">
-                      Commissions are calculated strictly on agreed IT services and retainer fees. Third-party ad spends and GST are strictly excluded to keep margins predictable.
+                      Commissions are calculated on core technical service fees and retainer packages. Third-party ad budgets and pass-through costs are excluded for full predictability.
                     </p>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-[#1e345e]/80 border border-slate-700/80">
                     <div className="font-bold text-white flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-slate-700 text-[#AEECEF] flex items-center justify-center text-[10px] font-extrabold">3</span>
-                      Verified Milestone Payouts
+                      Direct Bank Disbursements
                     </div>
                     <p className="text-slate-300 text-[11px] mt-1 pl-7 leading-relaxed">
-                      Commissions are disbursed directly to your verified bank account via NEFT/IMPS with official bank UTR tracking upon verified client payment and final handover.
+                      Commissions are disbursed directly to your registered bank account via secure NEFT/IMPS upon verified client milestones and project delivery.
                     </p>
                   </div>
                 </div>
