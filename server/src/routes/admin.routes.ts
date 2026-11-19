@@ -2128,5 +2128,80 @@ router.get('/commission-configs/history', async (req: AuthRequest, res: Response
   }
 });
 
+// 16. Commission Range Configuration Management (Public Ranges)
+router.get('/commission-ranges', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const ranges = await prisma.commissionRangeConfig.findMany({
+      orderBy: { serviceCategory: 'asc' },
+    });
+    res.json({ ranges });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch commission ranges' });
+  }
+});
+
+router.put('/commission-ranges', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { serviceCategory, minPercentage, maxPercentage, status, effectiveDate } = req.body;
+
+    if (!serviceCategory) {
+      res.status(400).json({ error: 'Service category is required' });
+      return;
+    }
+
+    const min = parseFloat(minPercentage);
+    const max = parseFloat(maxPercentage);
+
+    if (isNaN(min) || isNaN(max) || min < 0 || max < 0 || max > 100) {
+      res.status(400).json({ error: 'Min and Max percentages must be valid numbers between 0 and 100' });
+      return;
+    }
+
+    if (min > max) {
+      res.status(400).json({ error: 'Minimum percentage must be less than or equal to maximum percentage' });
+      return;
+    }
+
+    const updated = await prisma.commissionRangeConfig.upsert({
+      where: { serviceCategory },
+      update: {
+        minPercentage: min,
+        maxPercentage: max,
+        status: status || 'ACTIVE',
+        effectiveDate: effectiveDate ? new Date(effectiveDate) : new Date(),
+        updatedById: req.user!.id,
+        updatedByName: req.user!.name,
+      },
+      create: {
+        serviceCategory,
+        minPercentage: min,
+        maxPercentage: max,
+        status: status || 'ACTIVE',
+        effectiveDate: effectiveDate ? new Date(effectiveDate) : new Date(),
+        updatedById: req.user!.id,
+        updatedByName: req.user!.name,
+      },
+    });
+
+    appCache.invalidatePrefix('public:');
+    appCache.invalidatePrefix('admin:');
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'UPDATE_COMMISSION_RANGE',
+      'COMMISSION_RANGE',
+      updated.id,
+      { serviceCategory, minPercentage: min, maxPercentage: max, status },
+      req.ip
+    );
+
+    res.json({ message: 'Commission range updated successfully', range: updated });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to update commission range' });
+  }
+});
+
 export default router;
 

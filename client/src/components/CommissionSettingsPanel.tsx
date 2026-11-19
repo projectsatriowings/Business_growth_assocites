@@ -252,7 +252,7 @@ export const CommissionSettingsPanel: React.FC = () => {
           </span>
           <h4 className="font-bold text-slate-900">System Category Baseline</h4>
           <p className="text-slate-600 text-[11px] leading-relaxed">
-            Fallback standard rate configured in System Settings per service category (DM: 15%, Web: 12%, Mobile: 12%).
+            Configured baseline range managed by Admin per service category.
           </p>
         </div>
       </div>

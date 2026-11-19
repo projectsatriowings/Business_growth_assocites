@@ -244,6 +244,11 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
       advanceRequiredPercent,
       paymentTerms,
       validityDays,
+      proposedCommissionRate,
+      commissionBillingType,
+      commissionCalculationBasis,
+      commissionNotes,
+      commissionExceptionReason,
     } = req.body;
 
     const existing = await prisma.quotation.findUnique({
@@ -270,6 +275,29 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
 
     const days = parseInt(validityDays) || 15;
     const validityDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+
+    // Validate proposed commission rate
+    const propCommRate = parseFloat(proposedCommissionRate);
+    if (isNaN(propCommRate) || propCommRate <= 0 || propCommRate > 100) {
+      res.status(400).json({ error: 'A valid proposed commission percentage between 0.1% and 100% is required' });
+      return;
+    }
+
+    // Fetch configured range for serviceCategory
+    const rangeConfig = await prisma.commissionRangeConfig.findUnique({
+      where: { serviceCategory: existing.serviceCategory },
+    });
+
+    const minRange = rangeConfig?.minPercentage ?? 10;
+    const maxRange = rangeConfig?.maxPercentage ?? 15;
+    const isException = propCommRate < minRange || propCommRate > maxRange;
+
+    if (isException && (!commissionExceptionReason || !commissionExceptionReason.trim())) {
+      res.status(400).json({
+        error: `Proposed commission rate ${propCommRate}% is outside the configured range (${minRange}%–${maxRange}%). A mandatory exception justification reason is required for Admin review.`,
+      });
+      return;
+    }
 
     const isRevision = existing.status === QuotationStatus.REVISION_REQUESTED || existing.status === QuotationStatus.REJECTED;
     let targetQuotationId = id;
@@ -304,6 +332,17 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
           adminApprovalStatus: 'PENDING',
           adminNotes: null,
           previousVersionId: existing.id,
+          // BGA Commission Proposal
+          proposedCommissionRate: propCommRate,
+          commissionBillingType: commissionBillingType || (existing.serviceCategory === 'DIGITAL_MARKETING' ? 'MONTHLY_RECURRING' : 'PROJECT_BASED'),
+          commissionCalculationBasis: commissionCalculationBasis || 'NET_SERVICE_FEE',
+          commissionNotes: commissionNotes ? commissionNotes.trim() : null,
+          commissionRangeMin: minRange,
+          commissionRangeMax: maxRange,
+          commissionExceptionReason: isException ? commissionExceptionReason.trim() : null,
+          isCommissionException: isException,
+          commissionApprovalStatus: 'PENDING',
+          approvedCommissionRate: null,
         },
       });
 
@@ -316,7 +355,7 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
       targetQuotationId = newQuot.id;
       targetQuotationNumber = newQuot.quotationNumber;
     } else {
-      // Update the requested quotation with prepared details
+      // Update the requested quotation with prepared details and commission proposal
       await prisma.quotation.update({
         where: { id },
         data: {
@@ -335,19 +374,30 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
           status: QuotationStatus.PENDING_ADMIN_APPROVAL,
           adminApprovalStatus: 'PENDING',
           adminNotes: null,
+          // BGA Commission Proposal
+          proposedCommissionRate: propCommRate,
+          commissionBillingType: commissionBillingType || (existing.serviceCategory === 'DIGITAL_MARKETING' ? 'MONTHLY_RECURRING' : 'PROJECT_BASED'),
+          commissionCalculationBasis: commissionCalculationBasis || 'NET_SERVICE_FEE',
+          commissionNotes: commissionNotes ? commissionNotes.trim() : null,
+          commissionRangeMin: minRange,
+          commissionRangeMax: maxRange,
+          commissionExceptionReason: isException ? commissionExceptionReason.trim() : null,
+          isCommissionException: isException,
+          commissionApprovalStatus: 'PENDING',
+          approvedCommissionRate: null,
         },
       });
     }
 
-    // Notify Admin of prepared quotation pending approval
+    // Notify Admin of prepared quotation & commission proposal pending approval
     const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
     for (const a of admins) {
       await createNotification(
         a.id,
-        isRevision ? 'Quotation Corrected - Admin Approval Required' : 'Quotation Prepared - Admin Approval Required',
+        isRevision ? 'Quotation & Commission Proposal Corrected - Admin Approval Required' : 'Quotation & Commission Proposal Prepared - Admin Approval Required',
         isRevision
-          ? `Accounts has submitted corrected quotation ${targetQuotationNumber} for ${existing.client.clientName}. Total Value: Rs. ${totalAmount.toLocaleString('en-IN')}. Please review and authorize for release to BGA.`
-          : `Accounts has prepared official quotation for ${existing.client.clientName}. Total Value: Rs. ${totalAmount.toLocaleString('en-IN')}. Please review and authorize for release to BGA.`,
+          ? `Accounts has submitted corrected quotation ${targetQuotationNumber} with proposed BGA commission of ${propCommRate}%${isException ? ' [RANGE EXCEPTION FLAGGED]' : ''} for ${existing.client.clientName}. Total Value: Rs. ${totalAmount.toLocaleString('en-IN')}. Please review both and authorize for release to BGA.`
+          : `Accounts has prepared official quotation and proposed BGA commission of ${propCommRate}%${isException ? ' [RANGE EXCEPTION FLAGGED]' : ''} for ${existing.client.clientName}. Total Value: Rs. ${totalAmount.toLocaleString('en-IN')}. Dual approval required before release to BGA.`,
         'ACTION_REQUIRED',
         '/admin/quotations'
       );

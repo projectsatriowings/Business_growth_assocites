@@ -304,6 +304,20 @@ model Quotation {
   createdAt              DateTime        @default(now())
   updatedAt              DateTime        @updatedAt
 
+  // Dual Approval & Commission Proposal Fields
+  proposedCommissionRate     Float?
+  commissionBillingType      String?         // PROJECT_BASED, MONTHLY_RECURRING
+  commissionCalculationBasis String?         // NET_SERVICE_FEE, TOTAL_CONTRACT_VALUE
+  commissionNotes            String?
+  commissionRangeMin         Float?
+  commissionRangeMax         Float?
+  commissionExceptionReason  String?
+  isCommissionException      Boolean         @default(false)
+  commissionApprovalStatus   String?         @default("PENDING") // PENDING, APPROVED, REVISION_REQUESTED, REJECTED
+  approvedCommissionRate     Float?
+  commissionApprovedAt       DateTime?
+  commissionApprovedById     String?
+
   workOrder              WorkOrder?
   reminders              QuotationReminder[]
 
@@ -335,6 +349,7 @@ model WorkOrder {
   handoverApprovedAt   DateTime?
   handoverApprovedById String?
   handoverNotes        String?
+  approvedCommissionRate Float?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -670,6 +685,22 @@ model FinalPaymentFollowUp {
   @@index([projectId])
   @@index([clientId])
   @@index([bgaId])
+}
+
+model CommissionRangeConfig {
+  id              String              @id @default(cuid())
+  serviceCategory ServiceCategoryType @unique
+  minPercentage   Float
+  maxPercentage   Float
+  status          String              @default("ACTIVE") // ACTIVE, INACTIVE
+  effectiveDate   DateTime            @default(now())
+  updatedById     String?
+  updatedByName   String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([serviceCategory])
+  @@index([status])
 }
 
 

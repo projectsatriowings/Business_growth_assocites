@@ -13,6 +13,7 @@ import notificationRoutes from './routes/notification.routes';
 import resourceRoutes from './routes/resource.routes';
 import contactRoutes from './routes/contact.routes';
 import uploadRoutes from './routes/upload.routes';
+import publicRoutes from './routes/public.routes';
 
 dotenv.config();
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -57,6 +58,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/public', publicRoutes);
 
 // Serve Frontend Build (client/dist)
 const clientDistPath = path.resolve(__dirname, '../../client/dist');

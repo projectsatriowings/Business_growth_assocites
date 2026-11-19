@@ -1148,7 +1148,7 @@ export const RegisterBgaPage: React.FC = () => {
                     </p>
                     <p className="font-bold text-slate-800">3. Commission Terms & Exclusions</p>
                     <p>
-                      Digital Marketing commission (15%) is recurring on verified monthly fees, with ad spend strictly excluded. Web, Mobile, and Software commissions (10-12%) are eligible upon milestone sign-off and verified final client receipt.
+                      Associate commissions are determined on an approved client project basis within Admin-configured category ranges. For Digital Marketing, recurring commissions apply to verified service retainers with third-party ad spend strictly excluded. For Web, Mobile, and Custom Software projects, commissions are eligible upon milestone sign-off and verified final payment clearance.
                     </p>
                   </div>
 

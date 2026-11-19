@@ -43,6 +43,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Navbar } from '../components/Navbar';
 import { ModalPortal } from '../components/ModalPortal';
+import { apiRequest } from '../utils/api';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -72,6 +73,67 @@ export const LandingPage: React.FC = () => {
   ]);
   const [isBotThinking, setIsBotThinking] = useState(false);
   const chatFeedRef = useRef<HTMLDivElement>(null);
+
+  // Dynamic Commission Ranges from Admin Configuration
+  interface PublicCommissionRange {
+    serviceCategory: string;
+    minPercentage: number;
+    maxPercentage: number;
+    displayRange: string;
+    effectiveDate?: string;
+  }
+  const [commissionRanges, setCommissionRanges] = useState<PublicCommissionRange[]>([]);
+  const [rangesLoaded, setRangesLoaded] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    apiRequest('/api/public/commission-ranges')
+      .then((data) => {
+        if (isMounted && data?.ranges && Array.isArray(data.ranges)) {
+          setCommissionRanges(data.ranges);
+          setRangesLoaded(true);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load public commission ranges:', err);
+        if (isMounted) setRangesLoaded(true);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const getCategoryRange = (category: string): string | null => {
+    const match = commissionRanges.find(
+      (r) => r.serviceCategory?.toUpperCase() === category.toUpperCase()
+    );
+    if (match && typeof match.minPercentage === 'number' && typeof match.maxPercentage === 'number') {
+      return match.minPercentage === match.maxPercentage
+        ? `${match.minPercentage}%`
+        : `${match.minPercentage}% – ${match.maxPercentage}%`;
+    }
+    return null;
+  };
+
+  const dmRange = getCategoryRange('DIGITAL_MARKETING');
+  const webRange = getCategoryRange('WEBSITE_DEVELOPMENT');
+  const mobileRange = getCategoryRange('MOBILE_APPLICATION_DEVELOPMENT');
+  const webMobileRange = webRange || mobileRange;
+  const softwareRange = getCategoryRange('SOFTWARE_DEVELOPMENT');
+
+  const overallRangeText = (() => {
+    if (commissionRanges.length === 0) {
+      return rangesLoaded ? 'Approved Rates' : 'Executive Ranges';
+    }
+    const mins = commissionRanges.map((r) => r.minPercentage).filter((n) => typeof n === 'number' && !isNaN(n));
+    const maxs = commissionRanges.map((r) => r.maxPercentage).filter((n) => typeof n === 'number' && !isNaN(n));
+    if (mins.length > 0 && maxs.length > 0) {
+      const min = Math.min(...mins);
+      const max = Math.max(...maxs);
+      return min === max ? `${min}%` : `${min}% – ${max}%`;
+    }
+    return 'Approved Rates';
+  })();
   const streamIntervalRef = useRef<any>(null);
 
   useEffect(() => {
@@ -324,7 +386,7 @@ export const LandingPage: React.FC = () => {
     },
     {
       phaseNumber: '03',
-      phaseTitle: 'Fulfillment & Guaranteed Payouts',
+      phaseTitle: 'Fulfillment & Milestone Settlements',
       badge: 'Phase 3 • Execution & Rewards',
       steps: [
         {
@@ -339,7 +401,7 @@ export const LandingPage: React.FC = () => {
         },
         {
           step: '09',
-          title: 'Earn Guaranteed Commissions',
+          title: 'Earn Approved Project Commissions',
           desc: 'Receive recurring monthly subscription share or milestone payouts to your bank.',
         },
       ],
@@ -573,7 +635,7 @@ export const LandingPage: React.FC = () => {
       id: 'commissions',
       q: 'How are partner commissions calculated?',
       userQ: 'How are commissions calculated for Marketing vs. Development projects?',
-      a: 'For Digital Marketing retainers, Associates receive a 15% recurring monthly commission on eligible retainer fees for the full lifetime of the client subscription. For Website, Mobile App, and Custom Software projects, Associates earn 10% to 12% milestone completion commissions upon verified client handover and final payment.',
+      a: 'Commissions are determined on a project-by-project basis within Admin-configured ranges and approved by Executive Administration prior to quotation release. For recurring Digital Marketing engagements, Associates earn recurring monthly commissions on eligible retainer fees for the duration of the active subscription (third-party media spend excluded). For Website, Mobile App, and Custom Software projects, commissions are approved upfront and disbursed promptly upon verified client delivery and accounts payment clearance.',
       followUpIds: ['payouts', 'relationship'],
     },
     {
@@ -739,8 +801,8 @@ export const LandingPage: React.FC = () => {
               <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Exclusive Client Ownership</div>
             </div>
             <div className="p-3">
-              <div className="text-2xl sm:text-3xl font-extrabold text-[#6D96C5]">10% – 15%</div>
-              <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Verified Commission Rates</div>
+              <div className="text-2xl sm:text-3xl font-extrabold text-[#6D96C5]">{overallRangeText}</div>
+              <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Configurable Commission Range</div>
             </div>
             <div className="p-3">
               <div className="text-2xl sm:text-3xl font-extrabold text-[#119DA4]">End-to-End</div>
@@ -1118,11 +1180,19 @@ export const LandingPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-sm text-[#AEECEF]">Digital Marketing Model</span>
                     <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#119DA4]/30 text-[#80DED9] border border-[#80DED9]/30">
-                      15% Monthly Recurring
+                      {dmRange ? `${dmRange} Commission Range` : 'Approved Project Rate'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-                    Earn recurring monthly commissions (15%) for every verified monthly invoice. <strong className="text-white">Media advertisement spend is strictly excluded</strong> to keep margins predictable.
+                    {dmRange ? (
+                      <>
+                        Earn recurring monthly commissions within the Admin-approved <strong className="text-white">{dmRange}</strong> range on verified monthly service retainers. <strong className="text-white">Media advertisement spend is strictly excluded</strong> to keep margins predictable.
+                      </>
+                    ) : (
+                      <>
+                        Commission rates are determined based on individual client projects and Admin approval. <strong className="text-white">Media advertisement spend is strictly excluded</strong>.
+                      </>
+                    )}
                   </p>
                 </div>
 
@@ -1130,61 +1200,103 @@ export const LandingPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-sm text-[#80DED9]">Website & Mobile App Projects</span>
                     <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#3066BE]/40 text-[#AEECEF] border border-[#3066BE]/40">
-                      12% Project Delivery
+                      {webMobileRange ? `${webMobileRange} Commission Range` : 'Approved Project Rate'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-                    Earn 12% commission on the agreed technical scope. Commission is disbursed <strong className="text-white">promptly upon final technical sign-off and accounts payment verification</strong>.
+                    {webMobileRange ? (
+                      <>
+                        Earn commissions within the Admin-approved <strong className="text-white">{webMobileRange}</strong> range on the agreed technical scope. Commission is disbursed <strong className="text-white">promptly upon final technical sign-off and accounts payment verification</strong>.
+                      </>
+                    ) : (
+                      <>
+                        Commission rates are determined based on individual client projects and Admin approval. Disbursed upon verified client handover and accounts payment clearance.
+                      </>
+                    )}
                   </p>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-[#1e345e] border border-slate-700 shadow-sm">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-sm text-slate-200">Custom Enterprise Software</span>
-                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-700 text-slate-300">
-                      10% Project Delivery
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-700 text-slate-300 border border-slate-600">
+                      {softwareRange ? `${softwareRange} Commission Range` : 'Approved Project Rate'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-                    Earn 10% on high-ticket cloud ERP, CRM, and custom software systems upon project completion and client sign-off.
+                    {softwareRange ? (
+                      <>
+                        Earn commissions within the Admin-approved <strong className="text-white">{softwareRange}</strong> range on high-ticket cloud ERP, CRM, and bespoke software systems upon milestone completion and client sign-off.
+                      </>
+                    ) : (
+                      <>
+                        Commission rates are determined based on individual client projects and Admin approval on custom enterprise implementations.
+                      </>
+                    )}
                   </p>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-[#152544] border border-[#6D96C5]/30 text-xs text-slate-300 flex items-center gap-2.5">
+                  <ShieldCheck className="w-4 h-4 text-[#80DED9] shrink-0" />
+                  <span>Commission rates are determined based on individual client projects and Admin approval.</span>
                 </div>
               </div>
             </div>
 
-            {/* Earnings Simulator */}
-            <div className="bg-[#1a365d] rounded-3xl p-7 sm:p-9 border border-[#6D96C5]/30 shadow-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-white">Associate Earnings Example</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Realistic quarterly portfolio illustration</p>
-                </div>
-                <div className="w-10 h-10 rounded-xl bg-[#119DA4]/20 text-[#80DED9] flex items-center justify-center">
-                  <DollarSign className="w-5 h-5" />
-                </div>
-              </div>
-
-              <div className="space-y-4 text-xs">
-                <div className="flex justify-between items-center py-3 border-b border-slate-700/80">
-                  <span className="text-slate-300 font-medium">1x Custom ERP Software (₹5,00,000 @ 10%)</span>
-                  <span className="font-bold text-[#80DED9] text-sm">₹50,000</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-slate-700/80">
-                  <span className="text-slate-300 font-medium">2x Mobile Applications (₹3,00,000 @ 12%)</span>
-                  <span className="font-bold text-[#80DED9] text-sm">₹36,000</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-slate-700/80">
-                  <span className="text-slate-300 font-medium">3x Business Websites (₹1,50,000 @ 12%)</span>
-                  <span className="font-bold text-[#80DED9] text-sm">₹18,000</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-slate-700/80">
-                  <span className="text-slate-300 font-medium">4x Active DM Clients (₹1,20,000 fee @ 15% /mo)</span>
-                  <span className="font-bold text-[#AEECEF] text-sm">₹18,000 / month</span>
+            {/* Informational Earnings Framework */}
+            <div className="bg-[#1a365d] rounded-3xl p-7 sm:p-9 border border-[#6D96C5]/30 shadow-2xl flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">How Associate Earnings Work</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">Dual-approved, verified revenue sharing framework</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-[#119DA4]/20 text-[#80DED9] flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
                 </div>
 
-                <div className="pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm font-bold bg-[#152544] p-4 sm:p-5 rounded-2xl mt-4 border border-[#3066BE]/30 gap-2">
-                  <span className="text-slate-300">Simulated Total Payout:</span>
-                  <span className="text-[#80DED9] text-lg sm:text-xl font-extrabold">₹1,04,000 + ₹18,000/mo</span>
+                {/* Primary Mandatory Statement */}
+                <div className="p-4 rounded-2xl bg-[#152544] border border-[#80DED9]/30 text-xs text-[#AEECEF] font-medium leading-relaxed mb-5 shadow-sm">
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-[#80DED9] shrink-0 mt-0.5" />
+                    <span>
+                      <strong className="text-white font-semibold">Policy Notice: </strong>
+                      Your commission depends on the approved rate for each client project and the actual verified payments received.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div className="p-3.5 rounded-xl bg-[#1e345e]/80 border border-slate-700/80">
+                    <div className="font-bold text-white flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-[#3066BE]/40 text-[#80DED9] flex items-center justify-center text-[10px] font-extrabold">1</span>
+                      Official Dual Approval
+                    </div>
+                    <p className="text-slate-300 text-[11px] mt-1 pl-7 leading-relaxed">
+                      Every client quotation and proposed associate commission percentage must both receive executive Admin approval before either is released to the associate.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[#1e345e]/80 border border-slate-700/80">
+                    <div className="font-bold text-white flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-[#119DA4]/40 text-[#80DED9] flex items-center justify-center text-[10px] font-extrabold">2</span>
+                      Service Fee Base Protection
+                    </div>
+                    <p className="text-slate-300 text-[11px] mt-1 pl-7 leading-relaxed">
+                      Commissions are calculated strictly on agreed IT services and retainer fees. Third-party ad spends and GST are strictly excluded to keep margins predictable.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[#1e345e]/80 border border-slate-700/80">
+                    <div className="font-bold text-white flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-slate-700 text-[#AEECEF] flex items-center justify-center text-[10px] font-extrabold">3</span>
+                      Verified Milestone Payouts
+                    </div>
+                    <p className="text-slate-300 text-[11px] mt-1 pl-7 leading-relaxed">
+                      Commissions are disbursed directly to your verified bank account via NEFT/IMPS with official bank UTR tracking upon verified client payment and final handover.
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -1310,7 +1422,7 @@ export const LandingPage: React.FC = () => {
                   Know a Business That Needs Engineering or Marketing?
                 </h4>
                 <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
-                  Introduce clients in your business network to Atriowings and earn up to 15% guaranteed recurring or project commissions on every verified engagement.
+                  Introduce clients in your business network to Atriowings and earn attractive project and recurring commissions on every verified engagement.
                 </p>
               </div>
             </div>

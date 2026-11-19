@@ -6184,7 +6184,7 @@ export const BgaPortal: React.FC = () => {
                   {
                     key: 'DIGITAL_MARKETING',
                     name: 'Digital Marketing',
-                    rate: '15% Commission',
+                    rate: 'Configured Range',
                     model: 'Monthly Subscription (excl. ad spend)',
                     icon: TrendingUp,
                     accent: 'border-teal-200 bg-teal-50/30',
@@ -6192,7 +6192,7 @@ export const BgaPortal: React.FC = () => {
                   {
                     key: 'WEBSITE_DEVELOPMENT',
                     name: 'Website Development',
-                    rate: '12% Commission',
+                    rate: 'Configured Range',
                     model: 'Project-based on delivery completion',
                     icon: Globe,
                     accent: 'border-blue-200 bg-blue-50/30',
@@ -6200,7 +6200,7 @@ export const BgaPortal: React.FC = () => {
                   {
                     key: 'MOBILE_APPLICATION_DEVELOPMENT',
                     name: 'Mobile Application',
-                    rate: '12% Commission',
+                    rate: 'Configured Range',
                     model: 'Milestone / Full completion delivery',
                     icon: Smartphone,
                     accent: 'border-indigo-200 bg-indigo-50/30',
@@ -6208,7 +6208,7 @@ export const BgaPortal: React.FC = () => {
                   {
                     key: 'SOFTWARE_DEVELOPMENT',
                     name: 'Custom Software / ERP',
-                    rate: '12% Commission',
+                    rate: 'Configured Range',
                     model: 'Enterprise milestones upon delivery',
                     icon: Code2,
                     accent: 'border-purple-200 bg-purple-50/30',
@@ -6389,8 +6389,9 @@ export const BgaPortal: React.FC = () => {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredCommissions.map((c) => {
-                        const ratePct =
-                          c.serviceCategory === 'DIGITAL_MARKETING' ? '15%' : '12%';
+                        const ratePct = c.commissionRate
+                          ? `${c.commissionRate}%`
+                          : 'Approved Rate';
 
                         return (
                           <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">

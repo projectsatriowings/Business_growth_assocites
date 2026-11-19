@@ -239,6 +239,22 @@ async function main() {
     });
   }
 
+  // 2.1 Default Admin-Managed Commission Ranges
+  const commissionRanges = [
+    { serviceCategory: ServiceCategoryType.DIGITAL_MARKETING, minPercentage: 12, maxPercentage: 18, status: 'ACTIVE' },
+    { serviceCategory: ServiceCategoryType.WEBSITE_DEVELOPMENT, minPercentage: 10, maxPercentage: 15, status: 'ACTIVE' },
+    { serviceCategory: ServiceCategoryType.MOBILE_APPLICATION_DEVELOPMENT, minPercentage: 10, maxPercentage: 15, status: 'ACTIVE' },
+    { serviceCategory: ServiceCategoryType.SOFTWARE_DEVELOPMENT, minPercentage: 10, maxPercentage: 15, status: 'ACTIVE' },
+  ];
+
+  for (const r of commissionRanges) {
+    await prisma.commissionRangeConfig.upsert({
+      where: { serviceCategory: r.serviceCategory },
+      update: {},
+      create: r,
+    });
+  }
+
   // 3. Service Items (The 4 core categories)
   const services = [
     // Digital Marketing
