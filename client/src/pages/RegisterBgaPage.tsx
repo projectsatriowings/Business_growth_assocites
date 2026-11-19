@@ -38,12 +38,16 @@ export const RegisterBgaPage: React.FC = () => {
     fullName: '',
     dob: '',
     address: '',
+    city: '',
+    state: '',
+    pinCode: '',
     mobile: '',
     email: '',
     password: '',
     confirmPassword: '',
     panNumber: '',
     aadhaarNumber: '',
+    bankName: '',
     bankAccountHolder: '',
     bankAccountNumber: '',
     bankIfsc: '',
@@ -85,6 +89,25 @@ export const RegisterBgaPage: React.FC = () => {
         }
         return undefined;
 
+      case 'city':
+        if (value && value.trim().length > 0 && value.trim().length < 2) {
+          return 'City name must be at least 2 characters';
+        }
+        return undefined;
+
+      case 'state':
+        if (value && value.trim().length > 0 && value.trim().length < 2) {
+          return 'State name must be at least 2 characters';
+        }
+        return undefined;
+
+      case 'pinCode':
+        if (value && value.trim().length > 0) {
+          const cleanPin = value.replace(/\D/g, '');
+          if (cleanPin.length !== 6) return 'PIN Code must be a 6-digit number';
+        }
+        return undefined;
+
       case 'email':
         if (!value || !value.trim()) return 'Email address is required';
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim())) return 'Enter a valid email address (e.g. name@domain.com)';
@@ -112,6 +135,11 @@ export const RegisterBgaPage: React.FC = () => {
           const cleanAadhaar = value.replace(/\D/g, '');
           if (cleanAadhaar.length !== 12) return 'Aadhaar must be a 12-digit number';
         }
+        return undefined;
+
+      case 'bankName':
+        if (!value || !value.trim()) return 'Bank name is required';
+        if (value.trim().length < 2) return 'Bank name must be at least 2 characters';
         return undefined;
 
       case 'bankAccountHolder':
@@ -149,8 +177,9 @@ export const RegisterBgaPage: React.FC = () => {
       nextVal = (e.target as HTMLInputElement).checked;
     } else if (name === 'panNumber' || name === 'bankIfsc') {
       nextVal = value.toUpperCase();
-    } else if (name === 'mobile' || name === 'aadhaarNumber' || name === 'bankAccountNumber') {
+    } else if (name === 'mobile' || name === 'aadhaarNumber' || name === 'bankAccountNumber' || name === 'pinCode') {
       nextVal = value.replace(/\D/g, '');
+      if (name === 'pinCode') nextVal = nextVal.slice(0, 6);
     }
 
     const nextForm = { ...formData, [name]: nextVal };
@@ -182,11 +211,14 @@ export const RegisterBgaPage: React.FC = () => {
       stepFields = ['fullName', 'mobile', 'email', 'password', 'confirmPassword'];
       if (formData.dob) stepFields.push('dob');
       if (formData.address) stepFields.push('address');
+      if (formData.city) stepFields.push('city');
+      if (formData.state) stepFields.push('state');
+      if (formData.pinCode) stepFields.push('pinCode');
     } else if (step === 2) {
       stepFields = ['panNumber'];
       if (formData.aadhaarNumber) stepFields.push('aadhaarNumber');
     } else if (step === 3) {
-      stepFields = ['bankAccountHolder', 'bankAccountNumber', 'bankIfsc'];
+      stepFields = ['bankName', 'bankAccountHolder', 'bankAccountNumber', 'bankIfsc'];
     }
 
     const newErrors: Record<string, string> = {};
@@ -452,10 +484,55 @@ export const RegisterBgaPage: React.FC = () => {
                       value={formData.address}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      placeholder="Door No, Street, Locality, City, State, PIN"
+                      placeholder="Flat / House No., Building, Street Name, Area / Locality"
                       className={getInputClasses('address')}
                     />
-                    {renderFieldError('address')}
+                    {renderFieldError('address', 'House, street, and locality details')}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">City</label>
+                      <input
+                        type="text"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        placeholder="e.g. Kanchipuram"
+                        className={getInputClasses('city')}
+                      />
+                      {renderFieldError('city')}
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">State</label>
+                      <input
+                        type="text"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        placeholder="e.g. Tamil Nadu"
+                        className={getInputClasses('state')}
+                      />
+                      {renderFieldError('state')}
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">PIN Code</label>
+                      <input
+                        type="text"
+                        name="pinCode"
+                        maxLength={6}
+                        value={formData.pinCode}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        placeholder="e.g. 631501"
+                        className={getInputClasses('pinCode', true)}
+                      />
+                      {renderFieldError('pinCode', '6-digit PIN code')}
+                    </div>
                   </div>
 
                   <div>
@@ -605,21 +682,39 @@ export const RegisterBgaPage: React.FC = () => {
                     <p className="text-slate-500 text-xs mt-0.5">Direct bank transfer details for approved monthly and project payouts.</p>
                   </div>
 
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Bank Account Beneficiary Name <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="bankAccountHolder"
-                      required
-                      value={formData.bankAccountHolder}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      placeholder="Name as registered with your bank"
-                      className={getInputClasses('bankAccountHolder')}
-                    />
-                    {renderFieldError('bankAccountHolder', 'Must match official bank account records')}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Bank Name <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="bankName"
+                        required
+                        value={formData.bankName}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        placeholder="e.g. HDFC Bank, SBI, ICICI"
+                        className={getInputClasses('bankName')}
+                      />
+                      {renderFieldError('bankName', 'Official name of your bank')}
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Bank Account Beneficiary Name <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="bankAccountHolder"
+                        required
+                        value={formData.bankAccountHolder}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        placeholder="Name as registered with your bank"
+                        className={getInputClasses('bankAccountHolder')}
+                      />
+                      {renderFieldError('bankAccountHolder', 'Must match official bank account records')}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

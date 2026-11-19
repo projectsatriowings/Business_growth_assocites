@@ -215,6 +215,26 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    // Validate bank details if provided
+    if (bankName || bankAccountHolder || bankAccountNumber || bankIfsc) {
+      if (!bankName || !bankName.trim()) {
+        res.status(400).json({ error: 'Bank name is required' });
+        return;
+      }
+      if (!bankAccountHolder || !bankAccountHolder.trim()) {
+        res.status(400).json({ error: 'Bank beneficiary name is required' });
+        return;
+      }
+      if (!bankAccountNumber || !bankAccountNumber.trim()) {
+        res.status(400).json({ error: 'Bank account number is required' });
+        return;
+      }
+      if (!bankIfsc || !bankIfsc.trim()) {
+        res.status(400).json({ error: 'Bank IFSC code is required' });
+        return;
+      }
+    }
+
     // Secure Aadhaar Masking - Never store full Aadhaar number or OTPs as per compliance
     let maskedAadhaar = null;
     if (aadhaarNumber) {
