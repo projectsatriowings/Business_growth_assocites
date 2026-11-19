@@ -133,24 +133,35 @@ const VALID_ADMIN_TABS: AdminTab[] = [
 
 const getTabFromPathOrSearch = (pathname: string, search: string): AdminTab | null => {
   const path = (pathname || '').toLowerCase().replace(/\/+$/, '');
+  try {
+    const params = new URLSearchParams(search);
+    const tabParam = params.get('tab');
+    if (tabParam) {
+      if (tabParam === 'enquiry' || tabParam === 'enquiries') return 'enquiries';
+      if (tabParam === 'quotations') return 'quotations';
+      if (tabParam === 'work-orders' || tabParam === 'workorders') return 'workorders';
+      if (tabParam === 'technical' || tabParam === 'projects') return 'technical';
+      if (tabParam === 'bga' || tabParam === 'bgas') return 'bgas';
+      if (tabParam === 'commissions') return 'commissions';
+      if (tabParam === 'clients') return 'clients';
+      if (tabParam === 'dashboard') return 'dashboard';
+      if (tabParam === 'resources') return 'resources';
+      if (tabParam === 'settings' || tabParam === 'audit') return 'settings';
+      if (VALID_ADMIN_TABS.includes(tabParam as AdminTab)) return tabParam as AdminTab;
+    }
+  } catch (e) {}
+
   if (path.includes('/admin/quotations')) return 'quotations';
   if (path.includes('/admin/bga')) return 'bgas';
-  if (path.includes('/admin/enquiries')) return 'enquiries';
+  if (path.includes('/admin/enquiries') || path.includes('/admin/enquiry')) return 'enquiries';
   if (path.includes('/admin/work-orders') || path.includes('/admin/workorders')) return 'workorders';
   if (path.includes('/admin/commissions')) return 'commissions';
-  if (path.includes('/admin/technical')) return 'technical';
+  if (path.includes('/admin/technical') || path.includes('/admin/projects')) return 'technical';
   if (path.includes('/admin/clients')) return 'clients';
   if (path.includes('/admin/resources')) return 'resources';
   if (path.includes('/admin/settings') || path.includes('/admin/audit')) return 'settings';
   if (path.includes('/admin/dashboard')) return 'dashboard';
 
-  try {
-    const params = new URLSearchParams(search);
-    const tabParam = params.get('tab') as AdminTab;
-    if (tabParam && VALID_ADMIN_TABS.includes(tabParam)) {
-      return tabParam;
-    }
-  } catch (e) {}
   return null;
 };
 
@@ -355,6 +366,27 @@ export const AdminPortal: React.FC = () => {
     }
   };
 
+  // Listen for in-app notification tab switch event
+  useEffect(() => {
+    const handleSwitch = (e: any) => {
+      const targetTab = e.detail?.tab;
+      if (targetTab) {
+        if (targetTab === 'enquiry' || targetTab === 'enquiries') switchTab('enquiries');
+        else if (targetTab === 'quotations') switchTab('quotations');
+        else if (targetTab === 'work-orders' || targetTab === 'workorders') switchTab('workorders');
+        else if (targetTab === 'technical' || targetTab === 'projects') switchTab('technical');
+        else if (targetTab === 'bga' || targetTab === 'bgas') switchTab('bgas');
+        else if (targetTab === 'commissions') switchTab('commissions');
+        else if (targetTab === 'clients') switchTab('clients');
+        else if (targetTab === 'dashboard') switchTab('dashboard');
+        else if (targetTab === 'resources') switchTab('resources');
+        else if (targetTab === 'settings' || targetTab === 'audit') switchTab('settings');
+      }
+    };
+    window.addEventListener('portal-switch-tab', handleSwitch);
+    return () => window.removeEventListener('portal-switch-tab', handleSwitch);
+  }, []);
+
   // Sync active tab with URL path or query (e.g. from in-app notifications, browser back/forward, or direct links)
   useEffect(() => {
     const fromUrl = getTabFromPathOrSearch(location.pathname, location.search);
@@ -369,7 +401,7 @@ export const AdminPortal: React.FC = () => {
       const path = (location.pathname || '').toLowerCase().replace(/\/+$/, '');
       if (path === '/admin') {
         if (activeTab !== 'dashboard') {
-          navigate(`/admin/${activeTab}`, { replace: true });
+          navigate(/admin/, { replace: true });
         } else {
           try {
             localStorage.setItem('admin_active_tab', 'dashboard');

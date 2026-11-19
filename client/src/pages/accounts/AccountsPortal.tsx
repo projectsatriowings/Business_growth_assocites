@@ -165,6 +165,27 @@ export const AccountsPortal: React.FC = () => {
 
   // URL deep-linking and safe backward-compatible redirects
   useEffect(() => {
+    const handleSwitch = (e: any) => {
+      const targetTab = e.detail?.tab;
+      if (targetTab) {
+        if (targetTab === 'quotations' || targetTab === 'quotation-requests') {
+          setActiveTab('quotation-requests');
+        } else if (targetTab === 'payments-work-orders' || targetTab === 'payments' || targetTab === 'work-orders') {
+          setActiveTab('payments-work-orders');
+          if (targetTab === 'work-orders') setSubTab('work-orders');
+          else setSubTab('payments');
+        } else if (targetTab === 'commissions') {
+          setActiveTab('commissions');
+        } else if (targetTab === 'dashboard') {
+          setActiveTab('dashboard');
+        }
+      }
+    };
+    window.addEventListener('portal-switch-tab', handleSwitch);
+    return () => window.removeEventListener('portal-switch-tab', handleSwitch);
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
     if (tabParam === 'payments' || tabParam === 'payment-verification') {
@@ -178,8 +199,14 @@ export const AccountsPortal: React.FC = () => {
       const sub = params.get('sub');
       if (sub === 'work-orders') setSubTab('work-orders');
       else setSubTab('payments');
+    } else if (tabParam === 'quotations' || tabParam === 'quotation-requests') {
+      setActiveTab('quotation-requests');
+    } else if (tabParam === 'commissions') {
+      setActiveTab('commissions');
+    } else if (tabParam === 'dashboard') {
+      setActiveTab('dashboard');
     }
-  }, []);
+  }, [window.location.search]);
 
   const loadTabData = async (tab = activeTab) => {
     setTabLoading(true);
