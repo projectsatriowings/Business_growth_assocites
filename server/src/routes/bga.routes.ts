@@ -648,7 +648,6 @@ router.get('/resources', async (req: AuthRequest, res: Response): Promise<void> 
     const resources = await prisma.companyResource.findMany({
       where: {
         isPublished: true,
-        isConfidential: false,
       },
       orderBy: { createdAt: 'desc' },
     });

@@ -37,7 +37,25 @@ import { isExternalWebLink, extractUrls, downloadFile } from '../../utils/fileDo
 export const TechnicalPortal: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'projects'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'projects'>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      const valid = ['dashboard', 'projects'];
+      if (tabParam && valid.includes(tabParam)) return tabParam as any;
+      try {
+        const saved = localStorage.getItem('technical_active_tab');
+        if (saved && valid.includes(saved)) return saved as any;
+      } catch (e) {}
+    }
+    return 'dashboard';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('technical_active_tab', activeTab);
+    } catch (e) {}
+  }, [activeTab]);
   const [loading, setLoading] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
   const [stats, setStats] = useState<any>(null);

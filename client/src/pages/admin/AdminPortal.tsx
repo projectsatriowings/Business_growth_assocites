@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -106,11 +106,85 @@ const EmptyState: React.FC<{
   </div>
 );
 
+type AdminTab =
+  | 'dashboard'
+  | 'bgas'
+  | 'resources'
+  | 'clients'
+  | 'enquiries'
+  | 'quotations'
+  | 'workorders'
+  | 'technical'
+  | 'commissions'
+  | 'settings';
+
+const VALID_ADMIN_TABS: AdminTab[] = [
+  'dashboard',
+  'bgas',
+  'resources',
+  'clients',
+  'enquiries',
+  'quotations',
+  'workorders',
+  'technical',
+  'commissions',
+  'settings',
+];
+
+const getTabFromPathOrSearch = (pathname: string, search: string): AdminTab | null => {
+  const path = (pathname || '').toLowerCase().replace(/\/+$/, '');
+  try {
+    const params = new URLSearchParams(search);
+    const tabParam = params.get('tab');
+    if (tabParam) {
+      if (tabParam === 'enquiry' || tabParam === 'enquiries') return 'enquiries';
+      if (tabParam === 'quotations') return 'quotations';
+      if (tabParam === 'work-orders' || tabParam === 'workorders') return 'workorders';
+      if (tabParam === 'technical' || tabParam === 'projects') return 'technical';
+      if (tabParam === 'bga' || tabParam === 'bgas') return 'bgas';
+      if (tabParam === 'commissions') return 'commissions';
+      if (tabParam === 'clients') return 'clients';
+      if (tabParam === 'dashboard') return 'dashboard';
+      if (tabParam === 'resources') return 'resources';
+      if (tabParam === 'settings' || tabParam === 'audit') return 'settings';
+      if (VALID_ADMIN_TABS.includes(tabParam as AdminTab)) return tabParam as AdminTab;
+    }
+  } catch (e) {}
+
+  if (path.includes('/admin/quotations')) return 'quotations';
+  if (path.includes('/admin/bga')) return 'bgas';
+  if (path.includes('/admin/enquiries') || path.includes('/admin/enquiry')) return 'enquiries';
+  if (path.includes('/admin/work-orders') || path.includes('/admin/workorders')) return 'workorders';
+  if (path.includes('/admin/commissions')) return 'commissions';
+  if (path.includes('/admin/technical') || path.includes('/admin/projects')) return 'technical';
+  if (path.includes('/admin/clients')) return 'clients';
+  if (path.includes('/admin/resources')) return 'resources';
+  if (path.includes('/admin/settings') || path.includes('/admin/audit')) return 'settings';
+  if (path.includes('/admin/dashboard')) return 'dashboard';
+
+  return null;
+};
+
+const getInitialAdminTab = (): AdminTab => {
+  if (typeof window !== 'undefined') {
+    const fromUrl = getTabFromPathOrSearch(window.location.pathname, window.location.search);
+    if (fromUrl) return fromUrl;
+
+    try {
+      const saved = localStorage.getItem('admin_active_tab') as AdminTab;
+      if (saved && VALID_ADMIN_TABS.includes(saved)) {
+        return saved;
+      }
+    } catch (e) {}
+  }
+  return 'dashboard';
+};
+
 export const AdminPortal: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'bgas' | 'resources' | 'clients' | 'enquiries' | 'quotations' | 'workorders' | 'technical' | 'commissions' | 'settings'
-  >('dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState<AdminTab>(getInitialAdminTab);
 
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(null);
 
@@ -123,6 +197,13 @@ export const AdminPortal: React.FC = () => {
     if (activeTab === tab) return;
     setTabLoading(true);
     setActiveTab(tab);
+    try {
+      localStorage.setItem('admin_active_tab', tab);
+    } catch (e) {}
+    const targetPath = tab === 'dashboard' ? '/admin' : `/admin/${tab}`;
+    if (location.pathname !== targetPath) {
+      navigate(targetPath, { replace: true });
+    }
   };
   const [bgas, setBgas] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
@@ -285,66 +366,48 @@ export const AdminPortal: React.FC = () => {
     }
   };
 
-  const location = useLocation();
-
+  // Listen for in-app notification tab switch event
   useEffect(() => {
     const handleSwitch = (e: any) => {
       const targetTab = e.detail?.tab;
       if (targetTab) {
-        if (targetTab === 'enquiry' || targetTab === 'enquiries') setActiveTab('enquiries');
-        else if (targetTab === 'quotations') setActiveTab('quotations');
-        else if (targetTab === 'work-orders' || targetTab === 'workorders') setActiveTab('workorders');
-        else if (targetTab === 'technical' || targetTab === 'projects') setActiveTab('technical');
-        else if (targetTab === 'bga' || targetTab === 'bgas') setActiveTab('bgas');
-        else if (targetTab === 'commissions') setActiveTab('commissions');
-        else if (targetTab === 'clients') setActiveTab('clients');
-        else if (targetTab === 'dashboard') setActiveTab('dashboard');
+        if (targetTab === 'enquiry' || targetTab === 'enquiries') switchTab('enquiries');
+        else if (targetTab === 'quotations') switchTab('quotations');
+        else if (targetTab === 'work-orders' || targetTab === 'workorders') switchTab('workorders');
+        else if (targetTab === 'technical' || targetTab === 'projects') switchTab('technical');
+        else if (targetTab === 'bga' || targetTab === 'bgas') switchTab('bgas');
+        else if (targetTab === 'commissions') switchTab('commissions');
+        else if (targetTab === 'clients') switchTab('clients');
+        else if (targetTab === 'dashboard') switchTab('dashboard');
+        else if (targetTab === 'resources') switchTab('resources');
+        else if (targetTab === 'settings' || targetTab === 'audit') switchTab('settings');
       }
     };
     window.addEventListener('portal-switch-tab', handleSwitch);
     return () => window.removeEventListener('portal-switch-tab', handleSwitch);
   }, []);
 
-  // Sync active tab with URL path (e.g. from in-app notifications like /admin/quotations)
+  // Sync active tab with URL path or query (e.g. from in-app notifications, browser back/forward, or direct links)
   useEffect(() => {
-    const path = (location.pathname || '').toLowerCase().replace(/\/+$/, '');
-    const params = new URLSearchParams(location.search);
-    const tabParam = params.get('tab');
-
-    if (tabParam === 'enquiry' || tabParam === 'enquiries') {
-      setActiveTab('enquiries');
-    } else if (tabParam === 'quotations') {
-      setActiveTab('quotations');
-    } else if (tabParam === 'work-orders' || tabParam === 'workorders') {
-      setActiveTab('workorders');
-    } else if (tabParam === 'technical' || tabParam === 'projects') {
-      setActiveTab('technical');
-    } else if (tabParam === 'bga' || tabParam === 'bgas') {
-      setActiveTab('bgas');
-    } else if (tabParam === 'commissions') {
-      setActiveTab('commissions');
-    } else if (tabParam === 'clients') {
-      setActiveTab('clients');
-    } else if (tabParam === 'dashboard') {
-      setActiveTab('dashboard');
-    } else if (path.includes('/admin/quotations')) {
-      setActiveTab('quotations');
-    } else if (path.includes('/admin/bga')) {
-      setActiveTab('bgas');
-    } else if (path.includes('/admin/enquiries')) {
-      setActiveTab('enquiries');
-    } else if (path.includes('/admin/work-orders') || path.includes('/admin/workorders')) {
-      setActiveTab('workorders');
-    } else if (path.includes('/admin/commissions')) {
-      setActiveTab('commissions');
-    } else if (path.includes('/admin/technical')) {
-      setActiveTab('technical');
-    } else if (path.includes('/admin/clients')) {
-      setActiveTab('clients');
-    } else if (path.includes('/admin/resources')) {
-      setActiveTab('resources');
-    } else if (path.includes('/admin/settings') || path.includes('/admin/audit')) {
-      setActiveTab('settings');
+    const fromUrl = getTabFromPathOrSearch(location.pathname, location.search);
+    if (fromUrl) {
+      if (activeTab !== fromUrl) {
+        setActiveTab(fromUrl);
+      }
+      try {
+        localStorage.setItem('admin_active_tab', fromUrl);
+      } catch (e) {}
+    } else {
+      const path = (location.pathname || '').toLowerCase().replace(/\/+$/, '');
+      if (path === '/admin') {
+        if (activeTab !== 'dashboard') {
+          navigate(/admin/, { replace: true });
+        } else {
+          try {
+            localStorage.setItem('admin_active_tab', 'dashboard');
+          } catch (e) {}
+        }
+      }
     }
   }, [location.pathname, location.search]);
 
@@ -2460,15 +2523,6 @@ export const AdminPortal: React.FC = () => {
                           />
                           <span className="font-semibold text-slate-800">Publish to BGAs Immediately</span>
                         </label>
-
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={newResource.isConfidential}
-                            onChange={(e) => setNewResource({ ...newResource, isConfidential: e.target.checked })}
-                          />
-                          <span className="text-red-600 font-semibold">Confidential (Hidden from BGAs)</span>
-                        </label>
                       </div>
 
                       <button
@@ -2501,7 +2555,6 @@ export const AdminPortal: React.FC = () => {
                         <th className="p-3.5">Category</th>
                         <th className="p-3.5">Attached Resource</th>
                         <th className="p-3.5">Visibility Status</th>
-                        <th className="p-3.5">Confidentiality</th>
                         <th className="p-3.5 text-right">Actions</th>
                       </tr>
                     </thead>
@@ -2548,15 +2601,6 @@ export const AdminPortal: React.FC = () => {
                             }`}>
                               {r.isPublished ? 'Published to BGAs' : 'Draft / Unpublished'}
                             </span>
-                          </td>
-                          <td className="p-3.5">
-                            {r.isConfidential ? (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800">
-                                Confidential
-                              </span>
-                            ) : (
-                              <span className="text-slate-400">Public Collateral</span>
-                            )}
                           </td>
                           <td className="p-3.5 text-right space-x-2">
                             <button

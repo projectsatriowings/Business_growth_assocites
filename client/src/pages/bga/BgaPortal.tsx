@@ -87,7 +87,25 @@ export const BgaPortal: React.FC = () => {
   const [modalSubmitting, setModalSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<
     'dashboard' | 'profile' | 'resources' | 'new-client' | 'clients' | 'enquiries' | 'quotations' | 'projects' | 'earnings' | 'support' | 'requests'
-  >('dashboard');
+  >(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      const valid = ['dashboard', 'profile', 'clients', 'enquiries', 'quotations', 'projects', 'earnings', 'resources', 'support', 'requests', 'new-client'];
+      if (tabParam && valid.includes(tabParam)) return tabParam as any;
+      try {
+        const saved = localStorage.getItem('bga_active_tab');
+        if (saved && valid.includes(saved)) return saved as any;
+      } catch (e) {}
+    }
+    return 'dashboard';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('bga_active_tab', activeTab);
+    } catch (e) {}
+  }, [activeTab]);
 
   const [loading, setLoading] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
@@ -1224,7 +1242,7 @@ export const BgaPortal: React.FC = () => {
                 }`}
             >
               <FileText className="w-4 h-4 text-[#80DED9]" />
-              <span>Pitch Decks & Resources</span>
+              <span>Company Resources</span>
             </button>
 
             <button
@@ -6243,13 +6261,13 @@ export const BgaPortal: React.FC = () => {
   )
 }
 
-{/* TAB 8: RESOURCES & PITCH DECKS */ }
+{/* TAB 8: COMPANY RESOURCES */ }
 {
   activeTab === 'resources' && (
     <div className="space-y-4">
       <div className="bg-white p-4 rounded-xl border border-slate-200">
-        <h2 className="text-base font-bold text-slate-900">Approved Marketing & Presentation Decks</h2>
-        <p className="text-xs text-slate-500">Official resources authorized by management for presenting to prospects.</p>
+        <h2 className="text-base font-bold text-slate-900">Company Resources</h2>
+        <p className="text-xs text-slate-500">Official resources and presentations authorized by management for presenting to prospects.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
