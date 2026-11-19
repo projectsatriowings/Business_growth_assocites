@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Bell, ShieldCheck, UserCheck, AlertCircle, LogOut, CheckCircle2, KeyRound, X } from 'lucide-react';
+import { Bell, ShieldCheck, UserCheck, AlertCircle, LogOut, CheckCircle2, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../utils/api';
-import { ChangePasswordModal } from './ChangePasswordModal';
 
 export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ title, subtitle }) => {
   const { user, logout } = useAuth();
@@ -11,7 +10,6 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -238,14 +236,6 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
             </div>
 
             <button
-              onClick={() => setShowPasswordModal(true)}
-              className="p-2 rounded-xl text-slate-400 hover:text-[#3066BE] hover:bg-[#edf4fc] transition-colors"
-              title="Change Account Password"
-            >
-              <KeyRound className="w-5 h-5" />
-            </button>
-
-            <button
               onClick={logout}
               className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
               title="Sign Out"
@@ -255,12 +245,6 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
           </div>
         </div>
       </div>
-
-      {/* Global Change Password Modal */}
-      <ChangePasswordModal
-        isOpen={showPasswordModal}
-        onClose={() => setShowPasswordModal(false)}
-      />
     </header>
   );
 };
