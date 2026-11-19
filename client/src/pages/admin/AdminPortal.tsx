@@ -83,7 +83,7 @@ const formatClientLocation = (locStr?: string | null): string => {
       ].filter(Boolean);
       if (parts.length > 0) return parts.join(', ');
     }
-  } catch {}
+  } catch { }
   return locStr;
 };
 
@@ -155,7 +155,7 @@ const getTabFromPathOrSearch = (pathname: string, search: string): AdminTab | nu
       if (tabParam === 'settings' || tabParam === 'audit') return 'settings';
       if (VALID_ADMIN_TABS.includes(tabParam as AdminTab)) return tabParam as AdminTab;
     }
-  } catch (e) {}
+  } catch (e) { }
 
   if (path.includes('/admin/quotations')) return 'quotations';
   if (path.includes('/admin/bga')) return 'bgas';
@@ -181,7 +181,7 @@ const getInitialAdminTab = (): AdminTab => {
       if (saved && VALID_ADMIN_TABS.includes(saved)) {
         return saved;
       }
-    } catch (e) {}
+    } catch (e) { }
   }
   return 'dashboard';
 };
@@ -205,7 +205,7 @@ export const AdminPortal: React.FC = () => {
     setActiveTab(tab);
     try {
       localStorage.setItem('admin_active_tab', tab);
-    } catch (e) {}
+    } catch (e) { }
     const targetPath = tab === 'dashboard' ? '/admin' : `/admin/${tab}`;
     if (location.pathname !== targetPath) {
       navigate(targetPath, { replace: true });
@@ -402,7 +402,7 @@ export const AdminPortal: React.FC = () => {
       }
       try {
         localStorage.setItem('admin_active_tab', fromUrl);
-      } catch (e) {}
+      } catch (e) { }
     } else {
       const path = (location.pathname || '').toLowerCase().replace(/\/+$/, '');
       if (path === '/admin') {
@@ -411,7 +411,7 @@ export const AdminPortal: React.FC = () => {
         } else {
           try {
             localStorage.setItem('admin_active_tab', 'dashboard');
-          } catch (e) {}
+          } catch (e) { }
         }
       }
     }
@@ -705,7 +705,7 @@ export const AdminPortal: React.FC = () => {
         q.quotationNumber?.toLowerCase().includes(quotationSearch.toLowerCase()) ||
         q.client?.clientName?.toLowerCase().includes(quotationSearch.toLowerCase()) ||
         q.bga?.name?.toLowerCase().includes(quotationSearch.toLowerCase());
-      
+
       let matchStatus = quotationStatusFilter === 'ALL' || q.status === quotationStatusFilter;
       if (quotationStatusFilter === 'DELAYED') {
         matchStatus = (q.reminderCount || 0) > 0;
@@ -724,7 +724,7 @@ export const AdminPortal: React.FC = () => {
         w.workOrderNumber?.toLowerCase().includes(workOrderSearch.toLowerCase()) ||
         w.client?.clientName?.toLowerCase().includes(workOrderSearch.toLowerCase()) ||
         w.bga?.name?.toLowerCase().includes(workOrderSearch.toLowerCase());
-      
+
       let matchStatus = workOrderStatusFilter === 'ALL' || w.status === workOrderStatusFilter;
       if (workOrderStatusFilter === 'PENDING_HANDOVER') {
         matchStatus = w.advanceVerified && !w.handoverApproved;
@@ -809,9 +809,8 @@ export const AdminPortal: React.FC = () => {
 
             <button
               onClick={() => switchTab('dashboard')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'dashboard' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'dashboard' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <LayoutDashboard className="w-4 h-4 text-[#80DED9]" />
               <span>Dashboard & Analytics</span>
@@ -822,9 +821,8 @@ export const AdminPortal: React.FC = () => {
                 setSelectedAssociateId(null);
                 switchTab('bgas');
               }}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'bgas' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'bgas' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <div className="flex items-center gap-2.5">
                 <Users className="w-4 h-4 text-[#80DED9]" />
@@ -839,9 +837,8 @@ export const AdminPortal: React.FC = () => {
 
             <button
               onClick={() => switchTab('enquiries')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'enquiries' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'enquiries' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <div className="flex items-center gap-2.5">
                 <CheckSquare className="w-4 h-4 text-[#80DED9]" />
@@ -856,9 +853,8 @@ export const AdminPortal: React.FC = () => {
 
             <button
               onClick={() => switchTab('clients')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'clients' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'clients' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <UserCheck className="w-4 h-4 text-[#80DED9]" />
               <span>Clients & Ownership</span>
@@ -866,9 +862,8 @@ export const AdminPortal: React.FC = () => {
 
             <button
               onClick={() => switchTab('resources')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'resources' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'resources' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <FileText className="w-4 h-4 text-[#80DED9]" />
               <span>Company Resources</span>
@@ -876,9 +871,8 @@ export const AdminPortal: React.FC = () => {
 
             <button
               onClick={() => switchTab('quotations')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'quotations' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'quotations' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <div className="flex items-center gap-2.5">
                 <CreditCard className="w-4 h-4 text-[#80DED9]" />
@@ -893,9 +887,8 @@ export const AdminPortal: React.FC = () => {
 
             <button
               onClick={() => switchTab('workorders')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'workorders' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'workorders' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <Briefcase className="w-4 h-4 text-[#80DED9]" />
               <span>Work Orders & Accounts</span>
@@ -903,9 +896,8 @@ export const AdminPortal: React.FC = () => {
 
             <button
               onClick={() => switchTab('technical')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'technical' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'technical' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <Layers className="w-4 h-4 text-[#80DED9]" />
               <span>Technical Projects</span>
@@ -913,9 +905,8 @@ export const AdminPortal: React.FC = () => {
 
             <button
               onClick={() => switchTab('commissions')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'commissions' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'commissions' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <DollarSign className="w-4 h-4 text-[#80DED9]" />
               <span>Commissions & Payouts</span>
@@ -923,9 +914,8 @@ export const AdminPortal: React.FC = () => {
 
             <button
               onClick={() => switchTab('settings')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                activeTab === 'settings' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'settings' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
+                }`}
             >
               <Settings className="w-4 h-4 text-[#80DED9]" />
               <span>Workflow & Audit Logs</span>
@@ -947,441 +937,441 @@ export const AdminPortal: React.FC = () => {
             !stats ? (
               <AdminDashboardSkeleton />
             ) : (
-            <div className="space-y-6 w-full">
-              {/* Executive Greeting Banner */}
-              <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">
-                    Welcome back, {user?.name || 'Administrator'}
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Central management across associates, enquiries, quotations, projects, and finances.
-                  </p>
-                </div>
-              </div>
-              {/* Executive Overview Header */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900">Executive Company Dashboard</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Real-time consolidated analytics across associates, clients, contracts, technical execution, and finance.
-                  </p>
-                </div>
-                <button
-                  onClick={loadData}
-                  className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" /> Refresh Analytics
-                </button>
-              </div>
-
-              {/* Core Metric Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div
-                  onClick={() => switchTab('bgas')}
-                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
-                >
-                  <span className="text-xs text-slate-500 font-semibold uppercase block">Total Associates</span>
-                  <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-[#3066BE] transition-colors">
-                    {stats?.bgas?.total || 0}
-                  </div>
-                  <div className="flex items-center justify-between text-xs mt-2">
-                    <span className="text-emerald-600 font-bold">{stats?.bgas?.active || 0} Active</span>
-                    <span className="text-amber-600 font-bold">{stats?.bgas?.pendingApprovals || 0} Pending</span>
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => switchTab('enquiries')}
-                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
-                >
-                  <span className="text-xs text-slate-500 font-semibold uppercase block">Total Enquiries</span>
-                  <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-[#3066BE] transition-colors">
-                    {stats?.enquiries?.total || 0}
-                  </div>
-                  <div className="flex items-center justify-between text-xs mt-2">
-                    <span className="text-emerald-600 font-bold">{stats?.enquiries?.approved || 0} Approved</span>
-                    <span className="text-amber-600 font-bold">{stats?.enquiries?.pending || 0} Pending</span>
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => switchTab('clients')}
-                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
-                >
-                  <span className="text-xs text-slate-500 font-semibold uppercase block">Registered Clients</span>
-                  <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-[#3066BE] transition-colors">
-                    {stats?.clients?.total || 0}
-                  </div>
-                  <span className="text-xs text-[#3066BE] font-medium block mt-2">
-                    100% Associate Ownership Guaranteed
-                  </span>
-                </div>
-
-                <div
-                  onClick={() => switchTab('workorders')}
-                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
-                >
-                  <span className="text-xs text-slate-500 font-semibold uppercase block">Verified Revenue</span>
-                  <div className="text-3xl font-extrabold text-emerald-600 mt-1">
-                    ₹{(stats?.finance?.totalVerifiedRevenue || 0).toLocaleString()}
-                  </div>
-                  <span className="text-xs text-slate-400 block mt-2">
-                    {stats?.workOrders?.total || 0} Work Orders Total
-                  </span>
-                </div>
-              </div>
-
-              {/* MODULE 8: 10-STAGE ENTERPRISE WORKFLOW MONITORING PIPELINE */}
-              <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-slate-50 p-6 rounded-2xl border border-purple-100 shadow-sm space-y-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+              <div className="space-y-6 w-full">
+                {/* Executive Greeting Banner */}
+                <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-[#3066BE]" />
-                      10-Stage Enterprise Workflow Pipeline Monitoring
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Real-time progression tracking across client approvals, quotation preparation, payment clearance, and technical delivery. Click any card to filter tasks.
+                    <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">
+                      Welcome back, {user?.name || 'Administrator'}
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Central management across associates, enquiries, quotations, projects, and finances.
                     </p>
                   </div>
-                  <span className="text-[11px] font-bold text-[#3066BE] bg-purple-100 px-3 py-1 rounded-full border border-[#3066BE]/25">
-                    Live System Feeds
-                  </span>
+                </div>
+                {/* Executive Overview Header */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900">Executive Company Dashboard</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Real-time consolidated analytics across associates, clients, contracts, technical execution, and finance.
+                    </p>
+                  </div>
+                  <button
+                    onClick={loadData}
+                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Refresh Analytics
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-                  {/* Stage 1 */}
+                {/* Core Metric Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <div
-                    onClick={() => {
-                      switchTab('enquiries');
-                      setEnquiryStatusFilter('SUBMITTED');
-                    }}
-                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    onClick={() => switchTab('bgas')}
+                    className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
                   >
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 1</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
-                      Pending Approvals
-                    </span>
-                    <div className="text-2xl font-black text-amber-600 mt-2">
-                      {stats?.workflow?.pendingClientApprovals || 0}
+                    <span className="text-xs text-slate-500 font-semibold uppercase block">Total Associates</span>
+                    <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-[#3066BE] transition-colors">
+                      {stats?.bgas?.total || 0}
                     </div>
-                    <span className="text-[10px] text-slate-500 block mt-1">Awaiting Admin sign-off</span>
+                    <div className="flex items-center justify-between text-xs mt-2">
+                      <span className="text-emerald-600 font-bold">{stats?.bgas?.active || 0} Active</span>
+                      <span className="text-amber-600 font-bold">{stats?.bgas?.pendingApprovals || 0} Pending</span>
+                    </div>
                   </div>
 
-                  {/* Stage 2 */}
                   <div
-                    onClick={() => {
-                      switchTab('enquiries');
-                      setEnquiryStatusFilter('APPROVED');
-                    }}
-                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    onClick={() => switchTab('enquiries')}
+                    className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
                   >
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 2</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
-                      Approved Enquiries
-                    </span>
-                    <div className="text-2xl font-black text-emerald-600 mt-2">
-                      {stats?.workflow?.approvedEnquiries || 0}
+                    <span className="text-xs text-slate-500 font-semibold uppercase block">Total Enquiries</span>
+                    <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-[#3066BE] transition-colors">
+                      {stats?.enquiries?.total || 0}
                     </div>
-                    <span className="text-[10px] text-slate-500 block mt-1">Ready for Accounts quotation</span>
+                    <div className="flex items-center justify-between text-xs mt-2">
+                      <span className="text-emerald-600 font-bold">{stats?.enquiries?.approved || 0} Approved</span>
+                      <span className="text-amber-600 font-bold">{stats?.enquiries?.pending || 0} Pending</span>
+                    </div>
                   </div>
 
-                  {/* Stage 3 */}
                   <div
-                    onClick={() => {
-                      switchTab('quotations');
-                      setQuotationStatusFilter('REQUESTED');
-                    }}
-                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    onClick={() => switchTab('clients')}
+                    className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
                   >
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 3</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
-                      Pending Quotations
-                    </span>
-                    <div className="text-2xl font-black text-blue-600 mt-2">
-                      {stats?.workflow?.pendingQuotations || 0}
+                    <span className="text-xs text-slate-500 font-semibold uppercase block">Registered Clients</span>
+                    <div className="text-3xl font-extrabold text-slate-900 mt-1 group-hover:text-[#3066BE] transition-colors">
+                      {stats?.clients?.total || 0}
                     </div>
-                    <span className="text-[10px] text-slate-500 block mt-1">Under Accounts preparation</span>
+                    <span className="text-xs text-[#3066BE] font-medium block mt-2">
+                      100% Associate Ownership Guaranteed
+                    </span>
                   </div>
 
-                  {/* Stage 4 */}
                   <div
-                    onClick={() => {
-                      switchTab('quotations');
-                      setQuotationStatusFilter('DELAYED');
-                    }}
-                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-red-400 hover:shadow-md transition-all cursor-pointer group"
+                    onClick={() => switchTab('workorders')}
+                    className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3066BE]/35 transition-all cursor-pointer group"
                   >
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 4</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-red-600">
-                      Delayed Quotations
-                    </span>
-                    <div className="text-2xl font-black text-red-600 mt-2">
-                      {stats?.workflow?.delayedQuotations || 0}
+                    <span className="text-xs text-slate-500 font-semibold uppercase block">Verified Revenue</span>
+                    <div className="text-3xl font-extrabold text-emerald-600 mt-1">
+                      ₹{(stats?.finance?.totalVerifiedRevenue || 0).toLocaleString()}
                     </div>
-                    <span className="text-[10px] text-slate-500 block mt-1">BGA reminder triggered</span>
+                    <span className="text-xs text-slate-400 block mt-2">
+                      {stats?.workOrders?.total || 0} Work Orders Total
+                    </span>
+                  </div>
+                </div>
+
+                {/* MODULE 8: 10-STAGE ENTERPRISE WORKFLOW MONITORING PIPELINE */}
+                <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-slate-50 p-6 rounded-2xl border border-purple-100 shadow-sm space-y-4">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-[#3066BE]" />
+                        10-Stage Enterprise Workflow Pipeline Monitoring
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Real-time progression tracking across client approvals, quotation preparation, payment clearance, and technical delivery. Click any card to filter tasks.
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-bold text-[#3066BE] bg-purple-100 px-3 py-1 rounded-full border border-[#3066BE]/25">
+                      Live System Feeds
+                    </span>
                   </div>
 
-                  {/* Stage 5 */}
-                  <div
-                    onClick={() => {
-                      switchTab('quotations');
-                      setQuotationStatusFilter('PENDING_ADMIN_APPROVAL');
-                    }}
-                    className="p-4 rounded-xl bg-white border border-[#3066BE]/25 bg-blue-50/70/30 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
-                  >
-                    <span className="text-[10px] text-[#3066BE] font-bold uppercase block tracking-wider">Stage 5</span>
-                    <span className="text-xs font-bold text-[#152544] mt-0.5 block group-hover:text-[#3066BE]">
-                      Quote Approvals
-                    </span>
-                    <div className="text-2xl font-black text-[#3066BE] mt-2">
-                      {stats?.workflow?.pendingQuotationApprovals || 0}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                    {/* Stage 1 */}
+                    <div
+                      onClick={() => {
+                        switchTab('enquiries');
+                        setEnquiryStatusFilter('SUBMITTED');
+                      }}
+                      className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 1</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
+                        Pending Approvals
+                      </span>
+                      <div className="text-2xl font-black text-amber-600 mt-2">
+                        {stats?.workflow?.pendingClientApprovals || 0}
+                      </div>
+                      <span className="text-[10px] text-slate-500 block mt-1">Awaiting Admin sign-off</span>
                     </div>
-                    <span className="text-[10px] text-slate-500 block mt-1">Pending Admin release</span>
+
+                    {/* Stage 2 */}
+                    <div
+                      onClick={() => {
+                        switchTab('enquiries');
+                        setEnquiryStatusFilter('APPROVED');
+                      }}
+                      className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 2</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
+                        Approved Enquiries
+                      </span>
+                      <div className="text-2xl font-black text-emerald-600 mt-2">
+                        {stats?.workflow?.approvedEnquiries || 0}
+                      </div>
+                      <span className="text-[10px] text-slate-500 block mt-1">Ready for Accounts quotation</span>
+                    </div>
+
+                    {/* Stage 3 */}
+                    <div
+                      onClick={() => {
+                        switchTab('quotations');
+                        setQuotationStatusFilter('REQUESTED');
+                      }}
+                      className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 3</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
+                        Pending Quotations
+                      </span>
+                      <div className="text-2xl font-black text-blue-600 mt-2">
+                        {stats?.workflow?.pendingQuotations || 0}
+                      </div>
+                      <span className="text-[10px] text-slate-500 block mt-1">Under Accounts preparation</span>
+                    </div>
+
+                    {/* Stage 4 */}
+                    <div
+                      onClick={() => {
+                        switchTab('quotations');
+                        setQuotationStatusFilter('DELAYED');
+                      }}
+                      className="p-4 rounded-xl bg-white border border-slate-200 hover:border-red-400 hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 4</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-red-600">
+                        Delayed Quotations
+                      </span>
+                      <div className="text-2xl font-black text-red-600 mt-2">
+                        {stats?.workflow?.delayedQuotations || 0}
+                      </div>
+                      <span className="text-[10px] text-slate-500 block mt-1">BGA reminder triggered</span>
+                    </div>
+
+                    {/* Stage 5 */}
+                    <div
+                      onClick={() => {
+                        switchTab('quotations');
+                        setQuotationStatusFilter('PENDING_ADMIN_APPROVAL');
+                      }}
+                      className="p-4 rounded-xl bg-white border border-[#3066BE]/25 bg-blue-50/70/30 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <span className="text-[10px] text-[#3066BE] font-bold uppercase block tracking-wider">Stage 5</span>
+                      <span className="text-xs font-bold text-[#152544] mt-0.5 block group-hover:text-[#3066BE]">
+                        Quote Approvals
+                      </span>
+                      <div className="text-2xl font-black text-[#3066BE] mt-2">
+                        {stats?.workflow?.pendingQuotationApprovals || 0}
+                      </div>
+                      <span className="text-[10px] text-slate-500 block mt-1">Pending Admin release</span>
+                    </div>
+
+                    {/* Stage 6 */}
+                    <div
+                      onClick={() => {
+                        switchTab('quotations');
+                        setQuotationStatusFilter('ACCEPTED');
+                      }}
+                      className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 6</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
+                        Accepted Quotations
+                      </span>
+                      <div className="text-2xl font-black text-emerald-600 mt-2">
+                        {stats?.workflow?.acceptedQuotations || 0}
+                      </div>
+                      <span className="text-[10px] text-slate-500 block mt-1">Client confirmed contract</span>
+                    </div>
+
+                    {/* Stage 7 */}
+                    <div
+                      onClick={() => {
+                        switchTab('workorders');
+                        setWorkOrderStatusFilter('PENDING_ADVANCE');
+                      }}
+                      className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 7</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
+                        Pending Advances
+                      </span>
+                      <div className="text-2xl font-black text-amber-600 mt-2">
+                        {stats?.workflow?.pendingAdvancePayments || 0}
+                      </div>
+                      <span className="text-[10px] text-slate-500 block mt-1">Awaiting client payment</span>
+                    </div>
+
+                    {/* Stage 8 */}
+                    <div
+                      onClick={() => {
+                        switchTab('workorders');
+                        setWorkOrderStatusFilter('ADVANCE_VERIFIED');
+                      }}
+                      className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 8</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
+                        Payments Verified
+                      </span>
+                      <div className="text-2xl font-black text-emerald-600 mt-2">
+                        {stats?.workflow?.paymentsVerified || 0}
+                      </div>
+                      <span className="text-[10px] text-slate-500 block mt-1">Confirmed bank funds</span>
+                    </div>
+
+                    {/* Stage 9 */}
+                    <div
+                      onClick={() => {
+                        switchTab('workorders');
+                        setWorkOrderStatusFilter('PENDING_HANDOVER');
+                      }}
+                      className="p-4 rounded-xl bg-white border border-indigo-200 bg-indigo-50/30 hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <span className="text-[10px] text-indigo-600 font-bold uppercase block tracking-wider">Stage 9</span>
+                      <span className="text-xs font-bold text-indigo-900 mt-0.5 block group-hover:text-indigo-600">
+                        Pending Handovers
+                      </span>
+                      <div className="text-2xl font-black text-indigo-600 mt-2">
+                        {stats?.workflow?.pendingTechnicalHandovers || 0}
+                      </div>
+                      <span className="text-[10px] text-slate-500 block mt-1">Admin kickoff authorization</span>
+                    </div>
+
+                    {/* Stage 10 */}
+                    <div
+                      onClick={() => switchTab('technical')}
+                      className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 10</span>
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
+                        Active Tech Projects
+                      </span>
+                      <div className="text-2xl font-black text-[#3066BE] mt-2">
+                        {stats?.workflow?.activeTechnicalProjects || 0}
+                      </div>
+                      <span className="text-[10px] text-slate-500 block mt-1">Engineering sprints active</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Commission & Technical Performance Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div
+                    onClick={() => switchTab('commissions')}
+                    className="p-6 rounded-2xl bg-gradient-to-tr from-[#152544] to-[#3066BE] text-white shadow-md cursor-pointer hover:shadow-xl transition-all"
+                  >
+                    <span className="text-xs text-purple-200 uppercase tracking-wider font-semibold">Total Commissions</span>
+                    <div className="text-3xl font-extrabold mt-1">₹{(stats?.finance?.totalCommissions || 0).toLocaleString()}</div>
+                    <p className="text-xs text-purple-200/80 mt-1">Engine computed across all service categories</p>
+                    <div className="mt-4 pt-3 border-t border-purple-800/60 flex justify-between text-xs">
+                      <span>Pending Approval:</span>
+                      <strong className="text-amber-300 font-bold">₹{(stats?.finance?.pendingCommissions || 0).toLocaleString()}</strong>
+                    </div>
                   </div>
 
-                  {/* Stage 6 */}
                   <div
-                    onClick={() => {
-                      switchTab('quotations');
-                      setQuotationStatusFilter('ACCEPTED');
-                    }}
-                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    onClick={() => switchTab('commissions')}
+                    className="p-6 rounded-2xl bg-gradient-to-tr from-emerald-900 to-teal-900 text-white shadow-md cursor-pointer hover:shadow-xl transition-all"
                   >
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 6</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
-                      Accepted Quotations
-                    </span>
-                    <div className="text-2xl font-black text-emerald-600 mt-2">
-                      {stats?.workflow?.acceptedQuotations || 0}
+                    <span className="text-xs text-emerald-200 uppercase tracking-wider font-semibold">Commissions Disbursed</span>
+                    <div className="text-3xl font-extrabold mt-1">₹{(stats?.finance?.paidCommissions || 0).toLocaleString()}</div>
+                    <p className="text-xs text-emerald-200/80 mt-1">Transferred with bank transaction references</p>
+                    <div className="mt-4 pt-3 border-t border-emerald-800/60 flex justify-between text-xs">
+                      <span>Disbursement Rate:</span>
+                      <strong className="text-emerald-200 font-bold">
+                        {(stats?.finance?.totalCommissions || 0) > 0
+                          ? `${Math.round(((stats?.finance?.paidCommissions || 0) / stats.finance.totalCommissions) * 100)}%`
+                          : '100%'}
+                      </strong>
                     </div>
-                    <span className="text-[10px] text-slate-500 block mt-1">Client confirmed contract</span>
                   </div>
 
-                  {/* Stage 7 */}
-                  <div
-                    onClick={() => {
-                      switchTab('workorders');
-                      setWorkOrderStatusFilter('PENDING_ADVANCE');
-                    }}
-                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
-                  >
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 7</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
-                      Pending Advances
-                    </span>
-                    <div className="text-2xl font-black text-amber-600 mt-2">
-                      {stats?.workflow?.pendingAdvancePayments || 0}
-                    </div>
-                    <span className="text-[10px] text-slate-500 block mt-1">Awaiting client payment</span>
-                  </div>
-
-                  {/* Stage 8 */}
-                  <div
-                    onClick={() => {
-                      switchTab('workorders');
-                      setWorkOrderStatusFilter('ADVANCE_VERIFIED');
-                    }}
-                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
-                  >
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 8</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
-                      Payments Verified
-                    </span>
-                    <div className="text-2xl font-black text-emerald-600 mt-2">
-                      {stats?.workflow?.paymentsVerified || 0}
-                    </div>
-                    <span className="text-[10px] text-slate-500 block mt-1">Confirmed bank funds</span>
-                  </div>
-
-                  {/* Stage 9 */}
-                  <div
-                    onClick={() => {
-                      switchTab('workorders');
-                      setWorkOrderStatusFilter('PENDING_HANDOVER');
-                    }}
-                    className="p-4 rounded-xl bg-white border border-indigo-200 bg-indigo-50/30 hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer group"
-                  >
-                    <span className="text-[10px] text-indigo-600 font-bold uppercase block tracking-wider">Stage 9</span>
-                    <span className="text-xs font-bold text-indigo-900 mt-0.5 block group-hover:text-indigo-600">
-                      Pending Handovers
-                    </span>
-                    <div className="text-2xl font-black text-indigo-600 mt-2">
-                      {stats?.workflow?.pendingTechnicalHandovers || 0}
-                    </div>
-                    <span className="text-[10px] text-slate-500 block mt-1">Admin kickoff authorization</span>
-                  </div>
-
-                  {/* Stage 10 */}
                   <div
                     onClick={() => switchTab('technical')}
-                    className="p-4 rounded-xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                    className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm cursor-pointer hover:border-[#3066BE]/35 transition-all flex flex-col justify-between"
                   >
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Stage 10</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block group-hover:text-[#3066BE]">
-                      Active Tech Projects
-                    </span>
-                    <div className="text-2xl font-black text-[#3066BE] mt-2">
-                      {stats?.workflow?.activeTechnicalProjects || 0}
+                    <div>
+                      <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Technical Delivery</span>
+                      <div className="text-3xl font-extrabold text-slate-900 mt-1">
+                        {stats?.technical?.total || stats?.projects?.total || 0} Projects
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">Active delivery sprints and milestones</p>
                     </div>
-                    <span className="text-[10px] text-slate-500 block mt-1">Engineering sprints active</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Commission & Technical Performance Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div
-                  onClick={() => switchTab('commissions')}
-                  className="p-6 rounded-2xl bg-gradient-to-tr from-[#152544] to-[#3066BE] text-white shadow-md cursor-pointer hover:shadow-xl transition-all"
-                >
-                  <span className="text-xs text-purple-200 uppercase tracking-wider font-semibold">Total Commissions</span>
-                  <div className="text-3xl font-extrabold mt-1">₹{(stats?.finance?.totalCommissions || 0).toLocaleString()}</div>
-                  <p className="text-xs text-purple-200/80 mt-1">Engine computed across all service categories</p>
-                  <div className="mt-4 pt-3 border-t border-purple-800/60 flex justify-between text-xs">
-                    <span>Pending Approval:</span>
-                    <strong className="text-amber-300 font-bold">₹{(stats?.finance?.pendingCommissions || 0).toLocaleString()}</strong>
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => switchTab('commissions')}
-                  className="p-6 rounded-2xl bg-gradient-to-tr from-emerald-900 to-teal-900 text-white shadow-md cursor-pointer hover:shadow-xl transition-all"
-                >
-                  <span className="text-xs text-emerald-200 uppercase tracking-wider font-semibold">Commissions Disbursed</span>
-                  <div className="text-3xl font-extrabold mt-1">₹{(stats?.finance?.paidCommissions || 0).toLocaleString()}</div>
-                  <p className="text-xs text-emerald-200/80 mt-1">Transferred with bank transaction references</p>
-                  <div className="mt-4 pt-3 border-t border-emerald-800/60 flex justify-between text-xs">
-                    <span>Disbursement Rate:</span>
-                    <strong className="text-emerald-200 font-bold">
-                      {(stats?.finance?.totalCommissions || 0) > 0
-                        ? `${Math.round(((stats?.finance?.paidCommissions || 0) / stats.finance.totalCommissions) * 100)}%`
-                        : '100%'}
-                    </strong>
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => switchTab('technical')}
-                  className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm cursor-pointer hover:border-[#3066BE]/35 transition-all flex flex-col justify-between"
-                >
-                  <div>
-                    <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Technical Delivery</span>
-                    <div className="text-3xl font-extrabold text-slate-900 mt-1">
-                      {stats?.technical?.total || stats?.projects?.total || 0} Projects
+                    <div className="pt-4 border-t border-slate-100 flex justify-between text-xs">
+                      <span className="text-amber-600 font-bold">
+                        {stats?.technical?.active || stats?.projects?.active || 0} In Execution
+                      </span>
+                      <span className="text-emerald-600 font-bold">
+                        {stats?.technical?.completed || stats?.projects?.completed || 0} Completed
+                      </span>
                     </div>
-                    <p className="text-xs text-slate-500 mt-1">Active delivery sprints and milestones</p>
-                  </div>
-                  <div className="pt-4 border-t border-slate-100 flex justify-between text-xs">
-                    <span className="text-amber-600 font-bold">
-                      {stats?.technical?.active || stats?.projects?.active || 0} In Execution
-                    </span>
-                    <span className="text-emerald-600 font-bold">
-                      {stats?.technical?.completed || stats?.projects?.completed || 0} Completed
-                    </span>
                   </div>
                 </div>
+
+                {/* ENTERPRISE BI ANALYTICS ROW 1: REVENUE GROWTH & SERVICE SHARE */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="lg:col-span-7">
+                    <MonthlyAreaChart
+                      data={(stats.monthlyTrends || []).map((m: any) => ({
+                        month: m.month,
+                        yearMonth: m.yearMonth,
+                        value1: m.revenue,
+                        value2: m.newClients,
+                      }))}
+                      title="Company Revenue & Client Onboarding Velocity"
+                      subtitle="6-month trend of verified company revenue generated and newly acquired client accounts."
+                      label1="Verified Revenue"
+                      label2="New Clients"
+                      color1="#10B981"
+                      color2="#3066BE"
+                      formatValue={(v) => `₹${v.toLocaleString('en-IN')}`}
+                    />
+                  </div>
+
+                  <div className="lg:col-span-5">
+                    <CategoryDonutChart
+                      data={(stats.serviceRevenueShare || []).map((c: any) => ({
+                        category: c.category,
+                        count: c.projectsCount,
+                        percentage: c.percentage,
+                      }))}
+                      title="Enterprise Revenue by Service Stream"
+                      subtitle="Distribution of company contract value across technology disciplines."
+                      totalLabel="Projects"
+                    />
+                  </div>
+                </div>
+
+                {/* ENTERPRISE BI ANALYTICS ROW 2: CONVERSION FUNNEL & TOP PERFORMING BGAS */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="lg:col-span-5">
+                    <PipelineFunnel
+                      title="Enterprise Conversion Pipeline"
+                      subtitle="Macro-funnel conversion from client registration to successful delivery."
+                      stages={[
+                        { label: 'Registered Clients', count: stats.conversionFunnel?.clients ?? stats?.clients?.total ?? 0, color: '#3066BE' },
+                        { label: 'Submitted Enquiries', count: stats.conversionFunnel?.enquiries ?? stats?.enquiries?.total ?? 0, color: '#119DA4' },
+                        { label: 'Quotations Released', count: stats.conversionFunnel?.quotations ?? stats?.quotations?.total ?? 0, color: '#F59E0B' },
+                        { label: 'Accepted Contracts', count: stats.conversionFunnel?.accepted ?? stats?.workflow?.acceptedQuotations ?? 0, color: '#10B981' },
+                        { label: 'Work Orders in Execution', count: stats.conversionFunnel?.workOrders ?? stats?.workOrders?.total ?? 0, color: '#8B5CF6' },
+                        { label: 'Completed Deliverables', count: stats.conversionFunnel?.completed ?? stats?.projects?.completed ?? 0, color: '#059669' },
+                      ]}
+                    />
+                  </div>
+
+                  <div className="lg:col-span-7">
+                    <AssociatePeerLeaderboard
+                      associates={stats.topPerformingBgas || []}
+                      currentUserRank={1}
+                      totalNetworkCount={stats.bgas?.active || 1}
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Navigation Action Grid */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                  <h3 className="text-base font-bold text-slate-900">Direct Module Navigation</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {[
+                      { label: 'BGA Management', tab: 'bgas', icon: Users, desc: 'Approve & manage associates', badge: stats?.bgas?.pendingApprovals },
+                      { label: 'Enquiry Approvals', tab: 'enquiries', icon: CheckSquare, desc: 'Review client requirements', badge: stats?.enquiries?.pending },
+                      { label: 'Clients & Ownership', tab: 'clients', icon: UserCheck, desc: 'Client registry & transfers' },
+                      { label: 'Company Resources', tab: 'resources', icon: FileText, desc: 'Presentations & brochures' },
+                      { label: 'Quotation Monitoring', tab: 'quotations', icon: CreditCard, desc: 'Official quote tracking', badge: pendingQuotationApprovalsCount },
+                      { label: 'Work Orders', tab: 'workorders', icon: Briefcase, desc: 'Contract & payment tracking' },
+                      { label: 'Technical Projects', tab: 'technical', icon: Layers, desc: 'Milestone & progress monitoring' },
+                      { label: 'Commissions', tab: 'commissions', icon: DollarSign, desc: 'Authorize & disburse payouts' },
+                      { label: 'System Audit Logs', tab: 'settings', icon: Settings, desc: 'Immutable security trail' },
+                    ].map((m: any) => {
+                      const Icon = m.icon;
+                      return (
+                        <button
+                          key={m.tab}
+                          onClick={() => switchTab(m.tab as any)}
+                          className="p-3.5 rounded-xl border border-slate-200 hover:border-[#3066BE]/35 hover:bg-[#AEECEF]/20 text-left transition-all group relative"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <Icon className="w-5 h-5 text-[#3066BE] group-hover:scale-110 transition-transform" />
+                            {m.badge != null && m.badge > 0 && (
+                              <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                                {m.badge}
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-bold text-xs text-slate-900 block">{m.label}</span>
+                          <span className="text-[10px] text-slate-400 block mt-0.5">{m.desc}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-
-              {/* ENTERPRISE BI ANALYTICS ROW 1: REVENUE GROWTH & SERVICE SHARE */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-7">
-                  <MonthlyAreaChart
-                    data={(stats.monthlyTrends || []).map((m: any) => ({
-                      month: m.month,
-                      yearMonth: m.yearMonth,
-                      value1: m.revenue,
-                      value2: m.newClients,
-                    }))}
-                    title="Company Revenue & Client Onboarding Velocity"
-                    subtitle="6-month trend of verified company revenue generated and newly acquired client accounts."
-                    label1="Verified Revenue"
-                    label2="New Clients"
-                    color1="#10B981"
-                    color2="#3066BE"
-                    formatValue={(v) => `₹${v.toLocaleString('en-IN')}`}
-                  />
-                </div>
-
-                <div className="lg:col-span-5">
-                  <CategoryDonutChart
-                    data={(stats.serviceRevenueShare || []).map((c: any) => ({
-                      category: c.category,
-                      count: c.projectsCount,
-                      percentage: c.percentage,
-                    }))}
-                    title="Enterprise Revenue by Service Stream"
-                    subtitle="Distribution of company contract value across technology disciplines."
-                    totalLabel="Projects"
-                  />
-                </div>
-              </div>
-
-              {/* ENTERPRISE BI ANALYTICS ROW 2: CONVERSION FUNNEL & TOP PERFORMING BGAS */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-5">
-                  <PipelineFunnel
-                    title="Enterprise Conversion Pipeline"
-                    subtitle="Macro-funnel conversion from client registration to successful delivery."
-                    stages={[
-                      { label: 'Registered Clients', count: stats.conversionFunnel?.clients ?? stats?.clients?.total ?? 0, color: '#3066BE' },
-                      { label: 'Submitted Enquiries', count: stats.conversionFunnel?.enquiries ?? stats?.enquiries?.total ?? 0, color: '#119DA4' },
-                      { label: 'Quotations Released', count: stats.conversionFunnel?.quotations ?? stats?.quotations?.total ?? 0, color: '#F59E0B' },
-                      { label: 'Accepted Contracts', count: stats.conversionFunnel?.accepted ?? stats?.workflow?.acceptedQuotations ?? 0, color: '#10B981' },
-                      { label: 'Work Orders in Execution', count: stats.conversionFunnel?.workOrders ?? stats?.workOrders?.total ?? 0, color: '#8B5CF6' },
-                      { label: 'Completed Deliverables', count: stats.conversionFunnel?.completed ?? stats?.projects?.completed ?? 0, color: '#059669' },
-                    ]}
-                  />
-                </div>
-
-                <div className="lg:col-span-7">
-                  <AssociatePeerLeaderboard
-                    associates={stats.topPerformingBgas || []}
-                    currentUserRank={1}
-                    totalNetworkCount={stats.bgas?.active || 1}
-                  />
-                </div>
-              </div>
-
-              {/* Quick Navigation Action Grid */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-base font-bold text-slate-900">Direct Module Navigation</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                  {[
-                    { label: 'BGA Management', tab: 'bgas', icon: Users, desc: 'Approve & manage associates', badge: stats?.bgas?.pendingApprovals },
-                    { label: 'Enquiry Approvals', tab: 'enquiries', icon: CheckSquare, desc: 'Review client requirements', badge: stats?.enquiries?.pending },
-                    { label: 'Clients & Ownership', tab: 'clients', icon: UserCheck, desc: 'Client registry & transfers' },
-                    { label: 'Company Resources', tab: 'resources', icon: FileText, desc: 'Presentations & brochures' },
-                    { label: 'Quotation Monitoring', tab: 'quotations', icon: CreditCard, desc: 'Official quote tracking', badge: pendingQuotationApprovalsCount },
-                    { label: 'Work Orders', tab: 'workorders', icon: Briefcase, desc: 'Contract & payment tracking' },
-                    { label: 'Technical Projects', tab: 'technical', icon: Layers, desc: 'Milestone & progress monitoring' },
-                    { label: 'Commissions', tab: 'commissions', icon: DollarSign, desc: 'Authorize & disburse payouts' },
-                    { label: 'System Audit Logs', tab: 'settings', icon: Settings, desc: 'Immutable security trail' },
-                  ].map((m: any) => {
-                    const Icon = m.icon;
-                    return (
-                      <button
-                        key={m.tab}
-                        onClick={() => switchTab(m.tab as any)}
-                        className="p-3.5 rounded-xl border border-slate-200 hover:border-[#3066BE]/35 hover:bg-[#AEECEF]/20 text-left transition-all group relative"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <Icon className="w-5 h-5 text-[#3066BE] group-hover:scale-110 transition-transform" />
-                          {m.badge != null && m.badge > 0 && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold">
-                              {m.badge}
-                            </span>
-                          )}
-                        </div>
-                        <span className="font-bold text-xs text-slate-900 block">{m.label}</span>
-                        <span className="text-[10px] text-slate-400 block mt-0.5">{m.desc}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          ))}
+            ))}
 
           {/* TAB 2: BGA MANAGEMENT */}
           {activeTab === 'bgas' && (
@@ -1481,15 +1471,13 @@ export const AdminPortal: React.FC = () => {
                             </td>
                             <td className="p-4">
                               <div className="space-y-1">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
-                                  b.panVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                                }`}>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${b.panVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                  }`}>
                                   PAN: {b.panNumber ? b.panNumber.slice(0, 5) + '••••' : 'Missing'} {b.panVerified ? '✓' : '(Unverified)'}
                                 </span>
                                 <br />
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
-                                  b.aadhaarVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
-                                }`}>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${b.aadhaarVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+                                  }`}>
                                   Aadhaar: {(b.aadhaarNumber && b.aadhaarNumber.replace(/\D/g, '').length === 12)
                                     ? `${b.aadhaarNumber.replace(/\D/g, '').slice(0, 4)} ${b.aadhaarNumber.replace(/\D/g, '').slice(4, 8)} ${b.aadhaarNumber.replace(/\D/g, '').slice(8, 12)}`
                                     : (b.aadhaarMasked || 'Pending')} {b.aadhaarVerified ? '✓' : ''}
@@ -1503,20 +1491,18 @@ export const AdminPortal: React.FC = () => {
                               <div className="text-[11px] text-slate-500 mt-0.5">
                                 {b.bankName || 'Bank'} {b.bankIfsc ? `(${b.bankIfsc})` : ''}
                               </div>
-                              <span className={`inline-block mt-1 text-[10px] font-bold ${
-                                b.bankVerified ? 'text-emerald-600' : 'text-amber-600'
-                              }`}>
+                              <span className={`inline-block mt-1 text-[10px] font-bold ${b.bankVerified ? 'text-emerald-600' : 'text-amber-600'
+                                }`}>
                                 {b.bankVerified ? 'Verified ✓' : 'Verification Pending'}
                               </span>
                             </td>
                             <td className="p-4">
-                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                b.status === 'ACTIVE'
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${b.status === 'ACTIVE'
                                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                                   : b.status === 'SUBMITTED'
-                                  ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                  : 'bg-red-100 text-red-800 border border-red-200'
-                              }`}>
+                                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                    : 'bg-red-100 text-red-800 border border-red-200'
+                                }`}>
                                 {b.status}
                               </span>
                             </td>
@@ -1863,15 +1849,14 @@ export const AdminPortal: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            enq.status === 'APPROVED'
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${enq.status === 'APPROVED'
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                               : enq.status === 'CHANGES_REQUESTED'
-                              ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                              : enq.status === 'SUBMITTED'
-                              ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                              : 'bg-red-100 text-red-800 border border-red-200'
-                          }`}>
+                                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                : enq.status === 'SUBMITTED'
+                                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                  : 'bg-red-100 text-red-800 border border-red-200'
+                            }`}>
                             {enq.status?.replace('_', ' ')}
                           </span>
                           {enq.status === 'REJECTED' && (
@@ -1913,11 +1898,10 @@ export const AdminPortal: React.FC = () => {
                       )}
 
                       {enq.adminNotes && (
-                        <div className={`p-3 rounded-xl border text-xs ${
-                          enq.status === 'REJECTED'
+                        <div className={`p-3 rounded-xl border text-xs ${enq.status === 'REJECTED'
                             ? 'bg-rose-50 border-rose-200 text-rose-950'
                             : 'bg-blue-50/70 border-purple-100 text-[#152544]'
-                        }`}>
+                          }`}>
                           <strong className="block font-semibold">
                             {enq.status === 'REJECTED' ? 'Management Rejection Remarks:' : 'Executive Review Remarks:'}
                           </strong>
@@ -2014,8 +1998,8 @@ export const AdminPortal: React.FC = () => {
                       {enquiryReviewModal.action === 'APPROVE'
                         ? 'Approve Client Enquiry'
                         : enquiryReviewModal.action === 'REQUEST_CHANGES'
-                        ? 'Request Scope Changes'
-                        : 'Reject Client Enquiry'}
+                          ? 'Request Scope Changes'
+                          : 'Reject Client Enquiry'}
                     </h3>
                     <p className="text-xs text-slate-500">
                       Client: <strong>{enquiryReviewModal.enquiry.client?.clientName}</strong> ({enquiryReviewModal.enquiry.serviceCategory})
@@ -2044,13 +2028,12 @@ export const AdminPortal: React.FC = () => {
                       </button>
                       <button
                         onClick={executeEnquiryReview}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold text-white shadow-sm ${
-                          enquiryReviewModal.action === 'APPROVE'
+                        className={`px-4 py-2 rounded-lg text-xs font-bold text-white shadow-sm ${enquiryReviewModal.action === 'APPROVE'
                             ? 'bg-emerald-600 hover:bg-emerald-700'
                             : enquiryReviewModal.action === 'REQUEST_CHANGES'
-                            ? 'bg-amber-600 hover:bg-amber-700'
-                            : 'bg-red-600 hover:bg-red-700'
-                        }`}
+                              ? 'bg-amber-600 hover:bg-amber-700'
+                              : 'bg-red-600 hover:bg-red-700'
+                          }`}
                       >
                         Confirm {enquiryReviewModal.action}
                       </button>
@@ -2079,13 +2062,12 @@ export const AdminPortal: React.FC = () => {
                           <span className="text-xs font-bold text-[#3066BE] bg-blue-50 px-2.5 py-0.5 rounded border border-blue-100">
                             {enquiryDetailModal.serviceCategory}
                           </span>
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            enquiryDetailModal.status === 'APPROVED'
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${enquiryDetailModal.status === 'APPROVED'
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                               : enquiryDetailModal.status === 'SUBMITTED'
-                              ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                              : 'bg-red-100 text-red-800 border border-red-200'
-                          }`}>
+                                ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                : 'bg-red-100 text-red-800 border border-red-200'
+                            }`}>
                             {enquiryDetailModal.status}
                           </span>
                         </div>
@@ -2108,305 +2090,304 @@ export const AdminPortal: React.FC = () => {
                     <div className="p-6 md:p-8 pt-4 space-y-6 overflow-y-auto flex-1">
                       {/* SECTION 1: COMPLETE REGISTERED CLIENT DETAILS (FROM BGA NEW CLIENT REGISTRATION) */}
                       <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                          <Building2 className="w-4 h-4 text-[#3066BE]" />
-                          Registered Client & Commercial Profile
-                        </h3>
-                        <span className="text-[11px] text-slate-400">
-                          Client ID: <span className="font-mono">{enquiryDetailModal.client?.id?.slice(0, 10)}...</span>
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        {/* Client Contact Person */}
-                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                            Client Contact Person
-                          </span>
-                          <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                            <User className="w-3.5 h-3.5 text-slate-400" />
-                            {enquiryDetailModal.client?.clientName || 'N/A'}
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                            <Building2 className="w-4 h-4 text-[#3066BE]" />
+                            Registered Client & Commercial Profile
+                          </h3>
+                          <span className="text-[11px] text-slate-400">
+                            Client ID: <span className="font-mono">{enquiryDetailModal.client?.id?.slice(0, 10)}...</span>
                           </span>
                         </div>
 
-                        {/* Business / Company Name */}
-                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                            Business / Company Name
-                          </span>
-                          <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                            {enquiryDetailModal.client?.businessName || 'N/A'}
-                          </span>
-                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          {/* Client Contact Person */}
+                          <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                              Client Contact Person
+                            </span>
+                            <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                              <User className="w-3.5 h-3.5 text-slate-400" />
+                              {enquiryDetailModal.client?.clientName || 'N/A'}
+                            </span>
+                          </div>
 
-                        {/* Industry / Business Category */}
-                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                            Business Category / Industry
-                          </span>
-                          <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 inline-block">
-                            {enquiryDetailModal.client?.businessCategory || 'General Commercial'}
-                          </span>
-                        </div>
+                          {/* Business / Company Name */}
+                          <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                              Business / Company Name
+                            </span>
+                            <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                              <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                              {enquiryDetailModal.client?.businessName || 'N/A'}
+                            </span>
+                          </div>
 
-                        {/* Mobile Phone */}
-                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                            Mobile Phone
-                          </span>
-                          <a
-                            href={`tel:${enquiryDetailModal.client?.mobile}`}
-                            className="text-xs font-bold text-[#3066BE] hover:underline flex items-center gap-1.5"
-                          >
-                            <Phone className="w-3.5 h-3.5 text-slate-400" />
-                            {enquiryDetailModal.client?.mobile || 'N/A'}
-                          </a>
-                        </div>
+                          {/* Industry / Business Category */}
+                          <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                              Business Category / Industry
+                            </span>
+                            <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 inline-block">
+                              {enquiryDetailModal.client?.businessCategory || 'General Commercial'}
+                            </span>
+                          </div>
 
-                        {/* Email Address */}
-                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                            Email Address
-                          </span>
-                          <a
-                            href={`mailto:${enquiryDetailModal.client?.email}`}
-                            className="text-xs font-bold text-[#3066BE] hover:underline flex items-center gap-1.5 truncate"
-                          >
-                            <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span className="truncate">{enquiryDetailModal.client?.email || 'N/A'}</span>
-                          </a>
-                        </div>
+                          {/* Mobile Phone */}
+                          <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                              Mobile Phone
+                            </span>
+                            <a
+                              href={`tel:${enquiryDetailModal.client?.mobile}`}
+                              className="text-xs font-bold text-[#3066BE] hover:underline flex items-center gap-1.5"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-slate-400" />
+                              {enquiryDetailModal.client?.mobile || 'N/A'}
+                            </a>
+                          </div>
 
-                        {/* Registration Date */}
-                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                            Client Registration Date
-                          </span>
-                          <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                            {enquiryDetailModal.client?.createdAt
-                              ? new Date(enquiryDetailModal.client.createdAt).toLocaleDateString('en-IN', {
+                          {/* Email Address */}
+                          <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                              Email Address
+                            </span>
+                            <a
+                              href={`mailto:${enquiryDetailModal.client?.email}`}
+                              className="text-xs font-bold text-[#3066BE] hover:underline flex items-center gap-1.5 truncate"
+                            >
+                              <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span className="truncate">{enquiryDetailModal.client?.email || 'N/A'}</span>
+                            </a>
+                          </div>
+
+                          {/* Registration Date */}
+                          <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                              Client Registration Date
+                            </span>
+                            <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                              {enquiryDetailModal.client?.createdAt
+                                ? new Date(enquiryDetailModal.client.createdAt).toLocaleDateString('en-IN', {
                                   day: '2-digit',
                                   month: 'short',
                                   year: 'numeric',
                                 })
-                              : 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Full Registered Business Address */}
-                      <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
-                        <div className="flex items-center gap-1.5 mb-1 text-slate-500">
-                          <MapPin className="w-3.5 h-3.5 text-[#3066BE]" />
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            Registered Business Address
-                          </span>
-                        </div>
-                        <div className="text-xs text-slate-800 font-medium leading-relaxed">
-                          {formatClientLocation(enquiryDetailModal.client?.location)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* SECTION 2: ENQUIRY SCOPE, BUDGET & SPECIFICATIONS */}
-                    <div className="space-y-3 pt-2 border-t border-slate-100">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                        <Layers className="w-4 h-4 text-[#3066BE]" />
-                        Project Requirements & Commercial Scope
-                      </h3>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                            Service Category
-                          </span>
-                          <span className="text-xs font-bold text-slate-900 block">
-                            {enquiryDetailModal.serviceCategory}
-                          </span>
-                        </div>
-
-                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                            Expected Client Budget
-                          </span>
-                          <span className="text-base font-extrabold text-slate-900 block font-mono">
-                            ₹{enquiryDetailModal.expectedBudget?.toLocaleString('en-IN') || '0'}
-                          </span>
-                        </div>
-
-                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                            Enquiry Submission Timestamp
-                          </span>
-                          <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-slate-400" />
-                            {new Date(enquiryDetailModal.createdAt).toLocaleString('en-IN')}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Detailed Client Requirements */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                          Detailed Client Requirements & Specifications:
-                        </label>
-                        <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 text-xs text-slate-800 whitespace-pre-wrap leading-relaxed font-sans">
-                          {enquiryDetailModal.requirements || 'No specific requirements entered.'}
-                        </div>
-                      </div>
-
-                      {/* Attached Client Media / Document */}
-                      {enquiryDetailModal.attachmentUrl && (() => {
-                        const fileUrl = enquiryDetailModal.attachmentUrl;
-                        const isImg = fileUrl.match(/\.(png|jpg|jpeg|webp|gif|svg)$/i);
-                        const isVid = fileUrl.match(/\.(mp4|webm|mov)$/i) || fileUrl.includes('loom.com') || fileUrl.includes('youtube.com');
-                        const isAud = fileUrl.match(/\.(mp3|wav|m4a|ogg)$/i);
-                        const isArch = fileUrl.match(/\.(zip|rar|tar|gz)$/i);
-
-                        return (
-                          <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3 min-w-0">
-                              {isImg ? (
-                                <div className="w-12 h-12 rounded-lg border border-indigo-200 overflow-hidden bg-slate-900 shrink-0 relative group">
-                                  <img src={fileUrl} alt="Attached client brief" className="w-full h-full object-cover" />
-                                  <a
-                                    href={fileUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                                  >
-                                    <Eye className="w-4 h-4 text-white" />
-                                  </a>
-                                </div>
-                              ) : (
-                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
-                                  isVid
-                                    ? 'bg-rose-50 text-rose-600 border-rose-200'
-                                    : isAud
-                                    ? 'bg-purple-50 text-purple-600 border-purple-200'
-                                    : isArch
-                                    ? 'bg-amber-50 text-amber-600 border-amber-200'
-                                    : 'bg-indigo-100 text-indigo-700 border-indigo-200'
-                                }`}>
-                                  {isVid ? (
-                                    <Video className="w-5 h-5" />
-                                  ) : isAud ? (
-                                    <Music className="w-5 h-5" />
-                                  ) : isArch ? (
-                                    <Archive className="w-5 h-5" />
-                                  ) : (
-                                    <FileText className="w-5 h-5" />
-                                  )}
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <span className="font-bold text-slate-900 text-xs block">
-                                  Client-Provided Requirement Attachment
-                                </span>
-                                <span className="text-[11px] text-indigo-700 font-medium block">
-                                  {isImg ? 'Screenshot / Design File' : isVid ? 'Video Demo / Walkthrough' : isAud ? 'Voice Note / Audio Brief' : isArch ? 'Source Zip Archive' : 'Requirement Specification Document'}
-                                </span>
-                              </div>
-                            </div>
-
-                            <a
-                              href={fileUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-3 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shrink-0 shadow-xs"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              View / Download
-                            </a>
+                                : 'N/A'}
+                            </span>
                           </div>
-                        );
-                      })()}
-
-                      {/* Discussion Notes & Follow-up Date (from Client Meeting) */}
-                      {(enquiryDetailModal.discussionNotes || enquiryDetailModal.followUpDate) && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                          {enquiryDetailModal.discussionNotes && (
-                            <div className="p-3 bg-blue-50/40 rounded-xl border border-blue-100">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-900/70 block mb-1">
-                                Discussion Notes from Client Meeting
-                              </span>
-                              <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
-                                {enquiryDetailModal.discussionNotes}
-                              </p>
-                            </div>
-                          )}
-                          {enquiryDetailModal.followUpDate && (
-                            <div className="p-3 bg-purple-50/40 rounded-xl border border-purple-100">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-900/70 block mb-1">
-                                Scheduled Next Follow-Up Date
-                              </span>
-                              <p className="text-xs font-bold text-purple-900 flex items-center gap-1.5">
-                                <Calendar className="w-3.5 h-3.5" />
-                                {new Date(enquiryDetailModal.followUpDate).toLocaleDateString('en-IN', {
-                                  weekday: 'short',
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                })}
-                              </p>
-                            </div>
-                          )}
                         </div>
-                      )}
 
-                      {/* Executive Review Remarks (If reviewed) */}
-                      {enquiryDetailModal.adminNotes && (
-                        <div className="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200 text-xs">
-                          <span className="font-bold text-amber-900 block mb-0.5">Executive Review Remarks:</span>
-                          <p className="text-amber-800 leading-relaxed">{enquiryDetailModal.adminNotes}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Consultation & Follow-up History */}
-                    {enquiryDetailModal.discussionNotes && (
-                      <div className="text-xs">
-                        <div className="flex items-center justify-between mb-1">
-                          <strong className="text-emerald-900 font-bold flex items-center gap-1.5">
-                            💬 BGA Client Consultation & Follow-up History:
-                          </strong>
-                          {(() => {
-                            const match = enquiryDetailModal.discussionNotes?.match(/^\[(.*?)\]/);
-                            const consultDate = match ? match[1] : enquiryDetailModal.followUpDate ? new Date(enquiryDetailModal.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : null;
-                            return consultDate ? (
-                              <span className="text-[10px] text-emerald-700 font-mono">
-                                Consulted: {consultDate}
-                              </span>
-                            ) : null;
-                          })()}
-                        </div>
-                        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950 whitespace-pre-wrap leading-relaxed">
-                          {enquiryDetailModal.discussionNotes}
+                        {/* Full Registered Business Address */}
+                        <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                          <div className="flex items-center gap-1.5 mb-1 text-slate-500">
+                            <MapPin className="w-3.5 h-3.5 text-[#3066BE]" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              Registered Business Address
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-800 font-medium leading-relaxed">
+                            {formatClientLocation(enquiryDetailModal.client?.location)}
+                          </div>
                         </div>
                       </div>
-                    )}
 
-                    {/* SECTION 3: SUBMITTING BUSINESS GROWTH ASSOCIATE */}
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                          Submitting Business Growth Associate
+                      {/* SECTION 2: ENQUIRY SCOPE, BUDGET & SPECIFICATIONS */}
+                      <div className="space-y-3 pt-2 border-t border-slate-100">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                          <Layers className="w-4 h-4 text-[#3066BE]" />
+                          Project Requirements & Commercial Scope
+                        </h3>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                              Service Category
+                            </span>
+                            <span className="text-xs font-bold text-slate-900 block">
+                              {enquiryDetailModal.serviceCategory}
+                            </span>
+                          </div>
+
+                          <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                              Expected Client Budget
+                            </span>
+                            <span className="text-base font-extrabold text-slate-900 block font-mono">
+                              ₹{enquiryDetailModal.expectedBudget?.toLocaleString('en-IN') || '0'}
+                            </span>
+                          </div>
+
+                          <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                              Enquiry Submission Timestamp
+                            </span>
+                            <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-slate-400" />
+                              {new Date(enquiryDetailModal.createdAt).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Detailed Client Requirements */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                            Detailed Client Requirements & Specifications:
+                          </label>
+                          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 text-xs text-slate-800 whitespace-pre-wrap leading-relaxed font-sans">
+                            {enquiryDetailModal.requirements || 'No specific requirements entered.'}
+                          </div>
+                        </div>
+
+                        {/* Attached Client Media / Document */}
+                        {enquiryDetailModal.attachmentUrl && (() => {
+                          const fileUrl = enquiryDetailModal.attachmentUrl;
+                          const isImg = fileUrl.match(/\.(png|jpg|jpeg|webp|gif|svg)$/i);
+                          const isVid = fileUrl.match(/\.(mp4|webm|mov)$/i) || fileUrl.includes('loom.com') || fileUrl.includes('youtube.com');
+                          const isAud = fileUrl.match(/\.(mp3|wav|m4a|ogg)$/i);
+                          const isArch = fileUrl.match(/\.(zip|rar|tar|gz)$/i);
+
+                          return (
+                            <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                {isImg ? (
+                                  <div className="w-12 h-12 rounded-lg border border-indigo-200 overflow-hidden bg-slate-900 shrink-0 relative group">
+                                    <img src={fileUrl} alt="Attached client brief" className="w-full h-full object-cover" />
+                                    <a
+                                      href={fileUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                                    >
+                                      <Eye className="w-4 h-4 text-white" />
+                                    </a>
+                                  </div>
+                                ) : (
+                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${isVid
+                                      ? 'bg-rose-50 text-rose-600 border-rose-200'
+                                      : isAud
+                                        ? 'bg-purple-50 text-purple-600 border-purple-200'
+                                        : isArch
+                                          ? 'bg-amber-50 text-amber-600 border-amber-200'
+                                          : 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                                    }`}>
+                                    {isVid ? (
+                                      <Video className="w-5 h-5" />
+                                    ) : isAud ? (
+                                      <Music className="w-5 h-5" />
+                                    ) : isArch ? (
+                                      <Archive className="w-5 h-5" />
+                                    ) : (
+                                      <FileText className="w-5 h-5" />
+                                    )}
+                                  </div>
+                                )}
+                                <div className="min-w-0">
+                                  <span className="font-bold text-slate-900 text-xs block">
+                                    Client-Provided Requirement Attachment
+                                  </span>
+                                  <span className="text-[11px] text-indigo-700 font-medium block">
+                                    {isImg ? 'Screenshot / Design File' : isVid ? 'Video Demo / Walkthrough' : isAud ? 'Voice Note / Audio Brief' : isArch ? 'Source Zip Archive' : 'Requirement Specification Document'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <a
+                                href={fileUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3 py-1.5 bg-[#3066BE] hover:bg-[#255299] text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shrink-0 shadow-xs"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                View / Download
+                              </a>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Discussion Notes & Follow-up Date (from Client Meeting) */}
+                        {(enquiryDetailModal.discussionNotes || enquiryDetailModal.followUpDate) && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            {enquiryDetailModal.discussionNotes && (
+                              <div className="p-3 bg-blue-50/40 rounded-xl border border-blue-100">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-900/70 block mb-1">
+                                  Discussion Notes from Client Meeting
+                                </span>
+                                <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
+                                  {enquiryDetailModal.discussionNotes}
+                                </p>
+                              </div>
+                            )}
+                            {enquiryDetailModal.followUpDate && (
+                              <div className="p-3 bg-purple-50/40 rounded-xl border border-purple-100">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-900/70 block mb-1">
+                                  Scheduled Next Follow-Up Date
+                                </span>
+                                <p className="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                                  <Calendar className="w-3.5 h-3.5" />
+                                  {new Date(enquiryDetailModal.followUpDate).toLocaleDateString('en-IN', {
+                                    weekday: 'short',
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Executive Review Remarks (If reviewed) */}
+                        {enquiryDetailModal.adminNotes && (
+                          <div className="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200 text-xs">
+                            <span className="font-bold text-amber-900 block mb-0.5">Executive Review Remarks:</span>
+                            <p className="text-amber-800 leading-relaxed">{enquiryDetailModal.adminNotes}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Consultation & Follow-up History */}
+                      {enquiryDetailModal.discussionNotes && (
+                        <div className="text-xs">
+                          <div className="flex items-center justify-between mb-1">
+                            <strong className="text-emerald-900 font-bold flex items-center gap-1.5">
+                              💬 BGA Client Consultation & Follow-up History:
+                            </strong>
+                            {(() => {
+                              const match = enquiryDetailModal.discussionNotes?.match(/^\[(.*?)\]/);
+                              const consultDate = match ? match[1] : enquiryDetailModal.followUpDate ? new Date(enquiryDetailModal.followUpDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : null;
+                              return consultDate ? (
+                                <span className="text-[10px] text-emerald-700 font-mono">
+                                  Consulted: {consultDate}
+                                </span>
+                              ) : null;
+                            })()}
+                          </div>
+                          <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950 whitespace-pre-wrap leading-relaxed">
+                            {enquiryDetailModal.discussionNotes}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SECTION 3: SUBMITTING BUSINESS GROWTH ASSOCIATE */}
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                            Submitting Business Growth Associate
+                          </span>
+                          <div className="text-xs font-bold text-slate-900">
+                            {enquiryDetailModal.bga?.name}
+                          </div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">
+                            {enquiryDetailModal.bga?.email} • {enquiryDetailModal.bga?.mobile || 'N/A'}
+                          </div>
+                        </div>
+                        <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 shadow-2xs">
+                          Exclusive Client Lock Active
                         </span>
-                        <div className="text-xs font-bold text-slate-900">
-                          {enquiryDetailModal.bga?.name}
-                        </div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">
-                          {enquiryDetailModal.bga?.email} • {enquiryDetailModal.bga?.mobile || 'N/A'}
-                        </div>
                       </div>
-                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 shadow-2xs">
-                        Exclusive Client Lock Active
-                      </span>
                     </div>
-                  </div>
 
                     {/* Fixed Modal Actions Footer */}
                     <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-3 p-4 md:px-8 bg-slate-50 border-t border-slate-100 shrink-0 rounded-b-3xl">
@@ -2640,13 +2621,12 @@ export const AdminPortal: React.FC = () => {
                           </td>
                           <td className="p-3.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                r.fileType === 'PPT'
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${r.fileType === 'PPT'
                                   ? 'bg-amber-100 text-amber-800 border border-amber-200'
                                   : r.fileType === 'IMAGE'
                                     ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                                     : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
-                              }`}>
+                                }`}>
                                 {r.fileType || 'PDF'}
                               </span>
                               {r.fileUrl && (
@@ -2664,9 +2644,8 @@ export const AdminPortal: React.FC = () => {
                             </div>
                           </td>
                           <td className="p-3.5">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              r.isPublished ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
-                            }`}>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${r.isPublished ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                              }`}>
                               {r.isPublished ? 'Published to BGAs' : 'Draft / Unpublished'}
                             </span>
                           </td>
@@ -2871,11 +2850,10 @@ export const AdminPortal: React.FC = () => {
                                 {((q.versionHistory && q.versionHistory.length > 1) || q.previousVersion || q.version > 1) && (
                                   <button
                                     onClick={() => setExpandedQuotationHistoryIds(prev => ({ ...prev, [q.id]: !prev[q.id] }))}
-                                    className={`mt-1.5 flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border transition-all ${
-                                      expandedQuotationHistoryIds[q.id]
+                                    className={`mt-1.5 flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border transition-all ${expandedQuotationHistoryIds[q.id]
                                         ? 'bg-[#3066BE] text-white border-[#3066BE] shadow-xs'
                                         : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
-                                    }`}
+                                      }`}
                                     title="Click to view Version 1 baseline, rejection notes, and follow-up history directly on this page"
                                   >
                                     <History className="w-3 h-3" />
@@ -2903,29 +2881,28 @@ export const AdminPortal: React.FC = () => {
                               </td>
                               <td className="p-3.5">
                                 <span
-                                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                    q.status === 'ACCEPTED'
+                                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${q.status === 'ACCEPTED'
                                       ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                                       : q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA'
-                                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                      : q.status === 'PENDING_ADMIN_APPROVAL'
-                                      ? 'bg-purple-100 text-[#152544] border border-[#3066BE]/25'
-                                      : q.status === 'REVISION_REQUESTED'
-                                      ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                      : q.status === 'REJECTED'
-                                      ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                                      : 'bg-slate-100 text-slate-800 border border-slate-200'
-                                  }`}
+                                        ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                        : q.status === 'PENDING_ADMIN_APPROVAL'
+                                          ? 'bg-purple-100 text-[#152544] border border-[#3066BE]/25'
+                                          : q.status === 'REVISION_REQUESTED'
+                                            ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                            : q.status === 'REJECTED'
+                                              ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                              : 'bg-slate-100 text-slate-800 border border-slate-200'
+                                    }`}
                                 >
                                   {q.status === 'PENDING_ADMIN_APPROVAL'
                                     ? 'PENDING ADMIN APPROVAL'
                                     : q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA'
-                                    ? 'APPROVED & SENT TO BGA'
-                                    : q.status === 'REJECTED'
-                                    ? 'REJECTED (AWAITING ACCOUNTS CORRECTION)'
-                                    : q.status === 'REVISION_REQUESTED'
-                                    ? 'REVISION REQUESTED FROM ACCOUNTS'
-                                    : q.status}
+                                      ? 'APPROVED & SENT TO BGA'
+                                      : q.status === 'REJECTED'
+                                        ? 'REJECTED (AWAITING ACCOUNTS CORRECTION)'
+                                        : q.status === 'REVISION_REQUESTED'
+                                          ? 'REVISION REQUESTED FROM ACCOUNTS'
+                                          : q.status}
                                 </span>
                                 {q.adminNotes && (
                                   <div className="text-[10px] text-slate-500 mt-1 max-w-xs text-left">
@@ -2976,11 +2953,10 @@ export const AdminPortal: React.FC = () => {
                                   {((q.versionHistory && q.versionHistory.length > 1) || q.previousVersion || q.version > 1) && (
                                     <button
                                       onClick={() => setExpandedQuotationHistoryIds(prev => ({ ...prev, [q.id]: !prev[q.id] }))}
-                                      className={`px-2.5 py-1 rounded-lg border text-xs font-semibold flex items-center gap-1 transition-all ${
-                                        expandedQuotationHistoryIds[q.id]
+                                      className={`px-2.5 py-1 rounded-lg border text-xs font-semibold flex items-center gap-1 transition-all ${expandedQuotationHistoryIds[q.id]
                                           ? 'bg-[#3066BE] text-white border-[#3066BE]'
                                           : 'border-indigo-300 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100'
-                                      }`}
+                                        }`}
                                       title="View Version 1 & Version 2 history, rejection notes, and reminders directly inline"
                                     >
                                       <History className="w-3 h-3" />
@@ -3127,8 +3103,8 @@ export const AdminPortal: React.FC = () => {
                       {quotationReviewModal.action === 'APPROVE'
                         ? 'Approve Official Quotation & Release to BGA'
                         : quotationReviewModal.action === 'REQUEST_REVISION'
-                        ? 'Request Quotation Revision from Accounts'
-                        : 'Reject Official Quotation'}
+                          ? 'Request Quotation Revision from Accounts'
+                          : 'Reject Official Quotation'}
                     </h3>
                     <p className="text-xs text-slate-500">
                       Quotation: <strong>{quotationReviewModal.quotation?.quotationNumber}</strong> for{' '}
@@ -3163,13 +3139,12 @@ export const AdminPortal: React.FC = () => {
                       </button>
                       <button
                         onClick={executeQuotationReview}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold text-white transition-colors ${
-                          quotationReviewModal.action === 'APPROVE'
+                        className={`px-4 py-2 rounded-xl text-xs font-bold text-white transition-colors ${quotationReviewModal.action === 'APPROVE'
                             ? 'bg-emerald-600 hover:bg-emerald-700'
                             : quotationReviewModal.action === 'REQUEST_REVISION'
-                            ? 'bg-amber-600 hover:bg-amber-700'
-                            : 'bg-red-600 hover:bg-red-700'
-                        }`}
+                              ? 'bg-amber-600 hover:bg-amber-700'
+                              : 'bg-red-600 hover:bg-red-700'
+                          }`}
                       >
                         Confirm {quotationReviewModal.action}
                       </button>
@@ -3246,8 +3221,8 @@ export const AdminPortal: React.FC = () => {
                       {filteredWorkOrders.map((w) => {
                         const verifiedPayments = w.payments
                           ? w.payments
-                              .filter((p: any) => p.status === 'VERIFIED')
-                              .reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
+                            .filter((p: any) => p.status === 'VERIFIED')
+                            .reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
                           : 0;
                         const isPendingHandover = w.advanceVerified && !w.handoverApproved;
 
@@ -3265,11 +3240,10 @@ export const AdminPortal: React.FC = () => {
                             </td>
                             <td className="p-3.5">
                               <span
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                  w.advanceVerified
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${w.advanceVerified
                                     ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                                     : 'bg-amber-100 text-amber-800 border border-amber-200'
-                                }`}
+                                  }`}
                               >
                                 {w.advanceVerified ? 'VERIFIED' : 'PENDING RECEIPT'}
                               </span>
@@ -3279,19 +3253,18 @@ export const AdminPortal: React.FC = () => {
                             </td>
                             <td className="p-3.5">
                               <span
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                  w.handoverApproved
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${w.handoverApproved
                                     ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                                     : isPendingHandover
-                                    ? 'bg-purple-100 text-[#152544] border border-[#3066BE]/25 animate-pulse'
-                                    : 'bg-slate-100 text-slate-700'
-                                }`}
+                                      ? 'bg-purple-100 text-[#152544] border border-[#3066BE]/25 animate-pulse'
+                                      : 'bg-slate-100 text-slate-700'
+                                  }`}
                               >
                                 {w.handoverApproved
                                   ? 'HANDOVER APPROVED'
                                   : isPendingHandover
-                                  ? 'AWAITING HANDOVER APPROVAL'
-                                  : w.handoverStatus || 'PENDING'}
+                                    ? 'AWAITING HANDOVER APPROVAL'
+                                    : w.handoverStatus || 'PENDING'}
                               </span>
                             </td>
                             <td className="p-3.5 text-right">
@@ -3362,8 +3335,8 @@ export const AdminPortal: React.FC = () => {
                       {handoverReviewModal.action === 'APPROVE'
                         ? 'Authorize Technical Handover & Activate Project'
                         : handoverReviewModal.action === 'HOLD'
-                        ? 'Place Technical Handover On Hold'
-                        : 'Request Handover Clarification'}
+                          ? 'Place Technical Handover On Hold'
+                          : 'Request Handover Clarification'}
                     </h3>
                     <p className="text-xs text-slate-500">
                       Work Order: <strong>{handoverReviewModal.workOrder?.workOrderNumber}</strong> for{' '}
@@ -3396,13 +3369,12 @@ export const AdminPortal: React.FC = () => {
                       </button>
                       <button
                         onClick={executeHandoverReview}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold text-white transition-colors ${
-                          handoverReviewModal.action === 'APPROVE'
+                        className={`px-4 py-2 rounded-xl text-xs font-bold text-white transition-colors ${handoverReviewModal.action === 'APPROVE'
                             ? 'bg-emerald-600 hover:bg-emerald-700'
                             : handoverReviewModal.action === 'HOLD'
-                            ? 'bg-amber-600 hover:bg-amber-700'
-                            : 'bg-slate-700 hover:bg-slate-800'
-                        }`}
+                              ? 'bg-amber-600 hover:bg-amber-700'
+                              : 'bg-slate-700 hover:bg-slate-800'
+                          }`}
                       >
                         Confirm {handoverReviewModal.action}
                       </button>
@@ -3672,11 +3644,10 @@ export const AdminPortal: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAdminCommissionSubTab('LEDGER')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                    adminCommissionSubTab === 'LEDGER'
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${adminCommissionSubTab === 'LEDGER'
                       ? 'bg-[#3066BE] text-white shadow-sm'
                       : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                  }`}
+                    }`}
                 >
                   <DollarSign className="w-3.5 h-3.5" />
                   <span>Stage 4: Commission Approvals & Ledger</span>
@@ -3684,11 +3655,10 @@ export const AdminPortal: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAdminCommissionSubTab('SETTINGS')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                    adminCommissionSubTab === 'SETTINGS'
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${adminCommissionSubTab === 'SETTINGS'
                       ? 'bg-[#3066BE] text-white shadow-sm'
                       : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                  }`}
+                    }`}
                 >
                   <SlidersHorizontal className="w-3.5 h-3.5" />
                   <span>Section 8: Commission Percentage Settings</span>
@@ -3719,11 +3689,10 @@ export const AdminPortal: React.FC = () => {
                           <button
                             key={tab.id}
                             onClick={() => setCommissionTypeTab(tab.id as any)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                              commissionTypeTab === tab.id
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${commissionTypeTab === tab.id
                                 ? 'bg-[#3066BE] text-white shadow-sm font-bold shadow-sm'
                                 : 'text-slate-600 hover:text-slate-900'
-                            }`}
+                              }`}
                           >
                             {tab.label}
                           </button>
@@ -3789,11 +3758,10 @@ export const AdminPortal: React.FC = () => {
                                 </div>
                                 {c.rateSource && (
                                   <div className="mt-1">
-                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                                      c.rateSource === 'PROJECT_OVERRIDE' ? 'bg-indigo-100 text-indigo-700' :
-                                      c.rateSource === 'CLIENT_DEFAULT' ? 'bg-blue-100 text-blue-700' :
-                                      'bg-slate-100 text-slate-600'
-                                    }`}>
+                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${c.rateSource === 'PROJECT_OVERRIDE' ? 'bg-indigo-100 text-indigo-700' :
+                                        c.rateSource === 'CLIENT_DEFAULT' ? 'bg-blue-100 text-blue-700' :
+                                          'bg-slate-100 text-slate-600'
+                                      }`}>
                                       [{c.rateSource.replace(/_/g, ' ')}]
                                     </span>
                                   </div>
@@ -3805,13 +3773,12 @@ export const AdminPortal: React.FC = () => {
                                 )}
                               </td>
                               <td className="p-3.5">
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                  c.approvalStatus === 'APPROVED'
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${c.approvalStatus === 'APPROVED'
                                     ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                                     : c.approvalStatus === 'REJECTED'
-                                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
-                                }`}>
+                                      ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                      : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                  }`}>
                                   {c.approvalStatus}
                                 </span>
                                 {c.rejectionReason && (
@@ -3821,11 +3788,10 @@ export const AdminPortal: React.FC = () => {
                                 )}
                               </td>
                               <td className="p-3.5">
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                  c.payoutStatus === 'PROCESSED'
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${c.payoutStatus === 'PROCESSED'
                                     ? 'bg-blue-100 text-blue-800 border border-blue-200'
                                     : 'bg-slate-100 text-slate-700'
-                                }`}>
+                                  }`}>
                                   {c.payoutStatus}
                                 </span>
                                 {c.payoutReference && (
@@ -4061,9 +4027,8 @@ export const AdminPortal: React.FC = () => {
                         {s.key === 'enquiry_approval_required_for_quotation' ? (
                           <button
                             onClick={() => handleSaveSetting(s.key, s.value === 'true' ? 'false' : 'true')}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
-                              s.value === 'true' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-300 text-slate-800'
-                            }`}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${s.value === 'true' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-300 text-slate-800'
+                              }`}
                           >
                             {s.value === 'true' ? 'Enforced (Required)' : 'Bypass Approval'}
                           </button>

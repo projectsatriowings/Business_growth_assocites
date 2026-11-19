@@ -73,7 +73,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
   const [sendingReset, setSendingReset] = useState(false);
 
   const handleAdminUploadDoc = async (
-    field: 'panDocumentUrl' | 'addressProofUrl' | 'bankProofUrl' | 'agreementDocumentUrl',
+    field: 'panDocumentUrl' | 'addressProofUrl' | 'bankProofUrl',
     file: File
   ) => {
     setAdminUploadingDoc(field);
@@ -985,55 +985,11 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
           {activeTab === 'documents' && (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm w-full space-y-6">
               <div className="border-b border-slate-100 pb-3">
-                <h3 className="text-base font-bold text-slate-900">Submitted Documents & Signed Consent</h3>
-                <p className="text-xs text-slate-500">Access-controlled documentation for verification and legal compliance.</p>
+                <h3 className="text-base font-bold text-slate-900">Submitted Compliance Documents & Proofs</h3>
+                <p className="text-xs text-slate-500">Access-controlled documentation for KYC, identity, and bank verification.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Agreement Document */}
-                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex justify-between items-center text-xs">
-                  <div>
-                    <span className="font-bold text-slate-900 text-sm block">Signed Associate Agreement</span>
-                    <span className="text-slate-500 text-[11px] block mt-0.5">
-                      Accepted on {new Date(associate.agreementAcceptedAt || associate.createdAt).toLocaleDateString()}
-                    </span>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-2 inline-block">
-                      Legally Binding Consent Verified ✓
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() =>
-                        setPreviewDoc({
-                          title: 'BGA Associate Agreement & Consent Terms',
-                          url: associate.agreementDocumentUrl || '/sample-agreement.pdf',
-                          type: 'PDF Document',
-                        })
-                      }
-                      className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-[#3066BE]/10 hover:text-[#3066BE] text-slate-700 rounded-lg font-semibold flex items-center gap-1.5"
-                    >
-                      <Eye className="w-4 h-4" /> Preview
-                    </button>
-                    <label className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer">
-                      {adminUploadingDoc === 'agreementDocumentUrl' ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-[#3066BE]" />
-                      ) : (
-                        <Upload className="w-4 h-4" />
-                      )}
-                      <span>{adminUploadingDoc === 'agreementDocumentUrl' ? 'Uploading...' : 'Attach'}</span>
-                      <input
-                        type="file"
-                        accept=".pdf,image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleAdminUploadDoc('agreementDocumentUrl', file);
-                        }}
-                      />
-                    </label>
-                  </div>
-                </div>
-
                 {/* PAN Card Proof */}
                 <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex justify-between items-center text-xs">
                   <div>

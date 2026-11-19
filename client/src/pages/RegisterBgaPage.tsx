@@ -1082,28 +1082,6 @@ export const RegisterBgaPage: React.FC = () => {
                     </label>
                     {renderFieldError('agreementAccepted')}
                   </div>
-
-                  <div className="pt-2">
-                    <DocumentUploadField
-                      label="Signed Associate Agreement (Optional)"
-                      helpText="If you have printed, signed, and scanned a physical agreement document, upload it here (optional)."
-                      value={formData.agreementDocumentUrl}
-                      docName={docMeta.agreementDocumentUrl?.name}
-                      docSize={docMeta.agreementDocumentUrl?.size}
-                      onUploaded={(url, name, size) => {
-                        setFormData((prev) => ({ ...prev, agreementDocumentUrl: url }));
-                        setDocMeta((prev) => ({ ...prev, agreementDocumentUrl: { name, size } }));
-                      }}
-                      onRemove={() => {
-                        setFormData((prev) => ({ ...prev, agreementDocumentUrl: '' }));
-                        setDocMeta((prev) => {
-                          const copy = { ...prev };
-                          delete copy.agreementDocumentUrl;
-                          return copy;
-                        });
-                      }}
-                    />
-                  </div>
                 </div>
               )}
 

@@ -1057,29 +1057,6 @@ export const BgaProfileView: React.FC = () => {
                 </button>
               </div>
             </div>
-
-            {/* Signed Associate Agreement */}
-            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 flex justify-between items-center text-xs">
-              <div className="space-y-1">
-                <span className="font-bold text-slate-900 block">Signed Associate Partnership Agreement</span>
-                <span className="text-slate-500 text-[11px] block">Terms, Confidentiality & Commission Code</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 inline-block">
-                  Digitally Executed & Signed
-                </span>
-              </div>
-              <button
-                onClick={() =>
-                  setPreviewDoc({
-                    title: 'Associate Agreement & Code of Conduct',
-                    url: user?.agreementDocumentUrl || '/sample-agreement.pdf',
-                    type: 'PDF',
-                  })
-                }
-                className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-white text-indigo-600 font-semibold text-xs flex items-center gap-1 transition-colors"
-              >
-                <Eye className="w-3.5 h-3.5" /> View Terms
-              </button>
-            </div>
           </div>
         </div>
       )}
