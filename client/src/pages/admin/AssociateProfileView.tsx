@@ -377,11 +377,12 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
           )}
 
           <button
-            onClick={fetchProfile}
-            className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+            onClick={() => fetchProfile(true)}
+            disabled={isRefreshing}
+            className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors flex items-center gap-1.5 cursor-pointer"
             title="Refresh Data"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#3066BE]' : ''}`} />
           </button>
         </div>
       </div>
@@ -422,7 +423,22 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
             </div>
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-slate-400 shrink-0" />
-              <span>Last Login: {associate.lastLoginAt ? new Date(associate.lastLoginAt).toLocaleString() : 'Never logged in'}</span>
+              <span>
+                Last Login:{' '}
+                {associate.lastLoginAt ? (
+                  <strong className="text-slate-900 font-bold">
+                    {new Date(associate.lastLoginAt).toLocaleString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </strong>
+                ) : (
+                  <span className="text-amber-700 font-semibold">Never logged in</span>
+                )}
+              </span>
             </div>
           </div>
 
@@ -475,7 +491,10 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
               return (
                 <button
                   key={t.id}
-                  onClick={() => setActiveTab(t.id as any)}
+                  onClick={() => {
+                    setActiveTab(t.id as any);
+                    fetchProfile(true);
+                  }}
                   className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${isSel
                     ? 'bg-[#3066BE] text-white shadow-md shadow-[#3066BE]/25 font-bold'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -964,7 +983,20 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                   <span className="text-slate-400 font-semibold block uppercase text-[10px]">Last Login Session</span>
                   <span className="text-slate-900 font-bold text-sm mt-0.5 block">
-                    {associate.lastLoginAt ? new Date(associate.lastLoginAt).toLocaleString() : 'No recorded login'}
+                    {associate.lastLoginAt ? (
+                      <span className="text-emerald-700">
+                        {new Date(associate.lastLoginAt).toLocaleString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                        })}
+                      </span>
+                    ) : (
+                      <span className="text-amber-700 font-normal">No recorded login</span>
+                    )}
                   </span>
                 </div>
 
@@ -1365,16 +1397,39 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
               ) : (
                 <div className="divide-y divide-slate-100 text-xs">
                   {associate.auditLogs.map((log: any) => (
-                    <div key={log.id} className="py-3 flex justify-between items-start">
-                      <div>
-                        <span className="font-bold text-slate-900">{log.action}</span>
-                        <span className="text-[11px] text-slate-400 ml-2">by {log.userRole || 'SYSTEM'} ({log.userEmail})</span>
-                        <p className="text-slate-600 font-mono text-[11px] mt-0.5 bg-slate-50 p-1.5 rounded border border-slate-100">
-                          {log.details}
-                        </p>
+                    <div key={log.id} className="py-3 flex justify-between items-start gap-4 hover:bg-slate-50/70 p-2 rounded-xl transition-colors">
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`font-bold px-2 py-0.5 rounded text-[11px] ${
+                            log.action === 'USER_LOGIN_SUCCESS'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              : log.action.includes('ACTIVATE') || log.action.includes('APPROVE')
+                              ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                              : log.action.includes('SUBMIT')
+                              ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                              : 'bg-slate-100 text-slate-800'
+                          }`}>
+                            {log.action}
+                          </span>
+                          <span className="text-[11px] text-slate-500">
+                            by <strong className="text-slate-700">{log.userRole || 'SYSTEM'}</strong> ({log.userEmail})
+                          </span>
+                        </div>
+                        {log.details && (
+                          <p className="text-slate-600 font-mono text-[11px] mt-0.5 bg-slate-50 p-2 rounded-lg border border-slate-100 break-all leading-relaxed">
+                            {log.details}
+                          </p>
+                        )}
                       </div>
-                      <span className="text-[10px] text-slate-400 shrink-0">
-                        {new Date(log.createdAt).toLocaleString()}
+                      <span className="text-[10px] text-slate-400 shrink-0 whitespace-nowrap pt-0.5">
+                        {new Date(log.createdAt).toLocaleString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                        })}
                       </span>
                     </div>
                   ))}

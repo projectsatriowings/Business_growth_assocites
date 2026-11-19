@@ -325,6 +325,10 @@ export const RegisterBgaPage: React.FC = () => {
       case 'password':
         if (!value) return 'Password is required';
         if (value.length < 6) return 'Password must be at least 6 characters';
+        if (!/[A-Z]/.test(value)) return 'Must contain at least one uppercase letter (A-Z)';
+        if (!/[a-z]/.test(value)) return 'Must contain at least one lowercase letter (a-z)';
+        if (!/[0-9]/.test(value)) return 'Must contain at least one number (0-9)';
+        if (!/[^A-Za-z0-9]/.test(value)) return 'Must contain at least one special character';
         return undefined;
 
       case 'confirmPassword':
@@ -517,6 +521,14 @@ export const RegisterBgaPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Password Complexity Flags for Step 1
+  const pwdMinLength = formData.password.length >= 6;
+  const pwdUpper = /[A-Z]/.test(formData.password);
+  const pwdLower = /[a-z]/.test(formData.password);
+  const pwdNumber = /[0-9]/.test(formData.password);
+  const pwdSpecial = /[^A-Za-z0-9]/.test(formData.password);
+  const pwdMatches = formData.password.length > 0 && formData.password === formData.confirmPassword;
 
   const stepsMeta = [
     { num: 1, title: 'Personal & Profile', icon: User },
@@ -787,7 +799,7 @@ export const RegisterBgaPage: React.FC = () => {
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
-                      {renderFieldError('password', 'Minimum 6 characters')}
+                      {renderFieldError('password', 'Requires uppercase, lowercase, number, special char')}
                     </div>
 
                     <div>
@@ -828,6 +840,39 @@ export const RegisterBgaPage: React.FC = () => {
                       ) : (
                         <p className="text-[11px] text-slate-400 mt-1">Must match password</p>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Real-time Password Complexity Checklist */}
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5 mt-3">
+                    <span className="font-bold text-slate-700 block text-[10px] uppercase tracking-wider">
+                      Requirements:
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                      <div className={`flex items-center gap-1.5 ${pwdMinLength ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                        {pwdMinLength ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
+                        <span>6+ characters</span>
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${pwdUpper ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                        {pwdUpper ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
+                        <span>Uppercase (A-Z)</span>
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${pwdLower ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                        {pwdLower ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
+                        <span>Lowercase (a-z)</span>
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${pwdNumber ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                        {pwdNumber ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
+                        <span>Number (0-9)</span>
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${pwdSpecial ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                        {pwdSpecial ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
+                        <span>Special character</span>
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${pwdMatches ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                        {pwdMatches ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
+                        <span>Passwords match</span>
+                      </div>
                     </div>
                   </div>
                 </div>

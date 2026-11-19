@@ -15,6 +15,8 @@ import contactRoutes from './routes/contact.routes';
 import uploadRoutes from './routes/upload.routes';
 
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') });
 
 export const app = express();
 const PORT = Number(process.env.PORT) || 5000;
