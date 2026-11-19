@@ -563,12 +563,20 @@ router.get('/payments', async (req: AuthRequest, res: Response): Promise<void> =
   }
 });
 
-// Record new client payment (Accounts records payment upon bank receipt -> automatically verified)
+// Record new client payment (Accounts records payment upon bank receipt -> can verify immediately or save for audit)
 router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { paymentType, amount, adBudgetAmount, paymentMethod, transactionReference, paymentDate, proofAttachmentUrl } =
-      req.body;
+    const {
+      paymentType,
+      amount,
+      adBudgetAmount,
+      paymentMethod,
+      transactionReference,
+      paymentDate,
+      proofAttachmentUrl,
+      autoVerify,
+    } = req.body;
 
     const workOrder = await prisma.workOrder.findUnique({
       where: { id },
@@ -609,8 +617,9 @@ router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response)
     const payAmount = parseFloat(amount);
     const adAmount = parseFloat(adBudgetAmount) || 0;
     const netFee = Math.max(0, payAmount - adAmount);
+    const shouldVerify = autoVerify === true || autoVerify === 'true';
 
-    // Payments recorded by Accounts are saved as PENDING_VERIFICATION until authorized & audited
+    // 3. Create Payment record
     const payment = await prisma.payment.create({
       data: {
         workOrderId: id,
@@ -622,63 +631,217 @@ router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response)
         transactionReference: utrValidation.formattedUtr,
         paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
         proofAttachmentUrl: proofAttachmentUrl || null,
-        status: PaymentStatus.PENDING_VERIFICATION,
-        verificationNotes: 'Recorded by Accounts. Awaiting payment audit and verification.',
+        status: shouldVerify ? PaymentStatus.VERIFIED : PaymentStatus.PENDING_VERIFICATION,
+        verifiedById: shouldVerify ? req.user!.id : null,
+        verifiedAt: shouldVerify ? new Date() : null,
+        verificationNotes: shouldVerify
+          ? 'Recorded and verified against bank statement by Accounts.'
+          : 'Recorded by Accounts. Awaiting payment audit and verification.',
       },
     });
 
-    // Log to Client Follow-up & Activity History
-    await prisma.contactActivity.create({
-      data: {
-        clientId: workOrder.clientId,
-        bgaId: workOrder.bgaId,
-        contactMethod: 'PAYMENT_RECEIPT',
-        discussionSummary: `Accounts recorded ${paymentType} payment of ₹${payAmount.toLocaleString('en-IN')} via ${paymentMethod || 'BANK_TRANSFER'} (UTR: ${utrValidation.formattedUtr}).`,
-        followUpNotes: 'Client payment recorded in financial ledger. Verification audit in progress.',
-        outcome: paymentType === 'ADVANCE' ? 'ADVANCE_RECORDED' : 'FINAL_PAYMENT_RECORDED',
-        createdBy: req.user!.name || 'Accounts Department',
-      },
-    });
+    let releaseResult: any = null;
 
-    // Notify Assigned BGA of new payment recorded
-    await createNotification(
-      workOrder.bgaId,
-      `${paymentType === 'ADVANCE' ? 'Advance' : 'Final'} Payment Received by Accounts`,
-      `Accounts has recorded client payment of ₹${payAmount.toLocaleString('en-IN')} (UTR: ${utrValidation.formattedUtr}) for ${workOrder.client.clientName}. Payment audit and verification is currently in progress.`,
-      'INFO',
-      '/bga?tab=work-orders'
-    );
+    if (shouldVerify) {
+      // Handle immediate verification logic
+      if (paymentType === 'ADVANCE') {
+        releaseResult = await autoReleaseWorkOrderToTechnical(workOrder.id, req.user!.id, req.ip);
 
-    // Notify Accounts and Admin of new payment pending verification
-    await createNotification(
-      req.user!.id,
-      'Payment Recorded - Ready for Verification',
-      `Payment of ₹${payAmount.toLocaleString('en-IN')} (UTR: ${utrValidation.formattedUtr}) recorded for ${workOrder.client.clientName}. Ready for audit & verification.`,
-      'ACTION_REQUIRED',
-      '/accounts?tab=work-orders'
-    );
+        await prisma.contactActivity.create({
+          data: {
+            clientId: workOrder.clientId,
+            bgaId: workOrder.bgaId,
+            contactMethod: 'ACCOUNTS_VERIFICATION',
+            discussionSummary: `Advance Payment Recorded & Verified: ₹${payAmount.toLocaleString('en-IN')} (UTR: ${utrValidation.formattedUtr}). Work Order auto-released to Technical Department.`,
+            followUpNotes: 'Advance payment verified against bank records upon entry.',
+            outcome: 'ADVANCE_VERIFIED',
+            createdBy: req.user!.name || 'Accounts Head',
+          },
+        });
+
+        await createNotification(
+          workOrder.bgaId,
+          'Advance Payment Verified — Technical Execution Started',
+          `Accounts has verified advance payment of ₹${payAmount.toLocaleString('en-IN')} (UTR: ${utrValidation.formattedUtr}) for ${workOrder.client.clientName}. Technical project is now active.`,
+          'SUCCESS',
+          '/bga?tab=work-orders'
+        );
+      } else if (paymentType === 'FINAL') {
+        // Mark WorkOrder COMPLETED
+        await prisma.workOrder.update({
+          where: { id: workOrder.id },
+          data: { status: WorkOrderStatus.COMPLETED },
+        });
+
+        if (workOrder.project?.id) {
+          await prisma.technicalProject.update({
+            where: { id: workOrder.project.id },
+            data: {
+              closureStatus: 'COMPLETED_AND_SETTLED',
+              ...(workOrder.project.status !== ProjectStatus.COMPLETED
+                ? { status: ProjectStatus.COMPLETED, progressPercentage: 100, completedAt: new Date() }
+                : {}),
+            },
+          });
+        }
+
+        // Commission Generation (check duplicate project-based commission)
+        try {
+          const resolved = await resolveCommissionRate(
+            workOrder.clientId,
+            workOrder.project?.id,
+            workOrder.serviceCategory
+          );
+          const rate = resolved.rate;
+          const rateSource = resolved.source;
+
+          const existingCommission = await prisma.commission.findFirst({
+            where: { workOrderId: workOrder.id, billingType: 'PROJECT_BASED' },
+          });
+
+          if (!existingCommission) {
+            const { commissionableAmount, calculatedCommission } = computeCommissionBaseAndAmount(
+              workOrder.serviceCategory,
+              rate,
+              {
+                quotationServiceFee: workOrder.quotation.serviceFee,
+                quotationDiscount: workOrder.quotation.discount,
+                totalValue: workOrder.totalValue,
+              }
+            );
+
+            await prisma.commission.create({
+              data: {
+                bgaId: workOrder.bgaId,
+                clientId: workOrder.clientId,
+                workOrderId: workOrder.id,
+                paymentId: payment.id,
+                projectId: workOrder.project?.id || null,
+                serviceCategory: workOrder.serviceCategory,
+                billingType: 'PROJECT_BASED',
+                grossAmount: workOrder.totalValue,
+                excludedAdSpend: 0,
+                commissionableAmount,
+                commissionRate: rate,
+                calculatedCommission,
+                eligibilityStatus: CommissionEligibility.ELIGIBLE,
+                approvalStatus: CommissionApproval.PENDING_APPROVAL,
+                payoutStatus: CommissionPayout.UNPAID,
+                rateSource,
+                notes: `Final payment recorded & verified against bank credit. Rate: ${rate}% (${rateSource}).`,
+              },
+            });
+
+            const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+            for (const a of admins) {
+              await createNotification(
+                a.id,
+                'Final Payment Received and Verified',
+                `Accounts recorded and verified final payment of ₹${payAmount.toLocaleString('en-IN')} for ${workOrder.client.clientName} (WO: ${workOrder.workOrderNumber}). Commission request generated: ₹${calculatedCommission.toLocaleString('en-IN')} (${rate}%) awaiting approval.`,
+                'ACTION_REQUIRED',
+                '/admin?tab=commissions'
+              );
+            }
+
+            await createNotification(
+              workOrder.bgaId,
+              'Final Payment Received and Verified',
+              `Final client payment of ₹${payAmount.toLocaleString('en-IN')} verified by Accounts for ${workOrder.client.clientName}. Your commission of ₹${calculatedCommission.toLocaleString('en-IN')} is awaiting Admin approval.`,
+              'SUCCESS',
+              '/bga?tab=earnings'
+            );
+          }
+        } catch (commErr: any) {
+          console.error('Commission generation on payment entry failed:', commErr.message);
+        }
+
+        await prisma.contactActivity.create({
+          data: {
+            clientId: workOrder.clientId,
+            bgaId: workOrder.bgaId,
+            contactMethod: 'ACCOUNTS_VERIFICATION',
+            discussionSummary: `Final Payment Recorded & Verified: ₹${payAmount.toLocaleString('en-IN')} (UTR: ${utrValidation.formattedUtr}). 100% Contract Value Settled.`,
+            followUpNotes: 'Final payment verified against bank records upon entry.',
+            outcome: 'FINAL_PAYMENT_VERIFIED',
+            createdBy: req.user!.name || 'Accounts Head',
+          },
+        });
+      }
+
+      await logAudit(
+        req.user!.id,
+        req.user!.email,
+        req.user!.role,
+        'PAYMENT_RECORDED_AND_VERIFIED',
+        'PAYMENT',
+        payment.id,
+        { amount: payAmount, paymentType, utr: utrValidation.formattedUtr },
+        req.ip
+      );
+    } else {
+      // Saved as PENDING_VERIFICATION
+      await prisma.contactActivity.create({
+        data: {
+          clientId: workOrder.clientId,
+          bgaId: workOrder.bgaId,
+          contactMethod: 'PAYMENT_RECEIPT',
+          discussionSummary: `Accounts recorded ${paymentType} payment of ₹${payAmount.toLocaleString('en-IN')} via ${paymentMethod || 'BANK_TRANSFER'} (UTR: ${utrValidation.formattedUtr}).`,
+          followUpNotes: 'Client payment recorded in financial ledger. Verification audit in progress.',
+          outcome: paymentType === 'ADVANCE' ? 'ADVANCE_RECORDED' : 'FINAL_PAYMENT_RECORDED',
+          createdBy: req.user!.name || 'Accounts Department',
+        },
+      });
+
+      await createNotification(
+        workOrder.bgaId,
+        `${paymentType === 'ADVANCE' ? 'Advance' : 'Final'} Payment Received by Accounts`,
+        `Accounts has recorded client payment of ₹${payAmount.toLocaleString('en-IN')} (UTR: ${utrValidation.formattedUtr}) for ${workOrder.client.clientName}. Payment audit and verification is currently in progress.`,
+        'INFO',
+        '/bga?tab=work-orders'
+      );
+
+      await createNotification(
+        req.user!.id,
+        'Payment Recorded - Ready for Verification',
+        `Payment of ₹${payAmount.toLocaleString('en-IN')} (UTR: ${utrValidation.formattedUtr}) recorded for ${workOrder.client.clientName}. Ready for audit & verification.`,
+        'ACTION_REQUIRED',
+        '/accounts?tab=work-orders'
+      );
+
+      await logAudit(
+        req.user!.id,
+        req.user!.email,
+        req.user!.role,
+        'PAYMENT_RECORDED',
+        'PAYMENT',
+        payment.id,
+        { amount: payAmount, paymentType, utr: utrValidation.formattedUtr },
+        req.ip
+      );
+    }
 
     // Invalidate caches
     appCache.invalidatePrefix('accounts:');
     appCache.invalidatePrefix('admin:');
     appCache.invalidatePrefix('bga:');
 
-    await logAudit(
-      req.user!.id,
-      req.user!.email,
-      req.user!.role,
-      'PAYMENT_RECORDED',
-      'PAYMENT',
-      payment.id,
-      { amount: payAmount, paymentType, utr: utrValidation.formattedUtr },
-      req.ip
-    );
-
     res.json({
-      message: 'Payment recorded successfully. Awaiting payment audit and verification.',
+      message: shouldVerify
+        ? paymentType === 'FINAL'
+          ? `Final payment of ₹${payAmount.toLocaleString('en-IN')} recorded and verified successfully. Contract is 100% settled.`
+          : paymentType === 'ADVANCE'
+          ? releaseResult?.released
+            ? `Advance payment of ₹${payAmount.toLocaleString('en-IN')} recorded and verified successfully. Work order auto-released to ${releaseResult.teamName}.`
+            : `Advance payment of ₹${payAmount.toLocaleString('en-IN')} recorded and verified successfully.`
+          : `Payment of ₹${payAmount.toLocaleString('en-IN')} recorded and verified successfully.`
+        : 'Payment recorded successfully. Awaiting payment audit and verification.',
       payment,
+      autoReleased: releaseResult?.released || false,
+      routedTeam: releaseResult?.team,
+      teamName: releaseResult?.teamName,
     });
   } catch (error) {
+    console.error('Record payment error:', error);
     res.status(500).json({ error: 'Failed to record payment' });
   }
 });
@@ -814,6 +977,24 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
         } else {
           // Development Projects: Website, Mobile App, Software
           if (payment.paymentType === PaymentType.FINAL) {
+            // Update WorkOrder to COMPLETED
+            await prisma.workOrder.update({
+              where: { id: workOrder.id },
+              data: { status: WorkOrderStatus.COMPLETED },
+            });
+
+            if (workOrder.project?.id) {
+              await prisma.technicalProject.update({
+                where: { id: workOrder.project.id },
+                data: {
+                  closureStatus: 'COMPLETED_AND_SETTLED',
+                  ...(workOrder.project.status !== ProjectStatus.COMPLETED
+                    ? { status: ProjectStatus.COMPLETED, progressPercentage: 100, completedAt: new Date() }
+                    : {}),
+                },
+              });
+            }
+
             const isProjectCompleted = workOrder.project?.status === ProjectStatus.COMPLETED;
             const { commissionableAmount, calculatedCommission } = computeCommissionBaseAndAmount(
               workOrder.serviceCategory,
@@ -825,50 +1006,57 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
               }
             );
 
-            await prisma.commission.create({
-              data: {
-                bgaId: workOrder.bgaId,
-                clientId: workOrder.clientId,
-                workOrderId: workOrder.id,
-                paymentId: payment.id,
-                projectId: workOrder.project?.id || null,
-                serviceCategory: workOrder.serviceCategory,
-                billingType: 'PROJECT_BASED',
-                grossAmount: workOrder.totalValue,
-                excludedAdSpend: 0,
-                commissionableAmount,
-                commissionRate: rate,
-                calculatedCommission,
-                eligibilityStatus: isProjectCompleted ? CommissionEligibility.ELIGIBLE : CommissionEligibility.PENDING_CRITERIA,
-                approvalStatus: CommissionApproval.PENDING_APPROVAL,
-                payoutStatus: CommissionPayout.UNPAID,
-                rateSource,
-                notes: isProjectCompleted
-                  ? `Project-based commission for ${workOrder.serviceCategory}. Verified upon final payment and project completion. Rate: ${rate}% (${rateSource}).`
-                  : `Final payment verified. Commission will become ELIGIBLE once Technical marks project COMPLETED. Rate: ${rate}% (${rateSource}).`,
-              },
+            // Avoid duplicate project-based commission
+            const existingCommission = await prisma.commission.findFirst({
+              where: { workOrderId: workOrder.id, billingType: 'PROJECT_BASED' },
             });
 
-            // Stage 4 Notification: Notify Admin
-            const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
-            for (const a of admins) {
+            if (!existingCommission) {
+              await prisma.commission.create({
+                data: {
+                  bgaId: workOrder.bgaId,
+                  clientId: workOrder.clientId,
+                  workOrderId: workOrder.id,
+                  paymentId: payment.id,
+                  projectId: workOrder.project?.id || null,
+                  serviceCategory: workOrder.serviceCategory,
+                  billingType: 'PROJECT_BASED',
+                  grossAmount: workOrder.totalValue,
+                  excludedAdSpend: 0,
+                  commissionableAmount,
+                  commissionRate: rate,
+                  calculatedCommission,
+                  eligibilityStatus: isProjectCompleted ? CommissionEligibility.ELIGIBLE : CommissionEligibility.PENDING_CRITERIA,
+                  approvalStatus: CommissionApproval.PENDING_APPROVAL,
+                  payoutStatus: CommissionPayout.UNPAID,
+                  rateSource,
+                  notes: isProjectCompleted
+                    ? `Project-based commission for ${workOrder.serviceCategory}. Verified upon final payment and project completion. Rate: ${rate}% (${rateSource}).`
+                    : `Final payment verified. Commission will become ELIGIBLE once Technical marks project COMPLETED. Rate: ${rate}% (${rateSource}).`,
+                },
+              });
+
+              // Stage 4 Notification: Notify Admin
+              const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
+              for (const a of admins) {
+                await createNotification(
+                  a.id,
+                  'Final Payment Received and Verified',
+                  `Accounts verified final payment of ₹${payment.amount.toLocaleString('en-IN')} for project ${workOrder.project?.projectNumber || workOrder.workOrderNumber} (${workOrder.client.clientName}, BGA: ${workOrder.bga.name}). Commission request generated: ₹${calculatedCommission.toLocaleString('en-IN')} (${rate}% via ${rateSource}) awaiting approval.`,
+                  'ACTION_REQUIRED',
+                  '/admin?tab=commissions'
+                );
+              }
+
+              // Stage 4 Notification: Notify Assigned BGA
               await createNotification(
-                a.id,
+                workOrder.bgaId,
                 'Final Payment Received and Verified',
-                `Accounts verified final payment of ₹${payment.amount.toLocaleString('en-IN')} for project ${workOrder.project?.projectNumber || workOrder.workOrderNumber} (${workOrder.client.clientName}, BGA: ${workOrder.bga.name}). Commission request generated: ₹${calculatedCommission.toLocaleString('en-IN')} (${rate}% via ${rateSource}) awaiting approval.`,
-                'ACTION_REQUIRED',
-                '/admin?tab=commissions'
+                `Final client payment of ₹${payment.amount.toLocaleString('en-IN')} verified by Accounts for ${workOrder.client.clientName}. Your commission of ₹${calculatedCommission.toLocaleString('en-IN')} (${rate}%) is now awaiting Admin approval.`,
+                'SUCCESS',
+                '/bga?tab=earnings'
               );
             }
-
-            // Stage 4 Notification: Notify Assigned BGA
-            await createNotification(
-              workOrder.bgaId,
-              'Final Payment Received and Verified',
-              `Final client payment of ₹${payment.amount.toLocaleString('en-IN')} verified by Accounts for ${workOrder.client.clientName}. Your commission of ₹${calculatedCommission.toLocaleString('en-IN')} (${rate}%) is now awaiting Admin approval.`,
-              'SUCCESS',
-              '/bga?tab=earnings'
-            );
 
             // Log to Client Follow-up & Activity History
             await prisma.contactActivity.create({
@@ -945,12 +1133,25 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
     appCache.invalidatePrefix('admin:');
     appCache.invalidatePrefix('bga:');
 
+    let responseMessage: string;
+    if (!isVerified) {
+      responseMessage = 'Payment successfully marked as REJECTED';
+    } else if (payment.paymentType === PaymentType.FINAL) {
+      responseMessage = `Final payment of ₹${payment.amount.toLocaleString('en-IN')} verified successfully. 100% contract value is now settled.`;
+    } else if (payment.paymentType === PaymentType.ADVANCE) {
+      if (releaseResult?.released) {
+        responseMessage = `Advance payment verified successfully. Work order has been automatically released to ${releaseResult.teamName}.`;
+      } else if (releaseResult?.reason === 'WORK_ORDER_ON_HOLD') {
+        responseMessage = 'Advance payment verified. Project remains on hold.';
+      } else {
+        responseMessage = 'Advance payment verified successfully.';
+      }
+    } else {
+      responseMessage = `Payment of ₹${payment.amount.toLocaleString('en-IN')} verified successfully.`;
+    }
+
     res.json({
-      message: isVerified
-        ? releaseResult?.released
-          ? `Payment verified successfully. Work order has been automatically released to ${releaseResult.teamName}.`
-          : `Payment verified successfully.${releaseResult?.reason === 'WORK_ORDER_ON_HOLD' ? ' Project remains on hold.' : ' Awaiting remaining advance balance.'}`
-        : 'Payment successfully marked as REJECTED',
+      message: responseMessage,
       payment: updatedPayment,
       autoReleased: releaseResult?.released || false,
       routedTeam: releaseResult?.team,
