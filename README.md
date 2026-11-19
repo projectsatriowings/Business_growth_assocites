@@ -40,22 +40,6 @@ The application is engineered as **one unified platform** operating across a sin
 [ 9. Accounts & Admin Process Commission Payout with Bank UTR ]
 ```
 
----
-
-### 🔑 Pre-Seeded Portal Login Credentials
-
-All accounts are pre-seeded in Neon PostgreSQL with 1-click test fill buttons available on the login page:
-
-| Portal | Role | Email | Password | Access Privileges |
-| :--- | :--- | :--- | :--- | :--- |
-| **Admin Portal** | `ADMIN` | `admin@bga.com` | `Admin@123` | Complete executive control, KYC approvals, service pricing, audit logs, payout approvals |
-| **BGA Portal** | `BGA` | `bga@bga.com` | `Bga@123` | Exclusive client management, enquiry submissions, quotation presentation, commission earnings |
-| **Secondary BGA** | `BGA` | `bga2@bga.com` | `Bga2@123` | Used for testing client ownership isolation (cannot view BGA 1 data) |
-| **Accounts Portal** | `ACCOUNTS` | `accounts@bga.com` | `Accounts@123` | Official quotation preparation, version revisions, advance verification, commission calculations |
-| **Technical Portal**| `TECHNICAL` | `tech@bga.com` | `Tech@123` | Engineering execution, milestones, deliverable releases, bug fixes (Financial data isolated) |
-
----
-
 ### 🚀 Quick Start Guide
 
 #### 1. Start the Production Server (Serves Backend APIs & Frontend on Port 5000):
