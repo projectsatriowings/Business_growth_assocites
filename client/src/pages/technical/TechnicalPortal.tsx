@@ -33,6 +33,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ModalPortal } from '../../components/ModalPortal';
 import { MediaUploader, MediaUploadResult } from '../../components/MediaUploader';
 import { isExternalWebLink, extractUrls, downloadFile } from '../../utils/fileDownload';
+import {
+  MonthlyAreaChart,
+  CategoryDonutChart,
+  PipelineFunnel,
+} from '../../components/dashboard/DashboardCharts';
 
 export const TechnicalPortal: React.FC = () => {
   const { user } = useAuth();
@@ -350,6 +355,191 @@ export const TechnicalPortal: React.FC = () => {
                   <div className="text-2xl font-bold text-emerald-600 mt-1">{stats.completed}</div>
                   <span className="text-[11px] text-slate-400">Final Delivered</span>
                 </div>
+              </div>
+
+              {/* ANALYTICS ROW 1: SPRINT DELIVERY VELOCITY & CATEGORY WORKLOAD */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="lg:col-span-7">
+                  <MonthlyAreaChart
+                    data={(stats.monthlyVelocity || []).map((m: any) => ({
+                      month: m.month,
+                      yearMonth: m.yearMonth,
+                      value1: m.initiated,
+                      value2: m.completed,
+                    }))}
+                    title="Engineering Velocity & Completion Trends"
+                    subtitle="Monthly volume of project sprints initiated vs successfully completed & handed over."
+                    label1="Sprints Initiated"
+                    label2="Projects Completed"
+                    color1="#3066BE"
+                    color2="#10B981"
+                  />
+                </div>
+
+                <div className="lg:col-span-5">
+                  <CategoryDonutChart
+                    data={stats.categoryBreakdown || []}
+                    title="Workload by Service Category"
+                    subtitle="Distribution of assigned engineering deliverables across technical disciplines."
+                    totalLabel="Projects Total"
+                  />
+                </div>
+              </div>
+
+              {/* ANALYTICS ROW 2: LIFECYCLE FUNNEL & MILESTONE HEALTH */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="lg:col-span-7">
+                  <PipelineFunnel
+                    title="Technical Execution Pipeline"
+                    subtitle="Real-time progression through sprint stages to final client handover."
+                    stages={[
+                      { label: 'Ready to Start', count: stats.readyToStart || 0, color: '#3066BE' },
+                      { label: 'In Progress (Active Sprints)', count: stats.inProgress || 0, color: '#F59E0B' },
+                      { label: 'Under Review', count: stats.underReview || 0, color: '#8B5CF6' },
+                      { label: 'Correction Required', count: stats.correctionRequired || 0, color: '#EF4444' },
+                      { label: 'Completed & Delivered', count: stats.completed || 0, color: '#10B981' },
+                    ]}
+                  />
+                </div>
+
+                <div className="lg:col-span-5 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <CheckSquare className="w-4 h-4 text-emerald-600" />
+                      Milestone Health & Velocity
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Quality compliance across project milestones and client reviews.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4 my-4">
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                      <div className="flex justify-between items-center text-xs font-semibold mb-2">
+                        <span className="text-slate-700">Overall Milestone Completion</span>
+                        <span className="font-mono font-bold text-emerald-600">
+                          {stats.milestoneHealth?.completionRate || 0}%
+                        </span>
+                      </div>
+                      <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                          style={{ width: `${stats.milestoneHealth?.completionRate || 0}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                      <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
+                        <span className="text-[10px] text-blue-600 font-bold block">In Progress</span>
+                        <span className="text-lg font-black text-blue-900 font-mono">
+                          {stats.milestoneHealth?.inProgress || 0}
+                        </span>
+                      </div>
+                      <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
+                        <span className="text-[10px] text-purple-600 font-bold block">Under Review</span>
+                        <span className="text-lg font-black text-purple-900 font-mono">
+                          {stats.milestoneHealth?.underReview || 0}
+                        </span>
+                      </div>
+                      <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+                        <span className="text-[10px] text-emerald-600 font-bold block">Completed</span>
+                        <span className="text-lg font-black text-emerald-900 font-mono">
+                          {stats.milestoneHealth?.completed || 0}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-[11px] text-slate-500 pt-3 border-t border-slate-100 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    Milestones automatically unlock client reviews and final accounts settlements.
+                  </div>
+                </div>
+              </div>
+
+              {/* ANALYTICS ROW 3: ACTIVE ENGINEERING SPRINTS MONITOR */}
+              <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-[#3066BE]" />
+                      Active Engineering Sprints & Health Status
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Direct view into running project deliverables, sprint health, and completion meters.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('projects')}
+                    className="text-xs font-bold text-[#3066BE] hover:text-[#255299] flex items-center gap-1 transition-colors"
+                  >
+                    Open Projects Workspace <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {stats.activeProjectsList && stats.activeProjectsList.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {stats.activeProjectsList.map((p: any) => (
+                      <div
+                        key={p.id}
+                        onClick={() => {
+                          setActiveTab('projects');
+                          const proj = projects.find((item: any) => item.id === p.id);
+                          if (proj) setSelectedProject(proj);
+                        }}
+                        className="p-4 rounded-xl border border-slate-200 hover:border-[#3066BE]/40 hover:shadow-xs transition-all bg-slate-50/50 cursor-pointer flex flex-col justify-between space-y-3 group"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between text-[11px] mb-1">
+                            <span className="font-mono font-bold text-[#3066BE] group-hover:underline">
+                              {p.projectNumber}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              p.status === 'COMPLETED'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : p.status === 'UNDER_REVIEW'
+                                ? 'bg-purple-100 text-purple-800'
+                                : p.status === 'CORRECTION_REQUIRED'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {p.status.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-xs text-slate-900 truncate">
+                            {p.businessName || p.clientName || 'Assigned Client'}
+                          </h4>
+                          <span className="text-[10px] text-slate-500 block truncate">
+                            {p.serviceCategory?.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                            <span>Sprint Completion</span>
+                            <span className="font-mono text-[#3066BE]">{p.progressPercentage || 0}%</span>
+                          </div>
+                          <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-[#3066BE] to-[#119DA4] rounded-full transition-all"
+                              style={{ width: `${p.progressPercentage || 0}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-[10px] text-slate-400">
+                            <span>Milestones: {p.milestonesCount}</span>
+                            <span>Deliverables: {p.deliverablesCount}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl text-slate-400 text-xs">
+                    No active engineering sprints in the queue. New projects are assigned automatically upon advance clearance.
+                  </div>
+                )}
               </div>
 
               {/* Technical Privacy Notice */}

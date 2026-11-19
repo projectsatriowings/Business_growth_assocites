@@ -38,6 +38,16 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
+    const now = new Date();
+    const months: { label: string; yearMonth: string; start: Date; end: Date }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      const label = start.toLocaleString('en-US', { month: 'short' });
+      months.push({ label, yearMonth: `${label} ${start.getFullYear()}`, start, end });
+    }
+    const sixMonthsAgo = months[0].start;
+
     const [
       quotationRequests,
       acceptedQuotations,
@@ -50,6 +60,10 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       recentPayments,
       recentWorkOrders,
       recentQuotationRequests,
+      sixMonthPayments,
+      workOrdersByCategory,
+      pendingAdvanceCount,
+      pendingBalanceCount,
     ] = await Promise.all([
       prisma.quotation.count({
         where: { status: { in: [QuotationStatus.REQUESTED, QuotationStatus.REVISION_REQUESTED, QuotationStatus.REJECTED] } },
@@ -108,7 +122,48 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
           enquiry: true,
         },
       }),
+      // 6 month payments for trend
+      prisma.payment.findMany({
+        where: { createdAt: { gte: sixMonthsAgo } },
+        select: { amount: true, paymentType: true, status: true, createdAt: true },
+      }),
+      // Category revenue from work orders
+      prisma.workOrder.groupBy({
+        by: ['serviceCategory'],
+        _sum: { totalValue: true, advancePaid: true },
+        _count: { id: true },
+      }),
+      prisma.payment.count({
+        where: { status: PaymentStatus.PENDING_VERIFICATION, paymentType: PaymentType.ADVANCE },
+      }),
+      prisma.payment.count({
+        where: { status: PaymentStatus.PENDING_VERIFICATION, paymentType: { in: [PaymentType.FINAL, PaymentType.INTERIM, PaymentType.MONTHLY_RECURRING] } },
+      }),
     ]);
+
+    // Monthly collections trend
+    const monthlyCollections = months.map((m) => {
+      const paymentsInMonth = sixMonthPayments.filter((p) => p.createdAt >= m.start && p.createdAt < m.end && p.status === PaymentStatus.VERIFIED);
+      const advance = paymentsInMonth.filter((p) => p.paymentType === PaymentType.ADVANCE).reduce((sum, p) => sum + p.amount, 0);
+      const balance = paymentsInMonth.filter((p) => p.paymentType !== PaymentType.ADVANCE).reduce((sum, p) => sum + p.amount, 0);
+      return {
+        month: m.label,
+        yearMonth: m.yearMonth,
+        advance,
+        balance,
+        total: advance + balance,
+      };
+    });
+
+    // Service revenue breakdown
+    const totalRevenueSum = totalCollected._sum.amount || 1;
+    const serviceRevenueBreakdown = workOrdersByCategory.map((c) => ({
+      category: c.serviceCategory,
+      totalValue: c._sum.totalValue || 0,
+      advancePaid: c._sum.advancePaid || 0,
+      workOrdersCount: c._count.id,
+      percentage: Math.round(((c._sum.advancePaid || 0) / totalRevenueSum) * 100),
+    }));
 
     const result = {
       quotationRequests,
@@ -122,6 +177,14 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       recentPayments,
       recentWorkOrders,
       recentQuotationRequests,
+      monthlyCollections,
+      serviceRevenueBreakdown,
+      paymentAuditPipeline: {
+        pendingAdvanceCount,
+        pendingBalanceCount,
+        totalPendingVerifications: pendingPaymentVerifications,
+        pendingVerificationAmount: pendingVerificationAmount._sum.amount || 0,
+      },
     };
 
     appCache.set('accounts:dashboard-stats', result, 20);

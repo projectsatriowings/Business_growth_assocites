@@ -47,6 +47,11 @@ import { getQuotationPdfUrl, downloadQuotationPdf } from '../../utils/downloadPd
 import { motion, AnimatePresence } from 'framer-motion';
 import { ModalPortal } from '../../components/ModalPortal';
 import { QuotationHistoryTimeline } from '../../components/QuotationHistoryTimeline';
+import {
+  MonthlyAreaChart,
+  CategoryDonutChart,
+  PipelineFunnel,
+} from '../../components/dashboard/DashboardCharts';
 
 export const AccountsPortal: React.FC = () => {
   const { user } = useAuth();
@@ -827,6 +832,70 @@ export const AccountsPortal: React.FC = () => {
                       Client sign-offs
                     </div>
                   </div>
+                </div>
+
+                {/* FINANCIAL ANALYTICS ROW 1: MONTHLY CASH COLLECTIONS & CATEGORY REVENUE */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="lg:col-span-7">
+                    <MonthlyAreaChart
+                      data={(stats.monthlyCollections || []).map((m: any) => ({
+                        month: m.month,
+                        yearMonth: m.yearMonth,
+                        value1: m.advance,
+                        value2: m.balance,
+                      }))}
+                      title="Monthly Cash Collections & Bank Settlements"
+                      subtitle="6-month trend of verified client advance receipts vs final milestone balance settlements."
+                      label1="Advance Received"
+                      label2="Milestone Balance"
+                      color1="#10B981"
+                      color2="#3066BE"
+                      formatValue={(v) => `₹${v.toLocaleString('en-IN')}`}
+                    />
+                  </div>
+
+                  <div className="lg:col-span-5">
+                    <CategoryDonutChart
+                      data={(stats.serviceRevenueBreakdown || []).map((b: any) => ({
+                        category: b.category,
+                        count: b.workOrdersCount,
+                        percentage: b.percentage,
+                      }))}
+                      title="Contract Invoicing by Service Stream"
+                      subtitle="Distribution of contracted work orders across enterprise service domains."
+                      totalLabel="Work Orders"
+                    />
+                  </div>
+                </div>
+
+                {/* FINANCIAL ANALYTICS ROW 2: PAYMENT AUDIT & CLEARANCE PIPELINE */}
+                <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-emerald-600" />
+                        Bank Reconciliation & Payment Audit Funnel
+                      </h3>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Lifecycle clearance from client quotation release to complete milestone settlement.
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                      Total Verified: ₹{(stats.totalCollected || 0).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+
+                  <PipelineFunnel
+                    title=""
+                    stages={[
+                      { label: 'Quotation Requests', count: stats.quotationRequests || 0, color: '#3066BE' },
+                      { label: 'Accepted Quotations', count: stats.acceptedQuotations || 0, color: '#119DA4' },
+                      { label: 'Advance UTR Audits Pending', count: stats.paymentAuditPipeline?.pendingAdvanceCount ?? stats.pendingPaymentVerifications ?? 0, color: '#F59E0B' },
+                      { label: 'Work Orders in Production', count: stats.activeWorkOrders || 0, color: '#8B5CF6' },
+                      { label: 'Balance Milestone Audits Pending', count: stats.paymentAuditPipeline?.pendingBalanceCount ?? 0, color: '#EC4899' },
+                      { label: 'Eligible BGA Commissions', count: stats.eligibleCommissions || 0, color: '#10B981' },
+                    ]}
+                  />
                 </div>
 
                 {/* 4. MAIN OPERATIONAL GRID */}

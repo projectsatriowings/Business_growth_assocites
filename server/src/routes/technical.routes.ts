@@ -61,6 +61,16 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
+    const now = new Date();
+    const months: { label: string; yearMonth: string; start: Date; end: Date }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      const label = start.toLocaleString('en-US', { month: 'short' });
+      months.push({ label, yearMonth: `${label} ${start.getFullYear()}`, start, end });
+    }
+    const sixMonthsAgo = months[0].start;
+
     const [
       totalProjects,
       readyToStart,
@@ -68,6 +78,13 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       underReview,
       correctionRequired,
       completed,
+      categoryStats,
+      totalMilestones,
+      completedMilestones,
+      inProgressMilestones,
+      underReviewMilestones,
+      recentProjects,
+      activeProjectsList,
     ] = await Promise.all([
       prisma.technicalProject.count(),
       prisma.technicalProject.count({ where: { status: ProjectStatus.READY_TO_START } }),
@@ -77,7 +94,58 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
         where: { status: ProjectStatus.CORRECTION_REQUIRED },
       }),
       prisma.technicalProject.count({ where: { status: ProjectStatus.COMPLETED } }),
+      // Category Breakdown
+      prisma.technicalProject.groupBy({
+        by: ['serviceCategory'],
+        _count: { id: true },
+      }),
+      // Milestones
+      prisma.projectMilestone.count(),
+      prisma.projectMilestone.count({ where: { status: MilestoneStatus.COMPLETED } }),
+      prisma.projectMilestone.count({ where: { status: MilestoneStatus.IN_PROGRESS } }),
+      prisma.projectMilestone.count({ where: { status: MilestoneStatus.TODO } }),
+      // Last 6 months projects for trend
+      prisma.technicalProject.findMany({
+        where: { createdAt: { gte: sixMonthsAgo } },
+        select: { status: true, createdAt: true, updatedAt: true },
+      }),
+      // Active project list
+      prisma.technicalProject.findMany({
+        where: { status: { in: [ProjectStatus.READY_TO_START, ProjectStatus.IN_PROGRESS, ProjectStatus.UNDER_REVIEW, ProjectStatus.CORRECTION_REQUIRED] } },
+        take: 6,
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          projectNumber: true,
+          serviceCategory: true,
+          status: true,
+          progressPercentage: true,
+          updatedAt: true,
+          client: { select: { clientName: true, businessName: true } },
+          _count: {
+            select: { milestones: true, deliverables: true },
+          },
+        },
+      }),
     ]);
+
+    // Monthly velocity
+    const monthlyVelocity = months.map((m) => {
+      const initiated = recentProjects.filter((p) => p.createdAt >= m.start && p.createdAt < m.end).length;
+      const completedCount = recentProjects.filter((p) => p.status === ProjectStatus.COMPLETED && p.updatedAt >= m.start && p.updatedAt < m.end).length;
+      return {
+        month: m.label,
+        yearMonth: m.yearMonth,
+        initiated,
+        completed: completedCount,
+      };
+    });
+
+    const categoryBreakdown = categoryStats.map((c) => ({
+      category: c.serviceCategory,
+      count: c._count.id,
+      percentage: totalProjects > 0 ? Math.round((c._count.id / totalProjects) * 100) : 0,
+    }));
 
     const result = {
       total: totalProjects,
@@ -86,6 +154,27 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       underReview,
       correctionRequired,
       completed,
+      categoryBreakdown,
+      milestoneHealth: {
+        total: totalMilestones,
+        completed: completedMilestones,
+        inProgress: inProgressMilestones,
+        underReview: underReviewMilestones,
+        completionRate: totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0,
+      },
+      monthlyVelocity,
+      activeProjectsList: activeProjectsList.map((p) => ({
+        id: p.id,
+        projectNumber: p.projectNumber,
+        serviceCategory: p.serviceCategory,
+        status: p.status,
+        progressPercentage: p.progressPercentage,
+        clientName: p.client?.clientName || 'Client',
+        businessName: p.client?.businessName || '',
+        milestonesCount: p._count.milestones,
+        deliverablesCount: p._count.deliverables,
+        updatedAt: p.updatedAt,
+      })),
     };
 
     appCache.set('technical:dashboard-stats', result, 20);
