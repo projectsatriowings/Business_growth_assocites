@@ -17,6 +17,21 @@ export async function hydrateQuotationVersions<T extends { id: string; previousV
             client: true,
             bga: { select: { id: true, name: true, email: true, mobile: true } },
             reminders: { orderBy: { createdAt: 'asc' }, include: { bga: { select: { name: true } } } },
+            workOrder: {
+              include: {
+                payments: { orderBy: { createdAt: 'asc' } },
+                project: {
+                  include: {
+                    deliverables: true,
+                    finalPaymentFollowUps: {
+                      include: { bga: { select: { id: true, name: true } } },
+                      orderBy: { createdAt: 'desc' },
+                    },
+                  },
+                },
+                commissions: { orderBy: { createdAt: 'desc' } },
+              },
+            },
           },
           orderBy: { version: 'asc' },
         })
@@ -28,6 +43,21 @@ export async function hydrateQuotationVersions<T extends { id: string; previousV
             client: true,
             bga: { select: { id: true, name: true, email: true, mobile: true } },
             reminders: { orderBy: { createdAt: 'asc' }, include: { bga: { select: { name: true } } } },
+            workOrder: {
+              include: {
+                payments: { orderBy: { createdAt: 'asc' } },
+                project: {
+                  include: {
+                    deliverables: true,
+                    finalPaymentFollowUps: {
+                      include: { bga: { select: { id: true, name: true } } },
+                      orderBy: { createdAt: 'desc' },
+                    },
+                  },
+                },
+                commissions: { orderBy: { createdAt: 'desc' } },
+              },
+            },
           },
         })
       : Promise.resolve([]),
@@ -83,8 +113,15 @@ export async function hydrateQuotationVersions<T extends { id: string; previousV
     // Use enquiry history if available, otherwise synthesize
     const versionHistory = eqHistory.length > 0 ? eqHistory : prev ? [prev, q] : [q];
 
+    const workOrder =
+      (q as any).workOrder ||
+      eqHistory.find((h) => h.workOrder)?.workOrder ||
+      (prev as any)?.workOrder ||
+      null;
+
     return {
       ...q,
+      workOrder,
       previousVersion: prev,
       supersededBy: superseded,
       versionHistory,

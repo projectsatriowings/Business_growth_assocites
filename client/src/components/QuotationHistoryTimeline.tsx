@@ -11,8 +11,18 @@ import {
   Bell,
   Clock,
   ArrowRight,
+  Briefcase,
+  DollarSign,
+  ShieldCheck,
+  Phone,
+  FileCheck,
+  Award,
+  Wallet,
+  Sparkles,
+  ExternalLink,
 } from 'lucide-react';
 import { getQuotationPdfUrl } from '../utils/downloadPdf';
+import { QuotationPostAcceptanceTrail } from './QuotationPostAcceptanceTrail';
 
 interface Reminder {
   id: string;
@@ -21,7 +31,88 @@ interface Reminder {
   bga?: { name: string } | null;
 }
 
-interface QuotationVersionItem {
+export interface PaymentItem {
+  id: string;
+  paymentType: 'ADVANCE' | 'FINAL' | 'INTERIM' | 'MONTHLY_RECURRING' | string;
+  amount: number;
+  adBudgetAmount?: number;
+  netServiceFee?: number;
+  paymentMethod?: string;
+  transactionReference?: string;
+  paymentDate?: string | Date;
+  proofAttachmentUrl?: string | null;
+  status: 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED' | string;
+  verifiedAt?: string | Date | null;
+  verifiedById?: string | null;
+  verificationNotes?: string | null;
+  createdAt: string | Date;
+}
+
+export interface FinalPaymentFollowUpItem {
+  id: string;
+  followUpDate: string | Date;
+  contactMethod: string;
+  clientResponse?: string | null;
+  notes: string;
+  expectedPaymentDate?: string | Date | null;
+  expectedAmount?: number | null;
+  status: string;
+  createdAt: string | Date;
+  bga?: { name: string } | null;
+}
+
+export interface ProjectDeliverableItem {
+  id: string;
+  title: string;
+  fileUrl?: string | null;
+  version?: number;
+  notes?: string | null;
+  bgaApprovalStatus?: string;
+  createdAt: string | Date;
+}
+
+export interface TechnicalProjectItem {
+  id: string;
+  projectNumber: string;
+  status: string;
+  progressPercentage?: number;
+  completionNotes?: string | null;
+  completedAt?: string | Date | null;
+  deliverables?: ProjectDeliverableItem[];
+  finalPaymentFollowUps?: FinalPaymentFollowUpItem[];
+}
+
+export interface CommissionItem {
+  id: string;
+  calculatedCommission: number;
+  commissionRate: number;
+  approvalStatus: string;
+  payoutStatus: string;
+  payoutTransactionRef?: string | null;
+  payoutDate?: string | Date | null;
+  notes?: string | null;
+}
+
+export interface WorkOrderItem {
+  id: string;
+  workOrderNumber: string;
+  status: string;
+  agreedScope?: string;
+  totalValue?: number;
+  advanceRequired?: number;
+  advancePaid?: number;
+  advanceVerified?: boolean;
+  handoverApproved?: boolean;
+  handoverStatus?: string | null;
+  handoverNotes?: string | null;
+  handoverApprovedAt?: string | Date | null;
+  createdAt: string | Date;
+  payments?: PaymentItem[];
+  project?: TechnicalProjectItem | null;
+  commissions?: CommissionItem[];
+}
+
+export interface QuotationVersionItem {
   id: string;
   quotationNumber: string;
   version: number;
@@ -43,6 +134,7 @@ interface QuotationVersionItem {
   clientAcceptanceNotes?: string | null;
   preparedById?: string | null;
   reminders?: Reminder[];
+  workOrder?: WorkOrderItem | null;
 }
 
 interface QuotationHistoryTimelineProps {
@@ -50,6 +142,7 @@ interface QuotationHistoryTimelineProps {
     versionHistory?: QuotationVersionItem[];
     previousVersion?: QuotationVersionItem | null;
     supersededBy?: { id: string; quotationNumber: string; version: number } | null;
+    workOrder?: WorkOrderItem | null;
   };
   defaultExpanded?: boolean;
 }
@@ -367,6 +460,16 @@ export const QuotationHistoryTimeline: React.FC<QuotationHistoryTimelineProps> =
               </div>
             );
           })}
+
+          {/* Post-Acceptance Milestone & Payment Audit Trail */}
+          {(() => {
+            const wo =
+              currentQuotation.workOrder ||
+              history.find((h: any) => h.workOrder)?.workOrder ||
+              null;
+            if (!wo) return null;
+            return <QuotationPostAcceptanceTrail workOrder={wo} />;
+          })()}
         </div>
       )}
     </div>

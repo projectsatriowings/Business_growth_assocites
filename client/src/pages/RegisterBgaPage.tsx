@@ -288,7 +288,7 @@ export const RegisterBgaPage: React.FC = () => {
       case 'mobile':
         if (!value || !value.trim()) return 'Mobile number is required';
         const cleanMobile = value.replace(/\D/g, '');
-        if (cleanMobile.length !== 10) return 'Mobile number must be exactly 10 digits';
+        if (cleanMobile.length !== 10) return 'Mobile phone number must be exactly 10 digits (numbers only)';
         if (!/^[6-9]\d{9}$/.test(cleanMobile)) return 'Enter valid Indian mobile number starting with 6, 7, 8, or 9';
         return undefined;
 
@@ -299,27 +299,36 @@ export const RegisterBgaPage: React.FC = () => {
         return undefined;
 
       case 'city':
-        if (value && value.trim().length > 0 && value.trim().length < 2) {
-          return 'City name must be at least 2 characters';
+        if (value && value.trim().length > 0) {
+          if (value.trim().length < 2) return 'City name must be at least 2 characters';
+          if (!/^[a-zA-Z\s]+$/.test(value.trim())) return 'City must contain letters only';
         }
         return undefined;
 
       case 'state':
-        if (value && value.trim().length > 0 && value.trim().length < 2) {
-          return 'State name must be at least 2 characters';
+        if (value && value.trim().length > 0) {
+          if (value.trim().length < 2) return 'State name must be at least 2 characters';
+          if (!/^[a-zA-Z\s]+$/.test(value.trim())) return 'State must contain letters only';
         }
         return undefined;
 
       case 'pinCode':
+        if (currentForm.address && (!value || !value.trim())) {
+          return 'PIN Code is required when address is entered';
+        }
         if (value && value.trim().length > 0) {
           const cleanPin = value.replace(/\D/g, '');
-          if (cleanPin.length !== 6) return 'PIN Code must be a 6-digit number';
+          if (cleanPin.length !== 6 || !/^\d{6}$/.test(cleanPin)) {
+            return 'PIN Code must be exactly 6 digits (numbers only)';
+          }
         }
         return undefined;
 
       case 'email':
         if (!value || !value.trim()) return 'Email address is required';
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim())) return 'Enter a valid email address (e.g. name@domain.com)';
+        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value.trim())) {
+          return 'Enter a valid email address (e.g. name@domain.com)';
+        }
         return undefined;
 
       case 'password':
@@ -338,38 +347,48 @@ export const RegisterBgaPage: React.FC = () => {
 
       case 'panNumber':
         if (!value || !value.trim()) return 'PAN Number is required for tax & compliance';
-        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value.trim().toUpperCase())) {
-          return 'Invalid PAN format (e.g. ABCDE1234F: 5 letters, 4 digits, 1 letter)';
+        const cleanPan = value.trim().toUpperCase();
+        if (cleanPan.length !== 10) return 'PAN must be exactly 10 characters (e.g. ABCDE1234F)';
+        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanPan)) {
+          return 'Invalid PAN format (5 letters, 4 digits, 1 letter, e.g. ABCDE1234F)';
         }
         return undefined;
 
       case 'aadhaarNumber':
         if (value && value.trim()) {
           const cleanAadhaar = value.replace(/\D/g, '');
-          if (cleanAadhaar.length !== 12) return 'Aadhaar must be a 12-digit number';
+          if (cleanAadhaar.length !== 12 || !/^\d{12}$/.test(cleanAadhaar)) {
+            return 'Aadhaar must be exactly 12 digits (numbers only)';
+          }
         }
         return undefined;
 
       case 'bankName':
         if (!value || !value.trim()) return 'Bank name is required';
         if (value.trim().length < 2) return 'Bank name must be at least 2 characters';
+        if (!/^[a-zA-Z\s.&'-]+$/.test(value.trim())) return 'Bank name must contain letters only';
         return undefined;
 
       case 'bankAccountHolder':
         if (!value || !value.trim()) return 'Bank beneficiary name is required';
         if (value.trim().length < 3) return 'Name must be at least 3 characters';
+        if (!/^[a-zA-Z\s.']+$/.test(value.trim())) return 'Beneficiary name must contain letters only';
         return undefined;
 
       case 'bankAccountNumber':
         if (!value || !value.trim()) return 'Bank account number is required';
         const cleanAcc = value.replace(/\D/g, '');
-        if (cleanAcc.length < 9 || cleanAcc.length > 18) return 'Account number must be between 9 and 18 digits';
+        if (cleanAcc.length < 9 || cleanAcc.length > 18 || !/^\d{9,18}$/.test(cleanAcc)) {
+          return 'Account number must be between 9 and 18 digits (numbers only)';
+        }
         return undefined;
 
       case 'bankIfsc':
         if (!value || !value.trim()) return 'Bank IFSC Code is required';
-        if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value.trim().toUpperCase())) {
-          return 'Invalid IFSC format (e.g. HDFC0001234: 4 letters, 0, 6 characters)';
+        const cleanIfsc = value.trim().toUpperCase();
+        if (cleanIfsc.length !== 11) return 'IFSC Code must be exactly 11 characters (e.g. HDFC0001234)';
+        if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(cleanIfsc)) {
+          return 'Invalid IFSC format (4 letters, 0, 6 characters, e.g. HDFC0001234)';
         }
         return undefined;
 
@@ -388,11 +407,29 @@ export const RegisterBgaPage: React.FC = () => {
 
     if (type === 'checkbox') {
       nextVal = (e.target as HTMLInputElement).checked;
-    } else if (name === 'panNumber' || name === 'bankIfsc') {
-      nextVal = value.toUpperCase();
-    } else if (name === 'mobile' || name === 'aadhaarNumber' || name === 'bankAccountNumber' || name === 'pinCode') {
-      nextVal = value.replace(/\D/g, '');
-      if (name === 'pinCode') nextVal = nextVal.slice(0, 6);
+    } else if (name === 'fullName') {
+      nextVal = value.replace(/[^a-zA-Z\s.']/g, '');
+    } else if (name === 'city' || name === 'state') {
+      nextVal = value.replace(/[^a-zA-Z\s]/g, '');
+    } else if (name === 'mobile') {
+      let clean = value.replace(/\D/g, '');
+      if (clean.length > 10 && clean.startsWith('91')) clean = clean.slice(2);
+      else if (clean.length > 10 && clean.startsWith('0')) clean = clean.slice(1);
+      nextVal = clean.slice(0, 10);
+    } else if (name === 'pinCode') {
+      nextVal = value.replace(/\D/g, '').slice(0, 6);
+    } else if (name === 'aadhaarNumber') {
+      nextVal = value.replace(/\D/g, '').slice(0, 12);
+    } else if (name === 'bankAccountNumber') {
+      nextVal = value.replace(/\D/g, '').slice(0, 18);
+    } else if (name === 'panNumber') {
+      nextVal = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+    } else if (name === 'bankIfsc') {
+      nextVal = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11);
+    } else if (name === 'bankName') {
+      nextVal = value.replace(/[^a-zA-Z\s.&'-]/g, '');
+    } else if (name === 'bankAccountHolder') {
+      nextVal = value.replace(/[^a-zA-Z\s.']/g, '');
     }
 
     const nextForm = { ...formData, [name]: nextVal };
@@ -686,6 +723,8 @@ export const RegisterBgaPage: React.FC = () => {
                         type="tel"
                         name="mobile"
                         required
+                        inputMode="numeric"
+                        pattern="[6-9][0-9]{9}"
                         maxLength={10}
                         value={formData.mobile}
                         onChange={handleChange}
@@ -745,6 +784,8 @@ export const RegisterBgaPage: React.FC = () => {
                       <input
                         type="text"
                         name="pinCode"
+                        inputMode="numeric"
+                        pattern="[0-9]{6}"
                         maxLength={6}
                         value={formData.pinCode}
                         onChange={handleChange}
@@ -752,7 +793,7 @@ export const RegisterBgaPage: React.FC = () => {
                         placeholder="e.g. 631501"
                         className={getInputClasses('pinCode', true)}
                       />
-                      {renderFieldError('pinCode', '6-digit PIN code')}
+                      {renderFieldError('pinCode', '6-digit PIN code (numbers only)')}
                     </div>
                   </div>
 
@@ -895,6 +936,7 @@ export const RegisterBgaPage: React.FC = () => {
                       name="panNumber"
                       required
                       maxLength={10}
+                      pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
                       value={formData.panNumber}
                       onChange={handleChange}
                       onBlur={handleBlur}
@@ -931,6 +973,8 @@ export const RegisterBgaPage: React.FC = () => {
                     <input
                       type="text"
                       name="aadhaarNumber"
+                      inputMode="numeric"
+                      pattern="[0-9]{12}"
                       maxLength={12}
                       value={formData.aadhaarNumber}
                       onChange={handleChange}
@@ -938,7 +982,7 @@ export const RegisterBgaPage: React.FC = () => {
                       placeholder="e.g. 123456789012"
                       className={getInputClasses('aadhaarNumber', true)}
                     />
-                    {renderFieldError('aadhaarNumber', 'Enter 12-digit UIDAI Aadhaar number for identity and compliance verification.')}
+                    {renderFieldError('aadhaarNumber', 'Enter 12-digit UIDAI Aadhaar number (numbers only).')}
                   </div>
 
                   <DocumentUploadField
@@ -1024,6 +1068,8 @@ export const RegisterBgaPage: React.FC = () => {
                         type="text"
                         name="bankAccountNumber"
                         required
+                        inputMode="numeric"
+                        pattern="[0-9]{9,18}"
                         maxLength={18}
                         value={formData.bankAccountNumber}
                         onChange={handleChange}
@@ -1031,7 +1077,7 @@ export const RegisterBgaPage: React.FC = () => {
                         placeholder="e.g. 9876543210123"
                         className={getInputClasses('bankAccountNumber', true)}
                       />
-                      {renderFieldError('bankAccountNumber', 'Between 9 and 18 numeric digits')}
+                      {renderFieldError('bankAccountNumber', 'Between 9 and 18 numeric digits (numbers only)')}
                     </div>
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">
@@ -1042,6 +1088,7 @@ export const RegisterBgaPage: React.FC = () => {
                         name="bankIfsc"
                         required
                         maxLength={11}
+                        pattern="[A-Z]{4}0[A-Z0-9]{6}"
                         value={formData.bankIfsc}
                         onChange={handleChange}
                         onBlur={handleBlur}

@@ -157,7 +157,7 @@ export function App() {
               <Route
                 path="/technical"
                 element={
-                  <ProtectedRoute allowedRoles={['TECHNICAL', 'ADMIN']} redirectPath="/login/technical">
+                  <ProtectedRoute allowedRoles={['TECHNICAL', 'ADMIN', 'BGA']} redirectPath="/login/technical">
                     <TechnicalPortal />
                   </ProtectedRoute>
                 }
@@ -165,7 +165,7 @@ export function App() {
               <Route
                 path="/technical/*"
                 element={
-                  <ProtectedRoute allowedRoles={['TECHNICAL', 'ADMIN']} redirectPath="/login/technical">
+                  <ProtectedRoute allowedRoles={['TECHNICAL', 'ADMIN', 'BGA']} redirectPath="/login/technical">
                     <TechnicalPortal />
                   </ProtectedRoute>
                 }

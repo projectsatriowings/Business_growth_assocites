@@ -910,12 +910,22 @@ router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> =>
           orderBy: { createdAt: 'desc' },
         },
         workOrders: {
-          select: {
-            id: true,
-            workOrderNumber: true,
-            status: true,
-            totalValue: true,
-            createdAt: true,
+          include: {
+            payments: {
+              orderBy: { createdAt: 'desc' },
+            },
+            project: {
+              include: {
+                deliverables: true,
+                finalPaymentFollowUps: {
+                  include: { bga: { select: { id: true, name: true } } },
+                  orderBy: { createdAt: 'desc' },
+                },
+              },
+            },
+            commissions: {
+              orderBy: { createdAt: 'desc' },
+            },
           },
           orderBy: { createdAt: 'desc' },
         },
@@ -1018,16 +1028,16 @@ router.post('/clients', async (req: AuthRequest, res: Response): Promise<void> =
       res.status(400).json({ error: 'State is required' });
       return;
     }
-    if (!resolvedPinCode) {
-      res.status(400).json({ error: 'PIN / Postal Code is required' });
+    if (!resolvedPinCode || !/^\d{6}$/.test(resolvedPinCode)) {
+      res.status(400).json({ error: 'PIN Code must be a valid 6-digit postal code' });
       return;
     }
 
     const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
     const normalizedEmail = email.trim().toLowerCase();
 
-    if (normalizedMobile.length !== 10) {
-      res.status(400).json({ error: 'Valid 10-digit mobile number is required' });
+    if (normalizedMobile.length !== 10 || !/^[6-9]\d{9}$/.test(normalizedMobile)) {
+      res.status(400).json({ error: 'Valid 10-digit mobile number starting with 6, 7, 8, or 9 is required' });
       return;
     }
 
@@ -1476,8 +1486,8 @@ router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
     let normalizedMobile = client.mobile;
     if (mobile !== undefined && mobile !== null && mobile !== '') {
       const cleanMob = mobile.replace(/\D/g, '').slice(-10);
-      if (cleanMob.length !== 10) {
-        res.status(400).json({ error: 'Valid 10-digit mobile number is required' });
+      if (cleanMob.length !== 10 || !/^[6-9]\d{9}$/.test(cleanMob)) {
+        res.status(400).json({ error: 'Valid 10-digit mobile number starting with 6, 7, 8, or 9 is required' });
         return;
       }
       normalizedMobile = cleanMob;
@@ -1570,8 +1580,8 @@ router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
         res.status(400).json({ error: 'State cannot be empty' });
         return;
       }
-      if (!newPin) {
-        res.status(400).json({ error: 'PIN / Postal Code cannot be empty' });
+      if (!newPin || !/^\d{6}$/.test(newPin)) {
+        res.status(400).json({ error: 'PIN Code must be a valid 6-digit postal code' });
         return;
       }
 
@@ -1717,12 +1727,22 @@ router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
           orderBy: { createdAt: 'desc' },
         },
         workOrders: {
-          select: {
-            id: true,
-            workOrderNumber: true,
-            status: true,
-            totalValue: true,
-            createdAt: true,
+          include: {
+            payments: {
+              orderBy: { createdAt: 'desc' },
+            },
+            project: {
+              include: {
+                deliverables: true,
+                finalPaymentFollowUps: {
+                  include: { bga: { select: { id: true, name: true } } },
+                  orderBy: { createdAt: 'desc' },
+                },
+              },
+            },
+            commissions: {
+              orderBy: { createdAt: 'desc' },
+            },
           },
           orderBy: { createdAt: 'desc' },
         },
@@ -2129,7 +2149,21 @@ router.get('/quotations', async (req: AuthRequest, res: Response): Promise<void>
       include: {
         client: true,
         enquiry: true,
-        workOrder: true,
+        workOrder: {
+          include: {
+            payments: { orderBy: { createdAt: 'asc' } },
+            project: {
+              include: {
+                deliverables: true,
+                finalPaymentFollowUps: {
+                  include: { bga: { select: { id: true, name: true } } },
+                  orderBy: { createdAt: 'desc' },
+                },
+              },
+            },
+            commissions: { orderBy: { createdAt: 'desc' } },
+          },
+        },
         reminders: { orderBy: { createdAt: 'desc' } },
       },
       orderBy: { createdAt: 'desc' },
@@ -2633,7 +2667,21 @@ router.put('/deliverables/:id/review', async (req: AuthRequest, res: Response): 
       include: {
         project: {
           include: {
-            workOrder: true,
+            workOrder: {
+          include: {
+            payments: { orderBy: { createdAt: 'asc' } },
+            project: {
+              include: {
+                deliverables: true,
+                finalPaymentFollowUps: {
+                  include: { bga: { select: { id: true, name: true } } },
+                  orderBy: { createdAt: 'desc' },
+                },
+              },
+            },
+            commissions: { orderBy: { createdAt: 'desc' } },
+          },
+        },
             client: true,
           },
         },
@@ -2865,6 +2913,20 @@ router.post('/projects/:id/final-payment-follow-ups', async (req: AuthRequest, r
       },
       include: {
         bga: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    // Also record into Client Follow-up & Activity History
+    await prisma.contactActivity.create({
+      data: {
+        clientId: project.clientId,
+        bgaId: req.user!.id,
+        contactMethod: contactMethod || 'CALL',
+        discussionSummary: `Final Payment Follow-up [${(status || 'CLIENT_CONTACTED').replace(/_/g, ' ')}]: ${notes.trim().slice(0, 150)}${expectedPaymentDate ? ` • Promised by ${new Date(expectedPaymentDate).toLocaleDateString('en-IN')}` : ''}${expectedAmount ? ` • Amount: ₹${parseFloat(expectedAmount).toLocaleString('en-IN')}` : ''}`,
+        followUpNotes: clientResponse ? `Client Response: ${clientResponse.trim()}` : null,
+        nextFollowUpDate: expectedPaymentDate ? new Date(expectedPaymentDate) : null,
+        outcome: status || 'PAYMENT_FOLLOW_UP',
+        createdBy: req.user!.name || 'BGA',
       },
     });
 

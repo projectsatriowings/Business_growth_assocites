@@ -212,9 +212,20 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
 
-    if (normalizedMobile.length !== 10) {
-      res.status(400).json({ error: 'Please provide a valid 10-digit mobile number' });
+    if (normalizedMobile.length !== 10 || !/^[6-9]\d{9}$/.test(normalizedMobile)) {
+      res.status(400).json({ error: 'Please provide a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.' });
       return;
+    }
+
+    // Validate PIN code if provided
+    let cleanPinCode: string | null = null;
+    if (pinCode) {
+      const cleanPin = pinCode.toString().replace(/\D/g, '');
+      if (cleanPin.length !== 6) {
+        res.status(400).json({ error: 'PIN Code must be a valid 6-digit number.' });
+        return;
+      }
+      cleanPinCode = cleanPin;
     }
 
     // Check unique email and mobile
@@ -238,6 +249,8 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
     }
 
     // Validate bank details if provided
+    let cleanBankAccount: string | null = null;
+    let cleanIfscCode: string | null = null;
     if (bankName || bankAccountHolder || bankAccountNumber || bankIfsc) {
       if (!bankName || !bankName.trim()) {
         res.status(400).json({ error: 'Bank name is required' });
@@ -247,14 +260,19 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
         res.status(400).json({ error: 'Bank beneficiary name is required' });
         return;
       }
-      if (!bankAccountNumber || !bankAccountNumber.trim()) {
-        res.status(400).json({ error: 'Bank account number is required' });
+      const rawAcc = (bankAccountNumber || '').toString().replace(/\D/g, '');
+      if (!rawAcc || rawAcc.length < 9 || rawAcc.length > 18) {
+        res.status(400).json({ error: 'Bank account number must be between 9 and 18 numeric digits.' });
         return;
       }
-      if (!bankIfsc || !bankIfsc.trim()) {
-        res.status(400).json({ error: 'Bank IFSC code is required' });
+      cleanBankAccount = rawAcc;
+
+      const rawIfsc = (bankIfsc || '').trim().toUpperCase();
+      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(rawIfsc)) {
+        res.status(400).json({ error: 'Invalid Bank IFSC Code format. Example: HDFC0001234' });
         return;
       }
+      cleanIfscCode = rawIfsc;
     }
 
     // Aadhaar 12-digit UID validation & format
@@ -292,7 +310,7 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
         address: address ? address.trim() : null,
         city: city ? city.trim() : null,
         state: state ? state.trim() : null,
-        pinCode: pinCode ? pinCode.trim() : null,
+        pinCode: cleanPinCode,
         panNumber: cleanPan,
         panVerified: false,
         aadhaarNumber: validAadhaar,
@@ -301,8 +319,8 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
         kycSubmittedAt: new Date(),
         bankName: bankName ? bankName.trim() : null,
         bankAccountHolder: bankAccountHolder ? bankAccountHolder.trim() : null,
-        bankAccountNumber: bankAccountNumber ? bankAccountNumber.trim() : null,
-        bankIfsc: bankIfsc ? bankIfsc.trim().toUpperCase() : null,
+        bankAccountNumber: cleanBankAccount,
+        bankIfsc: cleanIfscCode,
         bankVerified: false,
         agreementAccepted: true,
         agreementAcceptedAt: new Date(),
