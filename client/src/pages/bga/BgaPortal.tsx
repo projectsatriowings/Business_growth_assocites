@@ -80,6 +80,7 @@ import { MediaUploader, MediaUploadResult } from '../../components/MediaUploader
 import { QuotationHistoryTimeline } from '../../components/QuotationHistoryTimeline';
 import { isExternalWebLink, downloadFile } from '../../utils/fileDownload';
 import { FinalPaymentFollowUpModal } from '../../components/FinalPaymentFollowUpModal';
+import { UnifiedClientFollowUpModal, FollowUpContextType } from '../../components/UnifiedClientFollowUpModal';
 import {
   MonthlyAreaChart,
   CategoryDonutChart,
@@ -152,6 +153,17 @@ export const BgaPortal: React.FC = () => {
     outcome: 'CONNECTED',
   });
   const [activitySubmitting, setActivitySubmitting] = useState(false);
+
+  // Unified Activity Timeline State
+  const [timelineData, setTimelineData] = useState<any | null>(null);
+  const [loadingTimeline, setLoadingTimeline] = useState(false);
+  const [timelineCategoryFilter, setTimelineCategoryFilter] = useState<string>('ALL');
+  const [timelineSearchQuery, setTimelineSearchQuery] = useState<string>('');
+  const [unifiedFollowUpModal, setUnifiedFollowUpModal] = useState<{
+    isOpen: boolean;
+    initialContext?: FollowUpContextType;
+    initialTargetId?: string;
+  } | null>(null);
 
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -713,12 +725,25 @@ export const BgaPortal: React.FC = () => {
     return true;
   };
 
+  const loadClientTimeline = async (clientId: string) => {
+    setLoadingTimeline(true);
+    try {
+      const res = await apiRequest(`/api/bga/clients/${clientId}/activity-timeline`);
+      setTimelineData(res);
+    } catch (err: any) {
+      console.error('Failed to load activity timeline:', err);
+    } finally {
+      setLoadingTimeline(false);
+    }
+  };
+
   const handleOpenClientDetail = async (clientId: string) => {
     setClientViewMode('detail');
     setLoadingClientDetail(true);
     try {
       const res = await apiRequest(`/api/bga/clients/${clientId}`);
       setActiveClientDetail(res.client);
+      loadClientTimeline(clientId);
     } catch (err: any) {
       toast.error(err.message || 'Failed to load client details', 'Load Error');
       setClientViewMode('list');
@@ -2703,188 +2728,357 @@ export const BgaPortal: React.FC = () => {
                       </div>
 
                       {/* SECTION F: UNIFIED CLIENT ACTIVITY TIMELINE */}
-                      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-                        <div className="border-b border-slate-100 pb-3">
-                          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-[#119DA4]" />
-                            Section F — Complete Client Lifecycle Activity Timeline
-                          </h3>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            Chronological history of all client events: onboarding, contact interactions, enquiry submissions, quotations, payments, and deliverables.
-                          </p>
+                      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+                        {/* Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-5 h-5 text-[#3066BE]" />
+                              <h3 className="text-base font-bold text-slate-900">
+                                Complete Client Lifecycle Activity Timeline
+                              </h3>
+                              {timelineData?.totalCount !== undefined && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#3066BE]/10 text-[#3066BE]">
+                                  {timelineData.totalCount} Events
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1">
+                              Chronological audit trail across onboarding, follow-ups, quotations, technical execution, communications, deliverables, payments, and commissions.
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => loadClientTimeline(activeClientDetail.id)}
+                              disabled={loadingTimeline}
+                              className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                              title="Refresh activity timeline"
+                            >
+                              <RefreshCw className={`w-3.5 h-3.5 ${loadingTimeline ? 'animate-spin text-[#3066BE]' : ''}`} />
+                              <span>Refresh</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setUnifiedFollowUpModal({
+                                  isOpen: true,
+                                  initialContext: 'GENERAL',
+                                })
+                              }
+                              className="px-3.5 py-1.5 bg-[#3066BE] hover:bg-[#204b8c] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Log Activity / Follow-up</span>
+                            </button>
+                          </div>
                         </div>
 
-                        {(() => {
-                          const events: any[] = [];
+                        {/* UPCOMING FOLLOW-UPS BANNER */}
+                        {timelineData?.upcomingFollowUps && timelineData.upcomingFollowUps.length > 0 && (
+                          <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-amber-700" />
+                                <span className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+                                  Upcoming Actions & Promised Deadlines ({timelineData.upcomingFollowUps.length})
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-full">
+                                Pending Follow-up
+                              </span>
+                            </div>
 
-                          if (activeClientDetail.createdAt) {
-                            events.push({
-                              id: `reg-${activeClientDetail.id}`,
-                              type: 'REGISTRATION',
-                              title: 'Client Onboarded & Registered',
-                              description: `Client '${activeClientDetail.clientName}' (${activeClientDetail.businessName}) registered under your associate account.`,
-                              date: new Date(activeClientDetail.createdAt),
-                              icon: UserPlus,
-                              badgeColor: 'bg-emerald-50 text-[#119DA4] border border-[#119DA4]/20',
-                            });
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                              {timelineData.upcomingFollowUps.map((up: any) => {
+                                const isPayment = up.type === 'PAYMENT_EXPECTED';
+                                const isEnquiry = up.type === 'ENQUIRY_FOLLOW_UP';
+                                return (
+                                  <div
+                                    key={up.id}
+                                    className="bg-white p-3 rounded-xl border border-amber-200/80 flex items-start justify-between gap-3 shadow-xs"
+                                  >
+                                    <div className="space-y-1 min-w-0">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className={`w-2 h-2 rounded-full ${isPayment ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                        <h4 className="text-xs font-bold text-slate-900 truncate">{up.title}</h4>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                                        <span className="font-semibold text-amber-800">
+                                          Due: {new Date(up.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </span>
+                                        {up.status && (
+                                          <span className="px-1.5 py-0.2 rounded text-[9px] font-medium bg-slate-100 text-slate-600">
+                                            {up.status.replace(/_/g, ' ')}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {up.notes && (
+                                        <p className="text-[11px] text-slate-600 line-clamp-1 italic">
+                                          "{up.notes}"
+                                        </p>
+                                      )}
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setUnifiedFollowUpModal({
+                                          isOpen: true,
+                                          initialContext: isPayment ? 'FINAL_PAYMENT' : isEnquiry ? 'ENQUIRY' : 'GENERAL',
+                                          initialTargetId: up.referenceNumber || undefined,
+                                        })
+                                      }
+                                      className="shrink-0 px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-lg text-[10px] transition-colors cursor-pointer"
+                                    >
+                                      Act Now
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* CATEGORY FILTER PILLS & SEARCH BAR */}
+                        <div className="space-y-2.5">
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                            {/* Search */}
+                            <div className="relative flex-1 max-w-sm">
+                              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                              <input
+                                type="text"
+                                value={timelineSearchQuery}
+                                onChange={(e) => setTimelineSearchQuery(e.target.value)}
+                                placeholder="Search timeline events, authors, references..."
+                                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#3066BE]/20 focus:border-[#3066BE] outline-hidden transition-all"
+                              />
+                              {timelineSearchQuery && (
+                                <button
+                                  type="button"
+                                  onClick={() => setTimelineSearchQuery('')}
+                                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Active filter indicator */}
+                            <div className="text-[11px] text-slate-500 font-medium shrink-0 flex items-center gap-1.5">
+                              <Filter className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Filter by category:</span>
+                            </div>
+                          </div>
+
+                          {/* Filter Tabs */}
+                          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+                            {[
+                              { id: 'ALL', label: 'All Activities' },
+                              { id: 'FOLLOW_UP', label: 'Follow-ups' },
+                              { id: 'ENQUIRY', label: 'Enquiries' },
+                              { id: 'QUOTATION', label: 'Quotations' },
+                              { id: 'WORK_ORDER', label: 'Work Orders' },
+                              { id: 'TECHNICAL', label: 'Projects' },
+                              { id: 'COMMUNICATION', label: 'Communication' },
+                              { id: 'DELIVERABLE', label: 'Deliverables' },
+                              { id: 'PAYMENT', label: 'Payments' },
+                              { id: 'COMMISSION', label: 'Commissions' },
+                            ].map((tab) => {
+                              const active = timelineCategoryFilter === tab.id;
+                              return (
+                                <button
+                                  key={tab.id}
+                                  type="button"
+                                  onClick={() => setTimelineCategoryFilter(tab.id)}
+                                  className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                                    active
+                                      ? 'bg-[#3066BE] text-white shadow-xs'
+                                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                                  }`}
+                                >
+                                  {tab.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* TIMELINE LIST */}
+                        {loadingTimeline ? (
+                          <div className="py-12 text-center space-y-3">
+                            <RefreshCw className="w-6 h-6 animate-spin text-[#3066BE] mx-auto" />
+                            <p className="text-xs text-slate-500 font-medium">Loading verified client lifecycle activity history...</p>
+                          </div>
+                        ) : (() => {
+                          const rawEvents = timelineData?.events || [];
+                          const filteredEvents = rawEvents.filter((ev: any) => {
+                            if (timelineCategoryFilter !== 'ALL' && ev.category !== timelineCategoryFilter) {
+                              return false;
+                            }
+                            if (timelineSearchQuery.trim()) {
+                              const q = timelineSearchQuery.toLowerCase();
+                              const matchTitle = (ev.title || '').toLowerCase().includes(q);
+                              const matchDesc = (ev.description || '').toLowerCase().includes(q);
+                              const matchAuthor = (ev.authorName || '').toLowerCase().includes(q);
+                              const matchSource = (ev.sourceType || '').toLowerCase().includes(q);
+                              if (!matchTitle && !matchDesc && !matchAuthor && !matchSource) {
+                                return false;
+                              }
+                            }
+                            return true;
+                          });
+
+                          if (filteredEvents.length === 0) {
+                            return (
+                              <div className="py-10 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 space-y-2">
+                                <Clock className="w-8 h-8 text-slate-300 mx-auto" />
+                                <h4 className="text-xs font-bold text-slate-700">No events found in this view</h4>
+                                <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                                  {timelineSearchQuery
+                                    ? 'Try clearing the search query or selecting a different category filter.'
+                                    : 'Log the first interaction or consultation with this client to begin the activity trail.'}
+                                </p>
+                              </div>
+                            );
                           }
 
-                          (activeClientDetail.contactActivities || []).forEach((act: any) => {
-                            events.push({
-                              id: `act-${act.id}`,
-                              type: 'ACTIVITY',
-                              title: `Follow-up: ${act.contactMethod} (${act.outcome?.replace(/_/g, ' ') || 'Logged'})`,
-                              description: act.discussionSummary + (act.followUpNotes ? ` • Notes: ${act.followUpNotes}` : ''),
-                              date: new Date(act.createdAt),
-                              icon: Phone,
-                              badgeColor: 'bg-teal-50 text-[#119DA4] border border-[#119DA4]/20',
-                            });
-                          });
-
-                          (activeClientDetail.enquiries || []).forEach((enq: any) => {
-                            events.push({
-                              id: `enq-${enq.id}`,
-                              type: 'ENQUIRY',
-                              title: `Service Request: ${enq.serviceCategory?.replace(/_/g, ' ')}`,
-                              description: `Scope: ${enq.requirements?.slice(0, 120)}${enq.requirements?.length > 120 ? '...' : ''} • Budget: ₹${enq.expectedBudget ? Number(enq.expectedBudget).toLocaleString('en-IN') : 'N/A'}`,
-                              date: new Date(enq.createdAt),
-                              icon: MessageSquare,
-                              badgeColor: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
-                            });
-
-                            if (enq.status === 'APPROVED') {
-                              events.push({
-                                id: `enq-app-${enq.id}`,
-                                type: 'ADMIN_APPROVAL',
-                                title: `Admin Approved: ${enq.serviceCategory?.replace(/_/g, ' ')}`,
-                                description: enq.adminNotes ? `Admin note: ${enq.adminNotes}` : 'Management validated and approved enquiry for commercial quotation drafting.',
-                                date: new Date(enq.updatedAt || enq.createdAt),
-                                icon: CheckCircle2,
-                                badgeColor: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-                              });
-                            }
-                          });
-
-                          (activeClientDetail.quotations || []).forEach((q: any) => {
-                            const isQApproved =
-                              q.status === 'ADMIN_APPROVED' ||
-                              q.status === 'SENT_TO_BGA' ||
-                              q.status === 'ACCEPTED' ||
-                              q.adminApprovalStatus === 'APPROVED';
-                            const isQPendingAdmin =
-                              q.status === 'PENDING_ADMIN_APPROVAL' ||
-                              (q.adminApprovalStatus === 'PENDING' && Boolean(q.preparedById));
-
-                            const statusLabel = isQApproved
-                              ? 'Approved & Issued'
-                              : isQPendingAdmin
-                                ? 'Prepared (Awaiting Admin Sign-off)'
-                                : q.status === 'REQUESTED'
-                                  ? 'Awaiting Accounts Preparation'
-                                  : q.status;
-
-                            events.push({
-                              id: `quote-${q.id}`,
-                              type: 'QUOTATION',
-                              title: `Commercial Quotation ${q.quotationNumber} — ${statusLabel}`,
-                              description: isQApproved
-                                ? `Total Commercial Value: ₹${(q.totalAmount || 0).toLocaleString('en-IN')} • Version v${q.version}`
-                                : `Target Budget: ₹${(q.totalAmount || 0).toLocaleString('en-IN')} • Accounts is preparing official commercial terms`,
-                              date: new Date(q.createdAt),
-                              icon: CreditCard,
-                              badgeColor: isQApproved
-                                ? 'bg-emerald-50 text-[#119DA4] border border-[#119DA4]/20'
-                                : 'bg-amber-50 text-amber-800 border border-amber-200',
-                            });
-
-                            if (q.status === 'ACCEPTED') {
-                              events.push({
-                                id: `quote-acc-${q.id}`,
-                                type: 'ACCEPTANCE',
-                                title: `Client Accepted Quotation ${q.quotationNumber}`,
-                                description: q.clientAcceptanceNotes ? `Notes: ${q.clientAcceptanceNotes}` : 'Client officially approved quotation terms.',
-                                date: new Date(q.updatedAt || q.createdAt),
-                                icon: FileCheck,
-                                badgeColor: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
-                              });
-                            }
-                          });
-
-                          (activeClientDetail.workOrders || []).forEach((w: any) => {
-                            events.push({
-                              id: `wo-${w.id}`,
-                              type: 'WORK_ORDER',
-                              title: `Work Order Generated (${w.workOrderNumber})`,
-                              description: `Total Value: ₹${(w.totalValue || 0).toLocaleString('en-IN')} • Advance: ${w.advanceVerified ? 'Verified' : 'Pending Verification'}`,
-                              date: new Date(w.createdAt),
-                              icon: Briefcase,
-                              badgeColor: 'bg-blue-50 text-blue-700 border border-blue-200',
-                            });
-
-                            (w.payments || []).forEach((p: any) => {
-                              events.push({
-                                id: `pay-${p.id}`,
-                                type: 'PAYMENT',
-                                title: `Payment ${p.status?.replace(/_/g, ' ')} (${p.paymentType}): ₹${(p.amount || 0).toLocaleString('en-IN')}`,
-                                description: `Transaction Ref: ${p.transactionReference || 'N/A'} • Method: ${p.paymentMethod || 'BANK_TRANSFER'}${p.verificationNotes ? ` • Verification: ${p.verificationNotes}` : ''}`,
-                                date: new Date(p.verifiedAt || p.paymentDate || p.createdAt),
-                                icon: DollarSign,
-                                badgeColor: p.status === 'VERIFIED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200',
-                              });
-                            });
-
-                            if (w.project) {
-                              events.push({
-                                id: `proj-${w.project.id}`,
-                                type: 'PROJECT',
-                                title: `Project ${w.project.projectNumber}: ${w.project.status}`,
-                                description: `Delivery Progress: ${w.project.progressPercentage || 0}% completed${w.project.completionNotes ? ` • Notes: ${w.project.completionNotes}` : ''}`,
-                                date: new Date(w.project.completedAt || w.project.updatedAt || w.project.createdAt),
-                                icon: Award,
-                                badgeColor: w.project.status === 'COMPLETED' ? 'bg-teal-50 text-[#119DA4] border border-[#119DA4]/20' : 'bg-indigo-50 text-indigo-700 border border-indigo-200',
-                              });
-
-                              (w.project.finalPaymentFollowUps || []).forEach((fUp: any) => {
-                                events.push({
-                                  id: `fup-${fUp.id}`,
-                                  type: 'FINAL_PAYMENT_FOLLOWUP',
-                                  title: `Final Payment Follow-up (${fUp.contactMethod || 'Call'}) — [${(fUp.status || 'CONTACTED').replace(/_/g, ' ')}]`,
-                                  description: `${fUp.notes || ''}${fUp.clientResponse ? ` • Response: ${fUp.clientResponse}` : ''}${fUp.expectedPaymentDate ? ` • Promised Date: ${new Date(fUp.expectedPaymentDate).toLocaleDateString('en-IN')}` : ''}${fUp.expectedAmount ? ` • Promised Amt: ₹${Number(fUp.expectedAmount).toLocaleString('en-IN')}` : ''}`,
-                                  date: new Date(fUp.followUpDate || fUp.createdAt),
-                                  icon: Phone,
-                                  badgeColor: 'bg-amber-50 text-amber-800 border border-amber-200',
-                                });
-                              });
-                            }
-                          });
-
-                          const sortedEvents = events.sort((a, b) => b.date.getTime() - a.date.getTime());
-
                           return (
-                            <div className="relative pl-6 space-y-4 border-l-2 border-slate-200">
-                              {sortedEvents.map((ev) => {
-                                const IconComponent = ev.icon || Clock;
+                            <div className="relative pl-6 space-y-4 border-l-2 border-slate-200 pt-2">
+                              {filteredEvents.map((ev: any) => {
+                                const isDeliverable = ev.category === 'DELIVERABLE';
+                                const isCommunication = ev.category === 'COMMUNICATION';
+                                const hasReplies = ev.replies && ev.replies.length > 0;
+
+                                let EventIcon = Clock;
+                                if (ev.category === 'ONBOARDING') EventIcon = UserPlus;
+                                else if (ev.category === 'FOLLOW_UP') EventIcon = Phone;
+                                else if (ev.category === 'ENQUIRY') EventIcon = FileText;
+                                else if (ev.category === 'QUOTATION') EventIcon = CreditCard;
+                                else if (ev.category === 'WORK_ORDER') EventIcon = Briefcase;
+                                else if (ev.category === 'TECHNICAL') EventIcon = Code2;
+                                else if (ev.category === 'COMMUNICATION') EventIcon = MessageSquare;
+                                else if (ev.category === 'DELIVERABLE') EventIcon = Download;
+                                else if (ev.category === 'PAYMENT') EventIcon = DollarSign;
+                                else if (ev.category === 'COMMISSION') EventIcon = TrendingUp;
+
                                 return (
                                   <div key={ev.id} className="relative group">
-                                    <span className="absolute -left-[31px] top-1 p-1 bg-white rounded-full border border-slate-300 text-slate-500 shadow-xs">
-                                      <IconComponent className="w-3.5 h-3.5 text-[#3066BE]" />
+                                    {/* Timeline Marker Dot */}
+                                    <span className="absolute -left-[31px] top-1 p-1 bg-white rounded-full border border-slate-300 text-[#3066BE] shadow-xs group-hover:border-[#3066BE] group-hover:scale-110 transition-all">
+                                      <EventIcon className="w-3.5 h-3.5" />
                                     </span>
-                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1 text-xs">
-                                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
-                                        <div className="flex items-center gap-2">
-                                          <strong className="text-slate-900">{ev.title}</strong>
-                                          <span className={`px-2 py-0.2 rounded-full text-[9px] font-bold ${ev.badgeColor}`}>
-                                            {ev.type}
+
+                                    {/* Main Event Card */}
+                                    <div className="bg-slate-50/80 hover:bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-2 text-xs transition-colors shadow-xs">
+                                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5 border-b border-slate-200/50 pb-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <strong className="text-slate-900 font-bold text-xs">{ev.title}</strong>
+                                          {ev.badgeLabel && (
+                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${ev.badgeColor || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                                              {ev.badgeLabel}
+                                            </span>
+                                          )}
+                                          <span className="text-[10px] text-slate-400 uppercase font-mono">
+                                            [{ev.category}]
                                           </span>
                                         </div>
-                                        <span className="text-[10px] text-slate-400">
-                                          {ev.date.toLocaleString('en-IN', {
-                                            dateStyle: 'medium',
-                                            timeStyle: 'short',
-                                          })}
-                                        </span>
+
+                                        <div className="flex items-center gap-2 text-[11px] text-slate-500 shrink-0">
+                                          {ev.authorName && (
+                                            <span className="font-medium text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 text-[10px]">
+                                              {ev.authorName} ({ev.authorRole || 'SYSTEM'})
+                                            </span>
+                                          )}
+                                          <span>
+                                            {new Date(ev.timestamp).toLocaleString('en-IN', {
+                                              dateStyle: 'medium',
+                                              timeStyle: 'short',
+                                            })}
+                                          </span>
+                                        </div>
                                       </div>
-                                      <p className="text-slate-600 text-[11px]">{ev.description}</p>
+
+                                      <p className="text-slate-700 text-xs leading-relaxed whitespace-pre-line">
+                                        {ev.description}
+                                      </p>
+
+                                      {/* SPECIALIZED RENDER: DELIVERABLES */}
+                                      {isDeliverable && ev.metadata?.fileUrl && (
+                                        <div className="mt-2 p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-3 shadow-xs">
+                                          <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className="p-2 bg-indigo-50 rounded-lg text-indigo-700 shrink-0">
+                                              <FileText className="w-4 h-4" />
+                                            </div>
+                                            <div className="min-w-0">
+                                              <h5 className="text-xs font-bold text-slate-900 truncate">
+                                                {ev.metadata.fileName || 'Project Deliverable'}
+                                              </h5>
+                                              <p className="text-[10px] text-slate-500">
+                                                v{ev.metadata.version || 1} • {ev.metadata.fileType || 'Asset'}
+                                                {ev.metadata.clientVisible ? ' • Shared with Client' : ' • Internal Draft'}
+                                              </p>
+                                            </div>
+                                          </div>
+
+                                          <button
+                                            type="button"
+                                            onClick={() => downloadFile(ev.metadata.fileUrl, ev.metadata.fileName || 'deliverable')}
+                                            className="shrink-0 px-3 py-1.5 bg-[#3066BE] hover:bg-[#204b8c] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                                          >
+                                            <Download className="w-3.5 h-3.5" />
+                                            <span>Download</span>
+                                          </button>
+                                        </div>
+                                      )}
+
+                                      {/* SPECIALIZED RENDER: COMMUNICATION THREAD & REPLIES */}
+                                      {isCommunication && (
+                                        <div className="pt-2 space-y-2">
+                                          {hasReplies && (
+                                            <div className="pl-4 border-l-2 border-indigo-200 space-y-2 mt-2">
+                                              {ev.replies.map((reply: any) => (
+                                                <div key={reply.id} className="bg-white p-2.5 rounded-lg border border-indigo-100 text-xs space-y-1 shadow-2xs">
+                                                  <div className="flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-1.5">
+                                                      <span className="font-bold text-slate-900 text-[11px]">{reply.authorName}</span>
+                                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-indigo-50 text-indigo-700">
+                                                        {reply.authorRole}
+                                                      </span>
+                                                    </div>
+                                                    <span className="text-[10px] text-slate-400">
+                                                      {new Date(reply.timestamp).toLocaleString('en-IN', {
+                                                        dateStyle: 'short',
+                                                        timeStyle: 'short',
+                                                      })}
+                                                    </span>
+                                                  </div>
+                                                  <p className="text-slate-700 text-[11px] whitespace-pre-line">{reply.description}</p>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+
+                                          <div className="flex justify-end pt-1">
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                setUnifiedFollowUpModal({
+                                                  isOpen: true,
+                                                  initialContext: 'PROJECT',
+                                                  initialTargetId: ev.metadata?.projectId,
+                                                })
+                                              }
+                                              className="px-2.5 py-1 text-indigo-700 hover:bg-indigo-50 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                            >
+                                              <MessageSquare className="w-3 h-3" />
+                                              <span>Reply to Discussion</span>
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 );
@@ -7076,6 +7270,22 @@ export const BgaPortal: React.FC = () => {
               project={followUpProjectModal.project}
               clientName={followUpProjectModal.clientName}
               onSuccess={() => loadTabData('projects')}
+            />
+          )}
+
+          {/* Unified Client Follow-up / Activity Modal */}
+          {unifiedFollowUpModal?.isOpen && activeClientDetail && (
+            <UnifiedClientFollowUpModal
+              isOpen={unifiedFollowUpModal.isOpen}
+              onClose={() => setUnifiedFollowUpModal(null)}
+              client={activeClientDetail}
+              initialContext={unifiedFollowUpModal.initialContext || 'GENERAL'}
+              initialTargetId={unifiedFollowUpModal.initialTargetId}
+              onSuccess={async () => {
+                await loadClientTimeline(activeClientDetail.id);
+                await handleOpenClientDetail(activeClientDetail.id);
+                loadTabData('clients');
+              }}
             />
           )}
         </main>

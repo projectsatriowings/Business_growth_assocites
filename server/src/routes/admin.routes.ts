@@ -19,6 +19,7 @@ import { appCache } from '../utils/cache';
 import { validateBankUtr } from '../utils/utrValidator';
 import { verifySmtpConnection, sendEmail, sendKycStatusEmail, sendPasswordResetEmail, ADMIN_ALERT_EMAIL } from '../utils/mailer';
 import { hydrateQuotationVersions } from '../utils/quotationVersion';
+import { getClientActivityTimeline } from '../utils/activityTimeline';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -905,6 +906,28 @@ router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> =>
     res.json({ clients: enrichedClients });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load clients' });
+  }
+});
+
+// Comprehensive Unified Client Activity Timeline (Admin view)
+router.get('/clients/:id/activity-timeline', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const timeline = await getClientActivityTimeline(id, {
+      id: req.user!.id,
+      role: req.user!.role as Role,
+      name: req.user!.name,
+    });
+
+    if (!timeline) {
+      res.status(404).json({ error: 'Client not found' });
+      return;
+    }
+
+    res.json(timeline);
+  } catch (error: any) {
+    console.error('Admin activity timeline error:', error);
+    res.status(500).json({ error: 'Failed to fetch client activity timeline' });
   }
 });
 
