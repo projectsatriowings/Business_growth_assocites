@@ -680,13 +680,6 @@ export const BgaProfileView: React.FC = () => {
                 Statutory identity verification required for tax deductions (TDS) and legal associate onboarding.
               </p>
             </div>
-            <button
-              onClick={openCorrectionModal}
-              className="px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold flex items-center gap-1.5 transition-colors self-start sm:self-auto"
-            >
-              <ShieldCheck className="w-4 h-4 text-indigo-600" />
-              <span>Request Identity Correction</span>
-            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -782,7 +775,7 @@ export const BgaProfileView: React.FC = () => {
             <div>
               <strong className="block font-semibold">Strict Identity Lock Notice:</strong>
               <p className="text-[11px] text-amber-700 mt-0.5">
-                For legal compliance and fraud prevention, verified PAN and Aadhaar records cannot be directly edited by associates. If you notice a clerical error or have updated your legal name/tax document, use the "Request Identity Correction" action to submit supporting documentation to Company Administration.
+                For legal compliance and fraud prevention, verified PAN and Aadhaar records cannot be directly edited by associates. Please contact Company Administration for any official record updates.
               </p>
             </div>
           </div>
@@ -1056,29 +1049,6 @@ export const BgaProfileView: React.FC = () => {
                   <Edit className="w-3.5 h-3.5" />
                 </button>
               </div>
-            </div>
-
-            {/* Signed Associate Agreement */}
-            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 flex justify-between items-center text-xs">
-              <div className="space-y-1">
-                <span className="font-bold text-slate-900 block">Signed Associate Partnership Agreement</span>
-                <span className="text-slate-500 text-[11px] block">Terms, Confidentiality & Commission Code</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 inline-block">
-                  Digitally Executed & Signed
-                </span>
-              </div>
-              <button
-                onClick={() =>
-                  setPreviewDoc({
-                    title: 'Associate Agreement & Code of Conduct',
-                    url: user?.agreementDocumentUrl || '/sample-agreement.pdf',
-                    type: 'PDF',
-                  })
-                }
-                className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-white text-indigo-600 font-semibold text-xs flex items-center gap-1 transition-colors"
-              >
-                <Eye className="w-3.5 h-3.5" /> View Terms
-              </button>
             </div>
           </div>
         </div>
@@ -1519,108 +1489,6 @@ export const BgaProfileView: React.FC = () => {
                   className="px-5 py-2 rounded-lg bg-[#3066BE] hover:bg-[#255299] text-white shadow-sm font-bold disabled:opacity-50"
                 >
                   {savingBank ? 'Submitting Bank Details...' : 'Submit for Admin Verification'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 3: IDENTITY CORRECTION REQUEST */}
-      {correctionModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-xl max-h-[90vh] overflow-y-auto space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Request Identity Correction</h3>
-                <p className="text-xs text-slate-500">Submit formal request to Company Administration with proof.</p>
-              </div>
-              <button onClick={() => setCorrectionModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {correctionError && (
-              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{correctionError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSaveCorrection} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Field Requiring Correction</label>
-                <select
-                  value={correctionForm.correctionType}
-                  onChange={(e: any) => setCorrectionForm({ ...correctionForm, correctionType: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="PAN">Permanent Account Number (PAN)</option>
-                  <option value="AADHAAR">Aadhaar Identification Number</option>
-                  <option value="NAME">Legal Associate Name</option>
-                  <option value="DOB">Date of Birth</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Proposed Correct Value
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={correctionForm.proposedValue}
-                  onChange={(e) => setCorrectionForm({ ...correctionForm, proposedValue: e.target.value })}
-                  placeholder={
-                    correctionForm.correctionType === 'PAN'
-                      ? 'e.g. ABCDE1234F'
-                      : correctionForm.correctionType === 'AADHAAR'
-                      ? 'e.g. 12-digit Aadhaar number'
-                      : correctionForm.correctionType === 'DOB'
-                      ? 'YYYY-MM-DD'
-                      : 'Correct Full Legal Name'
-                  }
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Reason for Correction Request</label>
-                <textarea
-                  rows={3}
-                  required
-                  value={correctionForm.reason}
-                  onChange={(e) => setCorrectionForm({ ...correctionForm, reason: e.target.value })}
-                  placeholder="Explain why this identity record needs correction (e.g. typographical error during registration, legal name change)..."
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Supporting Document Proof URL</label>
-                <input
-                  type="text"
-                  value={correctionForm.documentUrl}
-                  onChange={(e) => setCorrectionForm({ ...correctionForm, documentUrl: e.target.value })}
-                  placeholder="Link or document path to Govt Gazette / Pan Copy / Aadhaar Slip"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div className="pt-2 border-t border-slate-100 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCorrectionModal(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingCorrection}
-                  className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold disabled:opacity-50"
-                >
-                  {savingCorrection ? 'Submitting Request...' : 'Submit to Administration'}
                 </button>
               </div>
             </form>

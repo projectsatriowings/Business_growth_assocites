@@ -186,6 +186,24 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    // Password Complexity Rules: minimum 6 characters, uppercase, lowercase, number, special character
+    if (password.length < 6) {
+      res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+      return;
+    }
+
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+    if (!hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+      res.status(400).json({
+        error: 'Password must contain at least one uppercase letter (A-Z), one lowercase letter (a-z), one number (0-9), and one special character.',
+      });
+      return;
+    }
+
     if (!agreementAccepted) {
       res.status(400).json({ error: 'You must accept the terms, consent, and associate agreement' });
       return;
