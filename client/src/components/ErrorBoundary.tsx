@@ -26,6 +26,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      const isChunkError =
+        this.state.error?.message?.includes('dynamically imported module') ||
+        this.state.error?.message?.includes('Loading chunk') ||
+        this.state.error?.message?.includes('Importing a module script failed');
+
       return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
           <div className="max-w-lg w-full bg-white rounded-2xl border border-red-200 p-8 shadow-xl text-center space-y-4">
@@ -34,9 +39,13 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-slate-900">Application View Error</h2>
+              <h2 className="text-xl font-bold text-slate-900">
+                {isChunkError ? 'Portal Update Available' : 'Application View Error'}
+              </h2>
               <p className="text-xs text-slate-500 mt-1">
-                An unexpected exception occurred while rendering this module.
+                {isChunkError
+                  ? 'A new version of the portal was updated. Please reload to fetch the latest platform version.'
+                  : 'An unexpected exception occurred while rendering this module.'}
               </p>
             </div>
 
@@ -50,7 +59,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <button
                 onClick={() => {
                   this.setState({ hasError: false, error: null });
-                  window.location.reload();
+                  window.location.href = window.location.pathname;
                 }}
                 className="px-4 py-2.5 bg-[#3066BE] text-white rounded-xl text-xs font-bold hover:bg-[#25549e] flex items-center gap-1.5 transition-colors shadow-sm"
               >

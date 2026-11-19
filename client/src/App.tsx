@@ -5,15 +5,38 @@ import { ToastProvider } from './context/ToastContext';
 import { PageLoadingFallback } from './components/Skeleton';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
-// Route-level lazy loading
-const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
-const RegisterBgaPage = lazy(() => import('./pages/RegisterBgaPage').then((m) => ({ default: m.RegisterBgaPage })));
-const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })));
-const AdminPortal = lazy(() => import('./pages/admin/AdminPortal').then((m) => ({ default: m.AdminPortal })));
-const BgaPortal = lazy(() => import('./pages/bga/BgaPortal').then((m) => ({ default: m.BgaPortal })));
-const AccountsPortal = lazy(() => import('./pages/accounts/AccountsPortal').then((m) => ({ default: m.AccountsPortal })));
-const TechnicalPortal = lazy(() => import('./pages/technical/TechnicalPortal').then((m) => ({ default: m.TechnicalPortal })));
+// Route-level lazy loading with automatic self-recovery from stale build chunks
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<any>,
+  componentName: string
+) {
+  return lazy(async () => {
+    const sessionKey = `retry_chunk_${componentName}`;
+    try {
+      const module = await factory();
+      sessionStorage.removeItem(sessionKey);
+      const Component = module[componentName] || module.default;
+      return { default: Component as T };
+    } catch (error: any) {
+      const hasRetried = sessionStorage.getItem(sessionKey);
+      if (!hasRetried) {
+        sessionStorage.setItem(sessionKey, 'true');
+        window.location.reload();
+        return new Promise<{ default: T }>(() => {});
+      }
+      throw error;
+    }
+  });
+}
+
+const LandingPage = lazyWithRetry(() => import('./pages/LandingPage'), 'LandingPage');
+const RegisterBgaPage = lazyWithRetry(() => import('./pages/RegisterBgaPage'), 'RegisterBgaPage');
+const LoginPage = lazyWithRetry(() => import('./pages/LoginPage'), 'LoginPage');
+const ResetPasswordPage = lazyWithRetry(() => import('./pages/ResetPasswordPage'), 'ResetPasswordPage');
+const AdminPortal = lazyWithRetry(() => import('./pages/admin/AdminPortal'), 'AdminPortal');
+const BgaPortal = lazyWithRetry(() => import('./pages/bga/BgaPortal'), 'BgaPortal');
+const AccountsPortal = lazyWithRetry(() => import('./pages/accounts/AccountsPortal'), 'AccountsPortal');
+const TechnicalPortal = lazyWithRetry(() => import('./pages/technical/TechnicalPortal'), 'TechnicalPortal');
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
