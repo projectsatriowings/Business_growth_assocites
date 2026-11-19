@@ -45,6 +45,7 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
 }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [associate, setAssociate] = useState<any>(null);
   const [metrics, setMetrics] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<
@@ -109,21 +110,46 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
     }
   };
 
-  const fetchProfile = async () => {
-    setLoading(true);
+  const fetchProfile = async (silent = false) => {
+    if (!silent && !associate) {
+      setLoading(true);
+    }
+    setIsRefreshing(true);
     try {
-      const data = await apiRequest(`/api/admin/bgas/${associateId}`);
+      const data = await apiRequest(`/api/admin/bgas/${associateId}?_t=${Date.now()}`);
       setAssociate(data.associate);
       setMetrics(data.metrics);
     } catch (e: any) {
-      toast.error(e.message || 'Failed to load associate profile');
+      if (!silent && !associate) {
+        toast.error(e.message || 'Failed to load associate profile');
+      }
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchProfile();
+    fetchProfile(false);
+
+    // Auto-refresh periodically (every 10 seconds) so live logins and status updates reflect immediately
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchProfile(true);
+      }
+    }, 10000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchProfile(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [associateId]);
 
   // Handle Account Status Action
