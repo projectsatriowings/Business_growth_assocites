@@ -421,10 +421,6 @@ router.get('/bgas/:id', async (req: AuthRequest, res: Response): Promise<void> =
           },
           orderBy: { createdAt: 'desc' },
         },
-        auditLogs: {
-          take: 30,
-          orderBy: { createdAt: 'desc' },
-        },
       },
     });
 
@@ -432,6 +428,19 @@ router.get('/bgas/:id', async (req: AuthRequest, res: Response): Promise<void> =
       res.status(404).json({ error: 'Associate profile not found' });
       return;
     }
+
+    // Comprehensive Audit Logs for this Associate (logins, registrations, status updates, actions on this BGA)
+    const auditLogs = await prisma.auditLog.findMany({
+      where: {
+        OR: [
+          { userId: id },
+          { userEmail: bga.email },
+          { entityId: id },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 60,
+    });
 
     // Performance metrics calculated from real DB records
     const totalClients = bga.clients.length;
@@ -459,6 +468,7 @@ router.get('/bgas/:id', async (req: AuthRequest, res: Response): Promise<void> =
 
     // Strip sensitive password hash
     const { passwordHash, ...safeProfile } = bga;
+    (safeProfile as any).auditLogs = auditLogs;
 
     res.json({
       associate: safeProfile,
