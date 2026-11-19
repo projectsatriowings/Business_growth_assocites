@@ -11,21 +11,6 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
-  const notifRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
-        setShowNotifs(false);
-      }
-    };
-    if (showNotifs) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showNotifs]);
 
   useEffect(() => {
     const updateHeight = () => {
@@ -95,6 +80,129 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
     }
   };
 
+  // Resolve accurate destination URL for any notification based on user role and content
+  const resolveNotificationLink = (n: any): string => {
+    const role = user?.role || '';
+    const text = `${n.title || ''} ${n.message || ''}`.toLowerCase();
+    const rawLink = (n.link || '').trim();
+
+    // 1. If notification already has a specific route
+    if (rawLink) {
+      if (rawLink.startsWith('/bga/clients') || rawLink === '/bga/client') return '/bga?tab=clients';
+      if (rawLink.startsWith('/bga/projects') || rawLink.startsWith('/bga/work-orders') || rawLink.startsWith('/bga/workorders')) return '/bga?tab=projects';
+      if (rawLink.startsWith('/bga/quotations') || rawLink.startsWith('/bga/quotes')) return '/bga?tab=quotations';
+      if (rawLink.startsWith('/bga/enquiries') || rawLink.startsWith('/bga/inquiries')) return '/bga?tab=enquiries';
+      if (rawLink.startsWith('/bga/earnings') || rawLink.startsWith('/bga/commissions')) return '/bga?tab=earnings';
+      if (rawLink.startsWith('/bga/resources')) return '/bga?tab=resources';
+      if (rawLink.startsWith('/bga/profile')) return '/bga?tab=profile';
+      if (rawLink.startsWith('/bga/support')) return '/bga?tab=support';
+
+      if (rawLink.startsWith('/admin/quotations')) return '/admin?tab=quotations';
+      if (rawLink.startsWith('/admin/work-orders') || rawLink.startsWith('/admin/workorders')) return '/admin?tab=work-orders';
+      if (rawLink.startsWith('/admin/enquiries') || rawLink.startsWith('/admin/inquiries')) return '/admin?tab=enquiry';
+      if (rawLink.startsWith('/admin/technical') || rawLink.startsWith('/admin/projects')) return '/admin?tab=technical';
+      if (rawLink.startsWith('/admin/bga')) return '/admin?tab=bga';
+      if (rawLink.startsWith('/admin/commissions')) return '/admin?tab=commissions';
+      if (rawLink.startsWith('/admin/clients')) return '/admin?tab=clients';
+
+      if (rawLink.startsWith('/accounts/quotations') || rawLink.startsWith('/accounts/quotation-requests')) return '/accounts?tab=quotation-requests';
+      if (rawLink.startsWith('/accounts/work-orders') || rawLink.startsWith('/accounts/payments')) return '/accounts?tab=payments-work-orders';
+      if (rawLink.startsWith('/accounts/commissions')) return '/accounts?tab=commissions';
+
+      if (rawLink !== '/bga' && rawLink !== '/admin' && rawLink !== '/accounts' && rawLink !== '/technical') {
+        return rawLink;
+      }
+    }
+
+    // 2. Topic-based routing based on notification content
+    if (role === 'BGA') {
+      if (
+        text.includes('project') ||
+        text.includes('work order') ||
+        text.includes('deliverable') ||
+        text.includes('technical team') ||
+        text.includes('advance payment verified') ||
+        text.includes('automatically routed') ||
+        text.includes('ready to start') ||
+        text.includes('released to technical') ||
+        text.includes('handover') ||
+        text.includes('correction_required')
+      ) {
+        return '/bga?tab=projects';
+      }
+      if (text.includes('quotation') || text.includes('quote')) {
+        return '/bga?tab=quotations';
+      }
+      if (text.includes('enquiry') || text.includes('inquiry') || text.includes('scope')) {
+        return '/bga?tab=enquiries';
+      }
+      if (text.includes('commission') || text.includes('earning') || text.includes('payout') || text.includes('settled')) {
+        return '/bga?tab=earnings';
+      }
+      if (text.includes('client') || text.includes('welcome') || text.includes('registering client')) {
+        return '/bga?tab=clients';
+      }
+      if (text.includes('support') || text.includes('ticket')) {
+        return '/bga?tab=support';
+      }
+      if (text.includes('profile') || text.includes('kyc') || text.includes('account active')) {
+        return '/bga?tab=profile';
+      }
+      return '/bga?tab=dashboard';
+    }
+
+    if (role === 'ADMIN') {
+      if (text.includes('enquiry') || text.includes('inquiry')) return '/admin?tab=enquiry';
+      if (text.includes('quotation') || text.includes('quote')) return '/admin?tab=quotations';
+      if (text.includes('work order') || text.includes('advance verified') || text.includes('payment verified') || text.includes('released')) return '/admin?tab=work-orders';
+      if (text.includes('technical') || text.includes('project') || text.includes('deliverable')) return '/admin?tab=technical';
+      if (text.includes('bga') || text.includes('associate') || text.includes('kyc') || text.includes('registration')) return '/admin?tab=bga';
+      if (text.includes('commission')) return '/admin?tab=commissions';
+      if (text.includes('client')) return '/admin?tab=clients';
+      return '/admin?tab=dashboard';
+    }
+
+    if (role === 'ACCOUNTS') {
+      if (text.includes('quotation') || text.includes('quote')) return '/accounts?tab=quotation-requests';
+      if (text.includes('payment') || text.includes('work order') || text.includes('advance') || text.includes('receipt')) return '/accounts?tab=payments-work-orders';
+      if (text.includes('commission') || text.includes('payout')) return '/accounts?tab=commissions';
+      return '/accounts?tab=dashboard';
+    }
+
+    if (role === 'TECHNICAL') {
+      return '/technical';
+    }
+
+    return rawLink || '/';
+  };
+
+  const handleNotificationClick = (n: any) => {
+    // 1. Mark as read immediately in UI
+    if (!n.isRead) {
+      setNotifications((prev) =>
+        prev.map((item) => (item.id === n.id ? { ...item, isRead: true } : item))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      apiRequest(`/api/notifications/${n.id}/read`, { method: 'POST' }).catch(() => {});
+    }
+
+    // 2. Resolve target destination
+    const destination = resolveNotificationLink(n);
+
+    // 3. Dispatch tab switch event for mounted portals
+    if (destination.includes('tab=')) {
+      const match = destination.match(/tab=([^&]+)/);
+      if (match && match[1]) {
+        window.dispatchEvent(
+          new CustomEvent('portal-switch-tab', { detail: { tab: match[1] } })
+        );
+      }
+    }
+
+    // 4. Redirect to destination without closing the notification panel
+    navigate(destination);
+  };
+
   const getRoleBadgeStyle = (role: string) => {
     switch (role) {
       case 'ADMIN':
@@ -137,7 +245,7 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
 
         <div className="flex items-center space-x-4">
           {/* Notifications Dropdown */}
-          <div className="relative" ref={notifRef}>
+          <div className="relative">
             <button
               onClick={() => setShowNotifs(!showNotifs)}
               className="p-2.5 rounded-xl text-slate-600 hover:text-[#3066BE] hover:bg-[#edf4fc] relative transition-colors"
@@ -183,21 +291,30 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
                     notifications.map((n) => (
                       <div
                         key={n.id}
-                        onClick={() => {
-                          if (n.link) navigate(n.link);
-                          setShowNotifs(false);
-                        }}
-                        className={`p-3.5 text-xs cursor-pointer hover:bg-slate-50 transition-colors ${
+                        onClick={() => handleNotificationClick(n)}
+                        className={`p-3.5 text-xs cursor-pointer hover:bg-slate-50 transition-colors group relative ${
                           !n.isRead ? 'bg-[#edf4fc]/50 font-medium' : ''
                         }`}
+                        title="Click to redirect to this section"
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <span className="font-bold text-slate-900">{n.title}</span>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {!n.isRead && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#119DA4] shrink-0" />
+                            )}
+                            <span className="font-bold text-slate-900 group-hover:text-[#3066BE] transition-colors truncate">
+                              {n.title}
+                            </span>
+                          </div>
                           <span className="text-[10px] text-slate-400 shrink-0">
                             {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
                         <p className="text-slate-600 mt-1 line-clamp-2 leading-relaxed">{n.message}</p>
+                        <div className="mt-1 flex items-center gap-1 text-[10px] text-[#3066BE] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span>Open section</span>
+                          <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                        </div>
                       </div>
                     ))
                   )}

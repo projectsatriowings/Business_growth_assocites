@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   UserCheck,
@@ -129,14 +129,45 @@ export const BgaPortal: React.FC = () => {
   });
   const [activitySubmitting, setActivitySubmitting] = useState(false);
 
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+
+  // Listen to portal tab switch events (dispatched from notifications or portal header)
+  useEffect(() => {
+    const handleSwitch = (e: any) => {
+      const targetTab = e.detail?.tab;
+      if (targetTab && ['dashboard', 'profile', 'clients', 'enquiries', 'quotations', 'projects', 'earnings', 'resources', 'support'].includes(targetTab)) {
+        setActiveTab(targetTab as any);
+      }
+    };
+    window.addEventListener('portal-switch-tab', handleSwitch);
+    return () => window.removeEventListener('portal-switch-tab', handleSwitch);
+  }, []);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
+    const path = (location.pathname || '').toLowerCase();
+
     if (tabParam && ['dashboard', 'profile', 'clients', 'enquiries', 'quotations', 'projects', 'earnings', 'resources', 'support'].includes(tabParam)) {
       setActiveTab(tabParam as any);
+    } else if (path.includes('/bga/clients') || path.includes('/bga/client')) {
+      setActiveTab('clients');
+    } else if (path.includes('/bga/projects') || path.includes('/bga/project') || path.includes('/bga/work-orders') || path.includes('/bga/workorders')) {
+      setActiveTab('projects');
+    } else if (path.includes('/bga/quotations') || path.includes('/bga/quotes')) {
+      setActiveTab('quotations');
+    } else if (path.includes('/bga/enquiries') || path.includes('/bga/inquiries')) {
+      setActiveTab('enquiries');
+    } else if (path.includes('/bga/earnings') || path.includes('/bga/commissions')) {
+      setActiveTab('earnings');
+    } else if (path.includes('/bga/resources')) {
+      setActiveTab('resources');
+    } else if (path.includes('/bga/support')) {
+      setActiveTab('support');
+    } else if (path.includes('/bga/profile')) {
+      setActiveTab('profile');
     }
-  }, [searchParams]);
+  }, [searchParams, location.pathname, location.search]);
 
   // Client Consultation & Follow-up Modal State (Response to Admin Scope Changes or Rejection)
   const [followUpModal, setFollowUpModal] = useState<any | null>(null);

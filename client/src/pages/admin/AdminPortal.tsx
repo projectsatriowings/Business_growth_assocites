@@ -287,10 +287,47 @@ export const AdminPortal: React.FC = () => {
 
   const location = useLocation();
 
+  useEffect(() => {
+    const handleSwitch = (e: any) => {
+      const targetTab = e.detail?.tab;
+      if (targetTab) {
+        if (targetTab === 'enquiry' || targetTab === 'enquiries') setActiveTab('enquiries');
+        else if (targetTab === 'quotations') setActiveTab('quotations');
+        else if (targetTab === 'work-orders' || targetTab === 'workorders') setActiveTab('workorders');
+        else if (targetTab === 'technical' || targetTab === 'projects') setActiveTab('technical');
+        else if (targetTab === 'bga' || targetTab === 'bgas') setActiveTab('bgas');
+        else if (targetTab === 'commissions') setActiveTab('commissions');
+        else if (targetTab === 'clients') setActiveTab('clients');
+        else if (targetTab === 'dashboard') setActiveTab('dashboard');
+      }
+    };
+    window.addEventListener('portal-switch-tab', handleSwitch);
+    return () => window.removeEventListener('portal-switch-tab', handleSwitch);
+  }, []);
+
   // Sync active tab with URL path (e.g. from in-app notifications like /admin/quotations)
   useEffect(() => {
     const path = (location.pathname || '').toLowerCase().replace(/\/+$/, '');
-    if (path.includes('/admin/quotations')) {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+
+    if (tabParam === 'enquiry' || tabParam === 'enquiries') {
+      setActiveTab('enquiries');
+    } else if (tabParam === 'quotations') {
+      setActiveTab('quotations');
+    } else if (tabParam === 'work-orders' || tabParam === 'workorders') {
+      setActiveTab('workorders');
+    } else if (tabParam === 'technical' || tabParam === 'projects') {
+      setActiveTab('technical');
+    } else if (tabParam === 'bga' || tabParam === 'bgas') {
+      setActiveTab('bgas');
+    } else if (tabParam === 'commissions') {
+      setActiveTab('commissions');
+    } else if (tabParam === 'clients') {
+      setActiveTab('clients');
+    } else if (tabParam === 'dashboard') {
+      setActiveTab('dashboard');
+    } else if (path.includes('/admin/quotations')) {
       setActiveTab('quotations');
     } else if (path.includes('/admin/bga')) {
       setActiveTab('bgas');
@@ -309,7 +346,7 @@ export const AdminPortal: React.FC = () => {
     } else if (path.includes('/admin/settings') || path.includes('/admin/audit')) {
       setActiveTab('settings');
     }
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   // Initial load & periodic stats background polling
   useEffect(() => {
