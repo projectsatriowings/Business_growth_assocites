@@ -1146,7 +1146,21 @@ router.get('/quotations', async (req: AuthRequest, res: Response): Promise<void>
         bga: { select: { id: true, name: true, email: true, mobile: true } },
         enquiry: true,
         reminders: { orderBy: { createdAt: 'desc' } },
-        workOrder: { select: { id: true, workOrderNumber: true, status: true } },
+        workOrder: {
+          include: {
+            payments: { orderBy: { createdAt: 'asc' } },
+            project: {
+              include: {
+                deliverables: true,
+                finalPaymentFollowUps: {
+                  include: { bga: { select: { id: true, name: true } } },
+                  orderBy: { createdAt: 'desc' },
+                },
+              },
+            },
+            commissions: { orderBy: { createdAt: 'desc' } },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });

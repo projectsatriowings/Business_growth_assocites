@@ -2825,9 +2825,9 @@ export const BgaPortal: React.FC = () => {
                               events.push({
                                 id: `pay-${p.id}`,
                                 type: 'PAYMENT',
-                                title: `Payment ${p.status}: ₹${(p.amount || 0).toLocaleString('en-IN')}`,
-                                description: `Transaction Ref: ${p.transactionReference || 'N/A'} • Method: ${p.paymentMethod || 'BANK_TRANSFER'}`,
-                                date: new Date(p.paymentDate || p.createdAt),
+                                title: `Payment ${p.status?.replace(/_/g, ' ')} (${p.paymentType}): ₹${(p.amount || 0).toLocaleString('en-IN')}`,
+                                description: `Transaction Ref: ${p.transactionReference || 'N/A'} • Method: ${p.paymentMethod || 'BANK_TRANSFER'}${p.verificationNotes ? ` • Verification: ${p.verificationNotes}` : ''}`,
+                                date: new Date(p.verifiedAt || p.paymentDate || p.createdAt),
                                 icon: DollarSign,
                                 badgeColor: p.status === 'VERIFIED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200',
                               });
@@ -2838,10 +2838,22 @@ export const BgaPortal: React.FC = () => {
                                 id: `proj-${w.project.id}`,
                                 type: 'PROJECT',
                                 title: `Project ${w.project.projectNumber}: ${w.project.status}`,
-                                description: `Delivery Progress: ${w.project.progressPercentage || 0}% completed`,
-                                date: new Date(w.project.updatedAt || w.project.createdAt),
+                                description: `Delivery Progress: ${w.project.progressPercentage || 0}% completed${w.project.completionNotes ? ` • Notes: ${w.project.completionNotes}` : ''}`,
+                                date: new Date(w.project.completedAt || w.project.updatedAt || w.project.createdAt),
                                 icon: Award,
                                 badgeColor: w.project.status === 'COMPLETED' ? 'bg-teal-50 text-[#119DA4] border border-[#119DA4]/20' : 'bg-indigo-50 text-indigo-700 border border-indigo-200',
+                              });
+
+                              (w.project.finalPaymentFollowUps || []).forEach((fUp: any) => {
+                                events.push({
+                                  id: `fup-${fUp.id}`,
+                                  type: 'FINAL_PAYMENT_FOLLOWUP',
+                                  title: `Final Payment Follow-up (${fUp.contactMethod || 'Call'}) — [${(fUp.status || 'CONTACTED').replace(/_/g, ' ')}]`,
+                                  description: `${fUp.notes || ''}${fUp.clientResponse ? ` • Response: ${fUp.clientResponse}` : ''}${fUp.expectedPaymentDate ? ` • Promised Date: ${new Date(fUp.expectedPaymentDate).toLocaleDateString('en-IN')}` : ''}${fUp.expectedAmount ? ` • Promised Amt: ₹${Number(fUp.expectedAmount).toLocaleString('en-IN')}` : ''}`,
+                                  date: new Date(fUp.followUpDate || fUp.createdAt),
+                                  icon: Phone,
+                                  badgeColor: 'bg-amber-50 text-amber-800 border border-amber-200',
+                                });
                               });
                             }
                           });

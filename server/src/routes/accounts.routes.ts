@@ -206,6 +206,21 @@ router.get('/quotation-requests', async (req: AuthRequest, res: Response): Promi
         client: true,
         bga: { select: { id: true, name: true, email: true, mobile: true } },
         reminders: { orderBy: { createdAt: 'desc' }, include: { bga: { select: { name: true } } } },
+        workOrder: {
+          include: {
+            payments: { orderBy: { createdAt: 'asc' } },
+            project: {
+              include: {
+                deliverables: true,
+                finalPaymentFollowUps: {
+                  include: { bga: { select: { id: true, name: true } } },
+                  orderBy: { createdAt: 'desc' },
+                },
+              },
+            },
+            commissions: { orderBy: { createdAt: 'desc' } },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -562,6 +577,28 @@ router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response)
       },
     });
 
+    // Log to Client Follow-up & Activity History
+    await prisma.contactActivity.create({
+      data: {
+        clientId: workOrder.clientId,
+        bgaId: workOrder.bgaId,
+        contactMethod: 'PAYMENT_RECEIPT',
+        discussionSummary: `Accounts recorded ${paymentType} payment of ₹${payAmount.toLocaleString('en-IN')} via ${paymentMethod || 'BANK_TRANSFER'} (UTR: ${utrValidation.formattedUtr}).`,
+        followUpNotes: 'Client payment recorded in financial ledger. Verification audit in progress.',
+        outcome: paymentType === 'ADVANCE' ? 'ADVANCE_RECORDED' : 'FINAL_PAYMENT_RECORDED',
+        createdBy: req.user!.name || 'Accounts Department',
+      },
+    });
+
+    // Notify Assigned BGA of new payment recorded
+    await createNotification(
+      workOrder.bgaId,
+      `${paymentType === 'ADVANCE' ? 'Advance' : 'Final'} Payment Received by Accounts`,
+      `Accounts has recorded client payment of ₹${payAmount.toLocaleString('en-IN')} (UTR: ${utrValidation.formattedUtr}) for ${workOrder.client.clientName}. Payment audit and verification is currently in progress.`,
+      'INFO',
+      '/bga?tab=work-orders'
+    );
+
     // Notify Accounts and Admin of new payment pending verification
     await createNotification(
       req.user!.id,
@@ -640,6 +677,37 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
       // 1. Advance Payment Verification Handling -> Triggers Automatic Technical Release!
       if (payment.paymentType === PaymentType.ADVANCE) {
         releaseResult = await autoReleaseWorkOrderToTechnical(workOrder.id, req.user!.id, req.ip);
+
+        // Log to Client Follow-up & Activity History
+        await prisma.contactActivity.create({
+          data: {
+            clientId: workOrder.clientId,
+            bgaId: workOrder.bgaId,
+            contactMethod: 'ACCOUNTS_VERIFICATION',
+            discussionSummary: `Advance Payment Verified: ₹${payment.amount.toLocaleString('en-IN')} (UTR: ${payment.transactionReference}). Work Order auto-released to Technical Department for production.`,
+            followUpNotes: verificationNotes || 'Advance payment verified by Accounts Head.',
+            outcome: 'ADVANCE_VERIFIED',
+            createdBy: req.user!.name || 'Accounts Head',
+          },
+        });
+
+        // Notify Assigned BGA
+        await createNotification(
+          workOrder.bgaId,
+          'Advance Payment Verified — Technical Execution Started',
+          `Accounts has verified advance payment of ₹${payment.amount.toLocaleString('en-IN')} (UTR: ${payment.transactionReference}) for ${workOrder.client.clientName}. Technical project is now active.`,
+          'SUCCESS',
+          '/bga?tab=work-orders'
+        );
+
+        // Notify Accounts
+        await createNotification(
+          req.user!.id,
+          'Advance Payment Verified',
+          `Advance payment of ₹${payment.amount.toLocaleString('en-IN')} (UTR: ${payment.transactionReference}) verified for ${workOrder.client.clientName}. Work order released to Technical Team.`,
+          'SUCCESS',
+          '/accounts?tab=work-orders'
+        );
       }
 
       // 2. Commission Calculation Engine (Dynamic Hierarchy: Project > Client > System)
@@ -751,6 +819,28 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
               'SUCCESS',
               '/bga?tab=earnings'
             );
+
+            // Log to Client Follow-up & Activity History
+            await prisma.contactActivity.create({
+              data: {
+                clientId: workOrder.clientId,
+                bgaId: workOrder.bgaId,
+                contactMethod: 'ACCOUNTS_VERIFICATION',
+                discussionSummary: `Final Payment Verified: ₹${payment.amount.toLocaleString('en-IN')} (UTR: ${payment.transactionReference}). 100% Contract Value Settled. Commission request submitted to Admin.`,
+                followUpNotes: verificationNotes || 'Final payment verified by Accounts Head.',
+                outcome: 'FINAL_PAYMENT_VERIFIED',
+                createdBy: req.user!.name || 'Accounts Head',
+              },
+            });
+
+            // Notify Accounts user confirmation
+            await createNotification(
+              req.user!.id,
+              'Final Payment Verified',
+              `Final payment of ₹${payment.amount.toLocaleString('en-IN')} (UTR: ${payment.transactionReference}) verified for ${workOrder.client.clientName}. Commission approval request submitted to Admin.`,
+              'SUCCESS',
+              '/accounts?tab=work-orders'
+            );
           }
         }
       } catch (rateErr: any) {
@@ -767,6 +857,27 @@ router.post('/payments/:id/verify', async (req: AuthRequest, res: Response): Pro
           );
         }
       }
+    } else {
+      // Payment Rejected by Accounts
+      await prisma.contactActivity.create({
+        data: {
+          clientId: workOrder.clientId,
+          bgaId: workOrder.bgaId,
+          contactMethod: 'ACCOUNTS_AUDIT',
+          discussionSummary: `Payment Rejected by Accounts: ₹${payment.amount.toLocaleString('en-IN')} (UTR: ${payment.transactionReference}). Reason: ${verificationNotes || 'Invalid or unverified transaction.'}`,
+          followUpNotes: verificationNotes || 'Payment rejected.',
+          outcome: 'PAYMENT_REJECTED',
+          createdBy: req.user!.name || 'Accounts Head',
+        },
+      });
+
+      await createNotification(
+        workOrder.bgaId,
+        'Client Payment Verification Rejected',
+        `Payment of ₹${payment.amount.toLocaleString('en-IN')} (UTR: ${payment.transactionReference}) for ${workOrder.client.clientName} was rejected by Accounts. Reason: ${verificationNotes || 'Invalid or unverified transaction.'}`,
+        'WARNING',
+        '/bga?tab=work-orders'
+      );
     }
 
     await logAudit(
