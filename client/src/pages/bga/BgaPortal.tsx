@@ -80,6 +80,12 @@ import { MediaUploader, MediaUploadResult } from '../../components/MediaUploader
 import { QuotationHistoryTimeline } from '../../components/QuotationHistoryTimeline';
 import { isExternalWebLink, downloadFile } from '../../utils/fileDownload';
 import { FinalPaymentFollowUpModal } from '../../components/FinalPaymentFollowUpModal';
+import {
+  MonthlyAreaChart,
+  CategoryDonutChart,
+  PipelineFunnel,
+  AssociatePeerLeaderboard,
+} from '../../components/dashboard/DashboardCharts';
 
 export const BgaPortal: React.FC = () => {
   const { user } = useAuth();
@@ -1402,6 +1408,141 @@ export const BgaPortal: React.FC = () => {
                       Register New Client +
                     </button>
                   </div>
+                </div>
+
+                {/* ANALYTICS ROW 1: MONTHLY PERFORMANCE TRENDS & PIPELINE FUNNEL */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="lg:col-span-7">
+                    <MonthlyAreaChart
+                      data={(stats.monthlyPerformance || []).map((m: any) => ({
+                        month: m.month,
+                        yearMonth: m.yearMonth,
+                        value1: m.clients,
+                        value2: m.enquiries,
+                      }))}
+                      title="Client Acquisition & Enquiry Pipeline Trends"
+                      subtitle="Historical 6-month monthly velocity of clients onboarded vs enquiries logged."
+                      label1="Clients Onboarded"
+                      label2="Enquiries Logged"
+                      color1="#3066BE"
+                      color2="#119DA4"
+                    />
+                  </div>
+
+                  <div className="lg:col-span-5">
+                    <PipelineFunnel
+                      title="Contract Conversion Funnel"
+                      subtitle="Progressive conversion from client registration to project handover."
+                      stages={[
+                        { label: 'Registered Clients', count: stats.pipelineFunnel?.clients ?? stats.clients, color: '#3066BE' },
+                        { label: 'Submitted Enquiries', count: stats.pipelineFunnel?.enquiries ?? stats.enquiries, color: '#119DA4' },
+                        { label: 'Official Quotations', count: stats.pipelineFunnel?.quotations ?? stats.quotations, color: '#F59E0B' },
+                        { label: 'Accepted Contracts', count: stats.pipelineFunnel?.acceptedQuotations ?? stats.acceptedQuotations, color: '#10B981' },
+                        { label: 'Active Projects', count: stats.pipelineFunnel?.activeProjects ?? stats.activeProjects, color: '#8B5CF6' },
+                        { label: 'Delivered Projects', count: stats.pipelineFunnel?.completedProjects ?? 0, color: '#059669' },
+                      ]}
+                    />
+                  </div>
+                </div>
+
+                {/* ANALYTICS ROW 2: SERVICE BREAKDOWN & ASSOCIATE PEER BENCHMARK */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="lg:col-span-5">
+                    <CategoryDonutChart
+                      data={stats.categoryBreakdown || []}
+                      title="Service Demand Distribution"
+                      subtitle="Breakdown of client project requests across technology domains."
+                      totalLabel="Enquiries Logged"
+                    />
+                  </div>
+
+                  {/* ONE BGA CAN SHOW AND BENCHMARK AGAINST OTHER BGAS */}
+                  <div className="lg:col-span-7">
+                    <AssociatePeerLeaderboard
+                      associates={stats.peerLeaderboard || []}
+                      currentUserRank={stats.networkStats?.currentUserRank || 1}
+                      totalNetworkCount={stats.networkStats?.totalNetworkBgas || 1}
+                    />
+                  </div>
+                </div>
+
+                {/* ANALYTICS ROW 3: ACTIVE PROJECT DELIVERABLES MONITOR */}
+                <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-[#3066BE]" />
+                        Active Technical Deliverables & Client Status
+                      </h3>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Live execution progress of technical milestones for your signed client contracts.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('projects')}
+                      className="text-xs font-bold text-[#3066BE] hover:text-[#255299] flex items-center gap-1 transition-colors"
+                    >
+                      View All Work Orders <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {stats.recentActiveProjects && stats.recentActiveProjects.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {stats.recentActiveProjects.map((p: any) => {
+                        const completedMilestones = (p.milestones || []).filter((m: any) => m.status === 'COMPLETED').length;
+                        const totalMilestones = (p.milestones || []).length;
+                        return (
+                          <div
+                            key={p.id}
+                            className="p-4 rounded-xl border border-slate-200 hover:border-[#3066BE]/40 hover:shadow-xs transition-all bg-slate-50/40 flex flex-col justify-between space-y-3"
+                          >
+                            <div>
+                              <div className="flex items-center justify-between text-[11px] mb-1">
+                                <span className="font-mono font-bold text-[#3066BE]">{p.projectNumber}</span>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  p.status === 'COMPLETED'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : p.status === 'UNDER_REVIEW'
+                                    ? 'bg-purple-100 text-purple-800'
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {p.status.replace(/_/g, ' ')}
+                                </span>
+                              </div>
+                              <h4 className="font-bold text-xs text-slate-900 truncate">
+                                {p.client?.businessName || p.client?.clientName || 'Client Project'}
+                              </h4>
+                              <span className="text-[10px] text-slate-500 block truncate">
+                                {p.serviceCategory?.replace(/_/g, ' ')}
+                              </span>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                                <span>Execution Progress</span>
+                                <span className="font-mono text-[#3066BE]">{p.progressPercentage || 0}%</span>
+                              </div>
+                              <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-[#3066BE] to-[#119DA4] rounded-full transition-all"
+                                  style={{ width: `${p.progressPercentage || 0}%` }}
+                                />
+                              </div>
+                              <div className="flex justify-between text-[10px] text-slate-400">
+                                <span>Milestones: {completedMilestones}/{totalMilestones || 1}</span>
+                                <span>Deliverables: {(p.deliverables || []).length}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl text-slate-400 text-xs">
+                      No active technical projects currently in execution. Onboard a client and convert quotation to kickoff.
+                    </div>
+                  )}
                 </div>
               </div>
             )

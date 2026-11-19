@@ -33,6 +33,16 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
+    const now = new Date();
+    const months: { label: string; yearMonth: string; start: Date; end: Date }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      const label = start.toLocaleString('en-US', { month: 'short' });
+      months.push({ label, yearMonth: `${label} ${start.getFullYear()}`, start, end });
+    }
+    const sixMonthsAgo = months[0].start;
+
     const [
       totalBgas,
       activeBgas,
@@ -57,6 +67,11 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       pendingAdvancePayments,
       paymentsVerifiedCount,
       pendingTechnicalHandovers,
+      sixMonthPayments,
+      sixMonthClients,
+      sixMonthBgas,
+      workOrdersByCategory,
+      allActiveBgas,
     ] = await Promise.all([
       prisma.user.count({ where: { role: Role.BGA } }),
       prisma.user.count({ where: { role: Role.BGA, status: BgaStatus.ACTIVE } }),
@@ -118,7 +133,96 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       prisma.workOrder.count({
         where: { advanceVerified: true, handoverApproved: false },
       }),
+      // 6-month trends
+      prisma.payment.findMany({
+        where: { createdAt: { gte: sixMonthsAgo }, status: PaymentStatus.VERIFIED },
+        select: { amount: true, createdAt: true },
+      }),
+      prisma.client.findMany({
+        where: { createdAt: { gte: sixMonthsAgo } },
+        select: { createdAt: true },
+      }),
+      prisma.user.findMany({
+        where: { role: Role.BGA, createdAt: { gte: sixMonthsAgo } },
+        select: { createdAt: true },
+      }),
+      // Revenue by Category
+      prisma.workOrder.groupBy({
+        by: ['serviceCategory'],
+        _sum: { totalValue: true, advancePaid: true },
+        _count: { id: true },
+      }),
+      // Top performing BGAs
+      prisma.user.findMany({
+        where: { role: Role.BGA, status: BgaStatus.ACTIVE },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          _count: {
+            select: {
+              clients: true,
+              enquiries: true,
+              quotations: { where: { status: QuotationStatus.ACCEPTED } },
+              workOrders: { where: { project: { status: ProjectStatus.COMPLETED } } },
+            },
+          },
+        },
+      }),
     ]);
+
+    // Monthly revenue and growth trends
+    const monthlyTrends = months.map((m) => {
+      const revenue = sixMonthPayments
+        .filter((p) => p.createdAt >= m.start && p.createdAt < m.end)
+        .reduce((sum, p) => sum + p.amount, 0);
+      const newClients = sixMonthClients.filter((c) => c.createdAt >= m.start && c.createdAt < m.end).length;
+      const newBgas = sixMonthBgas.filter((b) => b.createdAt >= m.start && b.createdAt < m.end).length;
+      return {
+        month: m.label,
+        yearMonth: m.yearMonth,
+        revenue,
+        newClients,
+        newBgas,
+      };
+    });
+
+    // Service category revenue share
+    const totalRev = verifiedPayments._sum.amount || 1;
+    const serviceRevenueShare = workOrdersByCategory.map((c) => ({
+      category: c.serviceCategory,
+      totalValue: c._sum.totalValue || 0,
+      advancePaid: c._sum.advancePaid || 0,
+      projectsCount: c._count.id,
+      percentage: Math.round(((c._sum.totalValue || 0) / (totalRev || 1)) * 100),
+    }));
+
+    // Top performing BGAs
+    const topPerformingBgas = allActiveBgas
+      .map((b) => {
+        const clients = b._count.clients;
+        const acceptedQuotes = b._count.quotations;
+        const completedProjects = b._count.workOrders;
+        const enquiries = b._count.enquiries;
+        const points = acceptedQuotes * 30 + completedProjects * 40 + clients * 15 + enquiries * 5;
+        return {
+          id: b.id,
+          name: b.name,
+          email: b.email,
+          clientsCount: clients,
+          acceptedQuotesCount: acceptedQuotes,
+          completedProjectsCount: completedProjects,
+          enquiriesCount: enquiries,
+          points,
+        };
+      })
+      .sort((a, b) => b.points - a.points || b.clientsCount - a.clientsCount)
+      .slice(0, 5)
+      .map((b, idx) => ({
+        ...b,
+        rank: idx + 1,
+        tier: idx === 0 ? 'Top Enterprise Producer' : idx <= 2 ? 'Gold Partner' : 'Silver Partner',
+      }));
 
     const result = {
       bgas: { total: totalBgas, active: activeBgas, pendingApprovals: pendingBgaApprovals },
@@ -145,6 +249,17 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
         paymentsVerified: paymentsVerifiedCount,
         pendingTechnicalHandovers,
         activeTechnicalProjects: activeProjects,
+      },
+      monthlyTrends,
+      serviceRevenueShare,
+      topPerformingBgas,
+      conversionFunnel: {
+        clients: totalClients,
+        enquiries: totalEnquiries,
+        quotations: totalQuotations,
+        accepted: acceptedQuotations,
+        workOrders: totalWorkOrders,
+        completed: completedProjects,
       },
     };
 

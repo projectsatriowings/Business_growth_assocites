@@ -29,14 +29,32 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
+    // Helper for 6 months range
+    const now = new Date();
+    const months: { label: string; yearMonth: string; start: Date; end: Date }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      const label = start.toLocaleString('en-US', { month: 'short' });
+      months.push({ label, yearMonth: `${label} ${start.getFullYear()}`, start, end });
+    }
+    const sixMonthsAgo = months[0].start;
+
     const [
       totalClients,
       totalEnquiries,
       totalQuotations,
       acceptedQuotations,
       activeProjects,
+      completedProjects,
       totalEarnings,
       pendingEarnings,
+      recentClients,
+      recentEnquiries,
+      recentAcceptedQuotes,
+      categoryStats,
+      allBgas,
+      recentActiveProjects,
     ] = await Promise.all([
       prisma.client.count({ where: { bgaId } }),
       prisma.enquiry.count({ where: { bgaId } }),
@@ -48,6 +66,12 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
           status: { in: ['READY_TO_START', 'IN_PROGRESS', 'UNDER_REVIEW', 'CORRECTION_REQUIRED'] },
         },
       }),
+      prisma.technicalProject.count({
+        where: {
+          workOrder: { bgaId },
+          status: ProjectStatus.COMPLETED,
+        },
+      }),
       prisma.commission.aggregate({
         where: { bgaId, payoutStatus: 'PROCESSED' },
         _sum: { calculatedCommission: true },
@@ -56,7 +80,118 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
         where: { bgaId, payoutStatus: 'UNPAID' },
         _sum: { calculatedCommission: true },
       }),
+      // Last 6 months clients for monthly acquisition chart
+      prisma.client.findMany({
+        where: { bgaId, createdAt: { gte: sixMonthsAgo } },
+        select: { createdAt: true },
+      }),
+      // Last 6 months enquiries for monthly trend
+      prisma.enquiry.findMany({
+        where: { bgaId, createdAt: { gte: sixMonthsAgo } },
+        select: { createdAt: true },
+      }),
+      // Last 6 months accepted quotes
+      prisma.quotation.findMany({
+        where: { bgaId, status: QuotationStatus.ACCEPTED, updatedAt: { gte: sixMonthsAgo } },
+        select: { totalAmount: true, updatedAt: true },
+      }),
+      // Service Category Breakdown
+      prisma.enquiry.groupBy({
+        by: ['serviceCategory'],
+        where: { bgaId },
+        _count: { id: true },
+      }),
+      // Associate Peer Network ("for the bga it should be one bga should show another bga")
+      prisma.user.findMany({
+        where: { role: Role.BGA, status: BgaStatus.ACTIVE },
+        select: {
+          id: true,
+          name: true,
+          createdAt: true,
+          _count: {
+            select: {
+              clients: true,
+              enquiries: true,
+              quotations: { where: { status: QuotationStatus.ACCEPTED } },
+              workOrders: { where: { project: { status: ProjectStatus.COMPLETED } } },
+            },
+          },
+        },
+      }),
+      // Active project execution cards
+      prisma.technicalProject.findMany({
+        where: { workOrder: { bgaId } },
+        take: 5,
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          projectNumber: true,
+          serviceCategory: true,
+          status: true,
+          progressPercentage: true,
+          updatedAt: true,
+          client: { select: { clientName: true, businessName: true } },
+          milestones: { select: { id: true, title: true, status: true } },
+          deliverables: { select: { id: true, title: true, status: true } },
+        },
+      }),
     ]);
+
+    // Build 6-month trend arrays
+    const monthlyPerformance = months.map((m) => {
+      const clientsCount = recentClients.filter((c) => c.createdAt >= m.start && c.createdAt < m.end).length;
+      const enquiriesCount = recentEnquiries.filter((e) => e.createdAt >= m.start && e.createdAt < m.end).length;
+      const acceptedQuotes = recentAcceptedQuotes.filter((q) => q.updatedAt >= m.start && q.updatedAt < m.end);
+      const revenue = acceptedQuotes.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
+      return {
+        month: m.label,
+        yearMonth: m.yearMonth,
+        clients: clientsCount,
+        enquiries: enquiriesCount,
+        acceptedQuotes: acceptedQuotes.length,
+        revenue,
+      };
+    });
+
+    // Format service category breakdown
+    const totalEnquiriesCount = totalEnquiries || 1;
+    const categoryBreakdown = categoryStats.map((c) => ({
+      category: c.serviceCategory,
+      count: c._count.id,
+      percentage: Math.round((c._count.id / totalEnquiriesCount) * 100),
+    }));
+
+    // Build Peer Leaderboard / Network Benchmark
+    // Calculate performance scores
+    const peerLeaderboard = allBgas
+      .map((b) => {
+        const clients = b._count.clients;
+        const acceptedQuotes = b._count.quotations;
+        const completedProjects = b._count.workOrders;
+        const enquiries = b._count.enquiries;
+        // Weighted formula for ranking
+        const points = acceptedQuotes * 30 + completedProjects * 40 + clients * 15 + enquiries * 5;
+        return {
+          id: b.id,
+          name: b.name,
+          clientsCount: clients,
+          acceptedQuotesCount: acceptedQuotes,
+          completedProjectsCount: completedProjects,
+          enquiriesCount: enquiries,
+          points,
+          isCurrentUser: b.id === bgaId,
+        };
+      })
+      .sort((a, b) => b.points - a.points || b.clientsCount - a.clientsCount)
+      .map((item, idx) => ({
+        ...item,
+        rank: idx + 1,
+        tier: idx === 0 ? 'Elite Diamond' : idx <= 2 ? 'Gold Producer' : idx <= 5 ? 'Silver Partner' : 'Rising Associate',
+      }));
+
+    // Find current user position in network
+    const currentUserRank = peerLeaderboard.find((p) => p.isCurrentUser)?.rank || 1;
+    const totalNetworkBgas = peerLeaderboard.length;
 
     const result = {
       clients: totalClients,
@@ -64,10 +199,28 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       quotations: totalQuotations,
       acceptedQuotations,
       activeProjects,
+      completedProjects,
       earnings: {
         paid: totalEarnings._sum.calculatedCommission || 0,
         pending: pendingEarnings._sum.calculatedCommission || 0,
       },
+      monthlyPerformance,
+      categoryBreakdown,
+      pipelineFunnel: {
+        clients: totalClients,
+        enquiries: totalEnquiries,
+        quotations: totalQuotations,
+        acceptedQuotations,
+        activeProjects,
+        completedProjects,
+      },
+      peerLeaderboard: peerLeaderboard.slice(0, 10), // Top 10 associates
+      networkStats: {
+        currentUserRank,
+        totalNetworkBgas,
+        networkPercentile: Math.max(5, Math.round(((totalNetworkBgas - currentUserRank + 1) / totalNetworkBgas) * 100)),
+      },
+      recentActiveProjects,
     };
 
     appCache.set(cacheKey, result, 20);

@@ -59,6 +59,12 @@ import { ModalPortal } from '../../components/ModalPortal';
 import { MediaUploader } from '../../components/MediaUploader';
 import { QuotationHistoryTimeline } from '../../components/QuotationHistoryTimeline';
 import { CommissionSettingsPanel } from '../../components/CommissionSettingsPanel';
+import {
+  MonthlyAreaChart,
+  CategoryDonutChart,
+  PipelineFunnel,
+  AssociatePeerLeaderboard,
+} from '../../components/dashboard/DashboardCharts';
 
 // Formats client structured location JSON or legacy location string
 const formatClientLocation = (locStr?: string | null): string => {
@@ -1274,6 +1280,66 @@ export const AdminPortal: React.FC = () => {
                       {stats?.technical?.completed || stats?.projects?.completed || 0} Completed
                     </span>
                   </div>
+                </div>
+              </div>
+
+              {/* ENTERPRISE BI ANALYTICS ROW 1: REVENUE GROWTH & SERVICE SHARE */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="lg:col-span-7">
+                  <MonthlyAreaChart
+                    data={(stats.monthlyTrends || []).map((m: any) => ({
+                      month: m.month,
+                      yearMonth: m.yearMonth,
+                      value1: m.revenue,
+                      value2: m.newClients,
+                    }))}
+                    title="Company Revenue & Client Onboarding Velocity"
+                    subtitle="6-month trend of verified company revenue generated and newly acquired client accounts."
+                    label1="Verified Revenue"
+                    label2="New Clients"
+                    color1="#10B981"
+                    color2="#3066BE"
+                    formatValue={(v) => `₹${v.toLocaleString('en-IN')}`}
+                  />
+                </div>
+
+                <div className="lg:col-span-5">
+                  <CategoryDonutChart
+                    data={(stats.serviceRevenueShare || []).map((c: any) => ({
+                      category: c.category,
+                      count: c.projectsCount,
+                      percentage: c.percentage,
+                    }))}
+                    title="Enterprise Revenue by Service Stream"
+                    subtitle="Distribution of company contract value across technology disciplines."
+                    totalLabel="Projects"
+                  />
+                </div>
+              </div>
+
+              {/* ENTERPRISE BI ANALYTICS ROW 2: CONVERSION FUNNEL & TOP PERFORMING BGAS */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="lg:col-span-5">
+                  <PipelineFunnel
+                    title="Enterprise Conversion Pipeline"
+                    subtitle="Macro-funnel conversion from client registration to successful delivery."
+                    stages={[
+                      { label: 'Registered Clients', count: stats.conversionFunnel?.clients ?? stats?.clients?.total ?? 0, color: '#3066BE' },
+                      { label: 'Submitted Enquiries', count: stats.conversionFunnel?.enquiries ?? stats?.enquiries?.total ?? 0, color: '#119DA4' },
+                      { label: 'Quotations Released', count: stats.conversionFunnel?.quotations ?? stats?.quotations?.total ?? 0, color: '#F59E0B' },
+                      { label: 'Accepted Contracts', count: stats.conversionFunnel?.accepted ?? stats?.workflow?.acceptedQuotations ?? 0, color: '#10B981' },
+                      { label: 'Work Orders in Execution', count: stats.conversionFunnel?.workOrders ?? stats?.workOrders?.total ?? 0, color: '#8B5CF6' },
+                      { label: 'Completed Deliverables', count: stats.conversionFunnel?.completed ?? stats?.projects?.completed ?? 0, color: '#059669' },
+                    ]}
+                  />
+                </div>
+
+                <div className="lg:col-span-7">
+                  <AssociatePeerLeaderboard
+                    associates={stats.topPerformingBgas || []}
+                    currentUserRank={1}
+                    totalNetworkCount={stats.bgas?.active || 1}
+                  />
                 </div>
               </div>
 
