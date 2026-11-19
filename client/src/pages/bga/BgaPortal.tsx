@@ -905,9 +905,9 @@ export const BgaPortal: React.FC = () => {
     }
 
     // Validation 2: Mobile Number (10 Digits)
-    const cleanMobile = clientForm.mobile.replace(/\D/g, '').slice(-10);
-    if (cleanMobile.length !== 10) {
-      setClientFormError('Please enter a valid 10-digit mobile number.');
+    const cleanMobile = clientForm.mobile.replace(/\D/g, '');
+    if (cleanMobile.length !== 10 || !/^[6-9]\d{9}$/.test(cleanMobile)) {
+      setClientFormError('Please enter a valid 10-digit Indian mobile number (numbers only, starting with 6, 7, 8, or 9).');
       return;
     }
 
@@ -937,8 +937,13 @@ export const BgaPortal: React.FC = () => {
       setClientFormError('State is required.');
       return;
     }
-    if (!clientForm.pinCode.trim()) {
+    const cleanPin = clientForm.pinCode.replace(/\D/g, '');
+    if (!cleanPin) {
       setClientFormError('PIN / Postal Code is required.');
+      return;
+    }
+    if (cleanPin.length !== 6 || !/^\d{6}$/.test(cleanPin)) {
+      setClientFormError('PIN Code must be exactly 6 digits (numbers only).');
       return;
     }
 
@@ -1661,9 +1666,16 @@ export const BgaPortal: React.FC = () => {
                             type="tel"
                             required
                             maxLength={10}
+                            inputMode="numeric"
+                            pattern="[6-9][0-9]{9}"
                             value={clientForm.mobile}
-                            onChange={(e) => setClientForm({ ...clientForm, mobile: e.target.value.replace(/\D/g, '') })}
-                            placeholder="9876543210"
+                            onChange={(e) => {
+                              let clean = e.target.value.replace(/\D/g, '');
+                              if (clean.length > 10 && clean.startsWith('91')) clean = clean.slice(2);
+                              else if (clean.length > 10 && clean.startsWith('0')) clean = clean.slice(1);
+                              setClientForm({ ...clientForm, mobile: clean.slice(0, 10) });
+                            }}
+                            placeholder="9876543210 (10 digits)"
                             className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE] font-mono"
                           />
                         </div>
@@ -1769,9 +1781,12 @@ export const BgaPortal: React.FC = () => {
                             <input
                               type="text"
                               required
+                              maxLength={6}
+                              inputMode="numeric"
+                              pattern="[0-9]{6}"
                               value={clientForm.pinCode}
-                              onChange={(e) => setClientForm({ ...clientForm, pinCode: e.target.value })}
-                              placeholder="e.g. 400001"
+                              onChange={(e) => setClientForm({ ...clientForm, pinCode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                              placeholder="e.g. 400001 (6 digits)"
                               className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3066BE] focus:border-[#3066BE] font-mono"
                             />
                           </div>

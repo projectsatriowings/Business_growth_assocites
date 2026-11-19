@@ -208,8 +208,11 @@ export const BgaProfileView: React.FC = () => {
     setSavingPersonal(true);
 
     try {
-      if (personalForm.pinCode && !/^\d{6}$/.test(personalForm.pinCode.trim())) {
-        throw new Error('PIN Code must be a 6-digit number');
+      if (personalForm.pinCode) {
+        const cleanPin = personalForm.pinCode.replace(/\D/g, '');
+        if (cleanPin.length !== 6 || !/^\d{6}$/.test(cleanPin)) {
+          throw new Error('PIN Code must be exactly 6 digits (numbers only)');
+        }
       }
 
       const res = await apiRequest('/api/bga/profile', {
@@ -240,6 +243,11 @@ export const BgaProfileView: React.FC = () => {
     try {
       if (bankForm.bankAccountNumber !== bankForm.confirmAccountNumber) {
         throw new Error('Account numbers do not match');
+      }
+
+      const cleanAcc = bankForm.bankAccountNumber.replace(/\D/g, '');
+      if (cleanAcc.length < 9 || cleanAcc.length > 18 || !/^\d{9,18}$/.test(cleanAcc)) {
+        throw new Error('Bank account number must be between 9 and 18 digits (numbers only)');
       }
 
       const cleanIfsc = bankForm.bankIfsc.trim().toUpperCase();
@@ -1338,10 +1346,12 @@ export const BgaProfileView: React.FC = () => {
                   <label className="block font-semibold text-slate-700 mb-1">PIN Code</label>
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
                     required
                     maxLength={6}
                     value={personalForm.pinCode}
-                    onChange={(e) => setPersonalForm({ ...personalForm, pinCode: e.target.value })}
+                    onChange={(e) => setPersonalForm({ ...personalForm, pinCode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
                     placeholder="e.g. 500081"
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE] font-mono"
                   />
@@ -1430,10 +1440,12 @@ export const BgaProfileView: React.FC = () => {
                   <label className="block font-semibold text-slate-700 mb-1">Bank Account Number</label>
                   <input
                     type="password"
+                    inputMode="numeric"
                     required
+                    maxLength={18}
                     value={bankForm.bankAccountNumber}
-                    onChange={(e) => setBankForm({ ...bankForm, bankAccountNumber: e.target.value })}
-                    placeholder="Enter account number"
+                    onChange={(e) => setBankForm({ ...bankForm, bankAccountNumber: e.target.value.replace(/\D/g, '').slice(0, 18) })}
+                    placeholder="Enter account number (9-18 digits)"
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE] font-mono"
                   />
                 </div>
@@ -1441,9 +1453,11 @@ export const BgaProfileView: React.FC = () => {
                   <label className="block font-semibold text-slate-700 mb-1">Confirm Account Number</label>
                   <input
                     type="text"
+                    inputMode="numeric"
                     required
+                    maxLength={18}
                     value={bankForm.confirmAccountNumber}
-                    onChange={(e) => setBankForm({ ...bankForm, confirmAccountNumber: e.target.value })}
+                    onChange={(e) => setBankForm({ ...bankForm, confirmAccountNumber: e.target.value.replace(/\D/g, '').slice(0, 18) })}
                     placeholder="Re-enter account number"
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE] font-mono"
                   />
@@ -1458,7 +1472,7 @@ export const BgaProfileView: React.FC = () => {
                     required
                     maxLength={11}
                     value={bankForm.bankIfsc}
-                    onChange={(e) => setBankForm({ ...bankForm, bankIfsc: e.target.value.toUpperCase() })}
+                    onChange={(e) => setBankForm({ ...bankForm, bankIfsc: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11) })}
                     placeholder="e.g. HDFC0001234"
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#3066BE] font-mono uppercase"
                   />
