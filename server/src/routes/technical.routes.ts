@@ -7,7 +7,7 @@ import { appCache } from '../utils/cache';
 
 const router = Router();
 router.use(authenticateJWT);
-router.use(authorizeRoles(Role.TECHNICAL, Role.ADMIN));
+router.use(authorizeRoles(Role.TECHNICAL, Role.ADMIN, Role.BGA));
 
 // ============================================================================
 // AUTOMATIC MILESTONE PROGRESS RECALCULATION HELPER
@@ -669,14 +669,30 @@ router.post('/projects/:id/feedback', async (req: AuthRequest, res: Response): P
       },
     });
 
-    // Notify assigned BGA
-    if (project.workOrder?.bgaId) {
+    // Notify appropriate party based on author role
+    if (req.user!.role === Role.BGA) {
+      // BGA posted: notify Technical team & Admins
+      const techUsers = await prisma.user.findMany({
+        where: { role: { in: [Role.TECHNICAL, Role.ADMIN] } },
+        select: { id: true },
+      });
+      for (const t of techUsers) {
+        await createNotification(
+          t.id,
+          'New Client Feedback from BGA',
+          `BGA ${req.user!.name} posted a message on project ${project.projectNumber} (${project.client.clientName}): "${content.slice(0, 70)}..."`,
+          'INFO',
+          `/technical?tab=projects&projectId=${project.id}`
+        );
+      }
+    } else if (project.workOrder?.bgaId) {
+      // Technical/Admin posted: notify assigned BGA
       await createNotification(
         project.workOrder.bgaId,
         'Technical Team Replied to Project Feedback',
         `Technical team posted a response for project ${project.projectNumber} (${project.client.clientName}): "${content.slice(0, 70)}..."`,
         'INFO',
-        '/bga/projects'
+        '/bga?tab=work-orders'
       );
     }
 
