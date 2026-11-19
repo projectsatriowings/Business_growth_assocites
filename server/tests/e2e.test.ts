@@ -1,6 +1,7 @@
 import { PrismaClient, Role, BgaStatus, EnquiryStatus, QuotationStatus, WorkOrderStatus, PaymentStatus, ProjectStatus, CommissionEligibility } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { getClientActivityTimeline } from '../src/utils/activityTimeline';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'bga_super_secret_jwt_key_2026_growth_portal_secure_auth';
@@ -554,6 +555,138 @@ async function runEndToEndTests() {
       typeof pendingCommissions === 'number',
       'Test 39: 10-Stage Enterprise Pipeline metrics correctly aggregated'
     );
+
+    // =========================================================================
+    // SECTION: UNIFIED CLIENT WORKSPACE & COMPLETE ACTIVITY TIMELINE INTEGRATION
+    // =========================================================================
+
+    // Create a Project Deliverable
+    const testDeliverable = await prisma.projectDeliverable.create({
+      data: {
+        projectId: techProject.id,
+        title: 'Initial UI Mockups & Architecture Blueprint',
+        fileUrl: 'https://storage.bga.atriowings.in/deliverables/blueprint.pdf',
+        fileType: 'PDF_DOCUMENT',
+        version: '1',
+        uploadedById: techUser!.id,
+        status: 'APPROVED',
+        bgaApprovalStatus: 'APPROVED',
+        isClientVisible: true,
+      },
+    });
+
+    // Create a Root Project Feedback message
+    const rootFeedback = await prisma.projectFeedback.create({
+      data: {
+        projectId: techProject.id,
+        content: 'BGA shared client requirements for payment gateway integration.',
+        authorId: bga1!.id,
+        authorName: bga1!.name,
+        authorRole: 'BGA',
+        messageType: 'BGA_REPRESENTATIVE',
+        visibility: 'CLIENT_VISIBLE',
+        feedbackType: 'CLIENT_FEEDBACK',
+        status: 'NEW',
+      },
+    });
+
+    // Create a Threaded Reply
+    const replyFeedback = await prisma.projectFeedback.create({
+      data: {
+        projectId: techProject.id,
+        content: 'Technical team confirmed Razorpay and Stripe API integration in progress.',
+        authorId: techUser!.id,
+        authorName: techUser!.name,
+        authorRole: 'TECHNICAL',
+        messageType: 'TECHNICAL_REPLY',
+        visibility: 'CLIENT_VISIBLE',
+        feedbackType: 'TECHNICAL_RESPONSE',
+        status: 'IN_PROGRESS',
+        parentFeedbackId: rootFeedback.id,
+      },
+    });
+
+    // TEST 40: Timeline Generation & Complete Multi-Source Aggregation
+    const timeline = await getClientActivityTimeline(clientBga1.id, {
+      id: bga1!.id,
+      role: Role.BGA,
+      name: bga1!.name,
+    });
+
+    assert(timeline !== null, 'Test 40.1: Unified timeline fetched successfully');
+    assert(timeline!.client.id === clientBga1.id, 'Test 40.2: Timeline client header correctly mapped');
+    assert(timeline!.totalCount > 0, 'Test 40.3: Timeline aggregated real database records');
+
+    const categoriesFound = new Set(timeline!.events.map((e) => e.category));
+    assert(categoriesFound.has('ONBOARDING'), 'Test 40.4: Timeline contains ONBOARDING event');
+    assert(categoriesFound.has('ENQUIRY'), 'Test 40.5: Timeline contains ENQUIRY event');
+    assert(categoriesFound.has('QUOTATION'), 'Test 40.6: Timeline contains QUOTATION event');
+    assert(categoriesFound.has('WORK_ORDER'), 'Test 40.7: Timeline contains WORK_ORDER event');
+    assert(categoriesFound.has('PAYMENT'), 'Test 40.8: Timeline contains PAYMENT event');
+    assert(categoriesFound.has('TECHNICAL'), 'Test 40.9: Timeline contains TECHNICAL execution event');
+    assert(categoriesFound.has('DELIVERABLE'), 'Test 40.10: Timeline contains DELIVERABLE event with file info');
+    assert(categoriesFound.has('COMMUNICATION'), 'Test 40.11: Timeline contains COMMUNICATION event');
+    assert(categoriesFound.has('COMMISSION'), 'Test 40.12: Timeline contains COMMISSION event');
+
+    // TEST 41: Strict Ownership & Role Isolation on Activity Timeline
+    let accessBlocked = false;
+    try {
+      await getClientActivityTimeline(clientBga1.id, {
+        id: bga2!.id,
+        role: Role.BGA,
+        name: bga2!.name,
+      });
+    } catch (e: any) {
+      if (e.message === 'UNAUTHORIZED_CLIENT_ACCESS') {
+        accessBlocked = true;
+      }
+    }
+    assert(accessBlocked, 'Test 41.1: Unowned BGA cannot access another BGA’s client timeline');
+
+    const adminTimeline = await getClientActivityTimeline(clientBga1.id, {
+      id: adminUser!.id,
+      role: Role.ADMIN,
+      name: adminUser!.name,
+    });
+    assert(adminTimeline !== null && adminTimeline.totalCount >= timeline!.totalCount, 'Test 41.2: Admin has full governance view across all events');
+
+    // TEST 42: Canonical Deduplication (Financial & Follow-up records)
+    // Add a synthetic mirrored ContactActivity that references payment to test deduplication
+    const mirroredActivity = await prisma.contactActivity.create({
+      data: {
+        clientId: clientBga1.id,
+        bgaId: bga1!.id,
+        contactMethod: 'PAYMENT_RECEIPT',
+        discussionSummary: 'Received advance payment of 25000',
+        outcome: 'PAYMENT_COLLECTED',
+      },
+    });
+
+    const dedupedTimeline = await getClientActivityTimeline(clientBga1.id, {
+      id: bga1!.id,
+      role: Role.BGA,
+      name: bga1!.name,
+    });
+
+    const paymentEvents = dedupedTimeline!.events.filter((e) => e.category === 'PAYMENT');
+    const mirroredInEvents = dedupedTimeline!.events.find((e) => e.sourceId === mirroredActivity.id);
+    assert(paymentEvents.length > 0, 'Test 42.1: Payment is represented by canonical payment event');
+    assert(!mirroredInEvents, 'Test 42.2: Mirrored contact activity is suppressed in favor of canonical payment record');
+
+    // TEST 43: Feedback Threading & Hierarchy
+    const commEvents = dedupedTimeline!.events.filter((e) => e.category === 'COMMUNICATION');
+    const rootComm = commEvents.find((e) => e.sourceId === rootFeedback.id);
+    assert(rootComm !== undefined, 'Test 43.1: Root communication message present at top level');
+    assert(rootComm?.replies && rootComm.replies.length === 1, 'Test 43.2: Child reply successfully nested under root thread');
+    assert(rootComm?.replies?.[0].sourceId === replyFeedback.id, 'Test 43.3: Thread child matches child feedback ID');
+
+    // TEST 44: Upcoming Follow-ups Extraction
+    assert(Array.isArray(dedupedTimeline!.upcomingFollowUps), 'Test 44: Upcoming follow-ups correctly surfaced');
+
+    // Cleanup extra records created for timeline tests
+    await prisma.contactActivity.delete({ where: { id: mirroredActivity.id } });
+    await prisma.projectFeedback.deleteMany({ where: { id: { in: [rootFeedback.id, replyFeedback.id] } } });
+    await prisma.projectDeliverable.delete({ where: { id: testDeliverable.id } });
 
     // Cleanup test records created in this test run
     await prisma.commission.deleteMany({ where: { id: { in: [dmCommission.id, webCommission.id] } } });

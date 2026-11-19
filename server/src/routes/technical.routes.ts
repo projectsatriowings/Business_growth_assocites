@@ -626,8 +626,31 @@ router.get('/projects/:id/feedback', async (req: AuthRequest, res: Response): Pr
   try {
     const { id } = req.params;
 
+    const project = await prisma.technicalProject.findUnique({
+      where: { id },
+      include: { workOrder: true },
+    });
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    if (req.user!.role === Role.BGA && project.workOrder.bgaId !== req.user!.id) {
+      res.status(403).json({ error: 'Unauthorized to view feedback for this project' });
+      return;
+    }
+
+    const whereClause: any = { projectId: id };
+    if (req.user!.role === Role.BGA) {
+      whereClause.OR = [
+        { visibility: { not: 'INTERNAL' } },
+        { authorId: req.user!.id }
+      ];
+    }
+
     const feedback = await prisma.projectFeedback.findMany({
-      where: { projectId: id },
+      where: whereClause,
       orderBy: { createdAt: 'asc' },
     });
 
@@ -649,6 +672,11 @@ router.post('/projects/:id/feedback', async (req: AuthRequest, res: Response): P
 
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    if (req.user!.role === Role.BGA && project.workOrder.bgaId !== req.user!.id) {
+      res.status(403).json({ error: 'Unauthorized to post feedback for this project' });
       return;
     }
 

@@ -5,6 +5,7 @@ import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, checkBgaActive, AuthRequest, logAudit, createNotification } from '../middleware/auth';
 import { appCache } from '../utils/cache';
 import { hydrateQuotationVersions } from '../utils/quotationVersion';
+import { getClientActivityTimeline } from '../utils/activityTimeline';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -1426,6 +1427,32 @@ router.get('/clients/:id/activities', async (req: AuthRequest, res: Response): P
   }
 });
 
+// Comprehensive Unified Client Activity Timeline
+router.get('/clients/:id/activity-timeline', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const timeline = await getClientActivityTimeline(id, {
+      id: req.user!.id,
+      role: req.user!.role as Role,
+      name: req.user!.name,
+    });
+
+    if (!timeline) {
+      res.status(404).json({ error: 'Client not found or not owned by you' });
+      return;
+    }
+
+    res.json(timeline);
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED_CLIENT_ACCESS') {
+      res.status(403).json({ error: 'Unauthorized: client is not owned by you' });
+      return;
+    }
+    console.error('Error fetching activity timeline:', error);
+    res.status(500).json({ error: 'Failed to fetch client activity timeline' });
+  }
+});
+
 // Update client information, address, and discussion/enquiry fields
 router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -2757,7 +2784,7 @@ router.put('/deliverables/:id/review', async (req: AuthRequest, res: Response): 
 router.post('/projects/:id/feedback', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { content, messageType, visibility, milestoneId, deliverableId, clientDecision } = req.body;
+    const { content, messageType, visibility, milestoneId, deliverableId, clientDecision, parentFeedbackId } = req.body;
 
     const project = await prisma.technicalProject.findUnique({
       where: { id },
@@ -2788,6 +2815,7 @@ router.post('/projects/:id/feedback', async (req: AuthRequest, res: Response): P
         status: 'NEW',
         milestoneId: milestoneId || null,
         deliverableId: deliverableId || null,
+        parentFeedbackId: parentFeedbackId || null,
       },
     });
 
