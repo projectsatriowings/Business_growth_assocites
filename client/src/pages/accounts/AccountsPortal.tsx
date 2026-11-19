@@ -53,7 +53,25 @@ export const AccountsPortal: React.FC = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<
     'dashboard' | 'quotation-requests' | 'payments-work-orders' | 'commissions'
-  >('dashboard');
+  >(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      const valid = ['dashboard', 'quotation-requests', 'payments-work-orders', 'commissions'];
+      if (tabParam && valid.includes(tabParam)) return tabParam as any;
+      try {
+        const saved = localStorage.getItem('accounts_active_tab');
+        if (saved && valid.includes(saved)) return saved as any;
+      } catch (e) {}
+    }
+    return 'dashboard';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('accounts_active_tab', activeTab);
+    } catch (e) {}
+  }, [activeTab]);
   const [subTab, setSubTab] = useState<'payments' | 'work-orders'>('payments');
 
   const [loading, setLoading] = useState(false);

@@ -658,7 +658,7 @@ router.get('/resources', async (req: AuthRequest, res: Response): Promise<void> 
 
 router.post('/resources', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { title, description, category, serviceCategory, fileUrl, fileType, isPublished, isConfidential } = req.body;
+    const { title, description, category, serviceCategory, fileUrl, fileType, isPublished } = req.body;
 
     const resource = await prisma.companyResource.create({
       data: {
@@ -669,7 +669,7 @@ router.post('/resources', async (req: AuthRequest, res: Response): Promise<void>
         fileUrl: fileUrl || '/sample-resource.pdf',
         fileType: fileType || 'PDF',
         isPublished: isPublished !== undefined ? Boolean(isPublished) : true,
-        isConfidential: Boolean(isConfidential),
+        isConfidential: false,
         uploadedById: req.user!.id,
       },
     });
@@ -684,21 +684,21 @@ router.post('/resources', async (req: AuthRequest, res: Response): Promise<void>
 router.put('/resources/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { title, description, category, serviceCategory, isPublished, isConfidential } = req.body;
+    const { title, description, category, serviceCategory, isPublished } = req.body;
 
     const resource = await prisma.companyResource.update({
       where: { id },
       data: {
-        title,
-        description,
-        category,
-        serviceCategory: serviceCategory || null,
-        isPublished,
-        isConfidential,
+        ...(title !== undefined && { title }),
+        ...(description !== undefined && { description }),
+        ...(category !== undefined && { category }),
+        ...(serviceCategory !== undefined && { serviceCategory: serviceCategory || null }),
+        ...(isPublished !== undefined && { isPublished: Boolean(isPublished) }),
+        isConfidential: false,
       },
     });
 
-    await logAudit(req.user!.id, req.user!.email, req.user!.role, 'UPDATE_RESOURCE', 'RESOURCE', id, { title });
+    await logAudit(req.user!.id, req.user!.email, req.user!.role, 'UPDATE_RESOURCE', 'RESOURCE', id, { title: resource.title });
     res.json({ resource });
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to update resource' });

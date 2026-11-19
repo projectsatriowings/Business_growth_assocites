@@ -87,7 +87,25 @@ export const BgaPortal: React.FC = () => {
   const [modalSubmitting, setModalSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<
     'dashboard' | 'profile' | 'resources' | 'new-client' | 'clients' | 'enquiries' | 'quotations' | 'projects' | 'earnings' | 'support' | 'requests'
-  >('dashboard');
+  >(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      const valid = ['dashboard', 'profile', 'clients', 'enquiries', 'quotations', 'projects', 'earnings', 'resources', 'support', 'requests', 'new-client'];
+      if (tabParam && valid.includes(tabParam)) return tabParam as any;
+      try {
+        const saved = localStorage.getItem('bga_active_tab');
+        if (saved && valid.includes(saved)) return saved as any;
+      } catch (e) {}
+    }
+    return 'dashboard';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('bga_active_tab', activeTab);
+    } catch (e) {}
+  }, [activeTab]);
 
   const [loading, setLoading] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
