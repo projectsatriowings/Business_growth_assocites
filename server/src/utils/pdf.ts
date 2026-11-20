@@ -160,9 +160,10 @@ export async function generateQuotationPdfBuffer(data: QuotationPdfData): Promis
   kitDoc.on('data', (chunk) => chunks.push(chunk));
 
   // --- HEADER SECTION (Y: 142 to 205) ---
-  // Left: QUOTATION (Positioned with clear headroom below letterhead swoosh)
-  kitDoc.font(boldFont).fontSize(22).fillColor('#0f172a').text('QUOTATION', 45, 150);
-  kitDoc.font(boldFont).fontSize(7).fillColor('#64748b').text('OFFICIAL COMMERCIAL PROPOSAL • ATRIOWINGS GROWTH ASSOCIATE NETWORK', 45, 178);
+  // Left: PROFESSIONAL QUOTATION (Positioned with clear headroom below letterhead swoosh)
+  kitDoc.font(boldFont).fontSize(17).fillColor('#0f172a').text('PROFESSIONAL', 45, 142);
+  kitDoc.font(boldFont).fontSize(17).fillColor('#119DA4').text('QUOTATION', 45, 162);
+  kitDoc.font(boldFont).fontSize(7).fillColor('#64748b').text('OFFICIAL COMMERCIAL PROPOSAL • ATRIOWINGS GROWTH ASSOCIATE NETWORK', 45, 184);
 
   // Right: Quote Meta Badge (Cleanly aligned to the right-hand column axis at X: 330, ending at X: 550)
   const metaX = 330;
