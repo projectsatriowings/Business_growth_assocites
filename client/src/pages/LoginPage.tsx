@@ -1,9 +1,53 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, ShieldCheck, UserCheck, CreditCard, Layers } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AuthLayout } from '../components/auth/AuthLayout';
 import { AuthCard } from '../components/auth/AuthCard';
+
+interface DemoAccount {
+  role: 'ADMIN' | 'BGA' | 'ACCOUNTS' | 'TECHNICAL';
+  title: string;
+  email: string;
+  password: string;
+  badge: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const DEMO_ACCOUNTS: DemoAccount[] = [
+  {
+    role: 'ADMIN',
+    title: 'Super Admin',
+    email: 'admin@bga.com',
+    password: 'Admin@123',
+    badge: 'Admin',
+    icon: ShieldCheck,
+  },
+  {
+    role: 'BGA',
+    title: 'Growth Associate',
+    email: 'bga@bga.com',
+    password: 'Bga@123',
+    badge: 'BGA',
+    icon: UserCheck,
+  },
+  {
+    role: 'ACCOUNTS',
+    title: 'Accounts Desk',
+    email: 'accounts@bga.com',
+    password: 'Accounts@123',
+    badge: 'Accounts',
+    icon: CreditCard,
+  },
+  {
+    role: 'TECHNICAL',
+    title: 'Technical Lead',
+    email: 'tech@bga.com',
+    password: 'Tech@123',
+    badge: 'Technical',
+    icon: Layers,
+  },
+];
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +63,15 @@ export const LoginPage: React.FC = () => {
   // Field validation errors
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  // Environment check: Render demo accounts ONLY on local environments (localhost / 127.0.0.1 / DEV), NEVER on live domains
+  const isLocalOnly =
+    typeof window !== 'undefined' &&
+    !window.location.hostname.includes('atriowings.in') &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.endsWith('.local') ||
+      import.meta.env.DEV);
 
   const validate = (): boolean => {
     let valid = true;
@@ -251,6 +304,64 @@ export const LoginPage: React.FC = () => {
               </Link>
             </p>
           </div>
+
+          {/* LOCAL-ONLY DEMO CREDENTIALS (Exclusively for local development/testing; completely omitted on live domains) */}
+          {isLocalOnly && (
+            <div className="mt-5 pt-4 border-t border-[#E8EFF8]">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#60769B]">
+                    Local Demo Credentials
+                  </span>
+                </div>
+                <span className="text-[10px] text-[#0879E8] font-semibold bg-[#EBF3FC] px-2 py-0.5 rounded-full">
+                  1-Click Auto-Fill
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-left">
+                {DEMO_ACCOUNTS.map((demo) => {
+                  const Icon = demo.icon;
+                  const isSelected = email === demo.email;
+                  return (
+                    <button
+                      key={demo.role}
+                      type="button"
+                      onClick={() => {
+                        setEmail(demo.email);
+                        setPassword(demo.password);
+                        setEmailError(null);
+                        setPasswordError(null);
+                        setError(null);
+                        setInfo(null);
+                      }}
+                      className={`p-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer ${
+                        isSelected
+                          ? 'border-[#0879E8] bg-[#F0F7FF] ring-2 ring-[#0879E8]/20 shadow-xs'
+                          : 'border-[#E2EDFA] bg-[#F8FAFD] hover:border-[#0879E8]/40 hover:bg-[#F0F7FF]/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Icon className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-[#0879E8]' : 'text-[#60769B]'}`} />
+                          <span className="text-xs font-bold text-[#10244D] truncate">
+                            {demo.title}
+                          </span>
+                        </div>
+                        {isSelected && (
+                          <span className="text-[10px] font-bold text-emerald-600 shrink-0">✓</span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-[#60769B] truncate mt-1 font-mono pl-5">
+                        {demo.email}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </form>
       </AuthCard>
     </AuthLayout>
