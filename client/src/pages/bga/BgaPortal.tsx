@@ -1139,6 +1139,9 @@ export const BgaPortal: React.FC = () => {
       setRevisionModal(null);
       setRevisionNotes('');
       loadData();
+      if (activeClientDetail?.id) {
+        await handleOpenClientDetail(activeClientDetail.id);
+      }
     } catch (err: any) {
       toast.error(err.message || 'Failed to submit revision request', 'Revision Failed');
     } finally {
@@ -1165,6 +1168,9 @@ export const BgaPortal: React.FC = () => {
       setAcceptanceModal(null);
       setAcceptanceNotes('');
       loadData();
+      if (activeClientDetail?.id) {
+        await handleOpenClientDetail(activeClientDetail.id);
+      }
     } catch (err: any) {
       toast.error(err.message || 'Failed to record client acceptance', 'Acceptance Failed');
     } finally {
@@ -2699,6 +2705,12 @@ export const BgaPortal: React.FC = () => {
                                                   </button>
                                                 </>
                                               )}
+                                              {relatedQuote.status === 'ACCEPTED' && (
+                                                <span className="px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg font-bold text-xs flex items-center gap-1 shadow-2xs">
+                                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                                  <span>Client Accepted ✓</span>
+                                                </span>
+                                              )}
                                             </>
                                           ) : (
                                             <button
@@ -3870,7 +3882,14 @@ export const BgaPortal: React.FC = () => {
                                 className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center text-xs"
                               >
                                 <div>
-                                  <span className="font-bold text-slate-900 font-mono">{q.quotationNumber}</span>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-bold text-slate-900 font-mono">{q.quotationNumber}</span>
+                                    {(q.approvedCommissionRate || q.status === 'ADMIN_APPROVED' || q.status === 'ACCEPTED') && (
+                                      <span className="text-[10px] font-bold text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-200">
+                                        Approved Commission: {q.approvedCommissionRate ?? q.proposedCommissionRate ?? 10}% (₹{Math.round(((q.serviceFee || 0) - (q.discount || 0)) * ((q.approvedCommissionRate ?? q.proposedCommissionRate ?? 10) / 100)).toLocaleString('en-IN')})
+                                      </span>
+                                    )}
+                                  </div>
                                   <span className="text-slate-400 text-[10px] block">
                                     Version v{q.version} • {new Date(q.createdAt).toLocaleDateString()}
                                   </span>
@@ -4896,7 +4915,7 @@ export const BgaPortal: React.FC = () => {
                             </a>
                           </div>
                         ) : isApproved ? (
-                          <div className="py-2 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                          <div className="py-2 grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs bg-slate-50/50 p-3 rounded-xl border border-slate-100">
                             <div>
                               <span className="text-slate-400 block">Service Fee</span>
                               <span className="font-bold text-slate-800">₹{q.serviceFee?.toLocaleString()}</span>
@@ -4912,6 +4931,15 @@ export const BgaPortal: React.FC = () => {
                             <div>
                               <span className="text-slate-400 block">Required Advance ({q.advanceRequiredPercent}%)</span>
                               <span className="font-bold text-[#119DA4]">₹{q.advanceRequiredAmount?.toLocaleString()}</span>
+                            </div>
+                            <div className="bg-amber-50/80 border border-amber-200/70 rounded-lg p-2 col-span-2 sm:col-span-1">
+                              <span className="text-amber-800 block text-[10px] font-bold uppercase tracking-wider">Approved Commission</span>
+                              <span className="font-extrabold text-amber-950 text-sm">
+                                {q.approvedCommissionRate ?? q.proposedCommissionRate ?? 10}%
+                              </span>
+                              <span className="text-slate-500 block text-[10px] font-medium">
+                                ₹{Math.round(((q.serviceFee || 0) - (q.discount || 0)) * ((q.approvedCommissionRate ?? q.proposedCommissionRate ?? 10) / 100)).toLocaleString('en-IN')}
+                              </span>
                             </div>
                           </div>
                         ) : (

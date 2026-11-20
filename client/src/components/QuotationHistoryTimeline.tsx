@@ -124,11 +124,17 @@ export interface QuotationVersionItem {
   serviceCategory?: string;
   serviceScope?: string;
   serviceFee?: number;
+  discount?: number;
   taxRate?: number;
   taxAmount?: number;
   totalAmount?: number;
   advanceRequiredPercent?: number;
   advanceRequiredAmount?: number;
+  proposedCommissionRate?: number | null;
+  approvedCommissionRate?: number | null;
+  commissionApprovalStatus?: string | null;
+  commissionExceptionReason?: string | null;
+  commissionNotes?: string | null;
   createdAt: string | Date;
   acceptedAt?: string | Date | null;
   clientAcceptanceNotes?: string | null;
@@ -308,7 +314,7 @@ export const QuotationHistoryTimeline: React.FC<QuotationHistoryTimelineProps> =
                 </div>
 
                 {/* Financial Summary & Delta vs Previous Version */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs bg-slate-50/70 p-3 rounded-xl border border-slate-100">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs bg-slate-50/70 p-3 rounded-xl border border-slate-100">
                   <div>
                     <span className="text-slate-400 block text-[10px] uppercase font-medium">Service Fee</span>
                     <span className="font-bold text-slate-900">₹{(ver.serviceFee || 0).toLocaleString()}</span>
@@ -335,6 +341,17 @@ export const QuotationHistoryTimeline: React.FC<QuotationHistoryTimelineProps> =
                       Required Advance ({ver.advanceRequiredPercent || 50}%)
                     </span>
                     <span className="font-bold text-[#119DA4]">₹{(ver.advanceRequiredAmount || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="bg-amber-50/80 border border-amber-200/60 rounded-lg p-2">
+                    <span className="text-amber-800 block text-[10px] uppercase font-bold">
+                      BGA Commission {ver.approvedCommissionRate || ver.status === 'ADMIN_APPROVED' || ver.adminApprovalStatus === 'APPROVED' ? '(Approved)' : '(Proposed)'}
+                    </span>
+                    <span className="font-extrabold text-amber-950 text-xs">
+                      {ver.approvedCommissionRate ?? ver.proposedCommissionRate ?? (ver.status === 'ADMIN_APPROVED' ? 10 : 10)}%
+                    </span>
+                    <span className="text-slate-500 block text-[10px] font-medium mt-0.5">
+                      ₹{Math.round(((ver.serviceFee || 0) - (ver.discount || 0)) * ((ver.approvedCommissionRate ?? ver.proposedCommissionRate ?? 10) / 100)).toLocaleString('en-IN')}
+                    </span>
                   </div>
                 </div>
 

@@ -2456,6 +2456,10 @@ router.post('/quotations/:id/client-decision', async (req: AuthRequest, res: Res
         req.ip
       );
 
+      appCache.invalidatePrefix('bga:');
+      appCache.invalidatePrefix('accounts:');
+      appCache.invalidatePrefix('admin:');
+
       res.json({
         message: 'Client acceptance recorded successfully. Work Order generated in PENDING_ADVANCE status.',
         quotation: updatedQuotation,

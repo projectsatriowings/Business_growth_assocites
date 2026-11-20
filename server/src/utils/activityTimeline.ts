@@ -335,6 +335,10 @@ export async function getClientActivityTimeline(
       });
     } else {
       // Prepared by Accounts (Draft submitted to Admin or Approved)
+      const commRate = q.approvedCommissionRate || (isApproved ? q.proposedCommissionRate : null);
+      const commAmount = commRate ? Math.round(((q.serviceFee || 0) - (q.discount || 0)) * (commRate / 100)) : null;
+      const commText = isApproved && commRate ? ` • Approved Commission: ${commRate}% (₹${commAmount?.toLocaleString('en-IN')})` : '';
+
       rawEvents.push({
         id: `quote-${q.id}`,
         clientId: client.id,
@@ -345,7 +349,7 @@ export async function getClientActivityTimeline(
           : `Commercial Quotation ${q.quotationNumber} (v${q.version}) Drafted by Accounts`,
         description: `Contract Value: ₹${(q.totalAmount || 0).toLocaleString('en-IN')} (Advance: ₹${(
           q.advanceRequiredAmount || 0
-        ).toLocaleString('en-IN')}) • Scope: ${q.serviceScope?.slice(0, 100) || 'Official scope'}`,
+        ).toLocaleString('en-IN')})${commText} • Scope: ${q.serviceScope?.slice(0, 100) || 'Official scope'}`,
         timestamp: (q.updatedAt || q.createdAt).toISOString(),
         authorName: 'Accounts Department',
         authorRole: 'ACCOUNTS',
@@ -360,6 +364,8 @@ export async function getClientActivityTimeline(
           version: q.version,
           totalAmount: q.totalAmount,
           advanceRequiredAmount: q.advanceRequiredAmount,
+          approvedCommissionRate: commRate,
+          approvedCommissionAmount: commAmount,
         },
       });
     }
@@ -385,13 +391,17 @@ export async function getClientActivityTimeline(
 
     // 3. Admin Approval / Rejection
     if (isApproved && q.adminReviewedAt) {
+      const appCommRate = q.approvedCommissionRate || q.proposedCommissionRate;
+      const appCommAmount = appCommRate ? Math.round(((q.serviceFee || 0) - (q.discount || 0)) * (appCommRate / 100)) : null;
+      const appCommText = appCommRate ? ` • Approved Commission: ${appCommRate}% (₹${appCommAmount?.toLocaleString('en-IN')})` : '';
+
       rawEvents.push({
         id: `quote-app-${q.id}`,
         clientId: client.id,
         type: 'QUOTATION_APPROVED',
         category: 'QUOTATION',
         title: `Quotation ${q.quotationNumber} Approved by Admin`,
-        description: q.adminNotes ? `Executive Sign-off: "${q.adminNotes}"` : 'Quotation verified and released to BGA for client presentation.',
+        description: (q.adminNotes ? `Executive Sign-off: "${q.adminNotes}"` : 'Quotation verified and released to BGA for client presentation.') + appCommText,
         timestamp: q.adminReviewedAt.toISOString(),
         authorName: 'Admin Executive',
         authorRole: 'ADMIN',
@@ -399,6 +409,10 @@ export async function getClientActivityTimeline(
         badgeColor: 'bg-blue-50 text-blue-800 border-blue-200',
         sourceType: 'QUOTATION',
         sourceId: q.id,
+        metadata: {
+          approvedCommissionRate: appCommRate,
+          approvedCommissionAmount: appCommAmount,
+        },
       });
     } else if (isRejected && q.adminReviewedAt) {
       rawEvents.push({

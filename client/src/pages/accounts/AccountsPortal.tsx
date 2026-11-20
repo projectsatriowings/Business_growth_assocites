@@ -1470,9 +1470,29 @@ export const AccountsPortal: React.FC = () => {
                     <QuotationHistoryTimeline currentQuotation={q} defaultExpanded={false} />
 
                     <div className="pt-3 border-t border-slate-100 flex justify-between items-center text-xs flex-wrap gap-2">
-                      <span className="font-bold text-slate-800">
-                        Total Value: ₹{(q.totalAmount || 0).toLocaleString()} (Advance: ₹{(q.advanceRequiredAmount || 0).toLocaleString()})
-                      </span>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-bold text-slate-800">
+                          Total Value: ₹{(q.totalAmount || 0).toLocaleString()} (Advance: ₹{(q.advanceRequiredAmount || 0).toLocaleString()})
+                        </span>
+                        {(q.approvedCommissionRate || q.proposedCommissionRate || q.status === 'ADMIN_APPROVED') && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded-lg text-xs font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            BGA Commission: <strong>{q.approvedCommissionRate ?? q.proposedCommissionRate ?? 10}%</strong>
+                            <span className="text-slate-500 font-normal">
+                              (₹{Math.round(((q.serviceFee || 0) - (q.discount || 0)) * ((q.approvedCommissionRate ?? q.proposedCommissionRate ?? 10) / 100)).toLocaleString('en-IN')})
+                            </span>
+                            {q.approvedCommissionRate || q.status === 'ADMIN_APPROVED' || q.adminApprovalStatus === 'APPROVED' ? (
+                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded border border-emerald-200 ml-1">
+                                APPROVED
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200 ml-1">
+                                PROPOSED
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </div>
 
                       {(q.status === 'REQUESTED' || q.status === 'REVISION_REQUESTED' || q.status === 'REJECTED') ? (
                         <button
