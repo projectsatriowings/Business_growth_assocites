@@ -1309,6 +1309,8 @@ router.post('/quotations/:id/review', async (req: AuthRequest, res: Response): P
         adminNotes: notes || null,
         adminReviewedAt: new Date(),
         adminReviewedById: req.user!.id,
+        commissionApprovalStatus: action === 'APPROVE' ? 'APPROVED' : action === 'REQUEST_REVISION' ? 'REVISION_REQUESTED' : 'REJECTED',
+        approvedCommissionRate: action === 'APPROVE' ? quotation.proposedCommissionRate : null,
       },
     });
 

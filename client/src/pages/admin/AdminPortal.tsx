@@ -3053,7 +3053,7 @@ export const AdminPortal: React.FC = () => {
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="grid grid-cols-3 gap-3 text-xs">
                       <div className="p-3 bg-slate-50 rounded-xl">
                         <span className="text-slate-400 block text-[10px]">Total Contract Value</span>
                         <span className="font-bold text-slate-900 text-base">₹{(quotationDetailModal.totalAmount || 0).toLocaleString()}</span>
@@ -3061,6 +3061,18 @@ export const AdminPortal: React.FC = () => {
                       <div className="p-3 bg-slate-50 rounded-xl">
                         <span className="text-slate-400 block text-[10px]">Advance Required</span>
                         <span className="font-bold text-indigo-700 text-base">₹{(quotationDetailModal.advanceRequiredAmount || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="p-3 bg-amber-50/80 border border-amber-100 rounded-xl">
+                        <span className="text-amber-800 block text-[10px] font-semibold">BGA Commission</span>
+                        <span className="font-bold text-amber-950 text-base">
+                          {quotationDetailModal.approvedCommissionRate ?? quotationDetailModal.proposedCommissionRate ?? 10}%
+                        </span>
+                        <span className="text-[10px] text-slate-500 block">
+                          ₹{Math.round(
+                            ((quotationDetailModal.serviceFee || 0) - (quotationDetailModal.discount || 0)) *
+                            ((quotationDetailModal.approvedCommissionRate ?? quotationDetailModal.proposedCommissionRate ?? 10) / 100)
+                          ).toLocaleString('en-IN')}
+                        </span>
                       </div>
                     </div>
 
@@ -3111,6 +3123,36 @@ export const AdminPortal: React.FC = () => {
                       <strong>{quotationReviewModal.quotation?.client?.clientName}</strong>. Total Value: ₹
                       {(quotationReviewModal.quotation?.totalAmount || 0).toLocaleString()}.
                     </p>
+
+                    {/* Proposed BGA Commission Preview */}
+                    <div className="p-3 bg-amber-50/80 border border-amber-200/90 rounded-xl space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-amber-900">Proposed BGA Commission Rate:</span>
+                        <span className="text-sm font-extrabold text-amber-950 bg-amber-200/60 px-2 py-0.5 rounded">
+                          {quotationReviewModal.quotation?.proposedCommissionRate ?? 10}%
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-600 flex justify-between">
+                        <span>Estimated Commission Amount:</span>
+                        <strong className="text-emerald-700 font-bold">
+                          ₹{Math.round(
+                            ((quotationReviewModal.quotation?.serviceFee || 0) - (quotationReviewModal.quotation?.discount || 0)) *
+                            ((quotationReviewModal.quotation?.proposedCommissionRate ?? 10) / 100)
+                          ).toLocaleString('en-IN')}
+                        </strong>
+                      </div>
+                      {quotationReviewModal.quotation?.isCommissionException && (
+                        <div className="mt-1 p-2 bg-rose-50 border border-rose-200 rounded text-[11px] text-rose-900">
+                          <strong className="block text-rose-950 font-bold">Policy Exception Justification:</strong>
+                          <p className="mt-0.5">{quotationReviewModal.quotation?.commissionExceptionReason || 'Outside standard range'}</p>
+                        </div>
+                      )}
+                      {quotationReviewModal.quotation?.commissionNotes && (
+                        <div className="text-[11px] text-slate-600 mt-1 italic">
+                          <strong>Accounts Note:</strong> {quotationReviewModal.quotation.commissionNotes}
+                        </div>
+                      )}
+                    </div>
 
                     <QuotationHistoryTimeline currentQuotation={quotationReviewModal.quotation} defaultExpanded={false} />
 

@@ -108,8 +108,9 @@ export const AccountsPortal: React.FC = () => {
   const [requestInfoNotes, setRequestInfoNotes] = useState('');
   const [copiedUtr, setCopiedUtr] = useState<string | null>(null);
 
-  // Prepare Quotation Modal
+  // Prepare Quotation Modal & Commission Policy
   const [prepModal, setPrepModal] = useState<{ quotation: any } | null>(null);
+  const [commissionRanges, setCommissionRanges] = useState<any[]>([]);
   const [quoteForm, setQuoteForm] = useState({
     serviceScope: '',
     serviceFee: '',
@@ -119,6 +120,10 @@ export const AccountsPortal: React.FC = () => {
     advanceRequiredPercent: '50',
     paymentTerms: '50% advance to initiate technical architecture. Balance in milestones.',
     validityDays: '15',
+    proposedCommissionRate: '10',
+    commissionExceptionReason: '',
+    commissionNotes: '',
+    commissionBillingType: 'PROJECT_BASED',
   });
 
   // Record Payment Modal
@@ -260,6 +265,14 @@ export const AccountsPortal: React.FC = () => {
 
   useEffect(() => {
     loadStats();
+    // Load Admin-configured public commission ranges
+    apiRequest('/api/public/commission-ranges')
+      .then((data) => {
+        if (data?.ranges && Array.isArray(data.ranges)) {
+          setCommissionRanges(data.ranges);
+        }
+      })
+      .catch((err) => console.error('Failed to load commission ranges:', err));
   }, []);
 
   useEffect(() => {
@@ -389,11 +402,34 @@ export const AccountsPortal: React.FC = () => {
     }
   };
 
+  // Current quotation category commission range
+  const currentCategoryRange = useMemo(() => {
+    if (!prepModal?.quotation) return { minPercentage: 10, maxPercentage: 15 };
+    const cat = prepModal.quotation.serviceCategory;
+    const found = commissionRanges.find((r: any) => r.serviceCategory === cat);
+    return {
+      minPercentage: found?.minPercentage ?? 10,
+      maxPercentage: found?.maxPercentage ?? 15,
+    };
+  }, [prepModal, commissionRanges]);
+
+  const isRateOutsideRange = useMemo(() => {
+    const rate = parseFloat(quoteForm.proposedCommissionRate);
+    if (isNaN(rate)) return false;
+    return rate < currentCategoryRange.minPercentage || rate > currentCategoryRange.maxPercentage;
+  }, [quoteForm.proposedCommissionRate, currentCategoryRange]);
+
   // Open Prepare Quotation Modal
   const openPrepModal = (q: any) => {
+    const cat = q.serviceCategory;
+    const foundRange = commissionRanges.find((r: any) => r.serviceCategory === cat);
+    const defaultRate = q.proposedCommissionRate
+      ? String(q.proposedCommissionRate)
+      : String(foundRange?.minPercentage ?? 10);
+
     setPrepModal({ quotation: q });
     setQuoteForm({
-      serviceScope: q.serviceScope || q.enquiry?.requirements || '',
+      serviceScope: q.serviceScope || q.enquiry?.requirements || q.enquiry?.projectScope || '',
       serviceFee: String(q.serviceFee || q.enquiry?.expectedBudget || 50000),
       adBudget: String(q.adBudget || 0),
       discount: String(q.discount || 0),
@@ -401,6 +437,10 @@ export const AccountsPortal: React.FC = () => {
       advanceRequiredPercent: String(q.advanceRequiredPercent || 50),
       paymentTerms: q.paymentTerms || '50% advance to initiate technical architecture. Balance in milestones.',
       validityDays: '15',
+      proposedCommissionRate: defaultRate,
+      commissionExceptionReason: q.commissionExceptionReason || '',
+      commissionNotes: q.commissionNotes || '',
+      commissionBillingType: q.commissionBillingType || (q.serviceCategory === 'DIGITAL_MARKETING' ? 'MONTHLY_RECURRING' : 'PROJECT_BASED'),
     });
   };
 
@@ -408,6 +448,18 @@ export const AccountsPortal: React.FC = () => {
   const handlePrepareQuotation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prepModal) return;
+
+    const rate = parseFloat(quoteForm.proposedCommissionRate);
+    if (isNaN(rate) || rate <= 0 || rate > 100) {
+      toast.error('A valid proposed commission percentage between 0.1% and 100% is required');
+      return;
+    }
+
+    if (isRateOutsideRange && (!quoteForm.commissionExceptionReason || !quoteForm.commissionExceptionReason.trim())) {
+      toast.error(`Proposed commission rate ${rate}% is outside the configured range (${currentCategoryRange.minPercentage}%–${currentCategoryRange.maxPercentage}%). A mandatory exception justification reason is required for Admin review.`);
+      return;
+    }
+
     setModalSubmitting(true);
 
     try {
@@ -1189,19 +1241,7 @@ export const AccountsPortal: React.FC = () => {
                                 </div>
                               </div>
                               <button
-                                onClick={() => {
-                                  setPrepModal({ quotation: q });
-                                  setQuoteForm({
-                                    serviceScope: q.serviceScope || q.enquiry?.projectScope || '',
-                                    serviceFee: String(q.serviceFee || q.enquiry?.expectedBudget || ''),
-                                    adBudget: String(q.adBudget || '0'),
-                                    discount: String(q.discount || '0'),
-                                    taxRate: String(q.taxRate || '18'),
-                                    advanceRequiredPercent: String(q.advanceRequiredPercent || '50'),
-                                    paymentTerms: q.paymentTerms || '50% advance to initiate technical architecture. Balance in milestones.',
-                                    validityDays: '15',
-                                  });
-                                }}
+                                onClick={() => openPrepModal(q)}
                                 className="px-2.5 py-1 bg-[#3066BE] hover:bg-[#204a8c] text-white rounded text-[11px] font-bold transition-colors shrink-0 shadow-2xs"
                               >
                                 Draft
@@ -1619,6 +1659,98 @@ export const AccountsPortal: React.FC = () => {
                               onChange={(e) => setQuoteForm({ ...quoteForm, paymentTerms: e.target.value })}
                               className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 resize-none"
                             />
+                          </div>
+
+                          {/* BGA Commission Proposal (Dual Approval Required) */}
+                          <div className="p-3.5 bg-gradient-to-br from-amber-50/70 to-orange-50/50 border border-amber-200/90 rounded-xl space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
+                                <span className="font-bold text-amber-900 text-xs">
+                                  BGA Associate Commission Proposal (Dual Approval)
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                                Policy Range: {currentCategoryRange.minPercentage}% – {currentCategoryRange.maxPercentage}%
+                              </span>
+                            </div>
+
+                            <p className="text-[11px] text-slate-600 leading-relaxed">
+                              Propose commission percentage for Associate{' '}
+                              <strong className="text-slate-800">{prepModal.quotation.bga?.name || 'Assigned BGA'}</strong>.
+                              Admin executive approval is required before this quotation and commission rate are authorized.
+                            </p>
+
+                            <div className="grid grid-cols-2 gap-3 items-start">
+                              <div>
+                                <label className="block text-slate-700 font-semibold mb-1">
+                                  Proposed Commission Rate (%) <span className="text-rose-500">*</span>
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    min="0.1"
+                                    max="100"
+                                    required
+                                    value={quoteForm.proposedCommissionRate}
+                                    onChange={(e) => setQuoteForm({ ...quoteForm, proposedCommissionRate: e.target.value })}
+                                    className="w-full p-2.5 pr-8 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white"
+                                    placeholder="e.g. 10"
+                                  />
+                                  <span className="absolute right-3 top-2.5 text-slate-400 font-bold text-xs">%</span>
+                                </div>
+                              </div>
+
+                              <div className="p-2.5 bg-white/90 border border-amber-200/60 rounded-xl">
+                                <span className="text-[10px] text-slate-500 block font-semibold uppercase tracking-wider">
+                                  Estimated Payout
+                                </span>
+                                <div className="text-sm font-bold text-emerald-700 mt-0.5">
+                                  ₹{Math.round(
+                                    Math.max(0, (parseFloat(quoteForm.serviceFee) || 0) - (parseFloat(quoteForm.discount) || 0)) *
+                                    ((parseFloat(quoteForm.proposedCommissionRate) || 0) / 100)
+                                  ).toLocaleString('en-IN')}
+                                </div>
+                                <span className="text-[10px] text-slate-400">
+                                  Calculated on Net Fee (excl. GST & Ad Spends)
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Exception Notice & Reason */}
+                            {isRateOutsideRange && (
+                              <div className="space-y-1.5 p-2.5 bg-rose-50/90 border border-rose-200 rounded-lg text-rose-950">
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-rose-900">
+                                  <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                  <span>Policy Exception: Rate outside standard {currentCategoryRange.minPercentage}%–{currentCategoryRange.maxPercentage}%</span>
+                                </div>
+                                <label className="block text-[11px] font-semibold text-rose-900">
+                                  Mandatory Exception Justification for Admin <span className="text-rose-600">*</span>
+                                </label>
+                                <textarea
+                                  rows={2}
+                                  required={isRateOutsideRange}
+                                  value={quoteForm.commissionExceptionReason}
+                                  onChange={(e) => setQuoteForm({ ...quoteForm, commissionExceptionReason: e.target.value })}
+                                  placeholder="Provide commercial rationale for rate outside approved range..."
+                                  className="w-full p-2 text-xs border border-rose-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-rose-500 resize-none text-slate-800"
+                                />
+                              </div>
+                            )}
+
+                            <div>
+                              <label className="block text-[11px] text-slate-600 font-semibold mb-1">
+                                Commission Internal Notes (Optional for Admin)
+                              </label>
+                              <input
+                                type="text"
+                                value={quoteForm.commissionNotes}
+                                onChange={(e) => setQuoteForm({ ...quoteForm, commissionNotes: e.target.value })}
+                                placeholder="e.g. Standard rate for direct associate referral"
+                                className="w-full p-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-800"
+                              />
+                            </div>
                           </div>
 
                           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
