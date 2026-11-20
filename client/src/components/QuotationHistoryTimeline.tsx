@@ -344,14 +344,22 @@ export const QuotationHistoryTimeline: React.FC<QuotationHistoryTimelineProps> =
                   </div>
                   <div className="bg-amber-50/80 border border-amber-200/60 rounded-lg p-2">
                     <span className="text-amber-800 block text-[10px] uppercase font-bold">
-                      BGA Commission {ver.approvedCommissionRate || ver.status === 'ADMIN_APPROVED' || ver.adminApprovalStatus === 'APPROVED' ? '(Approved)' : '(Proposed)'}
+                      BGA Commission {ver.approvedCommissionRate || ver.status === 'ADMIN_APPROVED' || ver.adminApprovalStatus === 'APPROVED' ? '(Approved)' : ver.status === 'REQUESTED' ? '(Pending)' : '(Proposed)'}
                     </span>
-                    <span className="font-extrabold text-amber-950 text-xs">
-                      {ver.approvedCommissionRate ?? ver.proposedCommissionRate ?? (ver.status === 'ADMIN_APPROVED' ? 10 : 10)}%
-                    </span>
-                    <span className="text-slate-500 block text-[10px] font-medium mt-0.5">
-                      ₹{Math.round(((ver.serviceFee || 0) - (ver.discount || 0)) * ((ver.approvedCommissionRate ?? ver.proposedCommissionRate ?? 10) / 100)).toLocaleString('en-IN')}
-                    </span>
+                    {ver.status === 'REQUESTED' ? (
+                      <span className="text-amber-700 font-semibold text-xs block mt-1">
+                        Awaiting Draft
+                      </span>
+                    ) : (
+                      <>
+                        <span className="font-extrabold text-amber-950 text-xs">
+                          {ver.approvedCommissionRate ?? ver.proposedCommissionRate ?? 10}%
+                        </span>
+                        <span className="text-slate-500 block text-[10px] font-medium mt-0.5">
+                          ₹{Math.round(((ver.serviceFee || 0) - (ver.discount || 0)) * ((ver.approvedCommissionRate ?? ver.proposedCommissionRate ?? 10) / 100)).toLocaleString('en-IN')}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -360,6 +368,25 @@ export const QuotationHistoryTimeline: React.FC<QuotationHistoryTimelineProps> =
                   <div className="text-xs text-slate-700 bg-white p-2.5 rounded-lg border border-slate-100">
                     <strong className="text-slate-900">Scope of Work (v{ver.version}):</strong>{' '}
                     <span className="text-slate-600">{ver.serviceScope}</span>
+                  </div>
+                )}
+
+                {/* Commission Notes & Policy Exceptions */}
+                {(ver.commissionNotes || ver.commissionExceptionReason) && (
+                  <div className="text-[11px] bg-amber-50/60 border border-amber-200/60 p-2.5 rounded-lg flex items-start gap-2 text-amber-950">
+                    <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    <div>
+                      {ver.commissionExceptionReason && (
+                        <div>
+                          <strong className="text-rose-900 font-bold">Policy Exception Justification:</strong> {ver.commissionExceptionReason}
+                        </div>
+                      )}
+                      {ver.commissionNotes && (
+                        <div className="text-slate-600 mt-0.5">
+                          <strong className="text-slate-800">Accounts Commercial Note:</strong> {ver.commissionNotes}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -401,8 +428,8 @@ export const QuotationHistoryTimeline: React.FC<QuotationHistoryTimelineProps> =
                 )}
 
                 {/* ADMIN APPROVAL GUIDANCE (When Approved) */}
-                {isApproved && ver.adminNotes && !isRejected && (
-                  <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl text-xs space-y-1">
+                {isApproved && (ver.adminNotes || ver.approvedCommissionRate != null || ver.proposedCommissionRate != null) && !isRejected && (
+                  <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl text-xs space-y-1.5">
                     <div className="flex items-center gap-1.5 font-bold text-blue-900">
                       <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
                       <span>Executive Approval Verification:</span>
@@ -415,8 +442,21 @@ export const QuotationHistoryTimeline: React.FC<QuotationHistoryTimelineProps> =
                         </span>
                       )}
                     </div>
-                    <div className="pl-5 text-blue-950 font-semibold bg-white/70 p-2 rounded-lg border border-blue-100">
-                      "{ver.adminNotes}"
+                    {ver.adminNotes && (
+                      <div className="pl-5 text-blue-950 font-semibold bg-white/70 p-2 rounded-lg border border-blue-100">
+                        "{ver.adminNotes}"
+                      </div>
+                    )}
+                    <div className="pl-5 flex items-center gap-2 text-xs flex-wrap pt-0.5">
+                      <span className="font-bold text-blue-900">
+                        Authorized BGA Commission:
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-blue-100 font-extrabold text-blue-950 text-xs border border-blue-200">
+                        {ver.approvedCommissionRate ?? ver.proposedCommissionRate ?? 10}%
+                      </span>
+                      <span className="text-slate-600 font-semibold">
+                        (₹{Math.round(((ver.serviceFee || 0) - (ver.discount || 0)) * ((ver.approvedCommissionRate ?? ver.proposedCommissionRate ?? 10) / 100)).toLocaleString('en-IN')} net payout)
+                      </span>
                     </div>
                   </div>
                 )}

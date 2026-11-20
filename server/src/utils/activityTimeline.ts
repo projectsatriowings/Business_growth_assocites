@@ -334,29 +334,24 @@ export async function getClientActivityTimeline(
         },
       });
     } else {
-      // Prepared by Accounts (Draft submitted to Admin or Approved)
-      const commRate = q.approvedCommissionRate || (isApproved ? q.proposedCommissionRate : null);
-      const commAmount = commRate ? Math.round(((q.serviceFee || 0) - (q.discount || 0)) * (commRate / 100)) : null;
-      const commText = isApproved && commRate ? ` • Approved Commission: ${commRate}% (₹${commAmount?.toLocaleString('en-IN')})` : '';
+      // Prepared by Accounts (Draft submitted to Admin for approval)
+      const propRate = q.proposedCommissionRate || q.approvedCommissionRate || 10;
+      const propAmount = Math.round(((q.serviceFee || 0) - (q.discount || 0)) * (propRate / 100));
 
       rawEvents.push({
         id: `quote-${q.id}`,
         clientId: client.id,
         type: 'QUOTATION_CREATED',
         category: 'QUOTATION',
-        title: isApproved
-          ? `Commercial Quotation ${q.quotationNumber} (v${q.version}) Approved & Released`
-          : `Commercial Quotation ${q.quotationNumber} (v${q.version}) Drafted by Accounts`,
+        title: `Commercial Quotation ${q.quotationNumber} (v${q.version}) Prepared by Accounts`,
         description: `Contract Value: ₹${(q.totalAmount || 0).toLocaleString('en-IN')} (Advance: ₹${(
           q.advanceRequiredAmount || 0
-        ).toLocaleString('en-IN')})${commText} • Scope: ${q.serviceScope?.slice(0, 100) || 'Official scope'}`,
-        timestamp: (q.updatedAt || q.createdAt).toISOString(),
+        ).toLocaleString('en-IN')}) • Proposed BGA Commission: ${propRate}% (₹${propAmount.toLocaleString('en-IN')}) • Scope: ${q.serviceScope?.slice(0, 100) || 'Official scope'}`,
+        timestamp: q.createdAt.toISOString(),
         authorName: 'Accounts Department',
         authorRole: 'ACCOUNTS',
-        badgeLabel: isApproved ? `APPROVED v${q.version}` : `DRAFT v${q.version}`,
-        badgeColor: isApproved
-          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-          : 'bg-indigo-50 text-indigo-800 border-indigo-200',
+        badgeLabel: `DRAFT v${q.version}`,
+        badgeColor: 'bg-indigo-50 text-indigo-800 border-indigo-200',
         sourceType: 'QUOTATION',
         sourceId: q.id,
         metadata: {
@@ -364,8 +359,8 @@ export async function getClientActivityTimeline(
           version: q.version,
           totalAmount: q.totalAmount,
           advanceRequiredAmount: q.advanceRequiredAmount,
-          approvedCommissionRate: commRate,
-          approvedCommissionAmount: commAmount,
+          proposedCommissionRate: propRate,
+          proposedCommissionAmount: propAmount,
         },
       });
     }
@@ -391,17 +386,17 @@ export async function getClientActivityTimeline(
 
     // 3. Admin Approval / Rejection
     if (isApproved && q.adminReviewedAt) {
-      const appCommRate = q.approvedCommissionRate || q.proposedCommissionRate;
-      const appCommAmount = appCommRate ? Math.round(((q.serviceFee || 0) - (q.discount || 0)) * (appCommRate / 100)) : null;
-      const appCommText = appCommRate ? ` • Approved Commission: ${appCommRate}% (₹${appCommAmount?.toLocaleString('en-IN')})` : '';
+      const appCommRate = q.approvedCommissionRate || q.proposedCommissionRate || 10;
+      const appCommAmount = Math.round(((q.serviceFee || 0) - (q.discount || 0)) * (appCommRate / 100));
 
       rawEvents.push({
         id: `quote-app-${q.id}`,
         clientId: client.id,
         type: 'QUOTATION_APPROVED',
         category: 'QUOTATION',
-        title: `Quotation ${q.quotationNumber} Approved by Admin`,
-        description: (q.adminNotes ? `Executive Sign-off: "${q.adminNotes}"` : 'Quotation verified and released to BGA for client presentation.') + appCommText,
+        title: `Official Quotation & Commission Approved by Admin`,
+        description: (q.adminNotes ? `Executive Sign-off: "${q.adminNotes}" • ` : '') +
+          `Approved BGA Commission: ${appCommRate}% (₹${appCommAmount.toLocaleString('en-IN')}) • Released to BGA for client presentation.`,
         timestamp: q.adminReviewedAt.toISOString(),
         authorName: 'Admin Executive',
         authorRole: 'ADMIN',
@@ -412,6 +407,29 @@ export async function getClientActivityTimeline(
         metadata: {
           approvedCommissionRate: appCommRate,
           approvedCommissionAmount: appCommAmount,
+          adminNotes: q.adminNotes,
+        },
+      });
+
+      // Also register under COMMISSION category so BGA can view under Commissions filter tab
+      rawEvents.push({
+        id: `comm-quote-${q.id}`,
+        clientId: client.id,
+        type: 'COMMISSION_APPROVED',
+        category: 'COMMISSION',
+        title: `Project Commission Approved: ${appCommRate}% (₹${appCommAmount.toLocaleString('en-IN')})`,
+        description: `Admin executive sign-off completed for ${q.quotationNumber}. Payout of ₹${appCommAmount.toLocaleString('en-IN')} will be unlocked upon client payment verification.`,
+        timestamp: q.adminReviewedAt.toISOString(),
+        authorName: 'Admin Executive',
+        authorRole: 'ADMIN',
+        badgeLabel: `APPROVED ${appCommRate}%`,
+        badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        sourceType: 'QUOTATION',
+        sourceId: q.id,
+        metadata: {
+          quotationNumber: q.quotationNumber,
+          commissionRate: appCommRate,
+          calculatedCommission: appCommAmount,
         },
       });
     } else if (isRejected && q.adminReviewedAt) {
