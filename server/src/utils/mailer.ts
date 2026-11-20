@@ -626,3 +626,117 @@ export async function sendPasswordResetEmail(data: {
   });
 }
 
+export interface TransactionalEmailOptions {
+  to: string;
+  recipientName: string;
+  subject: string;
+  badge?: string;
+  eventTitle: string;
+  eventDescription: string;
+  details?: Array<{ label: string; value: string | number }>;
+  actionUrl?: string;
+  actionText?: string;
+  remarks?: string;
+  remarksLabel?: string;
+  priorityNotice?: string;
+}
+
+/**
+ * 7. Universal Transactional Business Notification Email
+ * Used across Admin, BGA, Accounts, and Technical portals for business events.
+ */
+export async function sendTransactionalNotificationEmail(
+  options: TransactionalEmailOptions
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const fullActionUrl = options.actionUrl
+    ? (options.actionUrl.startsWith('http') ? options.actionUrl : `${clientUrl}${options.actionUrl}`)
+    : `${clientUrl}/login`;
+
+  let detailsHtml = '';
+  if (options.details && options.details.length > 0) {
+    detailsHtml = `
+      <div class="card" style="border-left: 4px solid #3066BE; margin: 20px 0;">
+        <table class="data-table" style="width: 100%; border-collapse: collapse;">
+          ${options.details
+            .map(
+              (d) => `
+            <tr>
+              <td class="label" style="padding: 8px 12px; width: 38%; color: #64748b; font-weight: 600; font-size: 12px; border-bottom: 1px solid #f1f5f9;">
+                ${d.label}:
+              </td>
+              <td class="val" style="padding: 8px 12px; width: 62%; color: #152544; font-weight: 700; font-size: 13px; border-bottom: 1px solid #f1f5f9;">
+                ${d.value}
+              </td>
+            </tr>`
+            )
+            .join('')}
+        </table>
+      </div>
+    `;
+  }
+
+  let remarksHtml = '';
+  if (options.remarks) {
+    remarksHtml = `
+      <div class="card" style="border-left: 4px solid #119DA4; background-color: #f0fdfa; padding: 14px; margin: 16px 0;">
+        <strong style="color: #0f766e; font-size: 12px; text-transform: uppercase; display: block; margin-bottom: 4px;">
+          ${options.remarksLabel || 'Official Notes / Instructions'}:
+        </strong>
+        <p style="margin: 0; color: #134e4a; font-size: 13px; line-height: 1.5;">
+          ${options.remarks.replace(/\n/g, '<br>')}
+        </p>
+      </div>
+    `;
+  }
+
+  let priorityHtml = '';
+  if (options.priorityNotice) {
+    priorityHtml = `
+      <div class="card" style="border-left: 4px solid #f59e0b; background-color: #fffbeb; padding: 12px; margin: 16px 0;">
+        <p style="margin: 0; color: #92400e; font-size: 12px; font-weight: 600; line-height: 1.5;">
+          &#9888; ${options.priorityNotice}
+        </p>
+      </div>
+    `;
+  }
+
+  const content = `
+    <h2 style="font-size: 20px; color: #152544; margin-top: 0; font-weight: 800; line-height: 1.3;">
+      ${options.eventTitle}
+    </h2>
+    <p style="color: #475569; font-size: 14px; margin-bottom: 16px;">
+      Dear <strong>${options.recipientName}</strong>,
+    </p>
+    <p style="color: #334155; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0;">
+      ${options.eventDescription}
+    </p>
+
+    ${detailsHtml}
+    ${remarksHtml}
+    ${priorityHtml}
+
+    <div style="text-align: center; margin: 28px 0 20px 0;">
+      <a href="${fullActionUrl}" class="btn" style="background: linear-gradient(135deg, #0879E8 0%, #123FAD 100%); color: #ffffff !important; padding: 13px 28px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px; display: inline-block; box-shadow: 0 4px 14px rgba(8, 121, 232, 0.3);">
+        ${options.actionText || 'View Details in Portal &rarr;'}
+      </a>
+    </div>
+
+    <p style="font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 14px; margin-top: 24px; text-align: center;">
+      This is an automated enterprise transaction alert from Atriowings Technologies India Private Limited.<br>
+      Please do not reply directly to this email. For assistance, reach out to <a href="mailto:info@atriowings.in" style="color: #0879E8;">info@atriowings.in</a>.
+    </p>
+  `;
+
+  return await sendEmail({
+    to: options.to,
+    subject: options.subject,
+    html: wrapEmailHtml(content, {
+      preheader: options.eventDescription.slice(0, 90),
+      badge: options.badge || 'TRANSACTION ALERT',
+      subtitle: 'ATRIOWINGS ENTERPRISE PORTAL',
+    }),
+  });
+}
+
+

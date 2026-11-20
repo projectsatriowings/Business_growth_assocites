@@ -10,6 +10,8 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
+  const [activeToast, setActiveToast] = useState<{ id: string; title: string; message: string; link?: string } | null>(null);
+  const prevUnreadRef = useRef<number | null>(null);
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -29,8 +31,24 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
   const fetchNotifications = async () => {
     try {
       const data = await apiRequest('/api/notifications');
-      setNotifications(data.notifications || []);
-      setUnreadCount(data.unreadCount || 0);
+      const list = data.notifications || [];
+      const count = data.unreadCount || 0;
+
+      // Real-time toast alert when new unread notification arrives
+      if (prevUnreadRef.current !== null && count > prevUnreadRef.current && list.length > 0) {
+        const latest = list[0];
+        setActiveToast({
+          id: latest.id,
+          title: latest.title,
+          message: latest.message,
+          link: latest.link,
+        });
+        setTimeout(() => setActiveToast(null), 6000);
+      }
+      prevUnreadRef.current = count;
+
+      setNotifications(list);
+      setUnreadCount(count);
     } catch (e) {
       // ignore
     }
@@ -42,7 +60,7 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
     let intervalId: any = null;
     const startPolling = () => {
       if (!intervalId) {
-        intervalId = setInterval(fetchNotifications, 45000); // 45s poll
+        intervalId = setInterval(fetchNotifications, 20000); // 20s real-time poll
       }
     };
     const stopPolling = () => {
@@ -362,6 +380,38 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
           </div>
         </div>
       </div>
+
+      {/* Real-time Notification Toast Pill */}
+      {activeToast && (
+        <div
+          onClick={() => {
+            handleNotificationClick(activeToast);
+            setActiveToast(null);
+          }}
+          className="fixed bottom-6 right-6 max-w-sm bg-slate-900 text-white rounded-2xl shadow-2xl p-4 border border-slate-700/80 z-[100] cursor-pointer animate-slideUp flex items-start gap-3 hover:bg-slate-800 transition-colors"
+        >
+          <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
+            <Bell className="w-4 h-4 animate-bounce" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-1 mb-0.5">
+              <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider">New Notification</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveToast(null);
+                }}
+                className="text-slate-400 hover:text-white p-0.5"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <p className="text-xs font-bold text-white truncate">{activeToast.title}</p>
+            <p className="text-[11px] text-slate-300 line-clamp-2 mt-0.5">{activeToast.message}</p>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

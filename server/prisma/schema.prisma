@@ -703,4 +703,25 @@ model CommissionRangeConfig {
   @@index([status])
 }
 
+model EmailDeliveryLog {
+  id             String   @id @default(cuid())
+  eventType      String
+  recipientId    String?
+  recipientEmail String
+  recipientRole  String?
+  subject        String
+  status         String   @default("PENDING") // PENDING, SENT, FAILED
+  attempts       Int      @default(0)
+  errorMessage   String?
+  metadata       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([recipientEmail])
+  @@index([status])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+
 

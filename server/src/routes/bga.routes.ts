@@ -1893,17 +1893,28 @@ router.post('/enquiries', async (req: AuthRequest, res: Response): Promise<void>
       },
     });
 
-    // Notify Admins
-    const admins = await prisma.user.findMany({ where: { role: Role.ADMIN } });
-    for (const a of admins) {
+    // Notify Admins and Accounts
+    const adminAndAccounts = await prisma.user.findMany({
+      where: { role: { in: [Role.ADMIN, Role.ACCOUNTS] }, status: 'ACTIVE' },
+    });
+    for (const a of adminAndAccounts) {
       await createNotification(
         a.id,
         'New Client Enquiry Awaiting Review',
-        `Associate ${req.user!.name} created enquiry ${enquiryId} for ${client.clientName}.`,
+        `Associate ${req.user!.name} created enquiry ${enquiryId} for ${client.clientName} (${serviceCategory}).`,
         'ACTION_REQUIRED',
-        '/admin/enquiries'
+        a.role === Role.ADMIN ? '/admin/enquiries' : '/accounts/quotation-requests'
       );
     }
+
+    // Confirmation notification & email to BGA
+    await createNotification(
+      req.user!.id,
+      'Enquiry Submitted Successfully',
+      `Your enquiry ${enquiryId} for ${client.clientName} (${serviceCategory}) has been submitted for company review.`,
+      'SUCCESS',
+      '/bga?tab=enquiries'
+    );
 
     await logAudit(req.user!.id, req.user!.email, req.user!.role, 'CREATE_ENQUIRY', 'ENQUIRY', enquiry.id, {
       enquiryId,

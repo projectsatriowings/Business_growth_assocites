@@ -216,6 +216,18 @@ export async function autoReleaseWorkOrderToTechnical(
     );
   }
 
+  // POLICY ENFORCED: Notify Technical Team members via in-app & registered email!
+  const technicalUsers = await prisma.user.findMany({ where: { role: Role.TECHNICAL, status: 'ACTIVE' } });
+  for (const tech of technicalUsers) {
+    await createNotification(
+      tech.id,
+      'New Project Assigned to Technical Team',
+      `Advance verified for ${workOrder.client.clientName}. Project ${result.project?.projectNumber || workOrder.workOrderNumber} (${teamInfo.teamName}) is now active for team assignment and milestone execution.`,
+      'ACTION_REQUIRED',
+      '/technical?tab=projects'
+    );
+  }
+
   // 7. Invalidate Caches
   appCache.invalidatePrefix('accounts:');
   appCache.invalidatePrefix('technical:');

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role, BgaStatus } from '@prisma/client';
 import { prisma } from '../prisma';
+import { NotificationService } from '../services/notification.service';
 
 export interface AuthenticatedUser {
   id: string;
@@ -153,17 +154,25 @@ export const createNotification = async (
   link?: string
 ) => {
   try {
-    await prisma.notification.create({
-      data: {
-        userId,
-        title,
-        message,
-        type,
-        link,
+    // 1. Dispatch through centralized NotificationService with in-app & role-based canonical email
+    await NotificationService.dispatch({
+      eventType: 'SYSTEM_NOTIFICATION',
+      title,
+      message,
+      type,
+      link,
+      userIds: [userId],
+      emailData: {
+        subject: `${title} - Atriowings Enterprise`,
+        eventTitle: title,
+        eventDescription: message,
+        badge: type === 'ACTION_REQUIRED' ? 'ACTION REQUIRED' : 'PORTAL NOTIFICATION',
+        actionUrl: link,
+        actionText: 'Open Portal & View &rarr;',
       },
     });
   } catch (e) {
-    console.error('Failed to create notification:', e);
+    console.error('Failed to dispatch notification:', e);
   }
 };
 

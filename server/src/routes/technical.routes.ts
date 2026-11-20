@@ -310,7 +310,7 @@ router.get('/projects', async (req: AuthRequest, res: Response): Promise<void> =
 router.put('/projects/:id/status', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { status, progressPercentage, targetCompletionDate } = req.body;
+    const { status, progressPercentage, targetCompletionDate, assignedLeadId } = req.body;
 
     const project = await prisma.technicalProject.findUnique({
       where: { id },
@@ -339,6 +339,32 @@ router.put('/projects/:id/status', async (req: AuthRequest, res: Response): Prom
     if (status) updateData.status = status as ProjectStatus;
     if (progressPercentage !== undefined) updateData.progressPercentage = parseInt(progressPercentage);
     if (targetCompletionDate) updateData.targetCompletionDate = new Date(targetCompletionDate);
+
+    // Lead assignment or reassignment handling
+    if (assignedLeadId && assignedLeadId !== project.assignedLeadId) {
+      updateData.assignedLeadId = assignedLeadId;
+      const leadUser = await prisma.user.findUnique({ where: { id: assignedLeadId } });
+      if (leadUser) {
+        // POLICY ENFORCED: Technical Team members receive email + in-app notification!
+        await createNotification(
+          leadUser.id,
+          'Project Lead Assignment',
+          `You have been assigned as lead for project ${project.projectNumber} (${project.client.clientName}, ${project.serviceCategory}).`,
+          'ACTION_REQUIRED',
+          '/technical?tab=projects'
+        );
+
+        if (project.workOrder?.bgaId) {
+          await createNotification(
+            project.workOrder.bgaId,
+            'Technical Lead Assigned to Project',
+            `${leadUser.name} has been assigned as technical lead for project ${project.projectNumber} (${project.client.clientName}).`,
+            'INFO',
+            '/bga?tab=projects'
+          );
+        }
+      }
+    }
 
     if (status === ProjectStatus.IN_PROGRESS && !project.startDate) {
       updateData.startDate = new Date();
@@ -523,6 +549,23 @@ router.put('/milestones/:milestoneId', async (req: AuthRequest, res: Response): 
 
     // AUTOMATIC PROGRESS RECALCULATION
     const recalculatedProgress = await recalculateProjectProgress(milestone.projectId);
+
+    // Notify BGA and Admin if milestone was completed
+    if (status === MilestoneStatus.COMPLETED && existing.status !== MilestoneStatus.COMPLETED) {
+      const proj = await prisma.technicalProject.findUnique({
+        where: { id: milestone.projectId },
+        include: { client: true, workOrder: true },
+      });
+      if (proj && proj.workOrder?.bgaId) {
+        await createNotification(
+          proj.workOrder.bgaId,
+          'Project Milestone Completed',
+          `Milestone "${milestone.title}" for project ${proj.projectNumber} (${proj.client.clientName}) has been completed. Overall progress: ${recalculatedProgress}%.`,
+          'SUCCESS',
+          '/bga?tab=projects'
+        );
+      }
+    }
 
     await logAudit(
       req.user!.id,
