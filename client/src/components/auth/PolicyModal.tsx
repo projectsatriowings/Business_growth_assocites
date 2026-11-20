@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ShieldCheck, FileText, LifeBuoy, Mail, Phone, MapPin } from 'lucide-react';
+import { X, ShieldCheck, FileText, LifeBuoy, Mail, Phone, MapPin, Globe, MessageSquare, ExternalLink } from 'lucide-react';
 
 export type PolicyType = 'privacy' | 'terms' | 'support' | null;
 
@@ -106,8 +106,8 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({ type, onClose }) => {
                   <Mail className="w-4 h-4 text-[#0879E8] shrink-0" />
                   <div>
                     <span className="text-[11px] text-[#60769B] block">Email Support</span>
-                    <a href="mailto:support@atriowings.com" className="font-bold text-[#0879E8] hover:underline">
-                      support@atriowings.com
+                    <a href="mailto:info@atriowings.in" className="font-bold text-[#0879E8] hover:underline">
+                      info@atriowings.in
                     </a>
                   </div>
                 </div>
@@ -115,16 +115,56 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({ type, onClose }) => {
                   <Phone className="w-4 h-4 text-[#0879E8] shrink-0" />
                   <div>
                     <span className="text-[11px] text-[#60769B] block">Corporate Desk</span>
-                    <span className="font-bold text-[#10244D]">+91 (0) 44 4850 1200</span>
+                    <a href="tel:+918825948859" className="font-bold text-[#10244D] hover:text-[#0879E8] transition-colors">
+                      +91 8825948859
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <MessageSquare className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <div>
+                    <span className="text-[11px] text-[#60769B] block">Direct WhatsApp</span>
+                    <a
+                      href="https://wa.me/918825948859"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-emerald-600 hover:underline"
+                    >
+                      +91 8825948859
+                    </a>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <MapPin className="w-4 h-4 text-[#0879E8] shrink-0 mt-0.5" />
                   <div>
-                    <span className="text-[11px] text-[#60769B] block">Headquarters</span>
-                    <span className="text-xs text-[#10244D]">
-                      Atriowings Technologies India Private Limited, Chennai, Tamil Nadu, India
+                    <span className="text-[11px] text-[#60769B] block">Headquarters / Corporate Office</span>
+                    <span className="text-xs text-[#10244D] block font-medium leading-relaxed">
+                      No. 1, Gurudev Complex, 57th St, Venkatraman Nagar, Korattur, Chennai, Tamil Nadu 600080.
                     </span>
+                    <a
+                      href="https://www.google.com/maps/search/?api=1&query=No.+1,+Gurudev+Complex,+57th+St,+Venkatraman+Nagar,+Korattur,+Chennai,+Tamil+Nadu+600080"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] text-[#0879E8] hover:underline font-bold mt-1"
+                    >
+                      <span>Get Directions on Google Maps</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 pt-2 border-t border-[#D6E2F2]/60">
+                  <Globe className="w-4 h-4 text-[#0879E8] shrink-0" />
+                  <div>
+                    <span className="text-[11px] text-[#60769B] block">Official Website</span>
+                    <a
+                      href="https://atriowings.in/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-[#0879E8] hover:underline inline-flex items-center gap-1 text-xs"
+                    >
+                      <span>https://atriowings.in/</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
                   </div>
                 </div>
               </div>
