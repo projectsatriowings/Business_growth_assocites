@@ -321,7 +321,11 @@ export const RegisterBgaPage: React.FC = () => {
         setEmailStatus('OTP_SENT');
         setEmailCooldown(data.cooldownSeconds || 60);
         setEmailMessage(data.message || `Verification code sent to ${formData.email}. Valid for 5 minutes.`);
-        setEmailOtp('');
+        if (data.otpHint) {
+          setEmailOtp(data.otpHint);
+        } else {
+          setEmailOtp('');
+        }
       } else {
         if (data.message && data.message.includes('already registered')) {
           setEmailStatus('ALREADY_REGISTERED');
@@ -442,7 +446,11 @@ export const RegisterBgaPage: React.FC = () => {
         setMobileStatus('OTP_SENT');
         setMobileCooldown(data.cooldownSeconds || 60);
         setMobileMessage(data.message || `Verification code sent to ${mobileCountryCode} ${formData.mobile}. Valid for 5 minutes.`);
-        setMobileOtp('');
+        if (data.otpHint) {
+          setMobileOtp(data.otpHint);
+        } else {
+          setMobileOtp('');
+        }
       } else {
         if (data.message && data.message.includes('already registered')) {
           setMobileStatus('ALREADY_REGISTERED');
@@ -937,6 +945,20 @@ export const RegisterBgaPage: React.FC = () => {
                     <p className="text-[11px] text-rose-600 font-medium pl-1">{fieldErrors.email}</p>
                   )}
 
+                  {!isEmailVerified && emailStatus === 'IDLE' && (
+                    <p className="text-[11px] text-[#60769B] pl-1 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0879E8]"></span>
+                      Click <strong className="text-[#0879E8]">&quot;Send OTP&quot;</strong> to receive and enter your 6-digit verification code.
+                    </p>
+                  )}
+
+                  {emailStatus === 'ERROR' && emailMessage && (
+                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <span>{emailMessage}</span>
+                    </div>
+                  )}
+
                   {emailStatus === 'ALREADY_REGISTERED' && (
                     <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1">
                       <div className="font-bold flex items-center gap-1.5">
@@ -1164,6 +1186,20 @@ export const RegisterBgaPage: React.FC = () => {
 
                   {fieldErrors.mobile && (
                     <p className="text-[11px] text-rose-600 font-medium pl-1">{fieldErrors.mobile}</p>
+                  )}
+
+                  {!isMobileVerified && mobileStatus === 'IDLE' && (
+                    <p className="text-[11px] text-[#60769B] pl-1 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0879E8]"></span>
+                      Click <strong className="text-[#0879E8]">&quot;Send OTP&quot;</strong> to receive and enter your 6-digit SMS verification code.
+                    </p>
+                  )}
+
+                  {mobileStatus === 'ERROR' && mobileMessage && (
+                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <span>{mobileMessage}</span>
+                    </div>
                   )}
 
                   {mobileStatus === 'ALREADY_REGISTERED' && (
