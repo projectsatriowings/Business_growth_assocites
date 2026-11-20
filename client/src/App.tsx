@@ -32,6 +32,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
 const LandingPage = lazyWithRetry(() => import('./pages/LandingPage'), 'LandingPage');
 const RegisterBgaPage = lazyWithRetry(() => import('./pages/RegisterBgaPage'), 'RegisterBgaPage');
 const LoginPage = lazyWithRetry(() => import('./pages/LoginPage'), 'LoginPage');
+const ForgotPasswordPage = lazyWithRetry(() => import('./pages/ForgotPasswordPage'), 'ForgotPasswordPage');
 const ResetPasswordPage = lazyWithRetry(() => import('./pages/ResetPasswordPage'), 'ResetPasswordPage');
 const AdminPortal = lazyWithRetry(() => import('./pages/admin/AdminPortal'), 'AdminPortal');
 const BgaPortal = lazyWithRetry(() => import('./pages/bga/BgaPortal'), 'BgaPortal');
@@ -97,6 +98,7 @@ export function App() {
               <Route path="/register" element={<RegisterBgaPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/login/:role" element={<LoginPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* Admin Protected Routes */}

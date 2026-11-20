@@ -1,26 +1,31 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Building2,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  MapPin,
+  Lock,
+  CreditCard,
+  FileText,
+  ShieldCheck,
   CheckCircle2,
+  AlertCircle,
   ArrowRight,
   ArrowLeft,
-  ShieldCheck,
-  AlertCircle,
-  FileText,
-  User,
-  CreditCard,
-  Lock,
-  Sparkles,
+  Upload,
   Eye,
   EyeOff,
   Check,
-  Upload,
   X,
   Loader2,
-  Image as ImageIcon,
+  Building2,
 } from 'lucide-react';
-import { Navbar } from '../components/Navbar';
+import { AuthLayout } from '../components/auth/AuthLayout';
+import { AuthCard } from '../components/auth/AuthCard';
+import { AuthInput } from '../components/auth/AuthInput';
+import { AuthPrimaryButton } from '../components/auth/AuthPrimaryButton';
 import { uploadPublicFile } from '../utils/api';
 
 interface DocumentUploadFieldProps {
@@ -29,11 +34,9 @@ interface DocumentUploadFieldProps {
   helpText: string;
   value: string;
   docName?: string;
-  docSize?: number;
-  onUploaded: (url: string, name: string, size?: number) => void;
+  onUploaded: (url: string, name: string) => void;
   onRemove: () => void;
   error?: string;
-  accept?: string;
 }
 
 const DocumentUploadField: React.FC<DocumentUploadFieldProps> = ({
@@ -42,35 +45,25 @@ const DocumentUploadField: React.FC<DocumentUploadFieldProps> = ({
   helpText,
   value,
   docName,
-  docSize,
   onUploaded,
   onRemove,
   error,
-  accept = '.pdf,image/png,image/jpeg,image/webp',
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-
-  const formatBytes = (bytes?: number) => {
-    if (!bytes) return '';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
 
   const handleFile = async (file: File) => {
     setUploadError(null);
     if (file.size > 20 * 1024 * 1024) {
-      setUploadError('File is too large. Maximum size is 20MB.');
+      setUploadError('File size exceeds 20MB limit.');
       return;
     }
 
     setUploading(true);
     try {
       const res = await uploadPublicFile(file);
-      onUploaded(res.url, file.name, file.size);
+      onUploaded(res.url, file.name);
     } catch (err: any) {
       setUploadError(err.message || 'Failed to upload document');
     } finally {
@@ -78,30 +71,10 @@ const DocumentUploadField: React.FC<DocumentUploadFieldProps> = ({
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFile(file);
-    }
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      handleFile(file);
-    }
-  };
-
-  const isImage = value && value.match(/\.(jpeg|jpg|png|webp|svg)($|\?)/i);
-
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 text-left">
       <div className="flex items-center justify-between">
-        <label className="block font-bold text-slate-700">
+        <label className="block text-xs font-semibold text-[#10244D]">
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
         {value && (
@@ -114,50 +87,38 @@ const DocumentUploadField: React.FC<DocumentUploadFieldProps> = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept={accept}
-        onChange={handleInputChange}
+        accept=".pdf,image/png,image/jpeg,image/webp"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }}
         className="hidden"
       />
 
       {value ? (
-        <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 flex items-center justify-between gap-3 transition-all">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-              {isImage ? <ImageIcon className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+        <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+              <FileText className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-800 truncate">
-                {docName || value.split('/').pop()}
-              </p>
-              <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
-                {docSize ? <span>{formatBytes(docSize)}</span> : null}
-                <span className="text-emerald-600 font-semibold">• Document ready</span>
-              </div>
+              <p className="font-bold text-[#10244D] truncate">{docName || value.split('/').pop()}</p>
+              <span className="text-[10px] text-emerald-600 font-semibold">• Document ready for verification</span>
             </div>
           </div>
-
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={() => window.open(value, '_blank')}
-              className="px-2.5 py-1 text-[11px] font-semibold text-[#3066BE] hover:bg-blue-50 border border-[#3066BE]/30 rounded-lg flex items-center gap-1 transition-colors"
-              title="Preview Document"
+              className="px-2.5 py-1 text-[11px] font-bold text-[#0879E8] hover:bg-white rounded-lg transition-colors"
             >
-              <Eye className="w-3.5 h-3.5" /> Preview
-            </button>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-white border border-slate-300 rounded-lg flex items-center gap-1 transition-colors"
-              title="Replace File"
-            >
-              <Upload className="w-3.5 h-3.5" /> Replace
+              Preview
             </button>
             <button
               type="button"
               onClick={onRemove}
-              className="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
-              title="Remove File"
+              className="p-1 text-[#60769B] hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -165,56 +126,35 @@ const DocumentUploadField: React.FC<DocumentUploadFieldProps> = ({
         </div>
       ) : (
         <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragActive(true);
-          }}
-          onDragLeave={() => setDragActive(false)}
-          onDrop={handleDrop}
           onClick={() => !uploading && fileInputRef.current?.click()}
-          className={`p-4 rounded-xl border-2 border-dashed transition-all cursor-pointer text-center ${
-            dragActive
-              ? 'border-[#3066BE] bg-blue-50/30'
-              : error || uploadError
-              ? 'border-rose-300 bg-rose-50/10 hover:border-rose-400'
-              : 'border-slate-300 bg-slate-50/50 hover:border-[#3066BE] hover:bg-blue-50/20'
+          className={`p-3.5 rounded-xl border-2 border-dashed transition-all cursor-pointer text-center ${
+            error || uploadError
+              ? 'border-rose-300 bg-rose-50/20'
+              : 'border-[#D6E2F2] bg-[#F5F9FF]/60 hover:border-[#0879E8] hover:bg-[#DCEBFF]/30'
           }`}
         >
           {uploading ? (
-            <div className="py-2 flex flex-col items-center justify-center gap-2">
-              <Loader2 className="w-6 h-6 text-[#3066BE] animate-spin" />
-              <p className="text-xs font-semibold text-[#3066BE]">Uploading document, please wait...</p>
+            <div className="py-1 flex items-center justify-center gap-2 text-xs font-semibold text-[#0879E8]">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Uploading document...</span>
             </div>
           ) : (
-            <div className="py-1 space-y-1.5">
-              <div className="w-9 h-9 rounded-full bg-blue-50 text-[#3066BE] flex items-center justify-center mx-auto">
-                <Upload className="w-4 h-4" />
-              </div>
-              <div>
-                <span className="text-xs font-bold text-slate-800">
-                  Click to upload or drag & drop document
-                </span>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  PDF, JPG, PNG, WEBP (Max 20MB)
-                </p>
-              </div>
+            <div className="flex items-center justify-center gap-2 text-xs text-[#60769B]">
+              <Upload className="w-4 h-4 text-[#0879E8]" />
+              <span className="font-semibold text-[#10244D]">Click to upload document</span>
+              <span className="text-[10px] text-[#60769B]">(PDF, PNG, JPG max 20MB)</span>
             </div>
           )}
         </div>
       )}
 
-      {uploadError ? (
-        <p className="text-[11px] text-rose-600 font-medium flex items-center gap-1 mt-1">
+      {uploadError || error ? (
+        <p className="text-[11px] text-rose-600 font-medium flex items-center gap-1">
           <AlertCircle className="w-3 h-3 shrink-0" />
-          <span>{uploadError}</span>
-        </p>
-      ) : error ? (
-        <p className="text-[11px] text-rose-600 font-medium flex items-center gap-1 mt-1">
-          <AlertCircle className="w-3 h-3 shrink-0" />
-          <span>{error}</span>
+          <span>{uploadError || error}</span>
         </p>
       ) : (
-        <p className="text-[11px] text-slate-400 mt-1">{helpText}</p>
+        <p className="text-[10px] text-[#60769B]">{helpText}</p>
       )}
     </div>
   );
@@ -227,16 +167,13 @@ export const RegisterBgaPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<any | null>(null);
 
-  // Password Visibility State
+  // Password Visibility
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Field Validation State
+  // Field Errors
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
-
-  // Document metadata state for UI labels
-  const [docMeta, setDocMeta] = useState<Record<string, { name: string; size?: number }>>({});
+  const [docMeta, setDocMeta] = useState<Record<string, { name: string }>>({});
 
   // Form State
   const [formData, setFormData] = useState({
@@ -263,7 +200,7 @@ export const RegisterBgaPage: React.FC = () => {
     agreementDocumentUrl: '',
   });
 
-  const validateField = (name: string, value: any, currentForm = formData): string | undefined => {
+  const validateField = (name: string, value: any, form = formData): string | undefined => {
     switch (name) {
       case 'fullName':
         if (!value || !value.trim()) return 'Full legal name is required';
@@ -271,124 +208,70 @@ export const RegisterBgaPage: React.FC = () => {
         if (!/^[a-zA-Z\s.']+$/.test(value.trim())) return 'Name must contain letters only';
         return undefined;
 
-      case 'dob':
-        if (value) {
-          const birthDate = new Date(value);
-          const today = new Date();
-          let age = today.getFullYear() - birthDate.getFullYear();
-          const m = today.getMonth() - birthDate.getMonth();
-          if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-            age--;
-          }
-          if (age < 18) return 'You must be at least 18 years old to register';
-          if (age > 100) return 'Please enter a valid date of birth';
-        }
-        return undefined;
-
       case 'mobile':
         if (!value || !value.trim()) return 'Mobile number is required';
         const cleanMobile = value.replace(/\D/g, '');
-        if (cleanMobile.length !== 10) return 'Mobile phone number must be exactly 10 digits (numbers only)';
-        if (!/^[6-9]\d{9}$/.test(cleanMobile)) return 'Enter valid Indian mobile number starting with 6, 7, 8, or 9';
-        return undefined;
-
-      case 'address':
-        if (value && value.trim().length > 0 && value.trim().length < 6) {
-          return 'Please enter a complete address (min. 6 characters)';
-        }
-        return undefined;
-
-      case 'city':
-        if (value && value.trim().length > 0) {
-          if (value.trim().length < 2) return 'City name must be at least 2 characters';
-          if (!/^[a-zA-Z\s]+$/.test(value.trim())) return 'City must contain letters only';
-        }
-        return undefined;
-
-      case 'state':
-        if (value && value.trim().length > 0) {
-          if (value.trim().length < 2) return 'State name must be at least 2 characters';
-          if (!/^[a-zA-Z\s]+$/.test(value.trim())) return 'State must contain letters only';
-        }
-        return undefined;
-
-      case 'pinCode':
-        if (currentForm.address && (!value || !value.trim())) {
-          return 'PIN Code is required when address is entered';
-        }
-        if (value && value.trim().length > 0) {
-          const cleanPin = value.replace(/\D/g, '');
-          if (cleanPin.length !== 6 || !/^\d{6}$/.test(cleanPin)) {
-            return 'PIN Code must be exactly 6 digits (numbers only)';
-          }
-        }
+        if (cleanMobile.length !== 10) return 'Must be exactly 10 digits';
+        if (!/^[6-9]\d{9}$/.test(cleanMobile)) return 'Enter valid Indian mobile starting with 6, 7, 8, or 9';
         return undefined;
 
       case 'email':
         if (!value || !value.trim()) return 'Email address is required';
         if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value.trim())) {
-          return 'Enter a valid email address (e.g. name@domain.com)';
+          return 'Enter a valid email address';
         }
         return undefined;
 
       case 'password':
         if (!value) return 'Password is required';
-        if (value.length < 6) return 'Password must be at least 6 characters';
-        if (!/[A-Z]/.test(value)) return 'Must contain at least one uppercase letter (A-Z)';
-        if (!/[a-z]/.test(value)) return 'Must contain at least one lowercase letter (a-z)';
-        if (!/[0-9]/.test(value)) return 'Must contain at least one number (0-9)';
-        if (!/[^A-Za-z0-9]/.test(value)) return 'Must contain at least one special character';
+        if (value.length < 6) return 'Must be at least 6 characters';
+        if (!/[A-Z]/.test(value)) return 'Must contain an uppercase letter';
+        if (!/[a-z]/.test(value)) return 'Must contain a lowercase letter';
+        if (!/[0-9]/.test(value)) return 'Must contain a number';
+        if (!/[^A-Za-z0-9]/.test(value)) return 'Must contain a special character';
         return undefined;
 
       case 'confirmPassword':
         if (!value) return 'Please confirm your password';
-        if (value !== currentForm.password) return 'Passwords do not match';
+        if (value !== form.password) return 'Passwords do not match';
         return undefined;
 
-      case 'panNumber':
-        if (!value || !value.trim()) return 'PAN Number is required for tax & compliance';
-        const cleanPan = value.trim().toUpperCase();
-        if (cleanPan.length !== 10) return 'PAN must be exactly 10 characters (e.g. ABCDE1234F)';
-        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanPan)) {
-          return 'Invalid PAN format (5 letters, 4 digits, 1 letter, e.g. ABCDE1234F)';
+      case 'pinCode':
+        if (value && value.trim()) {
+          const cleanPin = value.replace(/\D/g, '');
+          if (cleanPin.length !== 6) return 'PIN Code must be 6 digits';
         }
         return undefined;
 
-      case 'aadhaarNumber':
-        if (value && value.trim()) {
-          const cleanAadhaar = value.replace(/\D/g, '');
-          if (cleanAadhaar.length !== 12 || !/^\d{12}$/.test(cleanAadhaar)) {
-            return 'Aadhaar must be exactly 12 digits (numbers only)';
-          }
+      case 'panNumber':
+        if (!value || !value.trim()) return 'PAN Number is required for compliance';
+        const cleanPan = value.trim().toUpperCase();
+        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanPan)) {
+          return 'Invalid PAN format (e.g. ABCDE1234F)';
         }
         return undefined;
 
       case 'bankName':
         if (!value || !value.trim()) return 'Bank name is required';
-        if (value.trim().length < 2) return 'Bank name must be at least 2 characters';
-        if (!/^[a-zA-Z\s.&'-]+$/.test(value.trim())) return 'Bank name must contain letters only';
         return undefined;
 
       case 'bankAccountHolder':
-        if (!value || !value.trim()) return 'Bank beneficiary name is required';
-        if (value.trim().length < 3) return 'Name must be at least 3 characters';
-        if (!/^[a-zA-Z\s.']+$/.test(value.trim())) return 'Beneficiary name must contain letters only';
+        if (!value || !value.trim()) return 'Beneficiary name is required';
         return undefined;
 
       case 'bankAccountNumber':
         if (!value || !value.trim()) return 'Bank account number is required';
         const cleanAcc = value.replace(/\D/g, '');
-        if (cleanAcc.length < 9 || cleanAcc.length > 18 || !/^\d{9,18}$/.test(cleanAcc)) {
-          return 'Account number must be between 9 and 18 digits (numbers only)';
+        if (cleanAcc.length < 9 || cleanAcc.length > 18) {
+          return 'Must be between 9 and 18 digits';
         }
         return undefined;
 
       case 'bankIfsc':
-        if (!value || !value.trim()) return 'Bank IFSC Code is required';
+        if (!value || !value.trim()) return 'IFSC code is required';
         const cleanIfsc = value.trim().toUpperCase();
-        if (cleanIfsc.length !== 11) return 'IFSC Code must be exactly 11 characters (e.g. HDFC0001234)';
         if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(cleanIfsc)) {
-          return 'Invalid IFSC format (4 letters, 0, 6 characters, e.g. HDFC0001234)';
+          return 'Invalid IFSC format (e.g. HDFC0001234)';
         }
         return undefined;
 
@@ -401,138 +284,57 @@ export const RegisterBgaPage: React.FC = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    let nextVal: any = value;
+  // Password validation checks
+  const pass = formData.password;
+  const hasMin = pass.length >= 6;
+  const hasUp = /[A-Z]/.test(pass);
+  const hasLow = /[a-z]/.test(pass);
+  const hasNum = /[0-9]/.test(pass);
+  const hasSpec = /[^A-Za-z0-9]/.test(pass);
 
-    if (type === 'checkbox') {
-      nextVal = (e.target as HTMLInputElement).checked;
-    } else if (name === 'fullName') {
-      nextVal = value.replace(/[^a-zA-Z\s.']/g, '');
-    } else if (name === 'city' || name === 'state') {
-      nextVal = value.replace(/[^a-zA-Z\s]/g, '');
-    } else if (name === 'mobile') {
-      let clean = value.replace(/\D/g, '');
-      if (clean.length > 10 && clean.startsWith('91')) clean = clean.slice(2);
-      else if (clean.length > 10 && clean.startsWith('0')) clean = clean.slice(1);
-      nextVal = clean.slice(0, 10);
-    } else if (name === 'pinCode') {
-      nextVal = value.replace(/\D/g, '').slice(0, 6);
-    } else if (name === 'aadhaarNumber') {
-      nextVal = value.replace(/\D/g, '').slice(0, 12);
-    } else if (name === 'bankAccountNumber') {
-      nextVal = value.replace(/\D/g, '').slice(0, 18);
-    } else if (name === 'panNumber') {
-      nextVal = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
-    } else if (name === 'bankIfsc') {
-      nextVal = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11);
-    } else if (name === 'bankName') {
-      nextVal = value.replace(/[^a-zA-Z\s.&'-]/g, '');
-    } else if (name === 'bankAccountHolder') {
-      nextVal = value.replace(/[^a-zA-Z\s.']/g, '');
-    }
-
-    const nextForm = { ...formData, [name]: nextVal };
-    setFormData(nextForm);
-
-    if (touched[name]) {
-      const err = validateField(name, nextVal, nextForm);
-      setFieldErrors((prev) => ({ ...prev, [name]: err || '' }));
-    }
-
-    if (name === 'password' && touched.confirmPassword) {
-      const confirmErr = validateField('confirmPassword', formData.confirmPassword, nextForm);
-      setFieldErrors((prev) => ({ ...prev, confirmPassword: confirmErr || '' }));
-    }
-  };
-
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setTouched((prev) => ({ ...prev, [name]: true }));
-    const err = validateField(name, value, formData);
-    setFieldErrors((prev) => ({ ...prev, [name]: err || '' }));
-  };
-
-  const handleNext = () => {
+  const handleNextStep = () => {
     setError(null);
-    let stepFields: string[] = [];
+    const newErrors: Record<string, string> = {};
 
     if (step === 1) {
-      stepFields = ['fullName', 'mobile', 'email', 'password', 'confirmPassword'];
-      if (formData.dob) stepFields.push('dob');
-      if (formData.address) stepFields.push('address');
-      if (formData.city) stepFields.push('city');
-      if (formData.state) stepFields.push('state');
-      if (formData.pinCode) stepFields.push('pinCode');
+      const step1Fields = ['fullName', 'email', 'mobile', 'password', 'confirmPassword'];
+      for (const f of step1Fields) {
+        const err = validateField(f, (formData as any)[f], formData);
+        if (err) newErrors[f] = err;
+      }
     } else if (step === 2) {
-      stepFields = ['panNumber'];
-      if (formData.aadhaarNumber) stepFields.push('aadhaarNumber');
-    } else if (step === 3) {
-      stepFields = ['bankName', 'bankAccountHolder', 'bankAccountNumber', 'bankIfsc'];
-    }
-
-    const newErrors: Record<string, string> = {};
-    const newTouched: Record<string, boolean> = { ...touched };
-
-    let hasErrors = false;
-    for (const f of stepFields) {
-      newTouched[f] = true;
-      const err = validateField(f, (formData as any)[f], formData);
-      if (err) {
-        newErrors[f] = err;
-        hasErrors = true;
+      const step2Fields = ['panNumber'];
+      if (formData.pinCode) step2Fields.push('pinCode');
+      for (const f of step2Fields) {
+        const err = validateField(f, (formData as any)[f], formData);
+        if (err) newErrors[f] = err;
       }
     }
 
-    setTouched(newTouched);
-    setFieldErrors((prev) => ({ ...prev, ...newErrors }));
-
-    if (hasErrors) {
-      const firstError = Object.values(newErrors)[0];
-      setError(firstError || 'Please correct the highlighted errors before continuing');
+    if (Object.keys(newErrors).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, ...newErrors }));
+      setError('Please review the highlighted fields before proceeding.');
       return;
     }
 
+    setFieldErrors({});
     setStep((prev) => prev + 1);
-  };
-
-  const getInputClasses = (fieldName: string, isMono = false, hasIconPadding = false) => {
-    const isErr = touched[fieldName] && fieldErrors[fieldName];
-    const isValid = touched[fieldName] && (formData as any)[fieldName] && !fieldErrors[fieldName];
-    return `w-full ${hasIconPadding ? 'pl-4 pr-11' : 'px-4'} py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 ${
-      isMono ? 'font-mono' : ''
-    } ${
-      isErr
-        ? 'border-rose-400 bg-rose-50/20 focus:ring-rose-200 text-rose-900'
-        : isValid
-        ? 'border-emerald-400 bg-emerald-50/10 focus:ring-emerald-200'
-        : 'border-slate-300 focus:ring-[#3066BE]'
-    }`;
-  };
-
-  const renderFieldError = (fieldName: string, defaultHelp?: string) => {
-    if (touched[fieldName] && fieldErrors[fieldName]) {
-      return (
-        <p className="text-[11px] text-rose-600 font-medium mt-1 flex items-center gap-1 animate-fadeIn">
-          <AlertCircle className="w-3 h-3 shrink-0" />
-          <span>{fieldErrors[fieldName]}</span>
-        </p>
-      );
-    }
-    if (defaultHelp) {
-      return <p className="text-[11px] text-slate-400 mt-1">{defaultHelp}</p>;
-    }
-    return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!formData.agreementAccepted) {
-      setTouched((prev) => ({ ...prev, agreementAccepted: true }));
-      setFieldErrors((prev) => ({ ...prev, agreementAccepted: 'You must accept the associate agreement and consent terms' }));
-      setError('You must accept the associate agreement and consent terms');
+    const step3Fields = ['bankName', 'bankAccountHolder', 'bankAccountNumber', 'bankIfsc', 'agreementAccepted'];
+    const newErrors: Record<string, string> = {};
+    for (const f of step3Fields) {
+      const err = validateField(f, (formData as any)[f], formData);
+      if (err) newErrors[f] = err;
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, ...newErrors }));
+      setError('Please complete all required bank and agreement fields.');
       return;
     }
 
@@ -545,684 +347,475 @@ export const RegisterBgaPage: React.FC = () => {
         body: JSON.stringify(formData),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to submit registration');
+        setError(data.error || 'Registration failed. Please verify your details.');
+        setLoading(false);
+        return;
       }
 
-      setSuccess(data);
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong during registration');
+      setSuccess({
+        message: data.message || 'Application submitted successfully.',
+        userId: data.userId || 'AT-BGA-XXXX',
+      });
+    } catch {
+      setError('Cannot connect to authentication service. Please check your connection.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Password Complexity Flags for Step 1
-  const pwdMinLength = formData.password.length >= 6;
-  const pwdUpper = /[A-Z]/.test(formData.password);
-  const pwdLower = /[a-z]/.test(formData.password);
-  const pwdNumber = /[0-9]/.test(formData.password);
-  const pwdSpecial = /[^A-Za-z0-9]/.test(formData.password);
-  const pwdMatches = formData.password.length > 0 && formData.password === formData.confirmPassword;
-
-  const stepsMeta = [
-    { num: 1, title: 'Personal & Profile', icon: User },
-    { num: 2, title: 'KYC & Compliance', icon: ShieldCheck },
-    { num: 3, title: 'Bank Account', icon: CreditCard },
-    { num: 4, title: 'Agreement & Terms', icon: FileText },
-  ];
-
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col text-slate-800">
-      <Navbar />
-
-      <div className="max-w-3xl mx-auto px-4 py-12 flex-1 w-full">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#edf4fc] border border-[#6D96C5]/30 text-[#3066BE] text-xs font-bold mb-3 uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-[#119DA4]" />
-            <span>Atriowings Technologies • Official Associate Onboarding</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Become an Atriowings Growth Associate
-          </h1>
-          <p className="text-sm text-slate-500 mt-2 max-w-xl mx-auto font-normal">
-            Complete the 4-step registration to start referring enterprise clients and earning predictable commissions with Atriowings Technologies.
-          </p>
-        </div>
-
-        {/* Success Screen */}
-        {success ? (
-          <div className="bg-white rounded-3xl p-8 sm:p-10 border border-[#80DED9]/60 shadow-card text-center animate-fadeIn">
-            <div className="w-16 h-16 rounded-2xl bg-[#e7f7f8] text-[#119DA4] flex items-center justify-center mx-auto mb-4 border border-[#80DED9]/40 shadow-sm">
-              <CheckCircle2 className="w-9 h-9" />
+    <AuthLayout customSubtitle="Apply to become an authorized Growth Associate and earn on verified corporate projects.">
+      {success ? (
+        /* Submission Success / Pending Approval Screen */
+        <AuthCard
+          title="Application Submitted"
+          subtitle="Your registration is under executive review and approval."
+          cardMaxWidth="max-w-xl"
+        >
+          <div className="py-4 space-y-6 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto shadow-sm">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
 
-            <span className="inline-block px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold uppercase tracking-wider mb-2">
-              Workflow Status: SUBMITTED
-            </span>
-
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">Registration Submitted!</h2>
-
-            <p className="text-xs sm:text-sm text-slate-600 mt-3 max-w-lg mx-auto leading-relaxed">
-              Your associate profile, PAN, Aadhaar consent, and banking details have been recorded. In accordance with
-              company security and KYC compliance, accounts are reviewed by Administration before activation.
-            </p>
-
-            <div className="mt-6 p-5 rounded-2xl bg-[#edf4fc]/50 border border-[#6D96C5]/20 text-left text-xs max-w-md mx-auto space-y-2.5">
-              <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Associate Name:</span>
-                <span className="font-bold text-slate-800">{formData.fullName}</span>
+            <div className="p-4 rounded-2xl bg-[#F5F9FF] border border-[#D6E2F2] text-left space-y-3">
+              <div className="flex items-center justify-between border-b border-[#D6E2F2] pb-2">
+                <span className="text-xs text-[#60769B]">Assigned Associate ID</span>
+                <span className="text-sm font-mono font-extrabold text-[#0879E8]">
+                  {success.userId}
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Registered Email:</span>
-                <span className="font-bold text-slate-800">{formData.email}</span>
+              <div className="flex items-center justify-between border-b border-[#D6E2F2] pb-2">
+                <span className="text-xs text-[#60769B]">Application Status</span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full">
+                  PENDING ADMIN APPROVAL
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Verification Status:</span>
-                <span className="font-bold text-amber-600">Pending Admin Verification</span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#60769B]">Registered Email</span>
+                <span className="text-xs font-semibold text-[#10244D]">{formData.email}</span>
               </div>
             </div>
 
-            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
+            <div className="text-left bg-white p-4 rounded-xl border border-slate-200 space-y-2 text-xs text-[#60769B]">
+              <h4 className="font-bold text-[#10244D] text-xs">What Happens Next?</h4>
+              <p>1. Our corporate compliance team verifies your submitted KYC & Bank details.</p>
+              <p>2. Upon Admin approval, your portal credentials will be activated.</p>
+              <p>3. You will receive an official onboarding confirmation alert on your registered email.</p>
+            </div>
+
+            <div className="pt-2">
               <button
+                type="button"
                 onClick={() => navigate('/login')}
-                className="px-7 py-3.5 rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all"
+                className="w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-[#0879E8] to-[#123FAD] shadow-[0_6px_20px_rgba(8,121,232,0.28)] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] transition-all"
               >
-                Go to Atriowings Growth Portal
+                Return to Sign In
               </button>
-              <Link
-                to="/"
-                className="px-7 py-3.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors"
-              >
-                Return to Home
-              </Link>
             </div>
           </div>
-        ) : (
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-card overflow-hidden">
-            {/* Step Indicators */}
-            <div className="grid grid-cols-4 border-b border-slate-200 bg-slate-50/70 text-xs font-semibold">
-              {stepsMeta.map((s) => {
-                const Icon = s.icon;
-                const isActive = step === s.num;
-                const isCompleted = step > s.num;
-                return (
-                  <div
-                    key={s.num}
-                    className={`p-3.5 text-center border-r border-slate-200 last:border-r-0 flex items-center justify-center gap-2 transition-colors ${
-                      isActive
-                        ? 'bg-white text-[#3066BE] font-bold border-b-2 border-b-[#3066BE]'
-                        : isCompleted
-                        ? 'text-[#119DA4] bg-[#e7f7f8]/50'
-                        : 'text-slate-400'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 shrink-0 hidden sm:inline" />
-                    <span className="truncate">
-                      {s.num}. {s.title}
-                    </span>
-                  </div>
-                );
-              })}
+        </AuthCard>
+      ) : (
+        /* Multi-Step Registration Form */
+        <AuthCard
+          title="Become a Growth Associate"
+          subtitle="Join our network and grow with Atriowings."
+          cardMaxWidth="max-w-2xl"
+          error={error}
+        >
+          {/* Step Progression Bar */}
+          <div className="grid grid-cols-3 gap-2 mb-6">
+            <div
+              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${
+                step === 1
+                  ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
+                  : step > 1
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-slate-50 text-slate-400 border-slate-200'
+              }`}
+            >
+              1. Personal & Security
             </div>
+            <div
+              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${
+                step === 2
+                  ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
+                  : step > 2
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-slate-50 text-slate-400 border-slate-200'
+              }`}
+            >
+              2. Location & KYC
+            </div>
+            <div
+              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${
+                step === 3
+                  ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
+                  : 'bg-slate-50 text-slate-400 border-slate-200'
+              }`}
+            >
+              3. Bank & Agreement
+            </div>
+          </div>
 
-            <div className="p-6 sm:p-8">
-              {error && (
-                <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{error}</span>
+          <form onSubmit={step === 3 ? handleSubmit : (e) => { e.preventDefault(); handleNextStep(); }} noValidate>
+            {/* STEP 1: Personal Information & Account Security */}
+            {step === 1 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <AuthInput
+                    label="Full Legal Name"
+                    icon={User}
+                    placeholder="Enter your name"
+                    value={formData.fullName}
+                    onChange={(e) => {
+                      setFormData({ ...formData, fullName: e.target.value });
+                      if (fieldErrors.fullName) setFieldErrors({ ...fieldErrors, fullName: '' });
+                    }}
+                    error={fieldErrors.fullName}
+                    required
+                  />
+
+                  <AuthInput
+                    label="Mobile Number"
+                    type="tel"
+                    icon={Phone}
+                    placeholder="10-digit mobile"
+                    value={formData.mobile}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setFormData({ ...formData, mobile: clean });
+                      if (fieldErrors.mobile) setFieldErrors({ ...fieldErrors, mobile: '' });
+                    }}
+                    error={fieldErrors.mobile}
+                    required
+                  />
                 </div>
-              )}
 
-              {/* STEP 1: PERSONAL & CONTACT */}
-              {step === 1 && (
-                <div className="space-y-4 text-xs animate-fadeIn">
-                  <div className="border-b border-slate-100 pb-3 mb-4">
-                    <h3 className="text-base font-bold text-slate-900">Step 1: Personal & Account Credentials</h3>
-                    <p className="text-slate-500 text-xs mt-0.5">Enter your basic identification details to create your associate profile.</p>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <AuthInput
+                    label="Registered Email Address"
+                    type="email"
+                    icon={Mail}
+                    placeholder="associate@example.com"
+                    value={formData.email}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value });
+                      if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: '' });
+                    }}
+                    error={fieldErrors.email}
+                    required
+                  />
 
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Full Legal Name <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      required
-                      value={formData.fullName}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      placeholder="As per Government ID (Aadhaar / PAN)"
-                      className={getInputClasses('fullName')}
-                    />
-                    {renderFieldError('fullName', 'Enter your full name as registered in official documents')}
-                  </div>
+                  <AuthInput
+                    label="Date of Birth"
+                    type="date"
+                    icon={Calendar}
+                    value={formData.dob}
+                    onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                  />
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">Date of Birth</label>
-                      <input
-                        type="date"
-                        name="dob"
-                        value={formData.dob}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        className={getInputClasses('dob')}
-                      />
-                      {renderFieldError('dob', 'Must be at least 18 years of age')}
-                    </div>
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Mobile Phone Number <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        name="mobile"
-                        required
-                        inputMode="numeric"
-                        pattern="[6-9][0-9]{9}"
-                        maxLength={10}
-                        value={formData.mobile}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        placeholder="10-digit mobile number"
-                        className={getInputClasses('mobile', true)}
-                      />
-                      {renderFieldError('mobile', '10 digits without +91 or leading 0')}
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <AuthInput
+                    label="Create Password"
+                    icon={Lock}
+                    placeholder="Min 6 characters"
+                    isPassword
+                    showPasswordToggle
+                    showPassword={showPassword}
+                    onTogglePassword={() => setShowPassword(!showPassword)}
+                    value={formData.password}
+                    onChange={(e) => {
+                      setFormData({ ...formData, password: e.target.value });
+                      if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: '' });
+                    }}
+                    error={fieldErrors.password}
+                    required
+                  />
 
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Residential Address</label>
-                    <textarea
-                      name="address"
-                      rows={2}
-                      value={formData.address}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      placeholder="Flat / House No., Building, Street Name, Area / Locality"
-                      className={getInputClasses('address')}
-                    />
-                    {renderFieldError('address', 'House, street, and locality details')}
-                  </div>
+                  <AuthInput
+                    label="Confirm Password"
+                    icon={Lock}
+                    placeholder="Re-enter password"
+                    isPassword
+                    showPasswordToggle
+                    showPassword={showConfirmPassword}
+                    onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
+                    value={formData.confirmPassword}
+                    onChange={(e) => {
+                      setFormData({ ...formData, confirmPassword: e.target.value });
+                      if (fieldErrors.confirmPassword) setFieldErrors({ ...fieldErrors, confirmPassword: '' });
+                    }}
+                    error={fieldErrors.confirmPassword}
+                    required
+                  />
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">City</label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        placeholder="e.g. Kanchipuram"
-                        className={getInputClasses('city')}
-                      />
-                      {renderFieldError('city')}
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">State</label>
-                      <input
-                        type="text"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        placeholder="e.g. Tamil Nadu"
-                        className={getInputClasses('state')}
-                      />
-                      {renderFieldError('state')}
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">PIN Code</label>
-                      <input
-                        type="text"
-                        name="pinCode"
-                        inputMode="numeric"
-                        pattern="[0-9]{6}"
-                        maxLength={6}
-                        value={formData.pinCode}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        placeholder="e.g. 631501"
-                        className={getInputClasses('pinCode', true)}
-                      />
-                      {renderFieldError('pinCode', '6-digit PIN code (numbers only)')}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Email Address <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      required
-                      value={formData.email}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      placeholder="name@domain.com"
-                      className={getInputClasses('email')}
-                    />
-                    {renderFieldError('email', 'Used for official notifications & login credentials')}
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Password <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          name="password"
-                          required
-                          value={formData.password}
-                          onChange={handleChange}
-                          onBlur={handleBlur}
-                          placeholder="Min. 6 characters"
-                          className={getInputClasses('password', false, true)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 focus:outline-none transition-colors"
-                          title={showPassword ? 'Hide password' : 'Show password'}
-                          tabIndex={-1}
-                        >
-                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                      {renderFieldError('password', 'Requires uppercase, lowercase, number, special char')}
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Confirm Password <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showConfirmPassword ? 'text' : 'password'}
-                          name="confirmPassword"
-                          required
-                          value={formData.confirmPassword}
-                          onChange={handleChange}
-                          onBlur={handleBlur}
-                          placeholder="Re-enter password"
-                          className={getInputClasses('confirmPassword', false, true)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 focus:outline-none transition-colors"
-                          title={showConfirmPassword ? 'Hide password' : 'Show password'}
-                          tabIndex={-1}
-                        >
-                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                      {touched.confirmPassword && fieldErrors.confirmPassword ? (
-                        <p className="text-[11px] text-rose-600 font-medium mt-1 flex items-center gap-1 animate-fadeIn">
-                          <AlertCircle className="w-3 h-3 shrink-0" />
-                          <span>{fieldErrors.confirmPassword}</span>
-                        </p>
-                      ) : touched.confirmPassword && formData.confirmPassword && !fieldErrors.confirmPassword ? (
-                        <p className="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 shrink-0" />
-                          <span>Passwords match</span>
-                        </p>
-                      ) : (
-                        <p className="text-[11px] text-slate-400 mt-1">Must match password</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Real-time Password Complexity Checklist */}
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5 mt-3">
-                    <span className="font-bold text-slate-700 block text-[10px] uppercase tracking-wider">
-                      Requirements:
+                {/* Password Policy Indicator */}
+                <div className="p-3 rounded-xl bg-[#F5F9FF] border border-[#D6E2F2] text-[11px] space-y-1">
+                  <span className="font-bold text-[#10244D]">Security Requirements:</span>
+                  <div className="grid grid-cols-2 gap-1 text-[#60769B]">
+                    <span className={hasMin ? 'text-emerald-600 font-semibold flex items-center gap-1' : 'flex items-center gap-1'}>
+                      {hasMin ? <Check className="w-3 h-3" /> : '•'} 6+ characters
                     </span>
-                    <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                      <div className={`flex items-center gap-1.5 ${pwdMinLength ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                        {pwdMinLength ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                        <span>6+ characters</span>
-                      </div>
-                      <div className={`flex items-center gap-1.5 ${pwdUpper ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                        {pwdUpper ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                        <span>Uppercase (A-Z)</span>
-                      </div>
-                      <div className={`flex items-center gap-1.5 ${pwdLower ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                        {pwdLower ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                        <span>Lowercase (a-z)</span>
-                      </div>
-                      <div className={`flex items-center gap-1.5 ${pwdNumber ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                        {pwdNumber ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                        <span>Number (0-9)</span>
-                      </div>
-                      <div className={`flex items-center gap-1.5 ${pwdSpecial ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                        {pwdSpecial ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                        <span>Special character</span>
-                      </div>
-                      <div className={`flex items-center gap-1.5 ${pwdMatches ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                        {pwdMatches ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                        <span>Passwords match</span>
-                      </div>
-                    </div>
+                    <span className={hasUp ? 'text-emerald-600 font-semibold flex items-center gap-1' : 'flex items-center gap-1'}>
+                      {hasUp ? <Check className="w-3 h-3" /> : '•'} Uppercase (A-Z)
+                    </span>
+                    <span className={hasLow ? 'text-emerald-600 font-semibold flex items-center gap-1' : 'flex items-center gap-1'}>
+                      {hasLow ? <Check className="w-3 h-3" /> : '•'} Lowercase (a-z)
+                    </span>
+                    <span className={hasNum && hasSpec ? 'text-emerald-600 font-semibold flex items-center gap-1' : 'flex items-center gap-1'}>
+                      {hasNum && hasSpec ? <Check className="w-3 h-3" /> : '•'} Number & Special
+                    </span>
                   </div>
                 </div>
-              )}
 
-              {/* STEP 2: KYC & COMPLIANCE */}
-              {step === 2 && (
-                <div className="space-y-4 text-xs animate-fadeIn">
-                  <div className="border-b border-slate-100 pb-3 mb-4">
-                    <h3 className="text-base font-bold text-slate-900">Step 2: KYC & Tax Compliance</h3>
-                    <p className="text-slate-500 text-xs mt-0.5">Government identification details required for TDS compliance and associate verification.</p>
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Permanent Account Number (PAN) <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="panNumber"
-                      required
-                      maxLength={10}
-                      pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
-                      value={formData.panNumber}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      placeholder="e.g. ABCDE1234F"
-                      className={getInputClasses('panNumber', true)}
-                    />
-                    {renderFieldError('panNumber', '5 letters, 4 digits, 1 letter (used for statutory TDS compliance)')}
-                  </div>
-
-                  <DocumentUploadField
-                    label="Upload PAN Card Document"
-                    helpText="Upload a clear scan or photo of your official PAN card (PDF, JPG, PNG)."
-                    value={formData.panDocumentUrl}
-                    docName={docMeta.panDocumentUrl?.name}
-                    docSize={docMeta.panDocumentUrl?.size}
-                    onUploaded={(url, name, size) => {
-                      setFormData((prev) => ({ ...prev, panDocumentUrl: url }));
-                      setDocMeta((prev) => ({ ...prev, panDocumentUrl: { name, size } }));
-                      setFieldErrors((prev) => ({ ...prev, panDocumentUrl: '' }));
-                    }}
-                    onRemove={() => {
-                      setFormData((prev) => ({ ...prev, panDocumentUrl: '' }));
-                      setDocMeta((prev) => {
-                        const copy = { ...prev };
-                        delete copy.panDocumentUrl;
-                        return copy;
-                      });
-                    }}
-                    error={touched.panDocumentUrl ? fieldErrors.panDocumentUrl : undefined}
-                  />
-
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Aadhaar Number (12 Digits)</label>
-                    <input
-                      type="text"
-                      name="aadhaarNumber"
-                      inputMode="numeric"
-                      pattern="[0-9]{12}"
-                      maxLength={12}
-                      value={formData.aadhaarNumber}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      placeholder="e.g. 123456789012"
-                      className={getInputClasses('aadhaarNumber', true)}
-                    />
-                    {renderFieldError('aadhaarNumber', 'Enter 12-digit UIDAI Aadhaar number (numbers only).')}
-                  </div>
-
-                  <DocumentUploadField
-                    label="Upload Aadhaar / Address Proof Document"
-                    helpText="Upload front & back copy of Aadhaar card, Voter ID, Passport, or utility bill."
-                    value={formData.addressProofUrl}
-                    docName={docMeta.addressProofUrl?.name}
-                    docSize={docMeta.addressProofUrl?.size}
-                    onUploaded={(url, name, size) => {
-                      setFormData((prev) => ({ ...prev, addressProofUrl: url }));
-                      setDocMeta((prev) => ({ ...prev, addressProofUrl: { name, size } }));
-                      setFieldErrors((prev) => ({ ...prev, addressProofUrl: '' }));
-                    }}
-                    onRemove={() => {
-                      setFormData((prev) => ({ ...prev, addressProofUrl: '' }));
-                      setDocMeta((prev) => {
-                        const copy = { ...prev };
-                        delete copy.addressProofUrl;
-                        return copy;
-                      });
-                    }}
-                    error={touched.addressProofUrl ? fieldErrors.addressProofUrl : undefined}
-                  />
-
-                  <div className="p-4 rounded-xl bg-[#edf4fc] border border-[#6D96C5]/30 text-slate-700 space-y-1">
-                    <span className="font-bold block text-slate-900">Compliance & Privacy Guarantee:</span>
-                    <p className="text-[11px] leading-relaxed">
-                      All identity credentials are used strictly for company onboarding and Indian statutory tax filing. All identity documents are verified by company administration for onboarding and regulatory compliance.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 3: BANK DETAILS */}
-              {step === 3 && (
-                <div className="space-y-4 text-xs animate-fadeIn">
-                  <div className="border-b border-slate-100 pb-3 mb-4">
-                    <h3 className="text-base font-bold text-slate-900">Step 3: Bank Account for Commission Payouts</h3>
-                    <p className="text-slate-500 text-xs mt-0.5">Direct bank transfer details for approved monthly and project payouts.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Bank Name <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="bankName"
-                        required
-                        value={formData.bankName}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        placeholder="e.g. HDFC Bank, SBI, ICICI"
-                        className={getInputClasses('bankName')}
-                      />
-                      {renderFieldError('bankName', 'Official name of your bank')}
-                    </div>
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Bank Account Beneficiary Name <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="bankAccountHolder"
-                        required
-                        value={formData.bankAccountHolder}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        placeholder="Name as registered with your bank"
-                        className={getInputClasses('bankAccountHolder')}
-                      />
-                      {renderFieldError('bankAccountHolder', 'Must match official bank account records')}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Bank Account Number <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="bankAccountNumber"
-                        required
-                        inputMode="numeric"
-                        pattern="[0-9]{9,18}"
-                        maxLength={18}
-                        value={formData.bankAccountNumber}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        placeholder="e.g. 9876543210123"
-                        className={getInputClasses('bankAccountNumber', true)}
-                      />
-                      {renderFieldError('bankAccountNumber', 'Between 9 and 18 numeric digits (numbers only)')}
-                    </div>
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Bank IFSC Code <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="bankIfsc"
-                        required
-                        maxLength={11}
-                        pattern="[A-Z]{4}0[A-Z0-9]{6}"
-                        value={formData.bankIfsc}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        placeholder="e.g. HDFC0001234"
-                        className={getInputClasses('bankIfsc', true)}
-                      />
-                      {renderFieldError('bankIfsc', '11-character alphanumeric IFSC code (e.g. HDFC0001234)')}
-                    </div>
-                  </div>
-
-                  <DocumentUploadField
-                    label="Upload Bank Proof Document"
-                    helpText="Upload a cancelled cheque, passbook first page, or bank statement clearly showing your name and account number."
-                    value={formData.bankProofUrl}
-                    docName={docMeta.bankProofUrl?.name}
-                    docSize={docMeta.bankProofUrl?.size}
-                    onUploaded={(url, name, size) => {
-                      setFormData((prev) => ({ ...prev, bankProofUrl: url }));
-                      setDocMeta((prev) => ({ ...prev, bankProofUrl: { name, size } }));
-                      setFieldErrors((prev) => ({ ...prev, bankProofUrl: '' }));
-                    }}
-                    onRemove={() => {
-                      setFormData((prev) => ({ ...prev, bankProofUrl: '' }));
-                      setDocMeta((prev) => {
-                        const copy = { ...prev };
-                        delete copy.bankProofUrl;
-                        return copy;
-                      });
-                    }}
-                    error={touched.bankProofUrl ? fieldErrors.bankProofUrl : undefined}
-                  />
-
-                  <div className="p-4 rounded-xl bg-[#e7f7f8] border border-[#80DED9]/50 text-slate-700">
-                    <p className="text-[11px] leading-relaxed">
-                      💡 Ensure the beneficiary name matches your registered identity documents to prevent bank verification delays during admin approval.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 4: AGREEMENT & SUBMIT */}
-              {step === 4 && (
-                <div className="space-y-4 text-xs animate-fadeIn">
-                  <div className="border-b border-slate-100 pb-3 mb-4">
-                    <h3 className="text-base font-bold text-slate-900">Step 4: Associate Agreement & Terms</h3>
-                    <p className="text-slate-500 text-xs mt-0.5">Please review and accept our growth associate code of conduct and revenue sharing terms.</p>
-                  </div>
-
-                  <div className="max-h-48 overflow-y-auto p-4 rounded-xl border border-slate-200 bg-slate-50 text-[11px] text-slate-600 space-y-2 leading-relaxed">
-                    <p className="font-bold text-slate-800">1. Associate Role & Representation</p>
-                    <p>
-                      The Business Growth Associate acts as an authorized client referral partner. The associate agrees to conduct interactions with high professional integrity and represent official service scopes accurately.
-                    </p>
-                    <p className="font-bold text-slate-800">2. Client Ownership Exclusivity</p>
-                    <p>
-                      Clients registered by an associate are protected under exclusive ownership. Any dispute regarding client assignment is resolved through normalized mobile/email timestamp records.
-                    </p>
-                    <p className="font-bold text-slate-800">3. Commission Terms & Exclusions</p>
-                    <p>
-                      Associate commissions are determined on an approved client project basis within Admin-configured category ranges. For Digital Marketing, recurring commissions apply to verified service retainers with third-party ad spend strictly excluded. For Web, Mobile, and Custom Software projects, commissions are eligible upon milestone sign-off and verified final payment clearance.
-                    </p>
-                  </div>
-
-                  <div className="pt-2">
-                    <label className={`flex items-start gap-3 p-3.5 rounded-xl border transition-colors cursor-pointer ${
-                      touched.agreementAccepted && fieldErrors.agreementAccepted
-                        ? 'border-rose-400 bg-rose-50/30'
-                        : formData.agreementAccepted
-                        ? 'border-emerald-400 bg-emerald-50/20'
-                        : 'border-slate-200 hover:bg-slate-50'
-                    }`}>
-                      <input
-                        type="checkbox"
-                        name="agreementAccepted"
-                        checked={formData.agreementAccepted}
-                        onChange={handleChange}
-                        className="mt-0.5 w-4 h-4 text-[#3066BE] rounded border-slate-300 focus:ring-[#3066BE]"
-                      />
-                      <span className="text-xs text-slate-700 leading-relaxed">
-                        I hereby declare that the details provided are true and accurate. I accept the Business Growth
-                        Associate terms, commission structure, and privacy policies.
-                      </span>
-                    </label>
-                    {renderFieldError('agreementAccepted')}
-                  </div>
-                </div>
-              )}
-
-              {/* Controls */}
-              <div className="mt-8 pt-4 border-t border-slate-100 flex items-center justify-between">
-                {step > 1 ? (
+                <div className="pt-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      setError(null);
-                      setStep((prev) => prev - 1);
-                    }}
-                    className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors flex items-center gap-1.5"
+                    onClick={handleNextStep}
+                    className="w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-[#0879E8] to-[#123FAD] shadow-[0_6px_20px_rgba(8,121,232,0.28)] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Back</span>
-                  </button>
-                ) : (
-                  <Link to="/login" className="text-xs text-[#3066BE] font-bold hover:underline">
-                    Already registered? Sign in
-                  </Link>
-                )}
-
-                {step < 4 ? (
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] text-white text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-1.5"
-                  >
-                    <span>Proceed to Step {step + 1}</span>
+                    <span>Continue to Location & KYC</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
-                ) : (
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: Location & KYC Information */}
+            {step === 2 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <AuthInput
+                    label="PAN Card Number"
+                    placeholder="ABCDE1234F"
+                    value={formData.panNumber}
+                    onChange={(e) => {
+                      const upper = e.target.value.toUpperCase().slice(0, 10);
+                      setFormData({ ...formData, panNumber: upper });
+                      if (fieldErrors.panNumber) setFieldErrors({ ...fieldErrors, panNumber: '' });
+                    }}
+                    error={fieldErrors.panNumber}
+                    required
+                  />
+
+                  <AuthInput
+                    label="Aadhaar Number (Optional)"
+                    placeholder="12-digit UID"
+                    value={formData.aadhaarNumber}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/\D/g, '').slice(0, 12);
+                      setFormData({ ...formData, aadhaarNumber: clean });
+                    }}
+                  />
+                </div>
+
+                <AuthInput
+                  label="Street Address"
+                  icon={MapPin}
+                  placeholder="Door / Flat / Street name"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                />
+
+                <div className="grid grid-cols-3 gap-3">
+                  <AuthInput
+                    label="City"
+                    placeholder="City"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  />
+                  <AuthInput
+                    label="State"
+                    placeholder="State"
+                    value={formData.state}
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  />
+                  <AuthInput
+                    label="PIN Code"
+                    placeholder="6 digits"
+                    value={formData.pinCode}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setFormData({ ...formData, pinCode: clean });
+                      if (fieldErrors.pinCode) setFieldErrors({ ...fieldErrors, pinCode: '' });
+                    }}
+                    error={fieldErrors.pinCode}
+                  />
+                </div>
+
+                {/* PAN Document Upload */}
+                <DocumentUploadField
+                  label="PAN Document / Photo"
+                  helpText="Upload front copy of PAN card for identity verification"
+                  value={formData.panDocumentUrl}
+                  docName={docMeta.pan?.name}
+                  onUploaded={(url, name) => {
+                    setFormData({ ...formData, panDocumentUrl: url });
+                    setDocMeta({ ...docMeta, pan: { name } });
+                  }}
+                  onRemove={() => {
+                    setFormData({ ...formData, panDocumentUrl: '' });
+                    setDocMeta({ ...docMeta, pan: { name: '' } });
+                  }}
+                />
+
+                <div className="flex items-center gap-3 pt-2">
                   <button
                     type="button"
-                    disabled={loading || !formData.agreementAccepted}
-                    onClick={handleSubmit}
-                    className="px-7 py-3 rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
+                    onClick={() => setStep(1)}
+                    className="py-3 px-4 rounded-xl font-bold text-xs text-[#60769B] hover:text-[#10244D] hover:bg-slate-100 transition-colors flex items-center gap-1.5"
                   >
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>{loading ? 'Submitting Application...' : 'Submit BGA Application'}</span>
+                    <ArrowLeft className="w-4 h-4" /> Back
                   </button>
-                )}
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="flex-1 py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-[#0879E8] to-[#123FAD] shadow-[0_6px_20px_rgba(8,121,232,0.28)] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Continue to Bank & Agreement</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* STEP 3: Banking & Agreement */}
+            {step === 3 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <AuthInput
+                    label="Bank Name"
+                    icon={Building2}
+                    placeholder="e.g. HDFC Bank, SBI"
+                    value={formData.bankName}
+                    onChange={(e) => {
+                      setFormData({ ...formData, bankName: e.target.value });
+                      if (fieldErrors.bankName) setFieldErrors({ ...fieldErrors, bankName: '' });
+                    }}
+                    error={fieldErrors.bankName}
+                    required
+                  />
+
+                  <AuthInput
+                    label="Beneficiary Account Name"
+                    icon={User}
+                    placeholder="Name as per passbook"
+                    value={formData.bankAccountHolder}
+                    onChange={(e) => {
+                      setFormData({ ...formData, bankAccountHolder: e.target.value });
+                      if (fieldErrors.bankAccountHolder) setFieldErrors({ ...fieldErrors, bankAccountHolder: '' });
+                    }}
+                    error={fieldErrors.bankAccountHolder}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <AuthInput
+                    label="Account Number"
+                    icon={CreditCard}
+                    placeholder="9 to 18 digits"
+                    value={formData.bankAccountNumber}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/\D/g, '').slice(0, 18);
+                      setFormData({ ...formData, bankAccountNumber: clean });
+                      if (fieldErrors.bankAccountNumber) setFieldErrors({ ...fieldErrors, bankAccountNumber: '' });
+                    }}
+                    error={fieldErrors.bankAccountNumber}
+                    required
+                  />
+
+                  <AuthInput
+                    label="IFSC Code"
+                    placeholder="e.g. HDFC0001234"
+                    value={formData.bankIfsc}
+                    onChange={(e) => {
+                      const upper = e.target.value.toUpperCase().slice(0, 11);
+                      setFormData({ ...formData, bankIfsc: upper });
+                      if (fieldErrors.bankIfsc) setFieldErrors({ ...fieldErrors, bankIfsc: '' });
+                    }}
+                    error={fieldErrors.bankIfsc}
+                    required
+                  />
+                </div>
+
+                {/* Bank Proof Upload */}
+                <DocumentUploadField
+                  label="Cancelled Cheque / Passbook Copy"
+                  helpText="Upload bank passbook or cancelled cheque for NEFT verification"
+                  value={formData.bankProofUrl}
+                  docName={docMeta.bank?.name}
+                  onUploaded={(url, name) => {
+                    setFormData({ ...formData, bankProofUrl: url });
+                    setDocMeta({ ...docMeta, bank: { name } });
+                  }}
+                  onRemove={() => {
+                    setFormData({ ...formData, bankProofUrl: '' });
+                    setDocMeta({ ...docMeta, bank: { name: '' } });
+                  }}
+                />
+
+                {/* Agreement Checkbox */}
+                <div className="p-3.5 rounded-xl bg-[#F5F9FF] border border-[#D6E2F2] space-y-2">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.agreementAccepted}
+                      onChange={(e) => {
+                        setFormData({ ...formData, agreementAccepted: e.target.checked });
+                        if (fieldErrors.agreementAccepted) setFieldErrors({ ...fieldErrors, agreementAccepted: '' });
+                      }}
+                      className="mt-0.5 w-4 h-4 rounded text-[#0879E8] focus:ring-[#0879E8] border-[#D6E2F2]"
+                      required
+                    />
+                    <span className="text-xs text-[#10244D] leading-normal font-medium">
+                      I accept the{' '}
+                      <span className="font-bold text-[#0879E8]">Atriowings Associate Agreement</span> and consent to official verification of my KYC credentials for commission payouts.
+                    </span>
+                  </label>
+                  {fieldErrors.agreementAccepted && (
+                    <p className="text-[11px] text-rose-600 font-medium">{fieldErrors.agreementAccepted}</p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="py-3 px-4 rounded-xl font-bold text-xs text-[#60769B] hover:text-[#10244D] hover:bg-slate-100 transition-colors flex items-center gap-1.5"
+                  >
+                    <ArrowLeft className="w-4 h-4" /> Back
+                  </button>
+                  <div className="flex-1">
+                    <AuthPrimaryButton loading={loading} loadingText="Submitting Application...">
+                      Create Account
+                    </AuthPrimaryButton>
+                  </div>
+                </div>
+              </div>
+            )}
+          </form>
+
+          {/* Already have an account footer */}
+          <div className="text-center pt-5 border-t border-[#D6E2F2]/60 mt-5">
+            <p className="text-xs text-[#60769B]">
+              Already have an account?{' '}
+              <Link
+                to="/login"
+                className="font-bold text-[#0879E8] hover:text-[#123FAD] hover:underline transition-colors"
+              >
+                Sign In
+              </Link>
+            </p>
           </div>
-        )}
-      </div>
-    </div>
+        </AuthCard>
+      )}
+    </AuthLayout>
   );
 };
 

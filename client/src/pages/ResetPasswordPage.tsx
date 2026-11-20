@@ -1,19 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import {
-  Lock,
-  Eye,
-  EyeOff,
-  CheckCircle2,
-  AlertCircle,
-  ShieldCheck,
-  ArrowLeft,
-  KeyRound,
-  Check,
-  X,
-  RefreshCw,
-} from 'lucide-react';
-import { Navbar } from '../components/Navbar';
+import { Lock, CheckCircle2, AlertCircle, ArrowLeft, Check, X, RefreshCw } from 'lucide-react';
+import { AuthLayout } from '../components/auth/AuthLayout';
+import { AuthCard } from '../components/auth/AuthCard';
+import { AuthInput } from '../components/auth/AuthInput';
+import { AuthPrimaryButton } from '../components/auth/AuthPrimaryButton';
 
 interface TokenVerification {
   valid: boolean;
@@ -46,7 +37,7 @@ export const ResetPasswordPage: React.FC = () => {
       setVerifying(false);
       setVerification({
         valid: false,
-        error: 'Missing password reset token in link. Please use the complete link provided in your email.',
+        error: 'Missing password reset token. Please use the secure link sent to your email.',
       });
       return;
     }
@@ -60,7 +51,7 @@ export const ResetPasswordPage: React.FC = () => {
         if (!res.ok || !data.valid) {
           setVerification({
             valid: false,
-            error: data.error || 'This password reset link is invalid or has expired.',
+            error: data.error || 'This password reset link is invalid or has expired (valid for 30 minutes).',
           });
         } else {
           setVerification({
@@ -70,10 +61,10 @@ export const ResetPasswordPage: React.FC = () => {
             role: data.role,
           });
         }
-      } catch (err: any) {
+      } catch {
         setVerification({
           valid: false,
-          error: 'Unable to connect to verification server. Please ensure the backend server is reachable.',
+          error: 'Unable to connect to verification server. Please ensure the backend server is running.',
         });
       } finally {
         setVerifying(false);
@@ -83,13 +74,14 @@ export const ResetPasswordPage: React.FC = () => {
     verifyToken();
   }, [token]);
 
-  // Password Validation Criteria
+  // Password Validation Criteria according to backend policy
   const hasMinLength = newPassword.length >= 6;
   const hasUpper = /[A-Z]/.test(newPassword);
   const hasLower = /[a-z]/.test(newPassword);
   const hasNumber = /[0-9]/.test(newPassword);
   const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
   const passwordsMatch = newPassword.length > 0 && newPassword === confirmPassword;
+
   const isFormValid =
     hasMinLength && hasUpper && hasLower && hasNumber && hasSpecial && passwordsMatch;
 
@@ -98,7 +90,7 @@ export const ResetPasswordPage: React.FC = () => {
     setSubmitError(null);
 
     if (!isFormValid) {
-      setSubmitError('Please ensure all password security requirements are fulfilled.');
+      setSubmitError('Please fulfill all password security requirements before proceeding.');
       return;
     }
 
@@ -114,279 +106,191 @@ export const ResetPasswordPage: React.FC = () => {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setSubmitError(data.error || 'Failed to reset password. Please try again or request a new link.');
+        setSubmitError(data.error || 'Failed to update password. Please request a new reset link.');
         setSubmitting(false);
         return;
       }
 
       setResetSuccess(true);
-    } catch (err: any) {
-      setSubmitError('Failed to communicate with authentication service. Please check your network.');
+    } catch {
+      setSubmitError('Cannot connect to authentication service. Please check your connection.');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
-
-      <div className="flex-1 flex items-center justify-center p-4 py-12">
-        <div className="w-full max-w-md mx-auto">
-          {/* Header Branding */}
-          <div className="text-center mb-8">
-            <Link to="/" className="inline-flex items-center gap-2.5 mb-3 group justify-center">
-              <img
-                src="/favicon.png"
-                alt="Atriowings Technologies"
-                className="w-8 h-8 rounded-lg object-contain transition-transform duration-200 group-hover:scale-105"
-              />
-              <span className="text-base font-bold text-slate-800 tracking-tight">
-                Atriowings Technologies
-              </span>
-            </Link>
-
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Reset Your Password
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1.5">
-              Create a strong, new password for your enterprise account
+    <AuthLayout customSubtitle="Configure a strong, secure password for your Growth Associate portal account.">
+      {/* 1. Verifying Token State */}
+      {verifying ? (
+        <AuthCard
+          title="Verifying Security Token"
+          subtitle="Validating your password reset token with Atriowings authentication service..."
+        >
+          <div className="py-12 flex flex-col items-center justify-center gap-3">
+            <RefreshCw className="w-8 h-8 text-[#0879E8] animate-spin" />
+            <p className="text-xs font-semibold text-[#60769B]">Securing connection...</p>
+          </div>
+        </AuthCard>
+      ) : /* 2. Invalid or Expired Token State */
+      !verification?.valid ? (
+        <AuthCard
+          title="Reset Link Invalid or Expired"
+          subtitle="We could not verify your security reset token."
+          error={verification?.error}
+        >
+          <div className="py-4 space-y-4 text-center">
+            <p className="text-xs text-[#60769B] leading-relaxed">
+              For security, password reset tokens are single-use and expire after 30 minutes. You can request a fresh reset link right now.
             </p>
-          </div>
 
-          {/* Main Card */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
-            {/* 1. Verifying State */}
-            {verifying && (
-              <div className="text-center py-10 space-y-4">
-                <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto animate-spin">
-                  <RefreshCw className="w-6 h-6" />
-                </div>
-                <h2 className="text-sm font-bold text-slate-900">Verifying Security Token...</h2>
-                <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                  Please hold on while we validate your single-use password recovery authorization.
-                </p>
-              </div>
-            )}
-
-            {/* 2. Invalid or Expired Token */}
-            {!verifying && verification && !verification.valid && (
-              <div className="text-center py-6 space-y-4">
-                <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
-                  <AlertCircle className="w-7 h-7" />
-                </div>
-
-                <div>
-                  <h2 className="text-base font-extrabold text-slate-900">Recovery Link Invalid or Expired</h2>
-                  <p className="text-xs text-slate-600 mt-2 leading-relaxed px-2">
-                    {verification.error}
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-800 text-left">
-                  <strong className="block font-bold mb-1">Why might this happen?</strong>
-                  <ul className="list-disc pl-4 space-y-0.5">
-                    <li>Recovery links expire 30 minutes after issuance.</li>
-                    <li>The link has already been used once.</li>
-                    <li>A newer password reset was requested.</li>
-                  </ul>
-                </div>
-
-                <div className="pt-2 flex flex-col gap-2.5">
-                  <button
-                    onClick={() => navigate('/login?forgot=true')}
-                    className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
-                  >
-                    <KeyRound className="w-4 h-4" />
-                    <span>Request a New Reset Link</span>
-                  </button>
-
-                  <Link
-                    to="/login"
-                    className="text-xs text-slate-500 hover:text-slate-800 font-semibold py-1 block text-center"
-                  >
-                    Return to Sign In
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            {/* 3. Password Reset Success */}
-            {!verifying && resetSuccess && (
-              <div className="text-center py-6 space-y-4 animate-fadeIn">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="w-8 h-8" />
-                </div>
-
-                <div>
-                  <h2 className="text-lg font-extrabold text-slate-900">Password Reset Complete!</h2>
-                  <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                    Your account password has been updated securely. You can now use your new password to sign in across all authorized portals.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 text-left">
-                  <span className="font-semibold text-slate-800 block mb-0.5">Global Single-Credential Protection</span>
-                  Your updated password is now active across Admin, BGA, Accounts, and Technical portals.
-                </div>
-
-                <div className="pt-2">
-                  <Link
-                    to="/login"
-                    className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>Proceed to Sign In &rarr;</span>
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            {/* 4. Valid Form State */}
-            {!verifying && verification && verification.valid && !resetSuccess && (
+            <div className="pt-2 space-y-2.5">
+              <Link
+                to="/forgot-password"
+                className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-[#0879E8] to-[#123FAD] shadow-[0_6px_20px_rgba(8,121,232,0.28)] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] transition-all"
+              >
+                Request New Reset Link
+              </Link>
               <div>
-                {/* Account Context Badge */}
-                <div className="mb-5 p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <div className="min-w-0">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                      Target Account
-                    </span>
-                    <span className="text-xs font-bold text-slate-800 truncate block">
-                      {verification.name || 'Enterprise User'}
-                    </span>
-                    <span className="text-[11px] text-slate-500 font-mono">
-                      {verification.email}
-                    </span>
-                  </div>
-                  {verification.role && (
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 uppercase">
-                      {verification.role}
-                    </span>
-                  )}
-                </div>
-
-                {submitError && (
-                  <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                    <span>{submitError}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* New Password */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      New Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showNewPassword ? 'text' : 'password'}
-                        required
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Enter secure new password"
-                        className="w-full px-3.5 py-2.5 pr-10 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
-                        tabIndex={-1}
-                      >
-                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Confirm New Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        required
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Re-enter new password"
-                        className={`w-full px-3.5 py-2.5 pr-10 rounded-lg border text-sm focus:outline-none focus:ring-2 transition-colors ${
-                          confirmPassword && !passwordsMatch
-                            ? 'border-rose-300 focus:ring-rose-500 bg-rose-50/20'
-                            : 'border-slate-300 focus:ring-indigo-500'
-                        }`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
-                        tabIndex={-1}
-                      >
-                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Real-Time Password Checklist */}
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
-                    <span className="font-bold text-slate-700 block mb-1 text-[11px] uppercase tracking-wider">
-                      Security Requirements:
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px]">
-                      <div className={`flex items-center gap-1.5 ${hasMinLength ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                        {hasMinLength ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                        <span>At least 6 characters</span>
-                      </div>
-                      <div className={`flex items-center gap-1.5 ${hasUpper ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                        {hasUpper ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                        <span>Uppercase letter (A-Z)</span>
-                      </div>
-                      <div className={`flex items-center gap-1.5 ${hasLower ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                        {hasLower ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                        <span>Lowercase letter (a-z)</span>
-                      </div>
-                      <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                        {hasNumber ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                        <span>At least one number</span>
-                      </div>
-                      <div className={`flex items-center gap-1.5 ${hasSpecial ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                        {hasSpecial ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                        <span>Special character (!@#$)</span>
-                      </div>
-                      <div className={`flex items-center gap-1.5 ${passwordsMatch ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                        {passwordsMatch ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-1 mr-0.5" />}
-                        <span>Passwords match</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={!isFormValid || submitting}
-                    className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Lock className="w-4 h-4" />
-                    <span>{submitting ? 'Updating Password...' : 'Save New Password & Complete'}</span>
-                  </button>
-
-                  <div className="pt-2 text-center">
-                    <Link
-                      to="/login"
-                      className="text-xs text-slate-500 hover:text-slate-800 font-semibold inline-flex items-center gap-1"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>Back to Sign In</span>
-                    </Link>
-                  </div>
-                </form>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0879E8] hover:text-[#123FAD] hover:underline transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Back to Sign In
+                </Link>
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </AuthCard>
+      ) : /* 3. Password Successfully Reset State */
+      resetSuccess ? (
+        <AuthCard
+          title="Password Updated Successfully"
+          subtitle="Your password has been updated. You can now sign in using your new password."
+        >
+          <div className="text-center py-4 space-y-5">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto shadow-sm">
+              <CheckCircle2 className="w-7 h-7" />
+            </div>
+
+            <p className="text-xs sm:text-sm text-[#60769B] leading-relaxed">
+              Your credentials have been securely updated in the Atriowings authentication system. Please proceed to sign in with your updated password.
+            </p>
+
+            <div className="pt-3">
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-[#0879E8] to-[#123FAD] shadow-[0_6px_20px_rgba(8,121,232,0.28)] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] transition-all"
+              >
+                Go to Sign In
+              </button>
+            </div>
+          </div>
+        </AuthCard>
+      ) : (
+        /* 4. Active Reset Password Form */
+        <AuthCard
+          title="Create a New Password"
+          subtitle="Choose a strong password to secure your Growth Associate account."
+          error={submitError}
+          info={
+            verification?.email
+              ? `Resetting password for registered account: ${verification.email}`
+              : null
+          }
+        >
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            {/* New Password */}
+            <AuthInput
+              label="New Password"
+              icon={Lock}
+              placeholder="Enter new password"
+              isPassword
+              showPasswordToggle
+              showPassword={showNewPassword}
+              onTogglePassword={() => setShowNewPassword(!showNewPassword)}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              autoComplete="new-password"
+            />
+
+            {/* Password Policy Checklist */}
+            <div className="p-3.5 rounded-xl bg-[#F5F9FF] border border-[#D6E2F2] space-y-1.5 text-[11px]">
+              <span className="font-bold text-[#10244D] block mb-1">Password Requirements:</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[#60769B]">
+                <div className={`flex items-center gap-1.5 ${hasMinLength ? 'text-emerald-600 font-semibold' : ''}`}>
+                  {hasMinLength ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <X className="w-3.5 h-3.5 text-slate-400" />}
+                  <span>At least 6 characters</span>
+                </div>
+                <div className={`flex items-center gap-1.5 ${hasUpper ? 'text-emerald-600 font-semibold' : ''}`}>
+                  {hasUpper ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <X className="w-3.5 h-3.5 text-slate-400" />}
+                  <span>One uppercase letter (A-Z)</span>
+                </div>
+                <div className={`flex items-center gap-1.5 ${hasLower ? 'text-emerald-600 font-semibold' : ''}`}>
+                  {hasLower ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <X className="w-3.5 h-3.5 text-slate-400" />}
+                  <span>One lowercase letter (a-z)</span>
+                </div>
+                <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-emerald-600 font-semibold' : ''}`}>
+                  {hasNumber ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <X className="w-3.5 h-3.5 text-slate-400" />}
+                  <span>One number (0-9)</span>
+                </div>
+                <div className={`flex items-center gap-1.5 col-span-1 sm:col-span-2 ${hasSpecial ? 'text-emerald-600 font-semibold' : ''}`}>
+                  {hasSpecial ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <X className="w-3.5 h-3.5 text-slate-400" />}
+                  <span>One special character (e.g. @#$%^&*)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Confirm New Password */}
+            <AuthInput
+              label="Confirm New Password"
+              icon={Lock}
+              placeholder="Re-enter new password"
+              isPassword
+              showPasswordToggle
+              showPassword={showConfirmPassword}
+              onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              error={
+                confirmPassword && !passwordsMatch
+                  ? 'Passwords do not match.'
+                  : undefined
+              }
+              required
+              autoComplete="new-password"
+            />
+
+            {/* Primary Submit */}
+            <div className="pt-2">
+              <AuthPrimaryButton
+                loading={submitting}
+                loadingText="Updating Password..."
+                disabled={!isFormValid}
+              >
+                Reset Password
+              </AuthPrimaryButton>
+            </div>
+
+            <div className="text-center pt-1">
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0879E8] hover:text-[#123FAD] hover:underline transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Back to Sign In
+              </Link>
+            </div>
+          </form>
+        </AuthCard>
+      )}
+    </AuthLayout>
   );
 };
 
