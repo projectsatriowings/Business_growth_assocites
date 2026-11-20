@@ -1363,11 +1363,29 @@ export const RegisterBgaPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Security & Verification Reminder */}
+                {(!isEmailVerified || !isMobileVerified) && (
+                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+                    <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Ownership Verification Required</p>
+                      <p className="text-[11px] text-amber-800">
+                        Please verify ownership of your email ({isEmailVerified ? '✓ Verified' : 'Pending OTP'}) and mobile number ({isMobileVerified ? '✓ Verified' : 'Pending OTP'}) before proceeding.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="pt-2">
                   <button
                     type="button"
                     onClick={handleNextStep}
-                    className="w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-[#0879E8] to-[#123FAD] shadow-[0_6px_20px_rgba(8,121,232,0.28)] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    disabled={!isEmailVerified || !isMobileVerified}
+                    className={`w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white shadow-[0_6px_20px_rgba(8,121,232,0.28)] transition-all flex items-center justify-center gap-2 ${
+                      !isEmailVerified || !isMobileVerified
+                        ? 'bg-slate-300 text-slate-500 shadow-none cursor-not-allowed opacity-60'
+                        : 'bg-gradient-to-r from-[#0879E8] to-[#123FAD] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] cursor-pointer'
+                    }`}
                   >
                     <span>Continue to Location & KYC</span>
                     <ArrowRight className="w-4 h-4" />
@@ -1702,9 +1720,9 @@ export const RegisterBgaPage: React.FC = () => {
                   <div className="flex-1">
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={loading || !formData.agreementAccepted || !isEmailVerified || !isMobileVerified}
                       className={`w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white shadow-[0_6px_20px_rgba(8,121,232,0.28)] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
-                        loading
+                        loading || !formData.agreementAccepted || !isEmailVerified || !isMobileVerified
                           ? 'bg-slate-300 text-slate-500 shadow-none cursor-not-allowed'
                           : 'bg-gradient-to-r from-[#0879E8] to-[#123FAD] hover:from-[#076cd0] hover:to-[#0f3494] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] active:scale-[0.99]'
                       }`}
