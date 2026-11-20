@@ -2109,20 +2109,31 @@ export const BgaPortal: React.FC = () => {
                               <span className="text-[11px] text-slate-500 block">Business Category</span>
                               <span className="font-bold text-slate-800">{activeClientDetail.businessCategory}</span>
                             </div>
-                            <div>
-                              <span className="text-[11px] text-slate-500 block">Required Service</span>
-                              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 inline-block mt-0.5">
-                                {activeClientDetail.requiredService?.replace(/_/g, ' ') || 'General Enquiry'}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-[11px] text-slate-500 block">Expected Budget</span>
-                              <strong className="text-sm font-extrabold text-slate-900">
-                                {activeClientDetail.expectedBudget
-                                  ? `₹${Number(activeClientDetail.expectedBudget).toLocaleString('en-IN')}`
-                                  : 'Not specified'}
-                              </strong>
-                            </div>
+                            {(() => {
+                              const latestEnq = activeClientDetail.enquiries && activeClientDetail.enquiries.length > 0
+                                ? activeClientDetail.enquiries[0]
+                                : null;
+                              const service = activeClientDetail.requiredService || latestEnq?.serviceCategory;
+                              const budget = activeClientDetail.expectedBudget ?? latestEnq?.expectedBudget;
+                              return (
+                                <>
+                                  <div>
+                                    <span className="text-[11px] text-slate-500 block">Required Service</span>
+                                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 inline-block mt-0.5">
+                                      {service ? String(service).replace(/_/g, ' ') : 'General Enquiry'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-[11px] text-slate-500 block">Expected Budget</span>
+                                    <strong className="text-sm font-extrabold text-slate-900">
+                                      {budget !== undefined && budget !== null && Number(budget) > 0
+                                        ? `₹${Number(budget).toLocaleString('en-IN')}`
+                                        : 'Not specified'}
+                                    </strong>
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
 
                           {/* Col 3: Complete Structured Address */}
@@ -2171,32 +2182,39 @@ export const BgaPortal: React.FC = () => {
                         </div>
 
                         {/* Additional Notes & Scope */}
-                        {(activeClientDetail.clientRequirements ||
-                          activeClientDetail.discussionNotes ||
-                          activeClientDetail.followUpDate) && (
+                        {(() => {
+                          const latestEnq = activeClientDetail.enquiries && activeClientDetail.enquiries.length > 0
+                            ? activeClientDetail.enquiries[0]
+                            : null;
+                          const reqs = activeClientDetail.clientRequirements || latestEnq?.requirements;
+                          const notes = activeClientDetail.discussionNotes || latestEnq?.discussionNotes;
+                          const followDate = activeClientDetail.followUpDate || latestEnq?.followUpDate;
+                          if (!reqs && !notes && !followDate) return null;
+                          return (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-100 text-xs">
-                              {activeClientDetail.clientRequirements && (
+                              {reqs && (
                                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                                   <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
                                     Initial Client Scope & Requirements
                                   </span>
                                   <p className="text-slate-700 whitespace-pre-wrap">
-                                    {activeClientDetail.clientRequirements}
+                                    {reqs}
                                   </p>
                                 </div>
                               )}
-                              {activeClientDetail.discussionNotes && (
+                              {notes && (
                                 <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-100">
                                   <span className="text-[10px] font-bold text-amber-700 uppercase block mb-1">
                                     Discussion Notes
                                   </span>
                                   <p className="text-slate-700 whitespace-pre-wrap">
-                                    {activeClientDetail.discussionNotes}
+                                    {notes}
                                   </p>
                                 </div>
                               )}
                             </div>
-                          )}
+                          );
+                        })()}
                       </div>
 
                       {/* SECTION B: CONTACT AND FOLLOW-UP HISTORY */}

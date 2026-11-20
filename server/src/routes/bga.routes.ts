@@ -937,8 +937,14 @@ router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> =>
 
     const enrichedClients = clients.map((c) => {
       const addr = parseClientLocation(c.location);
+      const latestEnq = c.enquiries && c.enquiries.length > 0 ? c.enquiries[0] : null;
       return {
         ...c,
+        requiredService: (c as any).requiredService || latestEnq?.serviceCategory || null,
+        expectedBudget: (c as any).expectedBudget ?? (latestEnq?.expectedBudget !== undefined ? latestEnq.expectedBudget : null),
+        clientRequirements: (c as any).clientRequirements || latestEnq?.requirements || null,
+        discussionNotes: (c as any).discussionNotes || latestEnq?.discussionNotes || null,
+        followUpDate: (c as any).followUpDate || latestEnq?.followUpDate || null,
         address: addr,
         addressLine1: addr.addressLine1,
         addressLine2: addr.addressLine2,
@@ -1266,9 +1272,15 @@ router.get('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
     }
 
     const addr = parseClientLocation(client.location);
+    const latestEnq = client.enquiries && client.enquiries.length > 0 ? client.enquiries[0] : null;
     res.json({
       client: {
         ...client,
+        requiredService: (client as any).requiredService || latestEnq?.serviceCategory || null,
+        expectedBudget: (client as any).expectedBudget ?? (latestEnq?.expectedBudget !== undefined ? latestEnq.expectedBudget : null),
+        clientRequirements: (client as any).clientRequirements || latestEnq?.requirements || null,
+        discussionNotes: (client as any).discussionNotes || latestEnq?.discussionNotes || null,
+        followUpDate: (client as any).followUpDate || latestEnq?.followUpDate || null,
         address: addr,
         addressLine1: addr.addressLine1,
         addressLine2: addr.addressLine2,
@@ -1778,8 +1790,17 @@ router.put('/clients/:id', async (req: AuthRequest, res: Response): Promise<void
     });
 
     const parsedAddr = parseClientLocation(refreshedClient?.location || updatedClient.location);
+    const targetClient = refreshedClient || updatedClient;
+    const latestEnq = (targetClient as any)?.enquiries && (targetClient as any).enquiries.length > 0
+      ? (targetClient as any).enquiries[0]
+      : updatedEnquiry || null;
     const enriched = {
-      ...(refreshedClient || updatedClient),
+      ...targetClient,
+      requiredService: (targetClient as any).requiredService || latestEnq?.serviceCategory || null,
+      expectedBudget: (targetClient as any).expectedBudget ?? (latestEnq?.expectedBudget !== undefined ? latestEnq.expectedBudget : null),
+      clientRequirements: (targetClient as any).clientRequirements || latestEnq?.requirements || null,
+      discussionNotes: (targetClient as any).discussionNotes || latestEnq?.discussionNotes || null,
+      followUpDate: (targetClient as any).followUpDate || latestEnq?.followUpDate || null,
       address: parsedAddr,
       addressLine1: parsedAddr.addressLine1,
       addressLine2: parsedAddr.addressLine2,
