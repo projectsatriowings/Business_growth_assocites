@@ -103,7 +103,7 @@ export const BgaPortal: React.FC = () => {
       try {
         const saved = localStorage.getItem('bga_active_tab');
         if (saved && valid.includes(saved)) return saved as any;
-      } catch (e) {}
+      } catch (e) { }
     }
     return 'dashboard';
   });
@@ -111,7 +111,7 @@ export const BgaPortal: React.FC = () => {
   useEffect(() => {
     try {
       localStorage.setItem('bga_active_tab', activeTab);
-    } catch (e) {}
+    } catch (e) { }
   }, [activeTab]);
 
   const [loading, setLoading] = useState(false);
@@ -1536,13 +1536,12 @@ export const BgaPortal: React.FC = () => {
                             <div>
                               <div className="flex items-center justify-between text-[11px] mb-1">
                                 <span className="font-mono font-bold text-[#3066BE]">{p.projectNumber}</span>
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                  p.status === 'COMPLETED'
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : p.status === 'UNDER_REVIEW'
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${p.status === 'COMPLETED'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : p.status === 'UNDER_REVIEW'
                                     ? 'bg-purple-100 text-purple-800'
                                     : 'bg-amber-100 text-amber-800'
-                                }`}>
+                                  }`}>
                                   {p.status.replace(/_/g, ' ')}
                                 </span>
                               </div>
@@ -2629,15 +2628,14 @@ export const BgaPortal: React.FC = () => {
                                               ₹{(relatedQuote.totalAmount || 0).toLocaleString('en-IN')}
                                             </span>
                                             <span
-                                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                                isQuoteAccepted
-                                                  ? 'bg-emerald-100 text-emerald-800'
-                                                  : isQuoteApproved
-                                                    ? 'bg-blue-100 text-blue-800'
-                                                    : isQuotePendingAdmin
-                                                      ? 'bg-purple-100 text-purple-800'
-                                                      : 'bg-amber-100 text-amber-800'
-                                              }`}
+                                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${isQuoteAccepted
+                                                ? 'bg-emerald-100 text-emerald-800'
+                                                : isQuoteApproved
+                                                  ? 'bg-blue-100 text-blue-800'
+                                                  : isQuotePendingAdmin
+                                                    ? 'bg-purple-100 text-purple-800'
+                                                    : 'bg-amber-100 text-amber-800'
+                                                }`}
                                             >
                                               {isQuoteAccepted
                                                 ? 'ACCEPTED BY CLIENT'
@@ -2722,12 +2720,6 @@ export const BgaPortal: React.FC = () => {
                                                     Record Acceptance
                                                   </button>
                                                 </>
-                                              )}
-                                              {relatedQuote.status === 'ACCEPTED' && (
-                                                <span className="px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg font-bold text-xs flex items-center gap-1 shadow-2xs">
-                                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                                  <span>Client Accepted ✓</span>
-                                                </span>
                                               )}
                                             </>
                                           ) : (
@@ -2924,11 +2916,10 @@ export const BgaPortal: React.FC = () => {
                                   key={tab.id}
                                   type="button"
                                   onClick={() => setTimelineCategoryFilter(tab.id)}
-                                  className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                                    active
-                                      ? 'bg-[#3066BE] text-white shadow-xs'
-                                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-                                  }`}
+                                  className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${active
+                                    ? 'bg-[#3066BE] text-white shadow-xs'
+                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                                    }`}
                                 >
                                   {tab.label}
                                 </button>
@@ -3364,114 +3355,114 @@ export const BgaPortal: React.FC = () => {
                                   }
                                 }
 
-                                  const fuState = getClientFollowUpState(c);
-                                  const latestActivity = c.contactActivities?.[0] || null;
-                                  const latestEnq = c.enquiries?.[0] || null;
+                                const fuState = getClientFollowUpState(c);
+                                const latestActivity = c.contactActivities?.[0] || null;
+                                const latestEnq = c.enquiries?.[0] || null;
 
-                                  return (
-                                    <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                                      {/* 1. Client & Company */}
-                                      <td className="p-3.5">
-                                        <div className="font-bold text-slate-900 text-sm">{c.clientName}</div>
-                                        <div className="text-xs text-indigo-600 font-semibold mt-0.5">
-                                          {c.businessName}
+                                return (
+                                  <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
+                                    {/* 1. Client & Company */}
+                                    <td className="p-3.5">
+                                      <div className="font-bold text-slate-900 text-sm">{c.clientName}</div>
+                                      <div className="text-xs text-indigo-600 font-semibold mt-0.5">
+                                        {c.businessName}
+                                      </div>
+                                    </td>
+
+                                    {/* 2. Business Category & Service */}
+                                    <td className="p-3.5">
+                                      <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-200 block w-max">
+                                        {c.businessCategory}
+                                      </span>
+                                      <span className="text-[10px] text-slate-500 font-medium block mt-1">
+                                        {c.requiredService?.replace(/_/g, ' ') || 'General'}
+                                      </span>
+                                    </td>
+
+                                    {/* 3. Mobile, Email & City */}
+                                    <td className="p-3.5">
+                                      <div className="text-slate-800 font-medium flex items-center gap-1.5">
+                                        <Phone className="w-3 h-3 text-slate-400" />
+                                        <span>{c.mobile}</span>
+                                      </div>
+                                      <div className="text-slate-500 text-[11px] flex items-center gap-1.5 mt-0.5">
+                                        <Mail className="w-3 h-3 text-slate-400" />
+                                        <span className="truncate max-w-[150px]">{c.email}</span>
+                                      </div>
+                                      <div className="text-slate-500 text-[11px] flex items-center gap-1 mt-0.5">
+                                        <MapPin className="w-3 h-3 text-slate-400" />
+                                        <span>{displayCity || '—'}</span>
+                                      </div>
+                                    </td>
+
+                                    {/* 4. Client Status & Next Follow-Up */}
+                                    <td className="p-3.5">
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-[#119DA4] border border-[#119DA4]/20 block w-max">
+                                        {c.status || 'ACTIVE'}
+                                      </span>
+                                      {fuState.status === 'NONE' ? (
+                                        <span className="text-[10px] text-slate-400 block mt-1">No follow-up set</span>
+                                      ) : (
+                                        <div
+                                          className={`text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded flex items-center gap-1 w-max ${fuState.badgeClass}`}
+                                        >
+                                          {fuState.iconType === 'phone' ? (
+                                            <Phone className="w-3 h-3" />
+                                          ) : (
+                                            <Calendar className="w-3 h-3" />
+                                          )}
+                                          <span>{fuState.label}</span>
                                         </div>
-                                      </td>
+                                      )}
+                                    </td>
 
-                                      {/* 2. Business Category & Service */}
-                                      <td className="p-3.5">
-                                        <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-200 block w-max">
-                                          {c.businessCategory}
+                                    {/* 5. Requests Count & Latest Activity */}
+                                    <td className="p-3.5">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                          {c.enquiries?.length || 0} {(c.enquiries?.length || 0) === 1 ? 'Request' : 'Requests'}
                                         </span>
-                                        <span className="text-[10px] text-slate-500 font-medium block mt-1">
-                                          {c.requiredService?.replace(/_/g, ' ') || 'General'}
+                                      </div>
+                                      {latestActivity ? (
+                                        <div className="text-[10px] text-slate-600 mt-1 truncate max-w-[170px]" title={latestActivity.discussionSummary}>
+                                          <span className="font-semibold">{latestActivity.contactMethod}:</span> {latestActivity.discussionSummary}
+                                        </div>
+                                      ) : latestEnq ? (
+                                        <div className="space-y-1">
+                                          <div className="text-[10px] text-slate-500">
+                                            Enquiry: <span className={latestEnq.status === 'REJECTED' ? 'font-bold text-red-600' : ''}>{latestEnq.status}</span>
+                                          </div>
+                                          {latestEnq.status === 'REJECTED' && (!latestEnq.discussionNotes || !latestEnq.discussionNotes.includes('Client Informed of Rejection')) && (
+                                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-300 animate-pulse flex items-center gap-1 w-fit">
+                                              <AlertCircle className="w-2.5 h-2.5 text-rose-600" />
+                                              Inform Client
+                                            </span>
+                                          )}
+                                          {latestEnq.status === 'REJECTED' && latestEnq.discussionNotes && latestEnq.discussionNotes.includes('Client Informed of Rejection') && (
+                                            <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1 w-fit">
+                                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                                              Client Informed
+                                            </span>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <span className="text-[10px] text-slate-400 block mt-1">No activity yet</span>
+                                      )}
+                                    </td>
+
+                                    {/* 6. Registration Date */}
+                                    <td className="p-3.5 text-slate-600">
+                                      <div className="flex items-center gap-1 font-medium">
+                                        <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                                        <span>
+                                          {new Date(c.createdAt).toLocaleDateString('en-IN', {
+                                            day: '2-digit',
+                                            month: 'short',
+                                            year: 'numeric',
+                                          })}
                                         </span>
-                                      </td>
-
-                                      {/* 3. Mobile, Email & City */}
-                                      <td className="p-3.5">
-                                        <div className="text-slate-800 font-medium flex items-center gap-1.5">
-                                          <Phone className="w-3 h-3 text-slate-400" />
-                                          <span>{c.mobile}</span>
-                                        </div>
-                                        <div className="text-slate-500 text-[11px] flex items-center gap-1.5 mt-0.5">
-                                          <Mail className="w-3 h-3 text-slate-400" />
-                                          <span className="truncate max-w-[150px]">{c.email}</span>
-                                        </div>
-                                        <div className="text-slate-500 text-[11px] flex items-center gap-1 mt-0.5">
-                                          <MapPin className="w-3 h-3 text-slate-400" />
-                                          <span>{displayCity || '—'}</span>
-                                        </div>
-                                      </td>
-
-                                      {/* 4. Client Status & Next Follow-Up */}
-                                      <td className="p-3.5">
-                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-[#119DA4] border border-[#119DA4]/20 block w-max">
-                                          {c.status || 'ACTIVE'}
-                                        </span>
-                                        {fuState.status === 'NONE' ? (
-                                          <span className="text-[10px] text-slate-400 block mt-1">No follow-up set</span>
-                                        ) : (
-                                          <div
-                                            className={`text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded flex items-center gap-1 w-max ${fuState.badgeClass}`}
-                                          >
-                                            {fuState.iconType === 'phone' ? (
-                                              <Phone className="w-3 h-3" />
-                                            ) : (
-                                              <Calendar className="w-3 h-3" />
-                                            )}
-                                            <span>{fuState.label}</span>
-                                          </div>
-                                        )}
-                                      </td>
-
-                                      {/* 5. Requests Count & Latest Activity */}
-                                      <td className="p-3.5">
-                                        <div className="flex items-center gap-1.5">
-                                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                            {c.enquiries?.length || 0} {(c.enquiries?.length || 0) === 1 ? 'Request' : 'Requests'}
-                                          </span>
-                                        </div>
-                                        {latestActivity ? (
-                                          <div className="text-[10px] text-slate-600 mt-1 truncate max-w-[170px]" title={latestActivity.discussionSummary}>
-                                            <span className="font-semibold">{latestActivity.contactMethod}:</span> {latestActivity.discussionSummary}
-                                          </div>
-                                        ) : latestEnq ? (
-                                          <div className="space-y-1">
-                                            <div className="text-[10px] text-slate-500">
-                                              Enquiry: <span className={latestEnq.status === 'REJECTED' ? 'font-bold text-red-600' : ''}>{latestEnq.status}</span>
-                                            </div>
-                                            {latestEnq.status === 'REJECTED' && (!latestEnq.discussionNotes || !latestEnq.discussionNotes.includes('Client Informed of Rejection')) && (
-                                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-300 animate-pulse flex items-center gap-1 w-fit">
-                                                <AlertCircle className="w-2.5 h-2.5 text-rose-600" />
-                                                Inform Client
-                                              </span>
-                                            )}
-                                            {latestEnq.status === 'REJECTED' && latestEnq.discussionNotes && latestEnq.discussionNotes.includes('Client Informed of Rejection') && (
-                                              <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1 w-fit">
-                                                <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                                                Client Informed
-                                              </span>
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <span className="text-[10px] text-slate-400 block mt-1">No activity yet</span>
-                                        )}
-                                      </td>
-
-                                      {/* 6. Registration Date */}
-                                      <td className="p-3.5 text-slate-600">
-                                        <div className="flex items-center gap-1 font-medium">
-                                          <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
-                                          <span>
-                                            {new Date(c.createdAt).toLocaleDateString('en-IN', {
-                                              day: '2-digit',
-                                              month: 'short',
-                                              year: 'numeric',
-                                            })}
-                                          </span>
-                                        </div>
-                                      </td>
+                                      </div>
+                                    </td>
 
                                     {/* 7. Actions */}
                                     <td className="p-3.5 text-right">
@@ -3995,12 +3986,12 @@ export const BgaPortal: React.FC = () => {
                                             </div>
                                           ) : (
                                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${isVid
-                                                ? 'bg-rose-50 text-rose-600 border-rose-200'
-                                                : isAud
-                                                  ? 'bg-purple-50 text-purple-600 border-purple-200'
-                                                  : isArch
-                                                    ? 'bg-amber-50 text-amber-600 border-amber-200'
-                                                    : 'bg-indigo-50 text-indigo-600 border-indigo-200'
+                                              ? 'bg-rose-50 text-rose-600 border-rose-200'
+                                              : isAud
+                                                ? 'bg-purple-50 text-purple-600 border-purple-200'
+                                                : isArch
+                                                  ? 'bg-amber-50 text-amber-600 border-amber-200'
+                                                  : 'bg-indigo-50 text-indigo-600 border-indigo-200'
                                               }`}>
                                               {isVid ? (
                                                 <Video className="w-5 h-5" />
@@ -4869,31 +4860,30 @@ export const BgaPortal: React.FC = () => {
 
                           <div className="flex items-center gap-2">
                             <span
-                              className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
-                                isSuperseded
-                                  ? 'bg-slate-100 text-slate-700 border border-slate-300'
-                                  : q.status === 'ACCEPTED'
+                              className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${isSuperseded
+                                ? 'bg-slate-100 text-slate-700 border border-slate-300'
+                                : q.status === 'ACCEPTED'
                                   ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
                                   : isApproved
-                                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                  : isPendingAdmin
-                                  ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                                  : 'bg-amber-100 text-amber-800 border border-amber-200'
-                              }`}
+                                    ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                    : isPendingAdmin
+                                      ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                      : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                }`}
                             >
                               {isSuperseded
                                 ? `SUPERSEDED BY V${q.supersededBy.version}`
                                 : isApproved
-                                ? 'APPROVED & AVAILABLE FOR CLIENT'
-                                : isPendingAdmin
-                                ? 'QUOTATION PENDING ADMIN APPROVAL'
-                                : q.status === 'REQUESTED'
-                                ? 'AWAITING ACCOUNTS PREPARATION'
-                                : q.status === 'REVISION_REQUESTED'
-                                ? 'REVISION REQUESTED BY ADMIN'
-                                : isUnderPrep
-                                ? 'QUOTATION UNDER PREPARATION'
-                                : q.status}
+                                  ? 'APPROVED & AVAILABLE FOR CLIENT'
+                                  : isPendingAdmin
+                                    ? 'QUOTATION PENDING ADMIN APPROVAL'
+                                    : q.status === 'REQUESTED'
+                                      ? 'AWAITING ACCOUNTS PREPARATION'
+                                      : q.status === 'REVISION_REQUESTED'
+                                        ? 'REVISION REQUESTED BY ADMIN'
+                                        : isUnderPrep
+                                          ? 'QUOTATION UNDER PREPARATION'
+                                          : q.status}
                             </span>
                             {(isApproved || isSuperseded || (q.preparedById && q.status === 'EXPIRED')) && (
                               <a
@@ -5041,2113 +5031,2268 @@ export const BgaPortal: React.FC = () => {
                     );
                   }))}
               </div>
+
+              {/* Revision Request Modal */}
+              <ModalPortal
+                isOpen={!!revisionModal}
+                onClose={() => !modalSubmitting && setRevisionModal(null)}
+              >
+                {revisionModal && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
+                            <Edit3 className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">
+                              Request Quotation Revision
+                            </h3>
+                            <p className="text-xs text-slate-500 font-mono">
+                              {revisionModal.quotationNumber}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => !modalSubmitting && setRevisionModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        Enter the requested scope modifications, commercial revisions, or client feedback. The Accounts Department will draft an updated quotation.
+                      </p>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                          Client Feedback / Revision Notes <span className="text-rose-500">*</span>
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={revisionNotes}
+                          onChange={(e) => setRevisionNotes(e.target.value)}
+                          placeholder="e.g. Client requested a 10% commercial discount and inclusion of 2 additional landing pages..."
+                          className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none transition-all"
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button
+                          type="button"
+                          disabled={modalSubmitting}
+                          onClick={() => setRevisionModal(null)}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!revisionNotes.trim() || modalSubmitting}
+                          onClick={handleSubmitRevision}
+                          className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {modalSubmitting ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5" />
+                          )}
+                          {modalSubmitting ? 'Sending...' : 'Send to Accounts'}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </ModalPortal>
+
+              {/* Client Acceptance Modal */}
+              <ModalPortal
+                isOpen={!!acceptanceModal}
+                onClose={() => !modalSubmitting && setAcceptanceModal(null)}
+              >
+                {acceptanceModal && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-600" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 border border-teal-200">
+                            <CheckCircle2 className="w-5 h-5 text-teal-600" />
+                          </div>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">
+                              Record Client Acceptance
+                            </h3>
+                            <p className="text-xs text-slate-500 font-mono">
+                              {acceptanceModal.quotationNumber}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => !modalSubmitting && setAcceptanceModal(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-200/70 text-xs text-teal-900 leading-relaxed">
+                        Recording client acceptance automatically generates an official <strong>Work Order</strong> and notifies Accounts to collect and verify the required advance payment.
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                          Acceptance Evidence / PO Reference Notes <span className="text-rose-500">*</span>
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={acceptanceNotes}
+                          onChange={(e) => setAcceptanceNotes(e.target.value)}
+                          placeholder="e.g. Approved via email confirmation from MD on 17 Nov 2026. PO Ref: APEX-2026-PO99"
+                          className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 resize-none transition-all"
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button
+                          type="button"
+                          disabled={modalSubmitting}
+                          onClick={() => setAcceptanceModal(null)}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!acceptanceNotes.trim() || modalSubmitting}
+                          onClick={handleClientAcceptance}
+                          className="px-5 py-2 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {modalSubmitting ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          )}
+                          {modalSubmitting ? 'Confirming...' : 'Confirm Acceptance'}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </ModalPortal>
             </div>
           )}
 
-{/* TAB 7: WORK ORDERS & PROJECTS */ }
-{
-  activeTab === 'projects' && (
-    <div className="space-y-4">
-      <div className="bg-white p-4 rounded-xl border border-slate-200">
-        <h2 className="text-base font-bold text-slate-900">My Client Projects & Execution</h2>
-        <p className="text-xs text-slate-500">
-          Track technical implementation progress and milestones for contracts accepted by your clients.
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        {!workOrdersLoaded || tabLoading ? (
-          <SkeletonTable rows={4} cols={5} />
-        ) : workOrders.length === 0 ? (
-          <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm">
-            <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-sm font-bold text-slate-800">No active projects yet</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-              Projects will appear here once your clients accept commercial quotations and technical execution kicks off.
-            </p>
-          </div>
-        ) : (
-          workOrders.map((wo) => {
-            const prj = wo.project;
-            return (
-              <div key={wo.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-slate-900">{wo.workOrderNumber}</span>
-                      {prj && <span className="font-mono text-xs text-indigo-600 font-bold">({prj.projectNumber})</span>}
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-900 mt-0.5">{wo.client?.clientName}</h3>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      wo.status === 'COMPLETED'
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                        : wo.advanceVerified
-                        ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {wo.status === 'COMPLETED' ? 'Final Payment: VERIFIED (100% Settled)' : wo.advanceVerified ? 'Advance: VERIFIED' : 'Advance: AWAITING VERIFICATION'}
-                    </span>
-                    <span className="text-xs font-bold text-slate-800">
-                      Value: ₹{wo.totalValue?.toLocaleString()}
-                    </span>
-                  </div>
+          {/* TAB 7: WORK ORDERS & PROJECTS */}
+          {
+            activeTab === 'projects' && (
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                  <h2 className="text-base font-bold text-slate-900">My Client Projects & Execution</h2>
+                  <p className="text-xs text-slate-500">
+                    Track technical implementation progress and milestones for contracts accepted by your clients.
+                  </p>
                 </div>
 
-                {prj ? (
-                  <div className="mt-3 space-y-3">
-                    <div>
-                      <div className="flex justify-between items-center text-xs text-slate-600 mb-1">
-                        <div className="flex items-center gap-2">
-                          <span>Technical Execution:</span>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            prj.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
-                            prj.status === 'CORRECTION_REQUIRED' ? 'bg-rose-100 text-rose-800' :
-                            prj.status === 'UNDER_REVIEW' ? 'bg-amber-100 text-amber-800' :
-                            'bg-blue-100 text-blue-800'
-                          }`}>
-                            {prj.status}
-                          </span>
-                        </div>
-                        <span className="font-bold">{prj.progressPercentage}%</span>
-                      </div>
-                      <div className="w-full bg-slate-100 rounded-full h-2">
-                        <div
-                          className="bg-[#3066BE] h-2 rounded-full transition-all"
-                          style={{ width: `${prj.progressPercentage}%` }}
-                        />
-                      </div>
+                <div className="space-y-4">
+                  {!workOrdersLoaded || tabLoading ? (
+                    <SkeletonTable rows={4} cols={5} />
+                  ) : workOrders.length === 0 ? (
+                    <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm">
+                      <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <h3 className="text-sm font-bold text-slate-800">No active projects yet</h3>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                        Projects will appear here once your clients accept commercial quotations and technical execution kicks off.
+                      </p>
                     </div>
+                  ) : (
+                    workOrders.map((wo) => {
+                      const prj = wo.project;
+                      return (
+                        <div key={wo.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-xs font-bold text-slate-900">{wo.workOrderNumber}</span>
+                                {prj && <span className="font-mono text-xs text-indigo-600 font-bold">({prj.projectNumber})</span>}
+                              </div>
+                              <h3 className="text-sm font-bold text-slate-900 mt-0.5">{wo.client?.clientName}</h3>
+                            </div>
 
-                    {/* Client Attached Requirement Document (if provided by client/enquiry) */}
-                    {wo.quotation?.enquiry?.attachmentUrl && (
-                      <div className="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 flex items-center justify-between gap-2 text-xs">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
-                          <div>
-                            <span className="font-bold text-slate-800 block truncate">
-                              Client Requirement Document / Specs
-                            </span>
-                            <span className="text-[10px] text-indigo-700">Client-provided brief from enquiry</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${wo.status === 'COMPLETED'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : wo.advanceVerified
+                                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                  : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                {wo.status === 'COMPLETED' ? 'Final Payment: VERIFIED (100% Settled)' : wo.advanceVerified ? 'Advance: VERIFIED' : 'Advance: AWAITING VERIFICATION'}
+                              </span>
+                              <span className="text-xs font-bold text-slate-800">
+                                Value: ₹{wo.totalValue?.toLocaleString()}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {isExternalWebLink(wo.quotation.enquiry.attachmentUrl) ? (
-                            <a
-                              href={wo.quotation.enquiry.attachmentUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-2.5 py-1 rounded bg-white hover:bg-slate-50 text-[#3066BE] border border-slate-200 text-xs font-bold inline-flex items-center gap-1"
-                            >
-                              <ExternalLink className="w-3 h-3" /> Open Link
-                            </a>
-                          ) : (
-                            <>
-                              <a
-                                href={wo.quotation.enquiry.attachmentUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-2 py-1 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold inline-flex items-center gap-1"
-                              >
-                                <Eye className="w-3 h-3" /> View
-                              </a>
-                              <button
-                                type="button"
-                                onClick={() => downloadFile(wo.quotation.enquiry.attachmentUrl, `${wo.client?.clientName || 'client'}-brief`)}
-                                className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
-                              >
-                                <Download className="w-3 h-3" /> Download
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
 
-                    {/* Uploaded Deliverables Section */}
-                    {prj.deliverables && prj.deliverables.length > 0 && (
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                            <FileCheck className="w-3.5 h-3.5 text-[#119DA4]" />
-                            Uploaded Deliverables ({prj.deliverables.length})
-                          </span>
-                          <span className="text-[10px] text-slate-500">Inspect deliverables before submitting client feedback</span>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {prj.deliverables.map((d: any) => (
-                            <div key={d.id} className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs flex flex-col justify-between gap-2 shadow-2xs">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-bold text-slate-900 truncate">{d.title}</span>
-                                    {d.version && (
-                                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-mono font-bold">
-                                        v{d.version}
-                                      </span>
-                                    )}
+                          {prj ? (
+                            <div className="mt-3 space-y-3">
+                              <div>
+                                <div className="flex justify-between items-center text-xs text-slate-600 mb-1">
+                                  <div className="flex items-center gap-2">
+                                    <span>Technical Execution:</span>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${prj.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
+                                      prj.status === 'CORRECTION_REQUIRED' ? 'bg-rose-100 text-rose-800' :
+                                        prj.status === 'UNDER_REVIEW' ? 'bg-amber-100 text-amber-800' :
+                                          'bg-blue-100 text-blue-800'
+                                      }`}>
+                                      {prj.status}
+                                    </span>
                                   </div>
-                                  {d.notes && <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{d.notes}</p>}
+                                  <span className="font-bold">{prj.progressPercentage}%</span>
                                 </div>
-                                {d.fileUrl && (
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    {isExternalWebLink(d.fileUrl) ? (
+                                <div className="w-full bg-slate-100 rounded-full h-2">
+                                  <div
+                                    className="bg-[#3066BE] h-2 rounded-full transition-all"
+                                    style={{ width: `${prj.progressPercentage}%` }}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Client Attached Requirement Document (if provided by client/enquiry) */}
+                              {wo.quotation?.enquiry?.attachmentUrl && (
+                                <div className="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 flex items-center justify-between gap-2 text-xs">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
+                                    <div>
+                                      <span className="font-bold text-slate-800 block truncate">
+                                        Client Requirement Document / Specs
+                                      </span>
+                                      <span className="text-[10px] text-indigo-700">Client-provided brief from enquiry</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    {isExternalWebLink(wo.quotation.enquiry.attachmentUrl) ? (
                                       <a
-                                        href={d.fileUrl}
+                                        href={wo.quotation.enquiry.attachmentUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="px-2 py-1 rounded bg-blue-50 text-[#3066BE] hover:bg-blue-100 font-bold text-[11px] inline-flex items-center gap-1"
+                                        className="px-2.5 py-1 rounded bg-white hover:bg-slate-50 text-[#3066BE] border border-slate-200 text-xs font-bold inline-flex items-center gap-1"
                                       >
-                                        <ExternalLink className="w-3 h-3" />
-                                        Open Link
+                                        <ExternalLink className="w-3 h-3" /> Open Link
                                       </a>
                                     ) : (
                                       <>
                                         <a
-                                          href={d.fileUrl}
+                                          href={wo.quotation.enquiry.attachmentUrl}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-[11px] inline-flex items-center gap-1"
+                                          className="px-2 py-1 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold inline-flex items-center gap-1"
                                         >
-                                          <Eye className="w-3 h-3" />
-                                          View
+                                          <Eye className="w-3 h-3" /> View
                                         </a>
                                         <button
                                           type="button"
-                                          onClick={() => downloadFile(d.fileUrl, d.title || 'deliverable')}
-                                          className="px-2 py-1 rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-colors"
-                                          title="Download deliverable"
+                                          onClick={() => downloadFile(wo.quotation.enquiry.attachmentUrl, `${wo.client?.clientName || 'client'}-brief`)}
+                                          className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                                         >
-                                          <Download className="w-3 h-3 text-indigo-600" />
-                                          Download
+                                          <Download className="w-3 h-3" /> Download
                                         </button>
                                       </>
                                     )}
                                   </div>
+                                </div>
+                              )}
+
+                              {/* Uploaded Deliverables Section */}
+                              {prj.deliverables && prj.deliverables.length > 0 && (
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                      <FileCheck className="w-3.5 h-3.5 text-[#119DA4]" />
+                                      Uploaded Deliverables ({prj.deliverables.length})
+                                    </span>
+                                    <span className="text-[10px] text-slate-500">Inspect deliverables before submitting client feedback</span>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {prj.deliverables.map((d: any) => (
+                                      <div key={d.id} className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs flex flex-col justify-between gap-2 shadow-2xs">
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="font-bold text-slate-900 truncate">{d.title}</span>
+                                              {d.version && (
+                                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-mono font-bold">
+                                                  v{d.version}
+                                                </span>
+                                              )}
+                                            </div>
+                                            {d.notes && <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{d.notes}</p>}
+                                          </div>
+                                          {d.fileUrl && (
+                                            <div className="flex items-center gap-1 shrink-0">
+                                              {isExternalWebLink(d.fileUrl) ? (
+                                                <a
+                                                  href={d.fileUrl}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="px-2 py-1 rounded bg-blue-50 text-[#3066BE] hover:bg-blue-100 font-bold text-[11px] inline-flex items-center gap-1"
+                                                >
+                                                  <ExternalLink className="w-3 h-3" />
+                                                  Open Link
+                                                </a>
+                                              ) : (
+                                                <>
+                                                  <a
+                                                    href={d.fileUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-[11px] inline-flex items-center gap-1"
+                                                  >
+                                                    <Eye className="w-3 h-3" />
+                                                    View
+                                                  </a>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => downloadFile(d.fileUrl, d.title || 'deliverable')}
+                                                    className="px-2 py-1 rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-colors"
+                                                    title="Download deliverable"
+                                                  >
+                                                    <Download className="w-3 h-3 text-indigo-600" />
+                                                    Download
+                                                  </button>
+                                                </>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px]">
+                                          <span className={`px-1.5 py-0.5 rounded font-semibold ${d.bgaApprovalStatus === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' :
+                                            d.bgaApprovalStatus === 'CHANGES_REQUESTED' ? 'bg-amber-50 text-amber-700' :
+                                              'bg-slate-100 text-slate-600'
+                                            }`}>
+                                            {d.bgaApprovalStatus === 'APPROVED' ? '✓ Shared with Client' :
+                                              d.bgaApprovalStatus === 'CHANGES_REQUESTED' ? '⚠ Changes Requested' :
+                                                'Pending Review'}
+                                          </span>
+                                          {d.bgaApprovalStatus !== 'APPROVED' && (
+                                            <button
+                                              onClick={() => {
+                                                setDeliverableReviewModal({ deliverable: d, project: prj });
+                                                setReviewAction('APPROVE_AND_SHARE');
+                                                setReviewNotes('');
+                                              }}
+                                              className="text-[#119DA4] hover:text-[#0c7479] font-bold text-[11px] hover:underline"
+                                            >
+                                              Review Deliverable →
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Action Bar: Add Client Review & Feedback + Share Portal */}
+                              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setBgaFeedbackModal({ project: prj, clientName: wo.client?.clientName });
+                                      setBgaClientDecision('APPROVED');
+                                      setBgaFeedbackType('CLIENT_FEEDBACK');
+                                      setBgaFeedbackContent('');
+                                    }}
+                                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    <span>+ Add Client Review & Feedback</span>
+                                  </button>
+
+                                  {prj.clientAccessToken && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopyClientPortalLink(prj.clientAccessToken, wo.client?.clientName)}
+                                      className="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                                      title="Copy direct portal link for client to review online"
+                                    >
+                                      <Share2 className="w-3.5 h-3.5 text-slate-500" />
+                                      <span>Copy Client Portal Link</span>
+                                    </button>
+                                  )}
+                                </div>
+
+                                {prj.status === 'CORRECTION_REQUIRED' && (
+                                  <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                                    Technical Team notified: Revisions in progress
+                                  </span>
                                 )}
                               </div>
-                              <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px]">
-                                <span className={`px-1.5 py-0.5 rounded font-semibold ${
-                                  d.bgaApprovalStatus === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' :
-                                  d.bgaApprovalStatus === 'CHANGES_REQUESTED' ? 'bg-amber-50 text-amber-700' :
-                                  'bg-slate-100 text-slate-600'
+
+                              {/* Review & Feedback History Log */}
+                              {prj.feedback && prj.feedback.length > 0 && (
+                                <div className="mt-3 p-3 bg-slate-50/70 rounded-xl border border-slate-200/80 space-y-2">
+                                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <History className="w-3.5 h-3.5 text-slate-500" />
+                                    Client Reviews & Communication Log ({prj.feedback.length})
+                                  </span>
+                                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                    {prj.feedback.map((f: any) => (
+                                      <div key={f.id} className="p-2 rounded-lg bg-white border border-slate-200 text-xs space-y-1 shadow-2xs">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="font-bold text-slate-900">{f.authorName}</span>
+                                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-semibold">
+                                              {f.authorRole || 'BGA'}
+                                            </span>
+                                            <span className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${f.feedbackType === 'INTERNAL_NOTE' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                                              }`}>
+                                              {f.feedbackType === 'INTERNAL_NOTE' ? 'Internal' : 'Client Review'}
+                                            </span>
+                                          </div>
+                                          <span className="text-[10px] text-slate-400">
+                                            {new Date(f.createdAt).toLocaleDateString('en-IN', {
+                                              day: 'numeric',
+                                              month: 'short',
+                                              hour: '2-digit',
+                                              minute: '2-digit',
+                                            })}
+                                          </span>
+                                        </div>
+                                        <p className="text-slate-700 text-xs leading-relaxed whitespace-pre-wrap">{f.content}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* STAGE 2: FINAL PAYMENT FOLLOW-UP DESK */}
+                              <div className={`mt-3 p-3.5 rounded-xl border ${prj.status === 'COMPLETED'
+                                ? 'bg-gradient-to-br from-indigo-50/90 via-blue-50/50 to-emerald-50/40 border-indigo-200 shadow-xs'
+                                : 'bg-slate-50 border-slate-200'
                                 }`}>
-                                  {d.bgaApprovalStatus === 'APPROVED' ? '✓ Shared with Client' :
-                                   d.bgaApprovalStatus === 'CHANGES_REQUESTED' ? '⚠ Changes Requested' :
-                                   'Pending Review'}
-                                </span>
-                                {d.bgaApprovalStatus !== 'APPROVED' && (
-                                  <button
-                                    onClick={() => {
-                                      setDeliverableReviewModal({ deliverable: d, project: prj });
-                                      setReviewAction('APPROVE_AND_SHARE');
-                                      setReviewNotes('');
-                                    }}
-                                    className="text-[#119DA4] hover:text-[#0c7479] font-bold text-[11px] hover:underline"
-                                  >
-                                    Review Deliverable →
-                                  </button>
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="p-1 rounded-md bg-indigo-100 text-indigo-700">
+                                        <Phone className="w-3.5 h-3.5" />
+                                      </span>
+                                      <h4 className="text-xs font-bold text-slate-900">
+                                        Final Client Payment Follow-up
+                                      </h4>
+                                      {prj.status === 'COMPLETED' && (
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 animate-pulse">
+                                          ★ Technical Project Completed
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">
+                                      Follow up with {wo.client?.clientName} for final balance settlement to unlock commission clearance.
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => setFollowUpProjectModal({ project: prj, clientName: wo.client?.clientName || 'Client' })}
+                                      className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      Record Follow-up
+                                    </button>
+                                    {prj.finalPaymentFollowUps && prj.finalPaymentFollowUps.length > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setExpandedFollowUpWoId(expandedFollowUpWoId === wo.id ? null : wo.id)}
+                                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold inline-flex items-center gap-1 transition-colors"
+                                      >
+                                        <History className="w-3 h-3 text-slate-500" />
+                                        <span>{prj.finalPaymentFollowUps.length} Logs</span>
+                                        <ChevronDown className={`w-3 h-3 transition-transform ${expandedFollowUpWoId === wo.id ? 'rotate-180' : ''}`} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Latest follow-up status summary badge */}
+                                {prj.finalPaymentFollowUps && prj.finalPaymentFollowUps.length > 0 ? (
+                                  <div className="mt-2.5 pt-2 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[11px] text-slate-500">Latest Status:</span>
+                                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${prj.finalPaymentFollowUps[0].status === 'PAYMENT_PROMISED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                                        prj.finalPaymentFollowUps[0].status === 'PAYMENT_DELAYED' ? 'bg-amber-100 text-amber-800' :
+                                          prj.finalPaymentFollowUps[0].status === 'CLIENT_DISPUTED' ? 'bg-rose-100 text-rose-800' :
+                                            'bg-blue-100 text-blue-800'
+                                        }`}>
+                                        {prj.finalPaymentFollowUps[0].status?.replace(/_/g, ' ')}
+                                      </span>
+                                      {prj.finalPaymentFollowUps[0].expectedPaymentDate && (
+                                        <span className="text-[11px] text-slate-600 flex items-center gap-1">
+                                          <Calendar className="w-3 h-3 text-slate-400" />
+                                          Expected: <strong>{new Date(prj.finalPaymentFollowUps[0].expectedPaymentDate).toLocaleDateString('en-IN')}</strong>
+                                        </span>
+                                      )}
+                                      {prj.finalPaymentFollowUps[0].expectedAmount && (
+                                        <span className="text-[11px] font-bold text-emerald-700">
+                                          ₹{Number(prj.finalPaymentFollowUps[0].expectedAmount).toLocaleString('en-IN')}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-[10px] text-slate-400">
+                                      Logged {new Date(prj.finalPaymentFollowUps[0].createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="mt-2 text-[11px] text-slate-500 italic">
+                                    No follow-up entries yet. Log client communication regarding final payment.
+                                  </div>
+                                )}
+
+                                {/* Expandable chronological follow-up history */}
+                                {expandedFollowUpWoId === wo.id && prj.finalPaymentFollowUps && prj.finalPaymentFollowUps.length > 0 && (
+                                  <div className="mt-3 pt-3 border-t border-slate-200 space-y-2">
+                                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                                      Follow-up Timeline & Client Commitments
+                                    </span>
+                                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                      {prj.finalPaymentFollowUps.map((f: any) => (
+                                        <div key={f.id} className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs space-y-1 shadow-2xs">
+                                          <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                              <span className="font-semibold text-slate-800">{f.bga?.name || 'Associate'}</span>
+                                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold uppercase">
+                                                via {f.contactMethod}
+                                              </span>
+                                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${f.status === 'PAYMENT_PROMISED' ? 'bg-emerald-50 text-emerald-700' :
+                                                f.status === 'PAYMENT_DELAYED' ? 'bg-amber-50 text-amber-700' :
+                                                  f.status === 'CLIENT_DISPUTED' ? 'bg-rose-50 text-rose-700' :
+                                                    'bg-blue-50 text-blue-700'
+                                                }`}>
+                                                {f.status?.replace(/_/g, ' ')}
+                                              </span>
+                                            </div>
+                                            <span className="text-[10px] text-slate-400">
+                                              {new Date(f.createdAt).toLocaleDateString('en-IN', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                              })}
+                                            </span>
+                                          </div>
+                                          {f.clientResponse && (
+                                            <div className="text-[11px] text-slate-600">
+                                              <strong className="text-slate-700">Client Response:</strong> {f.clientResponse}
+                                            </div>
+                                          )}
+                                          <p className="text-slate-700 text-xs leading-relaxed">{f.notes}</p>
+                                          {(f.expectedPaymentDate || f.expectedAmount) && (
+                                            <div className="flex items-center gap-3 pt-1 text-[11px] text-slate-500 font-medium">
+                                              {f.expectedPaymentDate && (
+                                                <span>Promise Date: <strong className="text-slate-800">{new Date(f.expectedPaymentDate).toLocaleDateString('en-IN')}</strong></span>
+                                              )}
+                                              {f.expectedAmount && (
+                                                <span>Committed Amount: <strong className="text-emerald-700">₹{Number(f.expectedAmount).toLocaleString('en-IN')}</strong></span>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
                                 )}
                               </div>
                             </div>
-                          ))}
+                          ) : (
+                            <div className="mt-3 p-3 rounded-lg bg-amber-50 text-amber-800 text-xs">
+                              ⏳ Waiting for Accounts to verify advance payment receipt before technical handover.
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
+                      );
+                    }))}
+                </div>
 
-                    {/* Action Bar: Add Client Review & Feedback + Share Portal */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setBgaFeedbackModal({ project: prj, clientName: wo.client?.clientName });
-                            setBgaClientDecision('APPROVED');
-                            setBgaFeedbackType('CLIENT_FEEDBACK');
-                            setBgaFeedbackContent('');
-                          }}
-                          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          <span>+ Add Client Review & Feedback</span>
-                        </button>
-
-                        {prj.clientAccessToken && (
+                {/* Deliverable Individual Review Modal */}
+                <ModalPortal
+                  isOpen={!!deliverableReviewModal}
+                  onClose={() => !reviewSubmitting && setDeliverableReviewModal(null)}
+                >
+                  {deliverableReviewModal && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500" />
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#3066BE] flex items-center justify-center shrink-0 border border-blue-200">
+                              <FileCheck className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">
+                                Review Deliverable
+                              </h3>
+                              <p className="text-xs text-slate-500">
+                                {deliverableReviewModal.deliverable.title} {deliverableReviewModal.deliverable.version ? `(v${deliverableReviewModal.deliverable.version})` : ''}
+                              </p>
+                            </div>
+                          </div>
                           <button
                             type="button"
-                            onClick={() => handleCopyClientPortalLink(prj.clientAccessToken, wo.client?.clientName)}
-                            className="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                            title="Copy direct portal link for client to review online"
+                            onClick={() => setDeliverableReviewModal(null)}
+                            disabled={reviewSubmitting}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                           >
-                            <Share2 className="w-3.5 h-3.5 text-slate-500" />
-                            <span>Copy Client Portal Link</span>
+                            <X className="w-4 h-4" />
                           </button>
-                        )}
-                      </div>
+                        </div>
 
-                      {prj.status === 'CORRECTION_REQUIRED' && (
-                        <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                          Technical Team notified: Revisions in progress
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Review & Feedback History Log */}
-                    {prj.feedback && prj.feedback.length > 0 && (
-                      <div className="mt-3 p-3 bg-slate-50/70 rounded-xl border border-slate-200/80 space-y-2">
-                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                          <History className="w-3.5 h-3.5 text-slate-500" />
-                          Client Reviews & Communication Log ({prj.feedback.length})
-                        </span>
-                        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                          {prj.feedback.map((f: any) => (
-                            <div key={f.id} className="p-2 rounded-lg bg-white border border-slate-200 text-xs space-y-1 shadow-2xs">
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-bold text-slate-900">{f.authorName}</span>
-                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-semibold">
-                                    {f.authorRole || 'BGA'}
-                                  </span>
-                                  <span className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
-                                    f.feedbackType === 'INTERNAL_NOTE' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                                  }`}>
-                                    {f.feedbackType === 'INTERNAL_NOTE' ? 'Internal' : 'Client Review'}
-                                  </span>
-                                </div>
-                                <span className="text-[10px] text-slate-400">
-                                  {new Date(f.createdAt).toLocaleDateString('en-IN', {
-                                    day: 'numeric',
-                                    month: 'short',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
-                                </span>
-                              </div>
-                              <p className="text-slate-700 text-xs leading-relaxed whitespace-pre-wrap">{f.content}</p>
+                        {deliverableReviewModal.deliverable.fileUrl && (
+                          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2">
+                            <span className="text-xs text-slate-700 font-medium truncate max-w-xs">
+                              {deliverableReviewModal.deliverable.title}
+                            </span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {isExternalWebLink(deliverableReviewModal.deliverable.fileUrl) ? (
+                                <a
+                                  href={deliverableReviewModal.deliverable.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs font-bold text-[#3066BE] hover:underline inline-flex items-center gap-1"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  Open Link
+                                </a>
+                              ) : (
+                                <>
+                                  <a
+                                    href={deliverableReviewModal.deliverable.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs font-bold text-[#3066BE] hover:underline inline-flex items-center gap-1"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    View
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => downloadFile(deliverableReviewModal.deliverable.fileUrl, deliverableReviewModal.deliverable.title || 'deliverable')}
+                                    className="px-2.5 py-1 rounded bg-[#3066BE] text-white font-bold text-xs inline-flex items-center gap-1 cursor-pointer hover:bg-[#204482] transition-colors"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                    Download
+                                  </button>
+                                </>
+                              )}
                             </div>
-                          ))}
+                          </div>
+                        )}
+
+                        <form onSubmit={handleReviewDeliverable} className="space-y-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-2">
+                              Review Decision <span className="text-red-500">*</span>
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                              <button
+                                type="button"
+                                onClick={() => setReviewAction('APPROVE_AND_SHARE')}
+                                className={`p-3 rounded-xl border text-left transition-all ${reviewAction === 'APPROVE_AND_SHARE'
+                                  ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
+                                  : 'border-slate-200 hover:border-slate-300 bg-white'
+                                  }`}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <CheckCircle2 className={`w-4 h-4 ${reviewAction === 'APPROVE_AND_SHARE' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                                  <span className="text-xs font-bold text-slate-900">Approve & Share</span>
+                                </div>
+                                <p className="text-[11px] text-slate-500">Makes deliverable visible to client on portal</p>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setReviewAction('REQUEST_CHANGES')}
+                                className={`p-3 rounded-xl border text-left transition-all ${reviewAction === 'REQUEST_CHANGES'
+                                  ? 'border-amber-500 bg-amber-50/60 ring-2 ring-amber-500/20'
+                                  : 'border-slate-200 hover:border-slate-300 bg-white'
+                                  }`}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <AlertTriangle className={`w-4 h-4 ${reviewAction === 'REQUEST_CHANGES' ? 'text-amber-600' : 'text-slate-400'}`} />
+                                  <span className="text-xs font-bold text-slate-900">Request Changes</span>
+                                </div>
+                                <p className="text-[11px] text-slate-500">Sends correction request back to Technical team</p>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">
+                              Review Notes / Instructions {reviewAction === 'REQUEST_CHANGES' && <span className="text-red-500">*</span>}
+                            </label>
+                            <textarea
+                              rows={3}
+                              value={reviewNotes}
+                              onChange={(e) => setReviewNotes(e.target.value)}
+                              placeholder={
+                                reviewAction === 'REQUEST_CHANGES'
+                                  ? 'Detail the changes or corrections needed from the Technical team...'
+                                  : 'Optional approval notes or message for the client...'
+                              }
+                              required={reviewAction === 'REQUEST_CHANGES'}
+                              className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#3066BE]/20 focus:border-[#3066BE]"
+                            />
+                          </div>
+
+                          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                            <button
+                              type="button"
+                              onClick={() => setDeliverableReviewModal(null)}
+                              disabled={reviewSubmitting}
+                              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={reviewSubmitting || (reviewAction === 'REQUEST_CHANGES' && !reviewNotes.trim())}
+                              className="px-4 py-2 rounded-xl bg-[#3066BE] hover:bg-[#204482] text-white text-xs font-bold transition-all disabled:opacity-50"
+                            >
+                              {reviewSubmitting ? 'Submitting...' : 'Confirm Review'}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </motion.div>
+                  )}
+                </ModalPortal>
+
+                {/* BGA Client Review & Feedback Modal */}
+                <ModalPortal
+                  isOpen={!!bgaFeedbackModal}
+                  onClose={() => !bgaFeedbackSubmitting && setBgaFeedbackModal(null)}
+                >
+                  {bgaFeedbackModal && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="h-1.5 w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-emerald-500" />
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
+                              <MessageSquare className="w-5 h-5 text-indigo-600" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">
+                                Add Client Review & Feedback
+                              </h3>
+                              <p className="text-xs text-slate-500">
+                                Project {bgaFeedbackModal.project.projectNumber} {bgaFeedbackModal.clientName ? `• ${bgaFeedbackModal.clientName}` : ''}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setBgaFeedbackModal(null)}
+                            disabled={bgaFeedbackSubmitting}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <form onSubmit={handlePostBgaFeedback} className="space-y-4">
+                          {/* Client Decision: Approved vs Changes Requested */}
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-2">
+                              Client Decision / Status <span className="text-red-500">*</span>
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                              <button
+                                type="button"
+                                onClick={() => setBgaClientDecision('APPROVED')}
+                                className={`p-3 rounded-xl border text-left transition-all ${bgaClientDecision === 'APPROVED'
+                                  ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
+                                  : 'border-slate-200 hover:border-slate-300 bg-white'
+                                  }`}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <CheckCircle2 className={`w-4 h-4 ${bgaClientDecision === 'APPROVED' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                                  <span className="text-xs font-bold text-slate-900">Client Approved</span>
+                                </div>
+                                <p className="text-[11px] text-slate-500">Client is satisfied with deliverables. Project advances to 95% completion.</p>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setBgaClientDecision('CHANGES_REQUESTED')}
+                                className={`p-3 rounded-xl border text-left transition-all ${bgaClientDecision === 'CHANGES_REQUESTED'
+                                  ? 'border-amber-500 bg-amber-50/60 ring-2 ring-amber-500/20'
+                                  : 'border-slate-200 hover:border-slate-300 bg-white'
+                                  }`}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <AlertTriangle className={`w-4 h-4 ${bgaClientDecision === 'CHANGES_REQUESTED' ? 'text-amber-600' : 'text-slate-400'}`} />
+                                  <span className="text-xs font-bold text-slate-900">Changes Requested</span>
+                                </div>
+                                <p className="text-[11px] text-slate-500">Flags project as CORRECTION_REQUIRED and alerts Technical team to revise.</p>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Communication Type */}
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                              Feedback Category
+                            </label>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setBgaFeedbackType('CLIENT_FEEDBACK')}
+                                className={`flex-1 py-2 px-3 rounded-lg border text-xs font-semibold text-center transition-all ${bgaFeedbackType === 'CLIENT_FEEDBACK'
+                                  ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
+                                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                  }`}
+                              >
+                                Client Review Feedback
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setBgaFeedbackType('INTERNAL_NOTE')}
+                                className={`flex-1 py-2 px-3 rounded-lg border text-xs font-semibold text-center transition-all ${bgaFeedbackType === 'INTERNAL_NOTE'
+                                  ? 'border-purple-600 bg-purple-50 text-purple-700 font-bold'
+                                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                  }`}
+                              >
+                                Internal Note (Technical Desk)
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Content */}
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">
+                              Client Review & Feedback Details <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={bgaFeedbackContent}
+                              onChange={(e) => setBgaFeedbackContent(e.target.value)}
+                              placeholder={
+                                bgaClientDecision === 'APPROVED'
+                                  ? 'Enter client confirmation notes, appreciation, or final sign-off remarks...'
+                                  : 'List the specific changes, edits, or corrections requested by the client...'
+                              }
+                              required
+                              className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                            />
+                          </div>
+
+                          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                            <button
+                              type="button"
+                              onClick={() => setBgaFeedbackModal(null)}
+                              disabled={bgaFeedbackSubmitting}
+                              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={bgaFeedbackSubmitting || !bgaFeedbackContent.trim()}
+                              className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-bold transition-all disabled:opacity-50 shadow-sm"
+                            >
+                              {bgaFeedbackSubmitting ? 'Recording...' : 'Submit Client Review'}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </motion.div>
+                  )}
+                </ModalPortal>
+              </div>
+            )
+          }
+
+          {/* TAB 8: MY EARNINGS & COMMISSIONS — COMPREHENSIVE PERFORMANCE DASHBOARD */}
+          {
+            activeTab === 'earnings' && (
+              <div className="space-y-6">
+                {/* Dashboard Header Bar */}
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-[#119DA4]" />
+                      My Earnings & Business Performance Dashboard
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Real-time commission tracking, business conversion funnel, service performance breakdown, and verified ledger.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => loadTabData('earnings')}
+                    className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Refresh Dashboard
+                  </button>
+                </div>
+
+                {!earningsData && tabLoading ? (
+                  <div className="space-y-4">
+                    <SkeletonStatsRow />
+                    <SkeletonTable rows={5} cols={6} />
+                  </div>
+                ) : (() => {
+                  const summary = earningsData?.summary || {
+                    totalClients: clients.length,
+                    activeClients: clients.filter((c) => c.status === 'ACTIVE').length,
+                    totalServiceRequests: clientRequests.length,
+                    approvedRequests: clientRequests.filter((r) => r.adminApprovalStatus === 'APPROVED').length,
+                    quotationsAccepted: quotations.filter((q) => q.status === 'ACCEPTED').length,
+                    projectsInProgress: workOrders.filter((w) => w.project && w.project.status !== 'COMPLETED').length,
+                    projectsCompleted: workOrders.filter((w) => w.project && w.project.status === 'COMPLETED').length,
+                    totalEligibleRevenue: 0,
+                    totalCommissionEarned: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
+                    pendingCommission: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE' && c.payoutStatus === 'UNPAID').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
+                    commissionPaid: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE' && c.payoutStatus === 'PROCESSED').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
+                    commissionPipeline: commissions.filter((c) => c.eligibilityStatus === 'PENDING_CRITERIA').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
+                  };
+
+                  const breakdown = earningsData?.breakdown || {
+                    earned: summary.totalCommissionEarned,
+                    pending: summary.pendingCommission,
+                    paid: summary.commissionPaid,
+                    pipeline: summary.commissionPipeline || 0,
+                  };
+
+                  const servicePerf: any[] = earningsData?.servicePerformance || [];
+
+                  // Filter commissions list
+                  const filteredCommissions = commissions.filter((c) => {
+                    const q = earningsSearch.toLowerCase().trim();
+                    const matchesSearch =
+                      !q ||
+                      c.client?.clientName?.toLowerCase().includes(q) ||
+                      c.client?.businessName?.toLowerCase().includes(q) ||
+                      c.workOrder?.workOrderNumber?.toLowerCase().includes(q) ||
+                      c.payment?.transactionReference?.toLowerCase().includes(q);
+
+                    const matchesCat =
+                      earningsCategoryFilter === 'ALL' || c.serviceCategory === earningsCategoryFilter;
+
+                    const matchesStatus =
+                      earningsStatusFilter === 'ALL' ||
+                      c.eligibilityStatus === earningsStatusFilter ||
+                      c.payoutStatus === earningsStatusFilter;
+
+                    let matchesDate = true;
+                    if (earningsDateFilter === 'THIS_MONTH') {
+                      const cDate = new Date(c.createdAt);
+                      const now = new Date();
+                      matchesDate =
+                        cDate.getMonth() === now.getMonth() && cDate.getFullYear() === now.getFullYear();
+                    } else if (earningsDateFilter === 'LAST_90_DAYS') {
+                      const diffDays =
+                        (Date.now() - new Date(c.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+                      matchesDate = diffDays <= 90;
+                    } else if (earningsDateFilter === 'THIS_YEAR') {
+                      matchesDate = new Date(c.createdAt).getFullYear() === new Date().getFullYear();
+                    }
+
+                    return matchesSearch && matchesCat && matchesStatus && matchesDate;
+                  });
+
+                  return (
+                    <div className="space-y-6">
+                      {/* 1. 11 PERFORMANCE SUMMARY CARDS */}
+                      <div>
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                          Performance Summary (11 Core Metrics)
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                          {/* 1. Total Clients */}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total Clients</span>
+                            <div className="text-lg font-extrabold text-slate-900 mt-0.5">{summary.totalClients}</div>
+                            <span className="text-[10px] text-slate-500">Registered portfolio</span>
+                          </div>
+
+                          {/* 2. Active Clients */}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">Active Clients</span>
+                            <div className="text-lg font-extrabold text-teal-600 mt-0.5">{summary.activeClients}</div>
+                            <span className="text-[10px] text-slate-500">In engagement</span>
+                          </div>
+
+                          {/* 3. Total Requests */}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total Requests</span>
+                            <div className="text-lg font-extrabold text-indigo-600 mt-0.5">{summary.totalServiceRequests}</div>
+                            <span className="text-[10px] text-slate-500">Enquiries logged</span>
+                          </div>
+
+                          {/* 4. Approved Requests */}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">Approved Requests</span>
+                            <div className="text-lg font-extrabold text-emerald-600 mt-0.5">{summary.approvedRequests}</div>
+                            <span className="text-[10px] text-slate-500">Admin validated</span>
+                          </div>
+
+                          {/* 5. Quotations Accepted */}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">Quotes Accepted</span>
+                            <div className="text-lg font-extrabold text-[#3066BE] mt-0.5">{summary.quotationsAccepted}</div>
+                            <span className="text-[10px] text-slate-500">Client approvals</span>
+                          </div>
+
+                          {/* 6. Projects In Progress */}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">In Progress</span>
+                            <div className="text-lg font-extrabold text-amber-600 mt-0.5">{summary.projectsInProgress}</div>
+                            <span className="text-[10px] text-slate-500">Active tech delivery</span>
+                          </div>
+
+                          {/* 7. Projects Completed */}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">Completed</span>
+                            <div className="text-lg font-extrabold text-teal-600 mt-0.5">{summary.projectsCompleted}</div>
+                            <span className="text-[10px] text-slate-500">Delivered projects</span>
+                          </div>
+
+                          {/* 8. Total Eligible Revenue */}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">Eligible Revenue</span>
+                            <div className="text-lg font-extrabold text-emerald-700 mt-0.5">
+                              ₹{Number(summary.totalEligibleRevenue || 0).toLocaleString('en-IN')}
+                            </div>
+                            <span className="text-[10px] text-slate-500">Verified receipts</span>
+                          </div>
+
+                          {/* 9. Total Commission Earned */}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">Commission Earned</span>
+                            <div className="text-lg font-extrabold text-[#119DA4] mt-0.5">
+                              ₹{Number(summary.totalCommissionEarned || 0).toLocaleString('en-IN')}
+                            </div>
+                            <span className="text-[10px] text-slate-500">Total unlocked</span>
+                          </div>
+
+                          {/* 10. Pending Commission */}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">Pending Payout</span>
+                            <div className="text-lg font-extrabold text-amber-600 mt-0.5">
+                              ₹{Number(summary.pendingCommission || 0).toLocaleString('en-IN')}
+                            </div>
+                            <span className="text-[10px] text-slate-500">Awaiting cycle</span>
+                          </div>
+
+                          {/* 11. Commission Paid */}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase block">Commission Paid</span>
+                            <div className="text-lg font-extrabold text-[#3066BE] mt-0.5">
+                              ₹{Number(summary.commissionPaid || 0).toLocaleString('en-IN')}
+                            </div>
+                            <span className="text-[10px] text-slate-500">Disbursed to bank</span>
+                          </div>
                         </div>
                       </div>
-                    )}
 
-                    {/* STAGE 2: FINAL PAYMENT FOLLOW-UP DESK */}
-                    <div className={`mt-3 p-3.5 rounded-xl border ${
-                      prj.status === 'COMPLETED'
-                        ? 'bg-gradient-to-br from-indigo-50/90 via-blue-50/50 to-emerald-50/40 border-indigo-200 shadow-xs'
-                        : 'bg-slate-50 border-slate-200'
-                    }`}>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="p-1 rounded-md bg-indigo-100 text-indigo-700">
-                              <Phone className="w-3.5 h-3.5" />
-                            </span>
-                            <h4 className="text-xs font-bold text-slate-900">
-                              Final Client Payment Follow-up
-                            </h4>
-                            {prj.status === 'COMPLETED' && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 animate-pulse">
-                                ★ Technical Project Completed
+                      {/* 2. 4 KEY FINANCIAL EARNINGS BREAKDOWN CARDS */}
+                      <div>
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                          Financial Status Breakdown
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                          {/* Card 1: Commission Earned */}
+                          <div className="p-5 rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50/50 border border-teal-200/80 shadow-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-teal-800 uppercase tracking-wider">
+                                Commission Earned
                               </span>
-                            )}
+                              <Award className="w-5 h-5 text-[#119DA4]" />
+                            </div>
+                            <div className="text-2xl font-black text-teal-900 mt-2">
+                              ₹{Number(breakdown.earned || 0).toLocaleString('en-IN')}
+                            </div>
+                            <p className="text-[11px] text-teal-700 mt-1">
+                              Total eligible commissions unlocked from verified client payments & completed deliverables.
+                            </p>
                           </div>
-                          <p className="text-[11px] text-slate-500 mt-0.5">
-                            Follow up with {wo.client?.clientName} for final balance settlement to unlock commission clearance.
+
+                          {/* Card 2: Commission Pending */}
+                          <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50/50 border border-amber-200/80 shadow-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
+                                Commission Pending
+                              </span>
+                              <Clock className="w-5 h-5 text-amber-600" />
+                            </div>
+                            <div className="text-2xl font-black text-amber-900 mt-2">
+                              ₹{Number(breakdown.pending || 0).toLocaleString('en-IN')}
+                            </div>
+                            <p className="text-[11px] text-amber-700 mt-1">
+                              Approved commissions awaiting scheduled disbursement to your registered bank account.
+                            </p>
+                          </div>
+
+                          {/* Card 3: Commission Paid */}
+                          <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/50 border border-blue-200/80 shadow-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">
+                                Commission Paid
+                              </span>
+                              <CheckCircle2 className="w-5 h-5 text-[#3066BE]" />
+                            </div>
+                            <div className="text-2xl font-black text-blue-900 mt-2">
+                              ₹{Number(breakdown.paid || 0).toLocaleString('en-IN')}
+                            </div>
+                            <p className="text-[11px] text-blue-700 mt-1">
+                              Disbursed payouts successfully transferred and cleared in your bank account.
+                            </p>
+                          </div>
+
+                          {/* Card 4: Commission Pipeline */}
+                          <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 shadow-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                Commission in Pipeline
+                              </span>
+                              <TrendingUp className="w-5 h-5 text-slate-500" />
+                            </div>
+                            <div className="text-2xl font-black text-slate-800 mt-2">
+                              ₹{Number(breakdown.pipeline || 0).toLocaleString('en-IN')}
+                            </div>
+                            <p className="text-[11px] text-slate-600 mt-1">
+                              Potential commissions awaiting project milestone completion or client payment verification.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3. SERVICE-WISE BUSINESS PERFORMANCE (4 CORE CATEGORIES) */}
+                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div className="border-b border-slate-100 pb-3">
+                          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <BarChart3 className="w-4 h-4 text-[#119DA4]" />
+                            Service-Wise Business Performance & Commission Rules
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Side-by-side performance breakdown across Digital Marketing, Website Dev, Mobile App Dev, and Custom Software.
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => setFollowUpProjectModal({ project: prj, clientName: wo.client?.clientName || 'Client' })}
-                            className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs inline-flex items-center gap-1.5 transition-all cursor-pointer"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            Record Follow-up
-                          </button>
-                          {prj.finalPaymentFollowUps && prj.finalPaymentFollowUps.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => setExpandedFollowUpWoId(expandedFollowUpWoId === wo.id ? null : wo.id)}
-                              className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold inline-flex items-center gap-1 transition-colors"
-                            >
-                              <History className="w-3 h-3 text-slate-500" />
-                              <span>{prj.finalPaymentFollowUps.length} Logs</span>
-                              <ChevronDown className={`w-3 h-3 transition-transform ${expandedFollowUpWoId === wo.id ? 'rotate-180' : ''}`} />
-                            </button>
-                          )}
-                        </div>
-                      </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          {[
+                            {
+                              key: 'DIGITAL_MARKETING',
+                              name: 'Digital Marketing',
+                              rate: 'Configured Range',
+                              model: 'Monthly Subscription (excl. ad spend)',
+                              icon: TrendingUp,
+                              accent: 'border-teal-200 bg-teal-50/30',
+                            },
+                            {
+                              key: 'WEBSITE_DEVELOPMENT',
+                              name: 'Website Development',
+                              rate: 'Configured Range',
+                              model: 'Project-based on delivery completion',
+                              icon: Globe,
+                              accent: 'border-blue-200 bg-blue-50/30',
+                            },
+                            {
+                              key: 'MOBILE_APPLICATION_DEVELOPMENT',
+                              name: 'Mobile Application',
+                              rate: 'Configured Range',
+                              model: 'Milestone / Full completion delivery',
+                              icon: Smartphone,
+                              accent: 'border-indigo-200 bg-indigo-50/30',
+                            },
+                            {
+                              key: 'SOFTWARE_DEVELOPMENT',
+                              name: 'Custom Software / ERP',
+                              rate: 'Configured Range',
+                              model: 'Enterprise milestones upon delivery',
+                              icon: Code2,
+                              accent: 'border-purple-200 bg-purple-50/30',
+                            },
+                          ].map((cat) => {
+                            const stat = servicePerf.find((s) => s.category === cat.key) || {
+                              clientCount: 0,
+                              requestCount: 0,
+                              approvedRequests: 0,
+                              acceptedQuotations: 0,
+                              activeProjects: 0,
+                              completedProjects: 0,
+                              eligibleRevenue: 0,
+                              commissionEarned: 0,
+                              pendingCommission: 0,
+                            };
 
-                      {/* Latest follow-up status summary badge */}
-                      {prj.finalPaymentFollowUps && prj.finalPaymentFollowUps.length > 0 ? (
-                        <div className="mt-2.5 pt-2 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-2 text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] text-slate-500">Latest Status:</span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              prj.finalPaymentFollowUps[0].status === 'PAYMENT_PROMISED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
-                              prj.finalPaymentFollowUps[0].status === 'PAYMENT_DELAYED' ? 'bg-amber-100 text-amber-800' :
-                              prj.finalPaymentFollowUps[0].status === 'CLIENT_DISPUTED' ? 'bg-rose-100 text-rose-800' :
-                              'bg-blue-100 text-blue-800'
-                            }`}>
-                              {prj.finalPaymentFollowUps[0].status?.replace(/_/g, ' ')}
-                            </span>
-                            {prj.finalPaymentFollowUps[0].expectedPaymentDate && (
-                              <span className="text-[11px] text-slate-600 flex items-center gap-1">
-                                <Calendar className="w-3 h-3 text-slate-400" />
-                                Expected: <strong>{new Date(prj.finalPaymentFollowUps[0].expectedPaymentDate).toLocaleDateString('en-IN')}</strong>
-                              </span>
-                            )}
-                            {prj.finalPaymentFollowUps[0].expectedAmount && (
-                              <span className="text-[11px] font-bold text-emerald-700">
-                                ₹{Number(prj.finalPaymentFollowUps[0].expectedAmount).toLocaleString('en-IN')}
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-slate-400">
-                            Logged {new Date(prj.finalPaymentFollowUps[0].createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="mt-2 text-[11px] text-slate-500 italic">
-                          No follow-up entries yet. Log client communication regarding final payment.
-                        </div>
-                      )}
+                            const IconComponent = cat.icon;
 
-                      {/* Expandable chronological follow-up history */}
-                      {expandedFollowUpWoId === wo.id && prj.finalPaymentFollowUps && prj.finalPaymentFollowUps.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-slate-200 space-y-2">
-                          <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
-                            Follow-up Timeline & Client Commitments
-                          </span>
-                          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                            {prj.finalPaymentFollowUps.map((f: any) => (
-                              <div key={f.id} className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs space-y-1 shadow-2xs">
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="font-semibold text-slate-800">{f.bga?.name || 'Associate'}</span>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold uppercase">
-                                      via {f.contactMethod}
-                                    </span>
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                                      f.status === 'PAYMENT_PROMISED' ? 'bg-emerald-50 text-emerald-700' :
-                                      f.status === 'PAYMENT_DELAYED' ? 'bg-amber-50 text-amber-700' :
-                                      f.status === 'CLIENT_DISPUTED' ? 'bg-rose-50 text-rose-700' :
-                                      'bg-blue-50 text-blue-700'
-                                    }`}>
-                                      {f.status?.replace(/_/g, ' ')}
-                                    </span>
+                            return (
+                              <div
+                                key={cat.key}
+                                className={`p-4 rounded-xl border ${cat.accent} space-y-3 text-xs`}
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <strong className="text-sm text-slate-900 block">{cat.name}</strong>
+                                    <span className="text-[10px] text-slate-500 block mt-0.5">{cat.model}</span>
                                   </div>
-                                  <span className="text-[10px] text-slate-400">
-                                    {new Date(f.createdAt).toLocaleDateString('en-IN', {
-                                      day: 'numeric',
-                                      month: 'short',
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                    })}
+                                  <span className="p-2 bg-white rounded-xl shadow-xs border border-slate-200">
+                                    <IconComponent className="w-4 h-4 text-[#3066BE]" />
                                   </span>
                                 </div>
-                                {f.clientResponse && (
-                                  <div className="text-[11px] text-slate-600">
-                                    <strong className="text-slate-700">Client Response:</strong> {f.clientResponse}
+
+                                <div className="bg-white/80 p-2 rounded-lg border border-slate-200/60 flex items-center justify-between">
+                                  <span className="text-[11px] text-slate-500">Commission Rate</span>
+                                  <span className="font-bold text-[#119DA4]">{cat.rate}</span>
+                                </div>
+
+                                <div className="space-y-1.5 pt-1">
+                                  <div className="flex justify-between text-slate-600">
+                                    <span>Clients Acquired:</span>
+                                    <strong className="text-slate-900">{stat.clientCount}</strong>
                                   </div>
-                                )}
-                                <p className="text-slate-700 text-xs leading-relaxed">{f.notes}</p>
-                                {(f.expectedPaymentDate || f.expectedAmount) && (
-                                  <div className="flex items-center gap-3 pt-1 text-[11px] text-slate-500 font-medium">
-                                    {f.expectedPaymentDate && (
-                                      <span>Promise Date: <strong className="text-slate-800">{new Date(f.expectedPaymentDate).toLocaleDateString('en-IN')}</strong></span>
-                                    )}
-                                    {f.expectedAmount && (
-                                      <span>Committed Amount: <strong className="text-emerald-700">₹{Number(f.expectedAmount).toLocaleString('en-IN')}</strong></span>
-                                    )}
+                                  <div className="flex justify-between text-slate-600">
+                                    <span>Requests (Approved):</span>
+                                    <strong className="text-slate-900">
+                                      {stat.requestCount} ({stat.approvedRequests})
+                                    </strong>
                                   </div>
-                                )}
+                                  <div className="flex justify-between text-slate-600">
+                                    <span>Quotations Accepted:</span>
+                                    <strong className="text-slate-900">{stat.acceptedQuotations}</strong>
+                                  </div>
+                                  <div className="flex justify-between text-slate-600">
+                                    <span>Active / Completed:</span>
+                                    <strong className="text-slate-900">
+                                      {stat.activeProjects} / {stat.completedProjects}
+                                    </strong>
+                                  </div>
+                                  <div className="flex justify-between text-slate-600 pt-1 border-t border-slate-200/60">
+                                    <span>Eligible Revenue:</span>
+                                    <strong className="text-slate-900">₹{Number(stat.eligibleRevenue || 0).toLocaleString('en-IN')}</strong>
+                                  </div>
+                                  <div className="flex justify-between text-[#119DA4] font-bold">
+                                    <span>Commission Earned:</span>
+                                    <span>₹{Number(stat.commissionEarned || 0).toLocaleString('en-IN')}</span>
+                                  </div>
+                                </div>
                               </div>
-                            ))}
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* 4. INTERACTIVE EARNINGS HISTORY TABLE WITH LIVE FILTERS */}
+                      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-5">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                              <Layers className="w-4 h-4 text-[#119DA4]" />
+                              Official Commission Ledger & Calculation History
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Filter transactions, inspect calculation steps, and audit payment clearance.
+                            </p>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-3 p-3 rounded-lg bg-amber-50 text-amber-800 text-xs">
-                    ⏳ Waiting for Accounts to verify advance payment receipt before technical handover.
-                  </div>
-                )}
-              </div>
-            );
-          }))}
-      </div>
 
-      {/* Deliverable Individual Review Modal */}
-      <ModalPortal
-        isOpen={!!deliverableReviewModal}
-        onClose={() => !reviewSubmitting && setDeliverableReviewModal(null)}
-      >
-        {deliverableReviewModal && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            transition={{ duration: 0.2 }}
-            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500" />
-            <div className="p-6 space-y-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#3066BE] flex items-center justify-center shrink-0 border border-blue-200">
-                    <FileCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">
-                      Review Deliverable
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      {deliverableReviewModal.deliverable.title} {deliverableReviewModal.deliverable.version ? `(v${deliverableReviewModal.deliverable.version})` : ''}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setDeliverableReviewModal(null)}
-                  disabled={reviewSubmitting}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+                        {/* Filter Bar */}
+                        <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
+                          {/* Search */}
+                          <div className="relative w-full lg:w-72">
+                            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                            <input
+                              type="text"
+                              placeholder="Search client, work order #, transaction ref..."
+                              value={earningsSearch}
+                              onChange={(e) => setEarningsSearch(e.target.value)}
+                              className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                            />
+                          </div>
 
-              {deliverableReviewModal.deliverable.fileUrl && (
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2">
-                  <span className="text-xs text-slate-700 font-medium truncate max-w-xs">
-                    {deliverableReviewModal.deliverable.title}
-                  </span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {isExternalWebLink(deliverableReviewModal.deliverable.fileUrl) ? (
-                      <a
-                        href={deliverableReviewModal.deliverable.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-bold text-[#3066BE] hover:underline inline-flex items-center gap-1"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        Open Link
-                      </a>
-                    ) : (
-                      <>
-                        <a
-                          href={deliverableReviewModal.deliverable.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs font-bold text-[#3066BE] hover:underline inline-flex items-center gap-1"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          View
-                        </a>
-                        <button
-                          type="button"
-                          onClick={() => downloadFile(deliverableReviewModal.deliverable.fileUrl, deliverableReviewModal.deliverable.title || 'deliverable')}
-                          className="px-2.5 py-1 rounded bg-[#3066BE] text-white font-bold text-xs inline-flex items-center gap-1 cursor-pointer hover:bg-[#204482] transition-colors"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          Download
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
+                          {/* Filters */}
+                          <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto text-xs">
+                            {/* Category Filter */}
+                            <select
+                              value={earningsCategoryFilter}
+                              onChange={(e) => setEarningsCategoryFilter(e.target.value)}
+                              className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                            >
+                              <option value="ALL">All Categories</option>
+                              <option value="DIGITAL_MARKETING">Digital Marketing</option>
+                              <option value="WEBSITE_DEVELOPMENT">Website Dev</option>
+                              <option value="MOBILE_APPLICATION_DEVELOPMENT">Mobile App Dev</option>
+                              <option value="SOFTWARE_DEVELOPMENT">Custom Software</option>
+                            </select>
 
-              <form onSubmit={handleReviewDeliverable} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">
-                    Review Decision <span className="text-red-500">*</span>
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setReviewAction('APPROVE_AND_SHARE')}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        reviewAction === 'APPROVE_AND_SHARE'
-                          ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <CheckCircle2 className={`w-4 h-4 ${reviewAction === 'APPROVE_AND_SHARE' ? 'text-emerald-600' : 'text-slate-400'}`} />
-                        <span className="text-xs font-bold text-slate-900">Approve & Share</span>
-                      </div>
-                      <p className="text-[11px] text-slate-500">Makes deliverable visible to client on portal</p>
-                    </button>
+                            {/* Status Filter */}
+                            <select
+                              value={earningsStatusFilter}
+                              onChange={(e) => setEarningsStatusFilter(e.target.value)}
+                              className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                            >
+                              <option value="ALL">All Statuses</option>
+                              <option value="ELIGIBLE">Eligible</option>
+                              <option value="PENDING_CRITERIA">Pending Criteria</option>
+                              <option value="UNPAID">Pending Payout</option>
+                              <option value="PROCESSED">Paid / Disbursed</option>
+                            </select>
 
-                    <button
-                      type="button"
-                      onClick={() => setReviewAction('REQUEST_CHANGES')}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        reviewAction === 'REQUEST_CHANGES'
-                          ? 'border-amber-500 bg-amber-50/60 ring-2 ring-amber-500/20'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <AlertTriangle className={`w-4 h-4 ${reviewAction === 'REQUEST_CHANGES' ? 'text-amber-600' : 'text-slate-400'}`} />
-                        <span className="text-xs font-bold text-slate-900">Request Changes</span>
-                      </div>
-                      <p className="text-[11px] text-slate-500">Sends correction request back to Technical team</p>
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Review Notes / Instructions {reviewAction === 'REQUEST_CHANGES' && <span className="text-red-500">*</span>}
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={reviewNotes}
-                    onChange={(e) => setReviewNotes(e.target.value)}
-                    placeholder={
-                      reviewAction === 'REQUEST_CHANGES'
-                        ? 'Detail the changes or corrections needed from the Technical team...'
-                        : 'Optional approval notes or message for the client...'
-                    }
-                    required={reviewAction === 'REQUEST_CHANGES'}
-                    className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#3066BE]/20 focus:border-[#3066BE]"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setDeliverableReviewModal(null)}
-                    disabled={reviewSubmitting}
-                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={reviewSubmitting || (reviewAction === 'REQUEST_CHANGES' && !reviewNotes.trim())}
-                    className="px-4 py-2 rounded-xl bg-[#3066BE] hover:bg-[#204482] text-white text-xs font-bold transition-all disabled:opacity-50"
-                  >
-                    {reviewSubmitting ? 'Submitting...' : 'Confirm Review'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </motion.div>
-        )}
-      </ModalPortal>
-
-      {/* BGA Client Review & Feedback Modal */}
-      <ModalPortal
-        isOpen={!!bgaFeedbackModal}
-        onClose={() => !bgaFeedbackSubmitting && setBgaFeedbackModal(null)}
-      >
-        {bgaFeedbackModal && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            transition={{ duration: 0.2 }}
-            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="h-1.5 w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-emerald-500" />
-            <div className="p-6 space-y-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
-                    <MessageSquare className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">
-                      Add Client Review & Feedback
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Project {bgaFeedbackModal.project.projectNumber} {bgaFeedbackModal.clientName ? `• ${bgaFeedbackModal.clientName}` : ''}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setBgaFeedbackModal(null)}
-                  disabled={bgaFeedbackSubmitting}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handlePostBgaFeedback} className="space-y-4">
-                {/* Client Decision: Approved vs Changes Requested */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">
-                    Client Decision / Status <span className="text-red-500">*</span>
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setBgaClientDecision('APPROVED')}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        bgaClientDecision === 'APPROVED'
-                          ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <CheckCircle2 className={`w-4 h-4 ${bgaClientDecision === 'APPROVED' ? 'text-emerald-600' : 'text-slate-400'}`} />
-                        <span className="text-xs font-bold text-slate-900">Client Approved</span>
-                      </div>
-                      <p className="text-[11px] text-slate-500">Client is satisfied with deliverables. Project advances to 95% completion.</p>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setBgaClientDecision('CHANGES_REQUESTED')}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        bgaClientDecision === 'CHANGES_REQUESTED'
-                          ? 'border-amber-500 bg-amber-50/60 ring-2 ring-amber-500/20'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <AlertTriangle className={`w-4 h-4 ${bgaClientDecision === 'CHANGES_REQUESTED' ? 'text-amber-600' : 'text-slate-400'}`} />
-                        <span className="text-xs font-bold text-slate-900">Changes Requested</span>
-                      </div>
-                      <p className="text-[11px] text-slate-500">Flags project as CORRECTION_REQUIRED and alerts Technical team to revise.</p>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Communication Type */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Feedback Category
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setBgaFeedbackType('CLIENT_FEEDBACK')}
-                      className={`flex-1 py-2 px-3 rounded-lg border text-xs font-semibold text-center transition-all ${
-                        bgaFeedbackType === 'CLIENT_FEEDBACK'
-                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
-                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      Client Review Feedback
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setBgaFeedbackType('INTERNAL_NOTE')}
-                      className={`flex-1 py-2 px-3 rounded-lg border text-xs font-semibold text-center transition-all ${
-                        bgaFeedbackType === 'INTERNAL_NOTE'
-                          ? 'border-purple-600 bg-purple-50 text-purple-700 font-bold'
-                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      Internal Note (Technical Desk)
-                    </button>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Client Review & Feedback Details <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={bgaFeedbackContent}
-                    onChange={(e) => setBgaFeedbackContent(e.target.value)}
-                    placeholder={
-                      bgaClientDecision === 'APPROVED'
-                        ? 'Enter client confirmation notes, appreciation, or final sign-off remarks...'
-                        : 'List the specific changes, edits, or corrections requested by the client...'
-                    }
-                    required
-                    className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setBgaFeedbackModal(null)}
-                    disabled={bgaFeedbackSubmitting}
-                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={bgaFeedbackSubmitting || !bgaFeedbackContent.trim()}
-                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-bold transition-all disabled:opacity-50 shadow-sm"
-                  >
-                    {bgaFeedbackSubmitting ? 'Recording...' : 'Submit Client Review'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </motion.div>
-        )}
-      </ModalPortal>
-    </div>
-  )
-}
-
-{/* TAB 8: MY EARNINGS & COMMISSIONS — COMPREHENSIVE PERFORMANCE DASHBOARD */ }
-{
-  activeTab === 'earnings' && (
-    <div className="space-y-6">
-      {/* Dashboard Header Bar */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-        <div>
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-[#119DA4]" />
-            My Earnings & Business Performance Dashboard
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Real-time commission tracking, business conversion funnel, service performance breakdown, and verified ledger.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => loadTabData('earnings')}
-          className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-        >
-          <RefreshCw className="w-3.5 h-3.5" /> Refresh Dashboard
-        </button>
-      </div>
-
-      {!earningsData && tabLoading ? (
-        <div className="space-y-4">
-          <SkeletonStatsRow />
-          <SkeletonTable rows={5} cols={6} />
-        </div>
-      ) : (() => {
-        const summary = earningsData?.summary || {
-          totalClients: clients.length,
-          activeClients: clients.filter((c) => c.status === 'ACTIVE').length,
-          totalServiceRequests: clientRequests.length,
-          approvedRequests: clientRequests.filter((r) => r.adminApprovalStatus === 'APPROVED').length,
-          quotationsAccepted: quotations.filter((q) => q.status === 'ACCEPTED').length,
-          projectsInProgress: workOrders.filter((w) => w.project && w.project.status !== 'COMPLETED').length,
-          projectsCompleted: workOrders.filter((w) => w.project && w.project.status === 'COMPLETED').length,
-          totalEligibleRevenue: 0,
-          totalCommissionEarned: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
-          pendingCommission: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE' && c.payoutStatus === 'UNPAID').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
-          commissionPaid: commissions.filter((c) => c.eligibilityStatus === 'ELIGIBLE' && c.payoutStatus === 'PROCESSED').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
-          commissionPipeline: commissions.filter((c) => c.eligibilityStatus === 'PENDING_CRITERIA').reduce((a, c) => a + (c.calculatedCommission || 0), 0),
-        };
-
-        const breakdown = earningsData?.breakdown || {
-          earned: summary.totalCommissionEarned,
-          pending: summary.pendingCommission,
-          paid: summary.commissionPaid,
-          pipeline: summary.commissionPipeline || 0,
-        };
-
-        const servicePerf: any[] = earningsData?.servicePerformance || [];
-
-        // Filter commissions list
-        const filteredCommissions = commissions.filter((c) => {
-          const q = earningsSearch.toLowerCase().trim();
-          const matchesSearch =
-            !q ||
-            c.client?.clientName?.toLowerCase().includes(q) ||
-            c.client?.businessName?.toLowerCase().includes(q) ||
-            c.workOrder?.workOrderNumber?.toLowerCase().includes(q) ||
-            c.payment?.transactionReference?.toLowerCase().includes(q);
-
-          const matchesCat =
-            earningsCategoryFilter === 'ALL' || c.serviceCategory === earningsCategoryFilter;
-
-          const matchesStatus =
-            earningsStatusFilter === 'ALL' ||
-            c.eligibilityStatus === earningsStatusFilter ||
-            c.payoutStatus === earningsStatusFilter;
-
-          let matchesDate = true;
-          if (earningsDateFilter === 'THIS_MONTH') {
-            const cDate = new Date(c.createdAt);
-            const now = new Date();
-            matchesDate =
-              cDate.getMonth() === now.getMonth() && cDate.getFullYear() === now.getFullYear();
-          } else if (earningsDateFilter === 'LAST_90_DAYS') {
-            const diffDays =
-              (Date.now() - new Date(c.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-            matchesDate = diffDays <= 90;
-          } else if (earningsDateFilter === 'THIS_YEAR') {
-            matchesDate = new Date(c.createdAt).getFullYear() === new Date().getFullYear();
-          }
-
-          return matchesSearch && matchesCat && matchesStatus && matchesDate;
-        });
-
-        return (
-          <div className="space-y-6">
-            {/* 1. 11 PERFORMANCE SUMMARY CARDS */}
-            <div>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                Performance Summary (11 Core Metrics)
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-                {/* 1. Total Clients */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total Clients</span>
-                  <div className="text-lg font-extrabold text-slate-900 mt-0.5">{summary.totalClients}</div>
-                  <span className="text-[10px] text-slate-500">Registered portfolio</span>
-                </div>
-
-                {/* 2. Active Clients */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Active Clients</span>
-                  <div className="text-lg font-extrabold text-teal-600 mt-0.5">{summary.activeClients}</div>
-                  <span className="text-[10px] text-slate-500">In engagement</span>
-                </div>
-
-                {/* 3. Total Requests */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total Requests</span>
-                  <div className="text-lg font-extrabold text-indigo-600 mt-0.5">{summary.totalServiceRequests}</div>
-                  <span className="text-[10px] text-slate-500">Enquiries logged</span>
-                </div>
-
-                {/* 4. Approved Requests */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Approved Requests</span>
-                  <div className="text-lg font-extrabold text-emerald-600 mt-0.5">{summary.approvedRequests}</div>
-                  <span className="text-[10px] text-slate-500">Admin validated</span>
-                </div>
-
-                {/* 5. Quotations Accepted */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Quotes Accepted</span>
-                  <div className="text-lg font-extrabold text-[#3066BE] mt-0.5">{summary.quotationsAccepted}</div>
-                  <span className="text-[10px] text-slate-500">Client approvals</span>
-                </div>
-
-                {/* 6. Projects In Progress */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">In Progress</span>
-                  <div className="text-lg font-extrabold text-amber-600 mt-0.5">{summary.projectsInProgress}</div>
-                  <span className="text-[10px] text-slate-500">Active tech delivery</span>
-                </div>
-
-                {/* 7. Projects Completed */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Completed</span>
-                  <div className="text-lg font-extrabold text-teal-600 mt-0.5">{summary.projectsCompleted}</div>
-                  <span className="text-[10px] text-slate-500">Delivered projects</span>
-                </div>
-
-                {/* 8. Total Eligible Revenue */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Eligible Revenue</span>
-                  <div className="text-lg font-extrabold text-emerald-700 mt-0.5">
-                    ₹{Number(summary.totalEligibleRevenue || 0).toLocaleString('en-IN')}
-                  </div>
-                  <span className="text-[10px] text-slate-500">Verified receipts</span>
-                </div>
-
-                {/* 9. Total Commission Earned */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Commission Earned</span>
-                  <div className="text-lg font-extrabold text-[#119DA4] mt-0.5">
-                    ₹{Number(summary.totalCommissionEarned || 0).toLocaleString('en-IN')}
-                  </div>
-                  <span className="text-[10px] text-slate-500">Total unlocked</span>
-                </div>
-
-                {/* 10. Pending Commission */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Pending Payout</span>
-                  <div className="text-lg font-extrabold text-amber-600 mt-0.5">
-                    ₹{Number(summary.pendingCommission || 0).toLocaleString('en-IN')}
-                  </div>
-                  <span className="text-[10px] text-slate-500">Awaiting cycle</span>
-                </div>
-
-                {/* 11. Commission Paid */}
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Commission Paid</span>
-                  <div className="text-lg font-extrabold text-[#3066BE] mt-0.5">
-                    ₹{Number(summary.commissionPaid || 0).toLocaleString('en-IN')}
-                  </div>
-                  <span className="text-[10px] text-slate-500">Disbursed to bank</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. 4 KEY FINANCIAL EARNINGS BREAKDOWN CARDS */}
-            <div>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                Financial Status Breakdown
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Card 1: Commission Earned */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50/50 border border-teal-200/80 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-teal-800 uppercase tracking-wider">
-                      Commission Earned
-                    </span>
-                    <Award className="w-5 h-5 text-[#119DA4]" />
-                  </div>
-                  <div className="text-2xl font-black text-teal-900 mt-2">
-                    ₹{Number(breakdown.earned || 0).toLocaleString('en-IN')}
-                  </div>
-                  <p className="text-[11px] text-teal-700 mt-1">
-                    Total eligible commissions unlocked from verified client payments & completed deliverables.
-                  </p>
-                </div>
-
-                {/* Card 2: Commission Pending */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50/50 border border-amber-200/80 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
-                      Commission Pending
-                    </span>
-                    <Clock className="w-5 h-5 text-amber-600" />
-                  </div>
-                  <div className="text-2xl font-black text-amber-900 mt-2">
-                    ₹{Number(breakdown.pending || 0).toLocaleString('en-IN')}
-                  </div>
-                  <p className="text-[11px] text-amber-700 mt-1">
-                    Approved commissions awaiting scheduled disbursement to your registered bank account.
-                  </p>
-                </div>
-
-                {/* Card 3: Commission Paid */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/50 border border-blue-200/80 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">
-                      Commission Paid
-                    </span>
-                    <CheckCircle2 className="w-5 h-5 text-[#3066BE]" />
-                  </div>
-                  <div className="text-2xl font-black text-blue-900 mt-2">
-                    ₹{Number(breakdown.paid || 0).toLocaleString('en-IN')}
-                  </div>
-                  <p className="text-[11px] text-blue-700 mt-1">
-                    Disbursed payouts successfully transferred and cleared in your bank account.
-                  </p>
-                </div>
-
-                {/* Card 4: Commission Pipeline */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Commission in Pipeline
-                    </span>
-                    <TrendingUp className="w-5 h-5 text-slate-500" />
-                  </div>
-                  <div className="text-2xl font-black text-slate-800 mt-2">
-                    ₹{Number(breakdown.pipeline || 0).toLocaleString('en-IN')}
-                  </div>
-                  <p className="text-[11px] text-slate-600 mt-1">
-                    Potential commissions awaiting project milestone completion or client payment verification.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* 3. SERVICE-WISE BUSINESS PERFORMANCE (4 CORE CATEGORIES) */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-              <div className="border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-[#119DA4]" />
-                  Service-Wise Business Performance & Commission Rules
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Side-by-side performance breakdown across Digital Marketing, Website Dev, Mobile App Dev, and Custom Software.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                  {
-                    key: 'DIGITAL_MARKETING',
-                    name: 'Digital Marketing',
-                    rate: 'Configured Range',
-                    model: 'Monthly Subscription (excl. ad spend)',
-                    icon: TrendingUp,
-                    accent: 'border-teal-200 bg-teal-50/30',
-                  },
-                  {
-                    key: 'WEBSITE_DEVELOPMENT',
-                    name: 'Website Development',
-                    rate: 'Configured Range',
-                    model: 'Project-based on delivery completion',
-                    icon: Globe,
-                    accent: 'border-blue-200 bg-blue-50/30',
-                  },
-                  {
-                    key: 'MOBILE_APPLICATION_DEVELOPMENT',
-                    name: 'Mobile Application',
-                    rate: 'Configured Range',
-                    model: 'Milestone / Full completion delivery',
-                    icon: Smartphone,
-                    accent: 'border-indigo-200 bg-indigo-50/30',
-                  },
-                  {
-                    key: 'SOFTWARE_DEVELOPMENT',
-                    name: 'Custom Software / ERP',
-                    rate: 'Configured Range',
-                    model: 'Enterprise milestones upon delivery',
-                    icon: Code2,
-                    accent: 'border-purple-200 bg-purple-50/30',
-                  },
-                ].map((cat) => {
-                  const stat = servicePerf.find((s) => s.category === cat.key) || {
-                    clientCount: 0,
-                    requestCount: 0,
-                    approvedRequests: 0,
-                    acceptedQuotations: 0,
-                    activeProjects: 0,
-                    completedProjects: 0,
-                    eligibleRevenue: 0,
-                    commissionEarned: 0,
-                    pendingCommission: 0,
-                  };
-
-                  const IconComponent = cat.icon;
-
-                  return (
-                    <div
-                      key={cat.key}
-                      className={`p-4 rounded-xl border ${cat.accent} space-y-3 text-xs`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <strong className="text-sm text-slate-900 block">{cat.name}</strong>
-                          <span className="text-[10px] text-slate-500 block mt-0.5">{cat.model}</span>
+                            {/* Date Filter */}
+                            <select
+                              value={earningsDateFilter}
+                              onChange={(e) => setEarningsDateFilter(e.target.value)}
+                              className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                            >
+                              <option value="ALL">All Time</option>
+                              <option value="THIS_MONTH">This Month</option>
+                              <option value="LAST_90_DAYS">Last 90 Days</option>
+                              <option value="THIS_YEAR">This Year</option>
+                            </select>
+                          </div>
                         </div>
-                        <span className="p-2 bg-white rounded-xl shadow-xs border border-slate-200">
-                          <IconComponent className="w-4 h-4 text-[#3066BE]" />
-                        </span>
-                      </div>
 
-                      <div className="bg-white/80 p-2 rounded-lg border border-slate-200/60 flex items-center justify-between">
-                        <span className="text-[11px] text-slate-500">Commission Rate</span>
-                        <span className="font-bold text-[#119DA4]">{cat.rate}</span>
-                      </div>
+                        {/* Ledger Table */}
+                        {filteredCommissions.length === 0 ? (
+                          <div className="p-10 text-center rounded-xl bg-slate-50/70 border border-dashed border-slate-200 text-xs text-slate-500">
+                            <DollarSign className="w-10 h-10 text-slate-300 mx-auto mb-2.5" />
+                            {commissions.length === 0 ? (
+                              <div className="max-w-md mx-auto space-y-1">
+                                <p className="font-bold text-slate-700 text-sm">No Commissions Earned Yet</p>
+                                <p className="text-slate-500 text-xs leading-relaxed">
+                                  Commission records are automatically generated when the Accounts department verifies an eligible client payment (monthly retainers for Digital Marketing, or final milestone payments upon project completion for Development projects).
+                                </p>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="font-semibold text-slate-700">No commission records match your filter criteria.</p>
+                                <p className="text-slate-400 mt-1">Try resetting the search keywords, category, status, or date range.</p>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto rounded-xl border border-slate-200">
+                            <table className="w-full text-left text-xs">
+                              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                                <tr>
+                                  <th className="p-3.5">Client & Business</th>
+                                  <th className="p-3.5">Service & Billing</th>
+                                  <th className="p-3.5">Work Order & Project</th>
+                                  <th className="p-3.5">Payment Base</th>
+                                  <th className="p-3.5">Commission Amount</th>
+                                  <th className="p-3.5">Eligibility</th>
+                                  <th className="p-3.5">Payout Status</th>
+                                  <th className="p-3.5 text-right">Action</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {filteredCommissions.map((c) => {
+                                  const ratePct = c.commissionRate
+                                    ? `${c.commissionRate}%`
+                                    : 'Approved Rate';
 
-                      <div className="space-y-1.5 pt-1">
-                        <div className="flex justify-between text-slate-600">
-                          <span>Clients Acquired:</span>
-                          <strong className="text-slate-900">{stat.clientCount}</strong>
-                        </div>
-                        <div className="flex justify-between text-slate-600">
-                          <span>Requests (Approved):</span>
-                          <strong className="text-slate-900">
-                            {stat.requestCount} ({stat.approvedRequests})
-                          </strong>
-                        </div>
-                        <div className="flex justify-between text-slate-600">
-                          <span>Quotations Accepted:</span>
-                          <strong className="text-slate-900">{stat.acceptedQuotations}</strong>
-                        </div>
-                        <div className="flex justify-between text-slate-600">
-                          <span>Active / Completed:</span>
-                          <strong className="text-slate-900">
-                            {stat.activeProjects} / {stat.completedProjects}
-                          </strong>
-                        </div>
-                        <div className="flex justify-between text-slate-600 pt-1 border-t border-slate-200/60">
-                          <span>Eligible Revenue:</span>
-                          <strong className="text-slate-900">₹{Number(stat.eligibleRevenue || 0).toLocaleString('en-IN')}</strong>
-                        </div>
-                        <div className="flex justify-between text-[#119DA4] font-bold">
-                          <span>Commission Earned:</span>
-                          <span>₹{Number(stat.commissionEarned || 0).toLocaleString('en-IN')}</span>
-                        </div>
+                                  return (
+                                    <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
+                                      {/* Client & Business */}
+                                      <td className="p-3.5">
+                                        <div className="font-bold text-slate-900">{c.client?.clientName}</div>
+                                        <div className="text-[11px] text-indigo-600 font-medium">
+                                          {c.client?.businessName}
+                                        </div>
+                                      </td>
+
+                                      {/* Service & Billing */}
+                                      <td className="p-3.5">
+                                        <span className="font-bold text-slate-800">
+                                          {c.serviceCategory?.replace(/_/g, ' ')}
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 block">{c.billingType}</span>
+                                      </td>
+
+                                      {/* Work Order & Project */}
+                                      <td className="p-3.5 font-mono text-[11px]">
+                                        <div className="text-slate-800 font-bold">
+                                          {c.workOrder?.workOrderNumber || '—'}
+                                        </div>
+                                        {c.project && (
+                                          <div className="text-[10px] text-slate-500 font-sans">
+                                            Proj: {c.project.projectNumber} ({c.project.status})
+                                          </div>
+                                        )}
+                                      </td>
+
+                                      {/* Payment Base */}
+                                      <td className="p-3.5">
+                                        <div className="font-bold text-slate-900">
+                                          ₹{Number(c.payment?.amount || c.workOrder?.totalValue || 0).toLocaleString('en-IN')}
+                                        </div>
+                                        {c.payment?.transactionReference && (
+                                          <span className="text-[10px] text-slate-400 font-mono block">
+                                            Ref: {c.payment.transactionReference}
+                                          </span>
+                                        )}
+                                      </td>
+
+                                      {/* Commission Amount */}
+                                      <td className="p-3.5">
+                                        <div className="text-sm font-black text-[#119DA4]">
+                                          ₹{Number(c.calculatedCommission || 0).toLocaleString('en-IN')}
+                                        </div>
+                                        <span className="text-[10px] text-slate-400 font-semibold block">
+                                          Rate: {ratePct}
+                                        </span>
+                                      </td>
+
+                                      {/* Eligibility */}
+                                      <td className="p-3.5">
+                                        <span
+                                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.eligibilityStatus === 'ELIGIBLE'
+                                            ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
+                                            : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                            }`}
+                                        >
+                                          {c.eligibilityStatus}
+                                        </span>
+                                      </td>
+
+                                      {/* Payout Status */}
+                                      <td className="p-3.5">
+                                        <span
+                                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.payoutStatus === 'PROCESSED'
+                                            ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                            : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                            }`}
+                                        >
+                                          {c.payoutStatus}
+                                        </span>
+                                        {c.payoutReference && (
+                                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                            Ref: {c.payoutReference}
+                                          </div>
+                                        )}
+                                      </td>
+
+                                      {/* Action */}
+                                      <td className="p-3.5 text-right">
+                                        <button
+                                          type="button"
+                                          onClick={() => setCalculationModal(c)}
+                                          className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                                          title="View Commission Calculation Breakdown"
+                                        >
+                                          <Calculator className="w-3.5 h-3.5" />
+                                          Breakdown
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
-                })}
-              </div>
-            </div>
+                })()}
 
-            {/* 4. INTERACTIVE EARNINGS HISTORY TABLE WITH LIVE FILTERS */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-5">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-[#119DA4]" />
-                    Official Commission Ledger & Calculation History
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Filter transactions, inspect calculation steps, and audit payment clearance.
-                  </p>
+                {/* CALCULATION BREAKDOWN MODAL */}
+                <ModalPortal
+                  isOpen={!!calculationModal}
+                  onClose={() => setCalculationModal(null)}
+                >
+                  {calculationModal && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-[#119DA4] to-[#3066BE]" />
+                      <div className="p-6 space-y-4 text-xs">
+                        <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-teal-50 rounded-xl border border-[#119DA4]/20">
+                              <Calculator className="w-5 h-5 text-[#119DA4]" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">Commission Calculation Breakdown</h3>
+                              <p className="text-xs text-slate-500">
+                                Client: <strong className="text-slate-800">{calculationModal.client?.clientName}</strong>
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setCalculationModal(null)}
+                            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        {/* Calculation Steps */}
+                        {(() => {
+                          const isDM = calculationModal.serviceCategory === 'DIGITAL_MARKETING';
+                          const ratePercent = isDM ? 15 : 12;
+                          const rawPayment = Number(calculationModal.payment?.amount || calculationModal.workOrder?.totalValue || 0);
+                          const adSpend = isDM ? Number(calculationModal.payment?.adBudgetAmount || 0) : 0;
+                          const commissionableBase = Math.max(0, rawPayment - adSpend);
+                          const calculatedCommission = Number(calculationModal.calculatedCommission || 0);
+
+                          return (
+                            <div className="space-y-3">
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500">Service Category:</span>
+                                  <strong className="text-slate-900">{calculationModal.serviceCategory?.replace(/_/g, ' ')}</strong>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500">Billing Model:</span>
+                                  <span className="font-semibold text-slate-800">{calculationModal.billingType}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500">Work Order Ref:</span>
+                                  <span className="font-mono text-slate-800 font-bold">{calculationModal.workOrder?.workOrderNumber || '—'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500">Payment Status:</span>
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    {calculationModal.payment?.status || 'VERIFIED'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="p-4 rounded-xl bg-teal-50/50 border border-[#119DA4]/20 space-y-2">
+                                <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block">
+                                  Step-by-Step Mathematical Computation
+                                </span>
+                                <div className="flex justify-between text-slate-700">
+                                  <span>1. Base Payment Received:</span>
+                                  <strong>₹{rawPayment.toLocaleString('en-IN')}</strong>
+                                </div>
+                                {isDM && (
+                                  <div className="flex justify-between text-amber-700">
+                                    <span>2. Excluded Media Ad Spend:</span>
+                                    <strong>- ₹{adSpend.toLocaleString('en-IN')}</strong>
+                                  </div>
+                                )}
+                                <div className="flex justify-between text-slate-900 font-semibold pt-1 border-t border-teal-200/50">
+                                  <span>{isDM ? '3.' : '2.'} Net Commissionable Service Fee:</span>
+                                  <strong>₹{commissionableBase.toLocaleString('en-IN')}</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-700">
+                                  <span>{isDM ? '4.' : '3.'} Applicable Commission Rate:</span>
+                                  <strong className="text-[#119DA4]">{ratePercent}%</strong>
+                                </div>
+                                <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-teal-200">
+                                  <span>Final Calculated Commission:</span>
+                                  <span className="text-[#119DA4]">₹{calculatedCommission.toLocaleString('en-IN')}</span>
+                                </div>
+                              </div>
+
+                              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 space-y-1">
+                                <strong>Eligibility Rule:</strong>
+                                <p>
+                                  {isDM
+                                    ? 'Digital Marketing commissions unlock upon verification of monthly retainer payment (ad spend strictly excluded from commission base).'
+                                    : 'Website, Mobile & Software commissions unlock upon 100% technical project completion and full client payment clearance.'}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        <div className="flex justify-end pt-3 border-t border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => setCalculationModal(null)}
+                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer"
+                          >
+                            Close Breakdown
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </ModalPortal>
+              </div>
+            )
+          }
+
+          {/* TAB 8: COMPANY RESOURCES */}
+          {
+            activeTab === 'resources' && (
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                  <h2 className="text-base font-bold text-slate-900">Company Resources</h2>
+                  <p className="text-xs text-slate-500">Official resources and presentations authorized by management for presenting to prospects.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {resources.map((r) => (
+                    <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">{r.category}</span>
+                        <h4 className="text-sm font-bold text-slate-900 mt-1">{r.title}</h4>
+                        <p className="text-xs text-slate-600 mt-1.5">{r.description}</p>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <span className="font-mono text-slate-400">{r.fileType || 'DOCUMENT'} File</span>
+                        {r.fileUrl ? (
+                          <a
+                            href={r.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded font-semibold hover:bg-indigo-100 flex items-center gap-1 transition-colors"
+                          >
+                            <Download className="w-3.5 h-3.5" /> Download
+                          </a>
+                        ) : (
+                          <button
+                            onClick={() => toast.info(`Downloading presentation: ${r.title}`)}
+                            className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded font-semibold hover:bg-indigo-100 flex items-center gap-1"
+                          >
+                            <Download className="w-3.5 h-3.5" /> Download
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
+            )
+          }
 
-              {/* Filter Bar */}
-              <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
-                {/* Search */}
-                <div className="relative w-full lg:w-72">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    placeholder="Search client, work order #, transaction ref..."
-                    value={earningsSearch}
-                    onChange={(e) => setEarningsSearch(e.target.value)}
-                    className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                  />
-                </div>
-
-                {/* Filters */}
-                <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto text-xs">
-                  {/* Category Filter */}
-                  <select
-                    value={earningsCategoryFilter}
-                    onChange={(e) => setEarningsCategoryFilter(e.target.value)}
-                    className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                  >
-                    <option value="ALL">All Categories</option>
-                    <option value="DIGITAL_MARKETING">Digital Marketing</option>
-                    <option value="WEBSITE_DEVELOPMENT">Website Dev</option>
-                    <option value="MOBILE_APPLICATION_DEVELOPMENT">Mobile App Dev</option>
-                    <option value="SOFTWARE_DEVELOPMENT">Custom Software</option>
-                  </select>
-
-                  {/* Status Filter */}
-                  <select
-                    value={earningsStatusFilter}
-                    onChange={(e) => setEarningsStatusFilter(e.target.value)}
-                    className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                  >
-                    <option value="ALL">All Statuses</option>
-                    <option value="ELIGIBLE">Eligible</option>
-                    <option value="PENDING_CRITERIA">Pending Criteria</option>
-                    <option value="UNPAID">Pending Payout</option>
-                    <option value="PROCESSED">Paid / Disbursed</option>
-                  </select>
-
-                  {/* Date Filter */}
-                  <select
-                    value={earningsDateFilter}
-                    onChange={(e) => setEarningsDateFilter(e.target.value)}
-                    className="p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                  >
-                    <option value="ALL">All Time</option>
-                    <option value="THIS_MONTH">This Month</option>
-                    <option value="LAST_90_DAYS">Last 90 Days</option>
-                    <option value="THIS_YEAR">This Year</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Ledger Table */}
-              {filteredCommissions.length === 0 ? (
-                <div className="p-10 text-center rounded-xl bg-slate-50/70 border border-dashed border-slate-200 text-xs text-slate-500">
-                  <DollarSign className="w-10 h-10 text-slate-300 mx-auto mb-2.5" />
-                  {commissions.length === 0 ? (
-                    <div className="max-w-md mx-auto space-y-1">
-                      <p className="font-bold text-slate-700 text-sm">No Commissions Earned Yet</p>
-                      <p className="text-slate-500 text-xs leading-relaxed">
-                        Commission records are automatically generated when the Accounts department verifies an eligible client payment (monthly retainers for Digital Marketing, or final milestone payments upon project completion for Development projects).
+          {/* TAB 11: SUPPORT */}
+          {
+            activeTab === 'support' && (
+              <div className="w-full space-y-6">
+                {/* Header Banner */}
+                <div className="bg-gradient-to-r from-slate-900 via-[#152544] to-[#3066BE] text-white p-6 sm:p-8 rounded-2xl border border-slate-800 shadow-md">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#80DED9] bg-[#119DA4]/20 px-3 py-1 rounded-full border border-[#80DED9]/30 inline-block mb-2">
+                        Associate Support & Headquarters Desk
+                      </span>
+                      <h3 className="text-xl sm:text-2xl font-black text-white">
+                        Connect with Atriowings Technologies
+                      </h3>
+                      <p className="text-xs text-slate-300 mt-1.5 max-w-2xl leading-relaxed">
+                        Have questions regarding quotation preparation, technical project feasibility, client onboarding, or commission disbursement? Reach our executive desk directly.
                       </p>
                     </div>
-                  ) : (
+                    <div className="flex items-center gap-3 shrink-0">
+                      <a
+                        href="https://wa.me/918825948859"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-sm transition-all"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        <span>WhatsApp Desk</span>
+                      </a>
+                      <a
+                        href="tel:+918825948859"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold transition-all"
+                      >
+                        <Phone className="w-4 h-4 text-[#80DED9]" />
+                        <span>Call Now</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Information Cards (From Landing Page) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Corporate Office */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
                     <div>
-                      <p className="font-semibold text-slate-700">No commission records match your filter criteria.</p>
-                      <p className="text-slate-400 mt-1">Try resetting the search keywords, category, status, or date range.</p>
+                      <div className="w-10 h-10 rounded-xl bg-[#3066BE]/10 text-[#3066BE] flex items-center justify-center mb-3">
+                        <MapPin className="w-5 h-5" />
+                      </div>
+                      <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Corporate Office</span>
+                      <h4 className="font-bold text-slate-800 text-sm mt-0.5">Atriowings Technologies</h4>
+                      <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                        No. 1, Gurudev Complex, 57th St, Venkatraman Nagar, Korattur, Chennai, Tamil Nadu 600080.
+                      </p>
+                    </div>
+                    <a
+                      href="https://www.google.com/maps/search/?api=1&query=No.+1,+Gurudev+Complex,+57th+St,+Venkatraman+Nagar,+Korattur,+Chennai,+Tamil+Nadu+600080"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-[#3066BE] font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
+                    >
+                      <span>Google Maps Directions</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+
+                  {/* Telephone Support */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+                    <div>
+                      <div className="w-10 h-10 rounded-xl bg-[#119DA4]/10 text-[#119DA4] flex items-center justify-center mb-3">
+                        <Phone className="w-5 h-5" />
+                      </div>
+                      <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Direct Phone Helpline</span>
+                      <h4 className="font-bold text-slate-800 text-sm mt-0.5">Associate Line</h4>
+                      <a
+                        href="tel:+918825948859"
+                        className="text-base font-extrabold text-[#3066BE] hover:underline block mt-2"
+                      >
+                        +91 8825948859
+                      </a>
+                      <span className="text-xs text-slate-500 mt-1 block">
+                        Mon – Sat, 9:00 AM – 7:00 PM IST
+                      </span>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Live Desk Active</span>
+                    </div>
+                  </div>
+
+                  {/* Official Email */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+                    <div>
+                      <div className="w-10 h-10 rounded-xl bg-[#6D96C5]/10 text-[#3066BE] flex items-center justify-center mb-3">
+                        <Mail className="w-5 h-5" />
+                      </div>
+                      <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Official Email Address</span>
+                      <h4 className="font-bold text-slate-800 text-sm mt-0.5">Corporate & Support Desk</h4>
+                      <a
+                        href="mailto:info@atriowings.in"
+                        className="text-sm font-bold text-[#3066BE] hover:underline block mt-2 break-all"
+                      >
+                        info@atriowings.in
+                      </a>
+                      <span className="text-xs text-slate-500 mt-1 block">
+                        Guaranteed response within 2–4 hours
+                      </span>
+                    </div>
+                    <a
+                      href="mailto:info@atriowings.in"
+                      className="inline-flex items-center gap-1.5 text-xs text-[#3066BE] font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
+                    >
+                      <span>Send Email to Desk</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+
+                  {/* WhatsApp & Web */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+                    <div>
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
+                        <MessageSquare className="w-5 h-5" />
+                      </div>
+                      <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Direct WhatsApp & Web</span>
+                      <h4 className="font-bold text-slate-800 text-sm mt-0.5">Atriowings Corporate Portal</h4>
+                      <a
+                        href="https://wa.me/918825948859"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold text-emerald-600 hover:underline block mt-2"
+                      >
+                        WhatsApp: +91 8825948859
+                      </a>
+                      <a
+                        href="https://atriowings.in/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-semibold text-slate-600 hover:text-[#3066BE] flex items-center gap-1 mt-1.5"
+                      >
+                        <span>https://atriowings.in</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                    <a
+                      href="https://wa.me/918825948859"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
+                    >
+                      <span>Instant WhatsApp Chat</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Two Column Layout: Support Department Directory + In-Portal Support Ticket Form */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Left: Department Operations Directory */}
+                  <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-4">
+                    <div className="border-b border-slate-100 pb-3">
+                      <h4 className="text-sm font-bold text-slate-900">Specialized Department Desks</h4>
+                      <p className="text-xs text-slate-500 mt-0.5">Route your queries to the appropriate management desk for faster turnaround:</p>
+                    </div>
+
+                    <div className="space-y-3 text-xs">
+                      <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900">Commercial & Quotation Desk</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">Accounts</span>
+                        </div>
+                        <p className="text-slate-600 text-[11px]">
+                          For quotation approvals, customized milestone billing terms, and official commercial pricing.
+                        </p>
+                        <a href="mailto:info@atriowings.in?subject=Commercial%20Quotation%20Desk%20Inquiry" className="text-[#3066BE] font-semibold hover:underline block pt-1">
+                          info@atriowings.in
+                        </a>
+                      </div>
+
+                      <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900">Technical Feasibility & Architecture</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-bold">Technical</span>
+                        </div>
+                        <p className="text-slate-600 text-[11px]">
+                          Technical scoping, requirement analysis, tech stack validation, and project delivery schedules.
+                        </p>
+                        <a href="mailto:info@atriowings.in?subject=Technical%20Feasibility%20Desk%20Inquiry" className="text-[#119DA4] font-semibold hover:underline block pt-1">
+                          info@atriowings.in
+                        </a>
+                      </div>
+
+                      <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900">Commission & Payout Reconciliation</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">Finance</span>
+                        </div>
+                        <p className="text-slate-600 text-[11px]">
+                          Commission disbursements, bank NEFT/IMPS confirmations, TDS records, and milestone payout releases.
+                        </p>
+                        <a href="mailto:info@atriowings.in?subject=Commission%20Payout%20Desk%20Inquiry" className="text-emerald-700 font-semibold hover:underline block pt-1">
+                          info@atriowings.in
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: In-Portal Support Ticket Form */}
+                  <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs">
+                    <div className="border-b border-slate-100 pb-3 mb-4">
+                      <h4 className="text-sm font-bold text-slate-900">Submit a Support Request</h4>
+                      <p className="text-xs text-slate-500 mt-0.5">Send a message directly to Atriowings management from your associate workspace:</p>
+                    </div>
+
+                    {supportSuccess && (
+                      <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>{supportSuccess}</span>
+                      </div>
+                    )}
+
+                    {supportError && (
+                      <div className="mb-4 p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                        <span>{supportError}</span>
+                      </div>
+                    )}
+
+                    <form onSubmit={handleSupportSubmit} className="space-y-3.5 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Associate Name</label>
+                          <input
+                            type="text"
+                            value={user?.name || ''}
+                            readOnly
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Registered Email</label>
+                          <input
+                            type="email"
+                            value={user?.email || ''}
+                            readOnly
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Contact Number</label>
+                          <input
+                            type="text"
+                            value={user?.mobile || '+91 8825948859'}
+                            readOnly
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Query Department *</label>
+                          <select
+                            value={supportCategory}
+                            onChange={(e) => setSupportCategory(e.target.value)}
+                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3066BE]"
+                          >
+                            <option value="Quotation & Commercial Inquiries">Quotation & Commercial Inquiries</option>
+                            <option value="Technical Project Feasibility">Technical Project Feasibility</option>
+                            <option value="Commission & Bank Payout">Commission & Bank Payout</option>
+                            <option value="Client Registration & Ownership">Client Registration & Ownership</option>
+                            <option value="KYC & Bank Verification">KYC & Bank Verification</option>
+                            <option value="General Support">General Support</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Message & Request Details *</label>
+                        <textarea
+                          rows={4}
+                          value={supportMessage}
+                          onChange={(e) => setSupportMessage(e.target.value)}
+                          placeholder="Please describe your enquiry, client ID, quotation reference, or questions in detail..."
+                          className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3066BE]"
+                          required
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[11px] text-slate-400">
+                          Dispatched directly to Atriowings Executive Operations
+                        </span>
+                        <button
+                          type="submit"
+                          disabled={supportSending}
+                          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {supportSending ? (
+                            <>
+                              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              <span>Sending...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-3.5 h-3.5" />
+                              <span>Submit Request</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          {/* CLIENT CONSULTATION & FOLLOW-UP MODAL (ADMIN SCOPE CHANGE & REJECTION RESOLUTION) */}
+          <AnimatePresence>
+            {followUpModal && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+                onClick={() => !submittingFollowUp && setFollowUpModal(null)}
+              >
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                  className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto my-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex justify-between items-start border-b border-slate-100 pb-4 mb-4">
+                    <div>
+                      <span
+                        className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${followUpForm.isRejection
+                          ? 'text-rose-700 bg-rose-50 border-rose-200'
+                          : 'text-amber-600 bg-amber-50 border-amber-200'
+                          }`}
+                      >
+                        {followUpForm.isRejection ? '⚠️ Rejection Consultation & Alert' : 'Client Consultation Follow-up'}
+                      </span>
+                      <h3 className="text-base font-bold text-slate-900 mt-1">
+                        {followUpForm.isRejection
+                          ? 'Inform Client of Management Rejection'
+                          : 'Record Client Discussion & Resubmit'}
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Enquiry <strong className="text-slate-800">{followUpModal.id}</strong> • Client:{' '}
+                        <strong className="text-slate-800">{followUpModal.client?.clientName || followUpModal.clientName || 'Client'}</strong>
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={submittingFollowUp}
+                      onClick={() => setFollowUpModal(null)}
+                      className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {followUpModal.adminNotes && (
+                    <div
+                      className={`mb-4 p-3 rounded-xl border text-xs ${followUpForm.isRejection
+                        ? 'bg-rose-50 border-rose-200 text-rose-950'
+                        : 'bg-amber-50 border-amber-200 text-amber-900'
+                        }`}
+                    >
+                      <span className="font-bold block mb-0.5">
+                        {followUpForm.isRejection ? 'Management Rejection Remarks:' : 'Admin Scope Change Note:'}
+                      </span>
+                      <span className="text-slate-800 block">{followUpModal.adminNotes}</span>
+                      {followUpForm.isRejection && (
+                        <span className="text-[11px] text-rose-700 mt-1.5 block font-medium">
+                          Guidance: Communicate this rejection reason clearly to the client and capture their response below.
+                        </span>
+                      )}
                     </div>
                   )}
-                </div>
-              ) : (
-                <div className="overflow-x-auto rounded-xl border border-slate-200">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                      <tr>
-                        <th className="p-3.5">Client & Business</th>
-                        <th className="p-3.5">Service & Billing</th>
-                        <th className="p-3.5">Work Order & Project</th>
-                        <th className="p-3.5">Payment Base</th>
-                        <th className="p-3.5">Commission Amount</th>
-                        <th className="p-3.5">Eligibility</th>
-                        <th className="p-3.5">Payout Status</th>
-                        <th className="p-3.5 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredCommissions.map((c) => {
-                        const ratePct = c.commissionRate
-                          ? `${c.commissionRate}%`
-                          : 'Approved Rate';
 
-                        return (
-                          <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                            {/* Client & Business */}
-                            <td className="p-3.5">
-                              <div className="font-bold text-slate-900">{c.client?.clientName}</div>
-                              <div className="text-[11px] text-indigo-600 font-medium">
-                                {c.client?.businessName}
-                              </div>
-                            </td>
-
-                            {/* Service & Billing */}
-                            <td className="p-3.5">
-                              <span className="font-bold text-slate-800">
-                                {c.serviceCategory?.replace(/_/g, ' ')}
-                              </span>
-                              <span className="text-[10px] text-slate-400 block">{c.billingType}</span>
-                            </td>
-
-                            {/* Work Order & Project */}
-                            <td className="p-3.5 font-mono text-[11px]">
-                              <div className="text-slate-800 font-bold">
-                                {c.workOrder?.workOrderNumber || '—'}
-                              </div>
-                              {c.project && (
-                                <div className="text-[10px] text-slate-500 font-sans">
-                                  Proj: {c.project.projectNumber} ({c.project.status})
-                                </div>
-                              )}
-                            </td>
-
-                            {/* Payment Base */}
-                            <td className="p-3.5">
-                              <div className="font-bold text-slate-900">
-                                ₹{Number(c.payment?.amount || c.workOrder?.totalValue || 0).toLocaleString('en-IN')}
-                              </div>
-                              {c.payment?.transactionReference && (
-                                <span className="text-[10px] text-slate-400 font-mono block">
-                                  Ref: {c.payment.transactionReference}
-                                </span>
-                              )}
-                            </td>
-
-                            {/* Commission Amount */}
-                            <td className="p-3.5">
-                              <div className="text-sm font-black text-[#119DA4]">
-                                ₹{Number(c.calculatedCommission || 0).toLocaleString('en-IN')}
-                              </div>
-                              <span className="text-[10px] text-slate-400 font-semibold block">
-                                Rate: {ratePct}
-                              </span>
-                            </td>
-
-                            {/* Eligibility */}
-                            <td className="p-3.5">
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.eligibilityStatus === 'ELIGIBLE'
-                                  ? 'bg-emerald-100 text-[#119DA4] border border-[#119DA4]/20'
-                                  : 'bg-amber-100 text-amber-800 border border-amber-200'
-                                  }`}
-                              >
-                                {c.eligibilityStatus}
-                              </span>
-                            </td>
-
-                            {/* Payout Status */}
-                            <td className="p-3.5">
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.payoutStatus === 'PROCESSED'
-                                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                  : 'bg-slate-100 text-slate-700 border border-slate-200'
-                                  }`}
-                              >
-                                {c.payoutStatus}
-                              </span>
-                              {c.payoutReference && (
-                                <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                  Ref: {c.payoutReference}
-                                </div>
-                              )}
-                            </td>
-
-                            {/* Action */}
-                            <td className="p-3.5 text-right">
-                              <button
-                                type="button"
-                                onClick={() => setCalculationModal(c)}
-                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer"
-                                title="View Commission Calculation Breakdown"
-                              >
-                                <Calculator className="w-3.5 h-3.5" />
-                                Breakdown
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* CALCULATION BREAKDOWN MODAL */}
-      <ModalPortal
-        isOpen={!!calculationModal}
-        onClose={() => setCalculationModal(null)}
-      >
-        {calculationModal && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            transition={{ duration: 0.2 }}
-            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-[#119DA4] to-[#3066BE]" />
-            <div className="p-6 space-y-4 text-xs">
-              <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-teal-50 rounded-xl border border-[#119DA4]/20">
-                    <Calculator className="w-5 h-5 text-[#119DA4]" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">Commission Calculation Breakdown</h3>
-                    <p className="text-xs text-slate-500">
-                      Client: <strong className="text-slate-800">{calculationModal.client?.clientName}</strong>
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setCalculationModal(null)}
-                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Calculation Steps */}
-              {(() => {
-                const isDM = calculationModal.serviceCategory === 'DIGITAL_MARKETING';
-                const ratePercent = isDM ? 15 : 12;
-                const rawPayment = Number(calculationModal.payment?.amount || calculationModal.workOrder?.totalValue || 0);
-                const adSpend = isDM ? Number(calculationModal.payment?.adBudgetAmount || 0) : 0;
-                const commissionableBase = Math.max(0, rawPayment - adSpend);
-                const calculatedCommission = Number(calculationModal.calculatedCommission || 0);
-
-                return (
-                  <div className="space-y-3">
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Service Category:</span>
-                        <strong className="text-slate-900">{calculationModal.serviceCategory?.replace(/_/g, ' ')}</strong>
+                  <form onSubmit={handleSubmitFollowUp} className="space-y-4 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">
+                          Consultation Date & Time <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="datetime-local"
+                          required
+                          value={followUpForm.consultationDate}
+                          onChange={(e) => setFollowUpForm({ ...followUpForm, consultationDate: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                        />
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Billing Model:</span>
-                        <span className="font-semibold text-slate-800">{calculationModal.billingType}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Work Order Ref:</span>
-                        <span className="font-mono text-slate-800 font-bold">{calculationModal.workOrder?.workOrderNumber || '—'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Payment Status:</span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          {calculationModal.payment?.status || 'VERIFIED'}
-                        </span>
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">
+                          Communication Channel <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={followUpForm.contactMethod}
+                          onChange={(e) => setFollowUpForm({ ...followUpForm, contactMethod: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                        >
+                          <option value="Phone Call">Phone Call (Direct)</option>
+                          <option value="WhatsApp Message">WhatsApp Message</option>
+                          <option value="In-person Meeting">In-person Meeting</option>
+                          <option value="Official Email">Official Email</option>
+                        </select>
                       </div>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-teal-50/50 border border-[#119DA4]/20 space-y-2">
-                      <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider block">
-                        Step-by-Step Mathematical Computation
-                      </span>
-                      <div className="flex justify-between text-slate-700">
-                        <span>1. Base Payment Received:</span>
-                        <strong>₹{rawPayment.toLocaleString('en-IN')}</strong>
-                      </div>
-                      {isDM && (
-                        <div className="flex justify-between text-amber-700">
-                          <span>2. Excluded Media Ad Spend:</span>
-                          <strong>- ₹{adSpend.toLocaleString('en-IN')}</strong>
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        Next Scheduled Follow-up Date <span className="text-slate-400 font-normal">(Optional — leave blank if consultation concluded)</span>
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={followUpForm.nextFollowUpDate}
+                        onChange={(e) => setFollowUpForm({ ...followUpForm, nextFollowUpDate: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">
+                        Client Consultation Discussion Notes <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        rows={4}
+                        required
+                        value={followUpForm.consultationNotes}
+                        onChange={(e) => setFollowUpForm({ ...followUpForm, consultationNotes: e.target.value })}
+                        placeholder={
+                          followUpForm.isRejection
+                            ? 'Detail what you communicated to the client regarding the rejection, how the client reacted, and what was agreed upon...'
+                            : 'Detail what was discussed with the client regarding the scope, payment/budget agreed upon, and client confirmation...'
+                        }
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                      />
+                    </div>
+
+                    {followUpForm.isRejection ? (
+                      <div className="space-y-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">
+                            Client Response Outcome <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={followUpForm.clientOutcome}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const shouldResubmit = val.includes('Re-evaluation');
+                              setFollowUpForm({
+                                ...followUpForm,
+                                clientOutcome: val,
+                                resubmit: shouldResubmit,
+                              });
+                            }}
+                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                          >
+                            <option value="Client Informed - Acknowledged Rejection & Closed">
+                              Client Informed - Acknowledged Rejection & Enquiry Closed
+                            </option>
+                            <option value="Client Wants Alternate Proposal / Different Service">
+                              Client Wants Alternate Proposal / Different Service
+                            </option>
+                            <option value="Client Agrees to Revised Payment / Scope (Request Re-evaluation)">
+                              Client Agrees to Revised Payment / Scope (Request Re-evaluation)
+                            </option>
+                          </select>
                         </div>
-                      )}
-                      <div className="flex justify-between text-slate-900 font-semibold pt-1 border-t border-teal-200/50">
-                        <span>{isDM ? '3.' : '2.'} Net Commissionable Service Fee:</span>
-                        <strong>₹{commissionableBase.toLocaleString('en-IN')}</strong>
+
+                        {followUpForm.resubmit && (
+                          <div className="space-y-3 pt-2 border-t border-slate-200">
+                            <div>
+                              <label className="block text-slate-700 font-semibold mb-1">
+                                Agreed Revised Expected Budget (₹)
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="1000"
+                                value={followUpForm.revisedBudget}
+                                onChange={(e) => setFollowUpForm({ ...followUpForm, revisedBudget: e.target.value })}
+                                placeholder="e.g. 150000"
+                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-slate-700 font-semibold mb-1">
+                                Revised Scope / Requirements
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={followUpForm.revisedRequirements}
+                                onChange={(e) => setFollowUpForm({ ...followUpForm, revisedRequirements: e.target.value })}
+                                placeholder="Describe agreed revised scope..."
+                                className="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex justify-between text-slate-700">
-                        <span>{isDM ? '4.' : '3.'} Applicable Commission Rate:</span>
-                        <strong className="text-[#119DA4]">{ratePercent}%</strong>
-                      </div>
-                      <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-teal-200">
-                        <span>Final Calculated Commission:</span>
-                        <span className="text-[#119DA4]">₹{calculatedCommission.toLocaleString('en-IN')}</span>
-                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">
+                              Agreed Expected Budget (₹)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1000"
+                              value={followUpForm.revisedBudget}
+                              onChange={(e) => setFollowUpForm({ ...followUpForm, revisedBudget: e.target.value })}
+                              placeholder="e.g. 100000"
+                              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-semibold mb-1">
+                              Resubmit Status
+                            </label>
+                            <div className="h-[38px] flex items-center px-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] font-semibold">
+                              ✓ Send to Admin for Approval
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">
+                            Updated Project Scope / Requirements (Optional)
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={followUpForm.revisedRequirements}
+                            onChange={(e) => setFollowUpForm({ ...followUpForm, revisedRequirements: e.target.value })}
+                            placeholder="Update scope details if changed based on client discussion..."
+                            className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                      <button
+                        type="button"
+                        disabled={submittingFollowUp}
+                        onClick={() => setFollowUpModal(null)}
+                        className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submittingFollowUp}
+                        className={`px-5 py-2 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer ${followUpForm.isRejection
+                          ? 'bg-rose-600 hover:bg-rose-700'
+                          : 'bg-[#3066BE] hover:bg-[#255299]'
+                          }`}
+                      >
+                        {submittingFollowUp ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Submitting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-3.5 h-3.5" />
+                            <span>
+                              {followUpForm.isRejection
+                                ? followUpForm.resubmit
+                                  ? 'Save & Resubmit to Admin'
+                                  : 'Save & Send Follow-up to Admin'
+                                : 'Save & Resubmit to Admin'}
+                            </span>
+                          </>
+                        )}
+                      </button>
                     </div>
-
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 space-y-1">
-                      <strong>Eligibility Rule:</strong>
-                      <p>
-                        {isDM
-                          ? 'Digital Marketing commissions unlock upon verification of monthly retainer payment (ad spend strictly excluded from commission base).'
-                          : 'Website, Mobile & Software commissions unlock upon 100% technical project completion and full client payment clearance.'}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              <div className="flex justify-end pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setCalculationModal(null)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer"
-                >
-                  Close Breakdown
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </ModalPortal>
-    </div>
-  )
-}
-
-{/* TAB 8: COMPANY RESOURCES */ }
-{
-  activeTab === 'resources' && (
-    <div className="space-y-4">
-      <div className="bg-white p-4 rounded-xl border border-slate-200">
-        <h2 className="text-base font-bold text-slate-900">Company Resources</h2>
-        <p className="text-xs text-slate-500">Official resources and presentations authorized by management for presenting to prospects.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {resources.map((r) => (
-          <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-            <div>
-              <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">{r.category}</span>
-              <h4 className="text-sm font-bold text-slate-900 mt-1">{r.title}</h4>
-              <p className="text-xs text-slate-600 mt-1.5">{r.description}</p>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
-              <span className="font-mono text-slate-400">{r.fileType || 'DOCUMENT'} File</span>
-              {r.fileUrl ? (
-                <a
-                  href={r.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download
-                  className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded font-semibold hover:bg-indigo-100 flex items-center gap-1 transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5" /> Download
-                </a>
-              ) : (
-                <button
-                  onClick={() => toast.info(`Downloading presentation: ${r.title}`)}
-                  className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded font-semibold hover:bg-indigo-100 flex items-center gap-1"
-                >
-                  <Download className="w-3.5 h-3.5" /> Download
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-{/* TAB 11: SUPPORT */ }
-{
-  activeTab === 'support' && (
-    <div className="w-full space-y-6">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-[#152544] to-[#3066BE] text-white p-6 sm:p-8 rounded-2xl border border-slate-800 shadow-md">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#80DED9] bg-[#119DA4]/20 px-3 py-1 rounded-full border border-[#80DED9]/30 inline-block mb-2">
-              Associate Support & Headquarters Desk
-            </span>
-            <h3 className="text-xl sm:text-2xl font-black text-white">
-              Connect with Atriowings Technologies
-            </h3>
-            <p className="text-xs text-slate-300 mt-1.5 max-w-2xl leading-relaxed">
-              Have questions regarding quotation preparation, technical project feasibility, client onboarding, or commission disbursement? Reach our executive desk directly.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <a
-              href="https://wa.me/918825948859"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-sm transition-all"
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>WhatsApp Desk</span>
-            </a>
-            <a
-              href="tel:+918825948859"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold transition-all"
-            >
-              <Phone className="w-4 h-4 text-[#80DED9]" />
-              <span>Call Now</span>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* Contact Information Cards (From Landing Page) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Corporate Office */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-[#3066BE]/10 text-[#3066BE] flex items-center justify-center mb-3">
-              <MapPin className="w-5 h-5" />
-            </div>
-            <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Corporate Office</span>
-            <h4 className="font-bold text-slate-800 text-sm mt-0.5">Atriowings Technologies</h4>
-            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-              No. 1, Gurudev Complex, 57th St, Venkatraman Nagar, Korattur, Chennai, Tamil Nadu 600080.
-            </p>
-          </div>
-          <a
-            href="https://www.google.com/maps/search/?api=1&query=No.+1,+Gurudev+Complex,+57th+St,+Venkatraman+Nagar,+Korattur,+Chennai,+Tamil+Nadu+600080"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-[#3066BE] font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
-          >
-            <span>Google Maps Directions</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-        </div>
-
-        {/* Telephone Support */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-[#119DA4]/10 text-[#119DA4] flex items-center justify-center mb-3">
-              <Phone className="w-5 h-5" />
-            </div>
-            <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Direct Phone Helpline</span>
-            <h4 className="font-bold text-slate-800 text-sm mt-0.5">Associate Line</h4>
-            <a
-              href="tel:+918825948859"
-              className="text-base font-extrabold text-[#3066BE] hover:underline block mt-2"
-            >
-              +91 8825948859
-            </a>
-            <span className="text-xs text-slate-500 mt-1 block">
-              Mon – Sat, 9:00 AM – 7:00 PM IST
-            </span>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Live Desk Active</span>
-          </div>
-        </div>
-
-        {/* Official Email */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-[#6D96C5]/10 text-[#3066BE] flex items-center justify-center mb-3">
-              <Mail className="w-5 h-5" />
-            </div>
-            <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Official Email Address</span>
-            <h4 className="font-bold text-slate-800 text-sm mt-0.5">Corporate & Support Desk</h4>
-            <a
-              href="mailto:info@atriowings.in"
-              className="text-sm font-bold text-[#3066BE] hover:underline block mt-2 break-all"
-            >
-              info@atriowings.in
-            </a>
-            <span className="text-xs text-slate-500 mt-1 block">
-              Guaranteed response within 2–4 hours
-            </span>
-          </div>
-          <a
-            href="mailto:info@atriowings.in"
-            className="inline-flex items-center gap-1.5 text-xs text-[#3066BE] font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
-          >
-            <span>Send Email to Desk</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </a>
-        </div>
-
-        {/* WhatsApp & Web */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
-              <MessageSquare className="w-5 h-5" />
-            </div>
-            <span className="text-slate-400 block text-[11px] font-medium uppercase tracking-wider">Direct WhatsApp & Web</span>
-            <h4 className="font-bold text-slate-800 text-sm mt-0.5">Atriowings Corporate Portal</h4>
-            <a
-              href="https://wa.me/918825948859"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-bold text-emerald-600 hover:underline block mt-2"
-            >
-              WhatsApp: +91 8825948859
-            </a>
-            <a
-              href="https://atriowings.in/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-semibold text-slate-600 hover:text-[#3066BE] flex items-center gap-1 mt-1.5"
-            >
-              <span>https://atriowings.in</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-          <a
-            href="https://wa.me/918825948859"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-bold hover:underline mt-4 pt-3 border-t border-slate-100"
-          >
-            <span>Instant WhatsApp Chat</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-        </div>
-      </div>
-
-      {/* Two Column Layout: Support Department Directory + In-Portal Support Ticket Form */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Department Operations Directory */}
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-4">
-          <div className="border-b border-slate-100 pb-3">
-            <h4 className="text-sm font-bold text-slate-900">Specialized Department Desks</h4>
-            <p className="text-xs text-slate-500 mt-0.5">Route your queries to the appropriate management desk for faster turnaround:</p>
-          </div>
-
-          <div className="space-y-3 text-xs">
-            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900">Commercial & Quotation Desk</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">Accounts</span>
-              </div>
-              <p className="text-slate-600 text-[11px]">
-                For quotation approvals, customized milestone billing terms, and official commercial pricing.
-              </p>
-              <a href="mailto:info@atriowings.in?subject=Commercial%20Quotation%20Desk%20Inquiry" className="text-[#3066BE] font-semibold hover:underline block pt-1">
-                info@atriowings.in
-              </a>
-            </div>
-
-            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900">Technical Feasibility & Architecture</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-bold">Technical</span>
-              </div>
-              <p className="text-slate-600 text-[11px]">
-                Technical scoping, requirement analysis, tech stack validation, and project delivery schedules.
-              </p>
-              <a href="mailto:info@atriowings.in?subject=Technical%20Feasibility%20Desk%20Inquiry" className="text-[#119DA4] font-semibold hover:underline block pt-1">
-                info@atriowings.in
-              </a>
-            </div>
-
-            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900">Commission & Payout Reconciliation</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">Finance</span>
-              </div>
-              <p className="text-slate-600 text-[11px]">
-                Commission disbursements, bank NEFT/IMPS confirmations, TDS records, and milestone payout releases.
-              </p>
-              <a href="mailto:info@atriowings.in?subject=Commission%20Payout%20Desk%20Inquiry" className="text-emerald-700 font-semibold hover:underline block pt-1">
-                info@atriowings.in
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: In-Portal Support Ticket Form */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs">
-          <div className="border-b border-slate-100 pb-3 mb-4">
-            <h4 className="text-sm font-bold text-slate-900">Submit a Support Request</h4>
-            <p className="text-xs text-slate-500 mt-0.5">Send a message directly to Atriowings management from your associate workspace:</p>
-          </div>
-
-          {supportSuccess && (
-            <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>{supportSuccess}</span>
-            </div>
-          )}
-
-          {supportError && (
-            <div className="mb-4 p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-              <span>{supportError}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSupportSubmit} className="space-y-3.5 text-xs">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Associate Name</label>
-                <input
-                  type="text"
-                  value={user?.name || ''}
-                  readOnly
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
-                />
-              </div>
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Registered Email</label>
-                <input
-                  type="email"
-                  value={user?.email || ''}
-                  readOnly
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Contact Number</label>
-                <input
-                  type="text"
-                  value={user?.mobile || '+91 8825948859'}
-                  readOnly
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
-                />
-              </div>
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Query Department *</label>
-                <select
-                  value={supportCategory}
-                  onChange={(e) => setSupportCategory(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3066BE]"
-                >
-                  <option value="Quotation & Commercial Inquiries">Quotation & Commercial Inquiries</option>
-                  <option value="Technical Project Feasibility">Technical Project Feasibility</option>
-                  <option value="Commission & Bank Payout">Commission & Bank Payout</option>
-                  <option value="Client Registration & Ownership">Client Registration & Ownership</option>
-                  <option value="KYC & Bank Verification">KYC & Bank Verification</option>
-                  <option value="General Support">General Support</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-slate-700 font-semibold mb-1 text-[11px]">Message & Request Details *</label>
-              <textarea
-                rows={4}
-                value={supportMessage}
-                onChange={(e) => setSupportMessage(e.target.value)}
-                placeholder="Please describe your enquiry, client ID, quotation reference, or questions in detail..."
-                className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#3066BE]"
-                required
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-[11px] text-slate-400">
-                Dispatched directly to Atriowings Executive Operations
-              </span>
-              <button
-                type="submit"
-                disabled={supportSending}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
-              >
-                {supportSending ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Sending...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Submit Request</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-{/* CLIENT CONSULTATION & FOLLOW-UP MODAL (ADMIN SCOPE CHANGE & REJECTION RESOLUTION) */ }
-<AnimatePresence>
-  {followUpModal && (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
-      onClick={() => !submittingFollowUp && setFollowUpModal(null)}
-    >
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0, y: 10 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.95, opacity: 0, y: 10 }}
-        className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto my-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-between items-start border-b border-slate-100 pb-4 mb-4">
-          <div>
-            <span
-              className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${followUpForm.isRejection
-                ? 'text-rose-700 bg-rose-50 border-rose-200'
-                : 'text-amber-600 bg-amber-50 border-amber-200'
-                }`}
-            >
-              {followUpForm.isRejection ? '⚠️ Rejection Consultation & Alert' : 'Client Consultation Follow-up'}
-            </span>
-            <h3 className="text-base font-bold text-slate-900 mt-1">
-              {followUpForm.isRejection
-                ? 'Inform Client of Management Rejection'
-                : 'Record Client Discussion & Resubmit'}
-            </h3>
-            <p className="text-xs text-slate-500">
-              Enquiry <strong className="text-slate-800">{followUpModal.id}</strong> • Client:{' '}
-              <strong className="text-slate-800">{followUpModal.client?.clientName || followUpModal.clientName || 'Client'}</strong>
-            </p>
-          </div>
-          <button
-            type="button"
-            disabled={submittingFollowUp}
-            onClick={() => setFollowUpModal(null)}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50 cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {followUpModal.adminNotes && (
-          <div
-            className={`mb-4 p-3 rounded-xl border text-xs ${followUpForm.isRejection
-              ? 'bg-rose-50 border-rose-200 text-rose-950'
-              : 'bg-amber-50 border-amber-200 text-amber-900'
-              }`}
-          >
-            <span className="font-bold block mb-0.5">
-              {followUpForm.isRejection ? 'Management Rejection Remarks:' : 'Admin Scope Change Note:'}
-            </span>
-            <span className="text-slate-800 block">{followUpModal.adminNotes}</span>
-            {followUpForm.isRejection && (
-              <span className="text-[11px] text-rose-700 mt-1.5 block font-medium">
-                Guidance: Communicate this rejection reason clearly to the client and capture their response below.
-              </span>
+                  </form>
+                </motion.div>
+              </motion.div>
             )}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmitFollowUp} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-700 font-semibold mb-1">
-                Consultation Date & Time <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="datetime-local"
-                required
-                value={followUpForm.consultationDate}
-                onChange={(e) => setFollowUpForm({ ...followUpForm, consultationDate: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-              />
-            </div>
-            <div>
-              <label className="block text-slate-700 font-semibold mb-1">
-                Communication Channel <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={followUpForm.contactMethod}
-                onChange={(e) => setFollowUpForm({ ...followUpForm, contactMethod: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-              >
-                <option value="Phone Call">Phone Call (Direct)</option>
-                <option value="WhatsApp Message">WhatsApp Message</option>
-                <option value="In-person Meeting">In-person Meeting</option>
-                <option value="Official Email">Official Email</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-slate-700 font-semibold mb-1">
-              Next Scheduled Follow-up Date <span className="text-slate-400 font-normal">(Optional — leave blank if consultation concluded)</span>
-            </label>
-            <input
-              type="datetime-local"
-              value={followUpForm.nextFollowUpDate}
-              onChange={(e) => setFollowUpForm({ ...followUpForm, nextFollowUpDate: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-700 font-semibold mb-1">
-              Client Consultation Discussion Notes <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              rows={4}
-              required
-              value={followUpForm.consultationNotes}
-              onChange={(e) => setFollowUpForm({ ...followUpForm, consultationNotes: e.target.value })}
-              placeholder={
-                followUpForm.isRejection
-                  ? 'Detail what you communicated to the client regarding the rejection, how the client reacted, and what was agreed upon...'
-                  : 'Detail what was discussed with the client regarding the scope, payment/budget agreed upon, and client confirmation...'
-              }
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-            />
-          </div>
-
-          {followUpForm.isRejection ? (
-            <div className="space-y-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  Client Response Outcome <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={followUpForm.clientOutcome}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const shouldResubmit = val.includes('Re-evaluation');
-                    setFollowUpForm({
-                      ...followUpForm,
-                      clientOutcome: val,
-                      resubmit: shouldResubmit,
-                    });
-                  }}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                >
-                  <option value="Client Informed - Acknowledged Rejection & Closed">
-                    Client Informed - Acknowledged Rejection & Enquiry Closed
-                  </option>
-                  <option value="Client Wants Alternate Proposal / Different Service">
-                    Client Wants Alternate Proposal / Different Service
-                  </option>
-                  <option value="Client Agrees to Revised Payment / Scope (Request Re-evaluation)">
-                    Client Agrees to Revised Payment / Scope (Request Re-evaluation)
-                  </option>
-                </select>
-              </div>
-
-              {followUpForm.resubmit && (
-                <div className="space-y-3 pt-2 border-t border-slate-200">
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1">
-                      Agreed Revised Expected Budget (₹)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1000"
-                      value={followUpForm.revisedBudget}
-                      onChange={(e) => setFollowUpForm({ ...followUpForm, revisedBudget: e.target.value })}
-                      placeholder="e.g. 150000"
-                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-700 font-semibold mb-1">
-                      Revised Scope / Requirements
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={followUpForm.revisedRequirements}
-                      onChange={(e) => setFollowUpForm({ ...followUpForm, revisedRequirements: e.target.value })}
-                      placeholder="Describe agreed revised scope..."
-                      className="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">
-                    Agreed Expected Budget (₹)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    value={followUpForm.revisedBudget}
-                    onChange={(e) => setFollowUpForm({ ...followUpForm, revisedBudget: e.target.value })}
-                    placeholder="e.g. 100000"
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">
-                    Resubmit Status
-                  </label>
-                  <div className="h-[38px] flex items-center px-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] font-semibold">
-                    ✓ Send to Admin for Approval
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  Updated Project Scope / Requirements (Optional)
-                </label>
-                <textarea
-                  rows={2}
-                  value={followUpForm.revisedRequirements}
-                  onChange={(e) => setFollowUpForm({ ...followUpForm, revisedRequirements: e.target.value })}
-                  placeholder="Update scope details if changed based on client discussion..."
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
-                />
-              </div>
-            </>
-          )}
-
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              disabled={submittingFollowUp}
-              onClick={() => setFollowUpModal(null)}
-              className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submittingFollowUp}
-              className={`px-5 py-2 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer ${followUpForm.isRejection
-                ? 'bg-rose-600 hover:bg-rose-700'
-                : 'bg-[#3066BE] hover:bg-[#255299]'
-                }`}
-            >
-              {submittingFollowUp ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Submitting...</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-3.5 h-3.5" />
-                  <span>
-                    {followUpForm.isRejection
-                      ? followUpForm.resubmit
-                        ? 'Save & Resubmit to Admin'
-                        : 'Save & Send Follow-up to Admin'
-                      : 'Save & Resubmit to Admin'}
-                  </span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </motion.div>
-    </motion.div>
-  )}
-</AnimatePresence>
+          </AnimatePresence>
 
           {/* Final Payment Follow-up Modal */}
           {followUpProjectModal && (
@@ -7175,174 +7320,6 @@ export const BgaPortal: React.FC = () => {
               }}
             />
           )}
-
-          {/* Revision Request Modal (Rendered globally across all tabs) */}
-          <ModalPortal
-            isOpen={!!revisionModal}
-            onClose={() => !modalSubmitting && setRevisionModal(null)}
-          >
-            {revisionModal && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                transition={{ duration: 0.2 }}
-                className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600" />
-                <div className="p-6 space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
-                        <Edit3 className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-bold text-slate-900">
-                          Request Quotation Revision
-                        </h3>
-                        <p className="text-xs text-slate-500 font-mono">
-                          {revisionModal.quotationNumber}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => !modalSubmitting && setRevisionModal(null)}
-                      className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Enter the requested scope modifications, commercial revisions, or client feedback. The Accounts Department will draft an updated quotation.
-                  </p>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                      Client Feedback / Revision Notes <span className="text-rose-500">*</span>
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={revisionNotes}
-                      onChange={(e) => setRevisionNotes(e.target.value)}
-                      placeholder="e.g. Client requested a 10% commercial discount and inclusion of 2 additional landing pages..."
-                      className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none transition-all"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button
-                      type="button"
-                      disabled={modalSubmitting}
-                      onClick={() => setRevisionModal(null)}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!revisionNotes.trim() || modalSubmitting}
-                      onClick={handleSubmitRevision}
-                      className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-                    >
-                      {modalSubmitting ? (
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Send className="w-3.5 h-3.5" />
-                      )}
-                      {modalSubmitting ? 'Sending...' : 'Send to Accounts'}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </ModalPortal>
-
-          {/* Client Acceptance Modal (Rendered globally across all tabs) */}
-          <ModalPortal
-            isOpen={!!acceptanceModal}
-            onClose={() => !modalSubmitting && setAcceptanceModal(null)}
-          >
-            {acceptanceModal && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                transition={{ duration: 0.2 }}
-                className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-600" />
-                <div className="p-6 space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 border border-teal-200">
-                        <CheckCircle2 className="w-5 h-5 text-teal-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-bold text-slate-900">
-                          Record Client Acceptance
-                        </h3>
-                        <p className="text-xs text-slate-500 font-mono">
-                          {acceptanceModal.quotationNumber}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => !modalSubmitting && setAcceptanceModal(null)}
-                      className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-200/70 text-xs text-teal-900 leading-relaxed">
-                    Recording client acceptance automatically generates an official <strong>Work Order</strong> and notifies Accounts to collect and verify the required advance payment.
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                      Acceptance Evidence / PO Reference Notes <span className="text-rose-500">*</span>
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={acceptanceNotes}
-                      onChange={(e) => setAcceptanceNotes(e.target.value)}
-                      placeholder="e.g. Approved via email confirmation from MD on 17 Nov 2026. PO Ref: APEX-2026-PO99"
-                      className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 resize-none transition-all"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button
-                      type="button"
-                      disabled={modalSubmitting}
-                      onClick={() => setAcceptanceModal(null)}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!acceptanceNotes.trim() || modalSubmitting}
-                      onClick={handleClientAcceptance}
-                      className="px-5 py-2 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-                    >
-                      {modalSubmitting ? (
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                      )}
-                      {modalSubmitting ? 'Confirming...' : 'Confirm Acceptance'}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </ModalPortal>
         </main>
       </div>
     </div>
