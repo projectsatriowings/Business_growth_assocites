@@ -344,7 +344,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
   let accumulatedPercent = 0;
 
   return (
-    <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+    <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col">
       <div>
         <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
           <Activity className="w-4 h-4 text-[#119DA4]" />
@@ -357,7 +357,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
 
       <div className="flex flex-col sm:flex-row items-center gap-6 my-4">
         {/* SVG Donut Circle */}
-        <div className="relative w-36 h-36 shrink-0 flex items-center justify-center">
+        <div className="relative w-32 h-32 sm:w-36 sm:h-36 shrink-0 flex items-center justify-center">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 140 140">
             {/* Background ring */}
             <circle
@@ -418,7 +418,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
         </div>
 
         {/* Legend */}
-        <div className="flex-1 w-full space-y-2">
+        <div className="flex-1 w-full space-y-1.5">
           {displayItems.map((item, idx) => {
             const color =
               CATEGORY_COLORS[item.category] || CATEGORY_COLORS.DEFAULT;
@@ -432,21 +432,93 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
                 key={idx}
                 className="flex items-center justify-between text-xs p-1.5 rounded-lg hover:bg-slate-50 transition-colors"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <span
                     className="w-2.5 h-2.5 rounded-full shrink-0"
                     style={{ backgroundColor: color }}
                   />
-                  <span className="font-semibold text-slate-700">
+                  <span className="font-semibold text-slate-700 truncate">
                     {formatCategoryName(item.category)}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 font-mono">
+                <div className="flex items-center gap-2 font-mono shrink-0">
                   <span className="font-bold text-slate-900">{item.count}</span>
                   <span className="text-[10px] text-slate-400 w-9 text-right font-semibold">
                     {pct}%
                   </span>
                 </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Enterprise Service Opportunity & Rate Coverage */}
+      <div className="mt-2 pt-3 border-t border-slate-100">
+        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <span>Enterprise Service Coverage</span>
+          <span className="text-[#3066BE] font-semibold">{totalCount} enquiries logged</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          {[
+            {
+              id: 'SOFTWARE_DEVELOPMENT',
+              name: 'Software Development',
+              desc: 'Cloud ERP, CRM & Custom SaaS',
+              color: '#8B5CF6',
+            },
+            {
+              id: 'WEB_DEVELOPMENT',
+              name: 'Website Development',
+              desc: 'Corporate, Portal & E-Commerce',
+              color: '#3066BE',
+            },
+            {
+              id: 'DIGITAL_MARKETING',
+              name: 'Digital Marketing',
+              desc: 'Monthly Retainers (SEO & PPC)',
+              color: '#F59E0B',
+            },
+            {
+              id: 'MOBILE_APP',
+              name: 'Mobile Applications',
+              desc: 'iOS & Android Native & Flutter',
+              color: '#119DA4',
+            },
+          ].map((domain) => {
+            const match = data.find(
+              (d) =>
+                d.category?.toUpperCase() === domain.id ||
+                d.category?.toUpperCase()?.replace(/_/g, '') === domain.id.replace(/_/g, '')
+            );
+            const count = match?.count || 0;
+            const hasEnquiries = count > 0;
+
+            return (
+              <div
+                key={domain.id}
+                className={`p-2.5 rounded-xl border transition-all ${
+                  hasEnquiries
+                    ? 'bg-blue-50/60 border-[#3066BE]/30'
+                    : 'bg-slate-50/60 border-slate-200/70'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-1 mb-0.5">
+                  <span className="font-bold text-xs text-slate-800 truncate">
+                    {domain.name}
+                  </span>
+                  {hasEnquiries ? (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#3066BE] text-white shrink-0">
+                      {count} Logged
+                    </span>
+                  ) : (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-slate-200/70 text-slate-600 shrink-0">
+                      Eligible
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-500 truncate">{domain.desc}</p>
               </div>
             );
           })}
@@ -568,9 +640,22 @@ export const AssociatePeerLeaderboard: React.FC<PeerLeaderboardProps> = ({
   currentUserRank = 1,
   totalNetworkCount = 1,
 }) => {
+  const [showAll, setShowAll] = useState(false);
+
+  // Top 5 associates for compact balanced dashboard display
+  const top5 = associates.slice(0, 5);
+  const currentUserInTop5 = top5.some((a) => a.isCurrentUser);
+  const currentUserObj = associates.find((a) => a.isCurrentUser);
+
+  const displayedAssociates = showAll
+    ? associates
+    : currentUserInTop5 || !currentUserObj
+    ? top5
+    : [...top5, currentUserObj];
+
   return (
-    <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+    <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
         <div>
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <Award className="w-4 h-4 text-amber-500" />
@@ -588,10 +673,14 @@ export const AssociatePeerLeaderboard: React.FC<PeerLeaderboardProps> = ({
         </div>
       </div>
 
-      {/* Podium and Ranking List */}
-      <div className="divide-y divide-slate-100">
-        {associates && associates.length > 0 ? (
-          associates.map((peer) => {
+      {/* Podium and Ranking List with max height limit for clean dashboard balance */}
+      <div
+        className={`divide-y divide-slate-100 ${
+          showAll ? 'max-h-[440px] overflow-y-auto sidebar-scrollbar pr-1' : ''
+        }`}
+      >
+        {displayedAssociates && displayedAssociates.length > 0 ? (
+          displayedAssociates.map((peer, idx) => {
             const isTop3 = peer.rank <= 3;
             const rankIcon =
               peer.rank === 1
@@ -602,83 +691,93 @@ export const AssociatePeerLeaderboard: React.FC<PeerLeaderboardProps> = ({
                 ? '🥉'
                 : `#${peer.rank}`;
 
+            // If this is the pinned current user outside top 5
+            const isPinnedCurrentUser =
+              !showAll && !currentUserInTop5 && peer.isCurrentUser && idx === 5;
+
             return (
-              <div
-                key={peer.id}
-                className={`py-3 px-3 rounded-xl transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                  peer.isCurrentUser
-                    ? 'bg-blue-50/70 border border-[#3066BE]/30 shadow-xs'
-                    : 'hover:bg-slate-50/80'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                      peer.rank === 1
-                        ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                        : peer.rank === 2
-                        ? 'bg-slate-200 text-slate-700'
-                        : peer.rank === 3
-                        ? 'bg-amber-50 text-amber-900'
-                        : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    {rankIcon}
+              <React.Fragment key={peer.id}>
+                {isPinnedCurrentUser && (
+                  <div className="py-1 text-center text-[10px] text-slate-400 font-bold tracking-widest">
+                    • • •
                   </div>
-
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-slate-900">
-                        {peer.name}
-                      </span>
-                      {peer.isCurrentUser && (
-                        <span className="px-1.5 py-0.2 rounded-full bg-[#3066BE] text-white text-[10px] font-bold">
-                          You
-                        </span>
-                      )}
+                )}
+                <div
+                  className={`py-2.5 px-3 rounded-xl transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                    peer.isCurrentUser
+                      ? 'bg-blue-50/70 border border-[#3066BE]/30 shadow-xs'
+                      : 'hover:bg-slate-50/80'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                        peer.rank === 1
+                          ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                          : peer.rank === 2
+                          ? 'bg-slate-200 text-slate-700'
+                          : peer.rank === 3
+                          ? 'bg-amber-50 text-amber-900'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {rankIcon}
                     </div>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      {peer.tier}
-                    </span>
-                  </div>
-                </div>
 
-                {/* Score & Delivery Metrics */}
-                <div className="flex items-center gap-4 text-xs font-semibold">
-                  <div className="text-center">
-                    <span className="text-[10px] text-slate-400 block font-normal">
-                      Clients
-                    </span>
-                    <span className="font-mono font-bold text-slate-800">
-                      {peer.clientsCount}
-                    </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-slate-900">
+                          {peer.name}
+                        </span>
+                        {peer.isCurrentUser && (
+                          <span className="px-1.5 py-0.2 rounded-full bg-[#3066BE] text-white text-[10px] font-bold">
+                            You
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {peer.tier}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <span className="text-[10px] text-slate-400 block font-normal">
-                      Signed Deals
-                    </span>
-                    <span className="font-mono font-bold text-emerald-600">
-                      {peer.acceptedQuotesCount}
-                    </span>
-                  </div>
-                  <div className="text-center">
-                    <span className="text-[10px] text-slate-400 block font-normal">
-                      Completed
-                    </span>
-                    <span className="font-mono font-bold text-blue-600">
-                      {peer.completedProjectsCount}
-                    </span>
-                  </div>
-                  <div className="pl-3 border-l border-slate-200 text-right shrink-0">
-                    <span className="text-[10px] text-slate-400 block font-normal">
-                      Score
-                    </span>
-                    <span className="font-mono font-extrabold text-[#3066BE]">
-                      {peer.points} pts
-                    </span>
+
+                  {/* Score & Delivery Metrics */}
+                  <div className="flex items-center gap-3 sm:gap-4 text-xs font-semibold">
+                    <div className="text-center">
+                      <span className="text-[10px] text-slate-400 block font-normal">
+                        Clients
+                      </span>
+                      <span className="font-mono font-bold text-slate-800">
+                        {peer.clientsCount}
+                      </span>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-[10px] text-slate-400 block font-normal">
+                        Signed Deals
+                      </span>
+                      <span className="font-mono font-bold text-emerald-600">
+                        {peer.acceptedQuotesCount}
+                      </span>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-[10px] text-slate-400 block font-normal">
+                        Completed
+                      </span>
+                      <span className="font-mono font-bold text-blue-600">
+                        {peer.completedProjectsCount}
+                      </span>
+                    </div>
+                    <div className="pl-2.5 border-l border-slate-200 text-right shrink-0">
+                      <span className="text-[10px] text-slate-400 block font-normal">
+                        Score
+                      </span>
+                      <span className="font-mono font-extrabold text-[#3066BE]">
+                        {peer.points} pts
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </React.Fragment>
             );
           })
         ) : (
@@ -688,7 +787,22 @@ export const AssociatePeerLeaderboard: React.FC<PeerLeaderboardProps> = ({
         )}
       </div>
 
-      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+      {/* Show more toggle button */}
+      {associates.length > 5 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(!showAll)}
+          className="w-full mt-2.5 py-1.5 px-3 rounded-xl bg-slate-50 hover:bg-blue-50/60 text-[#3066BE] text-xs font-bold transition-all border border-slate-200/80 flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <span>
+            {showAll
+              ? 'Show Top 5 Associates Only ↑'
+              : `View All ${associates.length} Associates (${associates.length - 5} more) ↓`}
+          </span>
+        </button>
+      )}
+
+      <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
         <span className="flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
           Rankings updated in real-time upon verified client milestone settlements.

@@ -1447,7 +1447,7 @@ export const BgaPortal: React.FC = () => {
                 </div>
 
                 {/* ANALYTICS ROW 1: MONTHLY PERFORMANCE TRENDS & PIPELINE FUNNEL */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   <div className="lg:col-span-7">
                     <MonthlyAreaChart
                       data={(stats.monthlyPerformance || []).map((m: any) => ({
@@ -1482,7 +1482,7 @@ export const BgaPortal: React.FC = () => {
                 </div>
 
                 {/* ANALYTICS ROW 2: SERVICE BREAKDOWN & ASSOCIATE PEER BENCHMARK */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   <div className="lg:col-span-5">
                     <CategoryDonutChart
                       data={stats.categoryBreakdown || []}
