@@ -1,15 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  User,
-  Mail,
-  Phone,
-  Calendar,
-  MapPin,
-  Lock,
-  CreditCard,
   FileText,
-  ShieldCheck,
   CheckCircle2,
   AlertCircle,
   ArrowRight,
@@ -20,12 +12,9 @@ import {
   Check,
   X,
   Loader2,
-  Building2,
 } from 'lucide-react';
 import { AuthLayout } from '../components/auth/AuthLayout';
 import { AuthCard } from '../components/auth/AuthCard';
-import { AuthInput } from '../components/auth/AuthInput';
-import { AuthPrimaryButton } from '../components/auth/AuthPrimaryButton';
 import { uploadPublicFile } from '../utils/api';
 
 interface DocumentUploadFieldProps {
@@ -74,7 +63,7 @@ const DocumentUploadField: React.FC<DocumentUploadFieldProps> = ({
   return (
     <div className="space-y-1.5 text-left">
       <div className="flex items-center justify-between">
-        <label className="block text-xs font-semibold text-[#10244D]">
+        <label className="block text-xs font-bold text-[#10244D]">
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
         {value && (
@@ -111,14 +100,14 @@ const DocumentUploadField: React.FC<DocumentUploadFieldProps> = ({
             <button
               type="button"
               onClick={() => window.open(value, '_blank')}
-              className="px-2.5 py-1 text-[11px] font-bold text-[#0879E8] hover:bg-white rounded-lg transition-colors"
+              className="px-2.5 py-1 text-[11px] font-bold text-[#0879E8] hover:bg-white rounded-lg transition-colors cursor-pointer"
             >
               Preview
             </button>
             <button
               type="button"
               onClick={onRemove}
-              className="p-1 text-[#60769B] hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+              className="p-1 text-[#60769B] hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -127,10 +116,11 @@ const DocumentUploadField: React.FC<DocumentUploadFieldProps> = ({
       ) : (
         <div
           onClick={() => !uploading && fileInputRef.current?.click()}
-          className={`p-3.5 rounded-xl border-2 border-dashed transition-all cursor-pointer text-center ${error || uploadError
-            ? 'border-rose-300 bg-rose-50/20'
-            : 'border-[#D6E2F2] bg-[#F5F9FF]/60 hover:border-[#0879E8] hover:bg-[#DCEBFF]/30'
-            }`}
+          className={`p-3.5 rounded-xl border-2 border-dashed transition-all cursor-pointer text-center ${
+            error || uploadError
+              ? 'border-rose-300 bg-rose-50/20'
+              : 'border-[#D6E2F2] bg-[#F5F9FF]/60 hover:border-[#0879E8] hover:bg-[#DCEBFF]/30'
+          }`}
         >
           {uploading ? (
             <div className="py-1 flex items-center justify-center gap-2 text-xs font-semibold text-[#0879E8]">
@@ -194,8 +184,8 @@ export const RegisterBgaPage: React.FC = () => {
     bankIfsc: '',
     agreementAccepted: false,
     panDocumentUrl: '',
-    addressProofUrl: '',
-    bankProofUrl: '',
+    addressProofUrl: '', // Aadhaar document
+    bankProofUrl: '',    // Bank passbook
     agreementDocumentUrl: '',
   });
 
@@ -247,6 +237,13 @@ export const RegisterBgaPage: React.FC = () => {
         const cleanPan = value.trim().toUpperCase();
         if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanPan)) {
           return 'Invalid PAN format (e.g. ABCDE1234F)';
+        }
+        return undefined;
+
+      case 'aadhaarNumber':
+        if (value && value.trim()) {
+          const cleanAadhaar = value.replace(/\D/g, '');
+          if (cleanAadhaar.length !== 12) return 'Aadhaar must be exactly 12 digits';
         }
         return undefined;
 
@@ -304,6 +301,7 @@ export const RegisterBgaPage: React.FC = () => {
     } else if (step === 2) {
       const step2Fields = ['panNumber'];
       if (formData.pinCode) step2Fields.push('pinCode');
+      if (formData.aadhaarNumber) step2Fields.push('aadhaarNumber');
       for (const f of step2Fields) {
         const err = validateField(f, (formData as any)[f], formData);
         if (err) newErrors[f] = err;
@@ -375,7 +373,7 @@ export const RegisterBgaPage: React.FC = () => {
           cardMaxWidth="max-w-xl"
         >
           <div className="py-4 space-y-6 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto shadow-sm">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto shadow-xs">
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
@@ -409,7 +407,7 @@ export const RegisterBgaPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate('/login')}
-                className="w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-[#0879E8] to-[#123FAD] shadow-[0_6px_20px_rgba(8,121,232,0.28)] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] transition-all"
+                className="w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-[#0879E8] to-[#123FAD] shadow-[0_6px_20px_rgba(8,121,232,0.28)] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] transition-all cursor-pointer"
               >
                 Return to Sign In
               </button>
@@ -427,30 +425,33 @@ export const RegisterBgaPage: React.FC = () => {
           {/* Step Progression Bar */}
           <div className="grid grid-cols-3 gap-2 mb-6">
             <div
-              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${step === 1
-                ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
-                : step > 1
+              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${
+                step === 1
+                  ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
+                  : step > 1
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   : 'bg-slate-50 text-slate-400 border-slate-200'
-                }`}
+              }`}
             >
               1. Personal & Security
             </div>
             <div
-              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${step === 2
-                ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
-                : step > 2
+              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${
+                step === 2
+                  ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
+                  : step > 2
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   : 'bg-slate-50 text-slate-400 border-slate-200'
-                }`}
+              }`}
             >
               2. Location & KYC
             </div>
             <div
-              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${step === 3
-                ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
-                : 'bg-slate-50 text-slate-400 border-slate-200'
-                }`}
+              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${
+                step === 3
+                  ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
+                  : 'bg-slate-50 text-slate-400 border-slate-200'
+              }`}
             >
               3. Bank & Agreement
             </div>
@@ -461,93 +462,164 @@ export const RegisterBgaPage: React.FC = () => {
             {step === 1 && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <AuthInput
-                    label="Full Legal Name"
-                    icon={User}
-                    placeholder="Enter your name"
-                    value={formData.fullName}
-                    onChange={(e) => {
-                      setFormData({ ...formData, fullName: e.target.value });
-                      if (fieldErrors.fullName) setFieldErrors({ ...fieldErrors, fullName: '' });
-                    }}
-                    error={fieldErrors.fullName}
-                    required
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      Full Legal Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter your name"
+                      value={formData.fullName}
+                      onChange={(e) => {
+                        setFormData({ ...formData, fullName: e.target.value });
+                        if (fieldErrors.fullName) setFieldErrors({ ...fieldErrors, fullName: '' });
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
+                        fieldErrors.fullName
+                          ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                          : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                      }`}
+                      required
+                    />
+                    {fieldErrors.fullName && (
+                      <p className="text-[11px] text-rose-600 font-medium mt-1">{fieldErrors.fullName}</p>
+                    )}
+                  </div>
 
-                  <AuthInput
-                    label="Mobile Number"
-                    type="tel"
-                    icon={Phone}
-                    placeholder="10-digit mobile"
-                    value={formData.mobile}
-                    onChange={(e) => {
-                      const clean = e.target.value.replace(/\D/g, '').slice(0, 10);
-                      setFormData({ ...formData, mobile: clean });
-                      if (fieldErrors.mobile) setFieldErrors({ ...fieldErrors, mobile: '' });
-                    }}
-                    error={fieldErrors.mobile}
-                    required
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      Mobile Phone Number <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="10-digit mobile"
+                      value={formData.mobile}
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setFormData({ ...formData, mobile: clean });
+                        if (fieldErrors.mobile) setFieldErrors({ ...fieldErrors, mobile: '' });
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
+                        fieldErrors.mobile
+                          ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                          : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                      }`}
+                      required
+                    />
+                    {fieldErrors.mobile && (
+                      <p className="text-[11px] text-rose-600 font-medium mt-1">{fieldErrors.mobile}</p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <AuthInput
-                    label="Registered Email Address"
-                    type="email"
-                    icon={Mail}
-                    placeholder="associate@example.com"
-                    value={formData.email}
-                    onChange={(e) => {
-                      setFormData({ ...formData, email: e.target.value });
-                      if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: '' });
-                    }}
-                    error={fieldErrors.email}
-                    required
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      Registered Email Address <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="associate@example.com"
+                      value={formData.email}
+                      onChange={(e) => {
+                        setFormData({ ...formData, email: e.target.value });
+                        if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: '' });
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
+                        fieldErrors.email
+                          ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                          : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                      }`}
+                      required
+                    />
+                    {fieldErrors.email && (
+                      <p className="text-[11px] text-rose-600 font-medium mt-1">{fieldErrors.email}</p>
+                    )}
+                  </div>
 
-                  <AuthInput
-                    label="Date of Birth"
-                    type="date"
-                    icon={Calendar}
-                    value={formData.dob}
-                    onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      Date of Birth
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.dob}
+                      onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium text-[#10244D] bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <AuthInput
-                    label="Create Password"
-                    icon={Lock}
-                    placeholder="Min 6 characters"
-                    isPassword
-                    showPasswordToggle
-                    showPassword={showPassword}
-                    onTogglePassword={() => setShowPassword(!showPassword)}
-                    value={formData.password}
-                    onChange={(e) => {
-                      setFormData({ ...formData, password: e.target.value });
-                      if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: '' });
-                    }}
-                    error={fieldErrors.password}
-                    required
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      Create Password <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Min 6 characters"
+                        value={formData.password}
+                        onChange={(e) => {
+                          setFormData({ ...formData, password: e.target.value });
+                          if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: '' });
+                        }}
+                        className={`w-full px-3.5 py-2.5 pr-10 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
+                          fieldErrors.password
+                            ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                            : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                        }`}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        tabIndex={-1}
+                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#60769B] hover:text-[#0879E8] cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {fieldErrors.password && (
+                      <p className="text-[11px] text-rose-600 font-medium mt-1">{fieldErrors.password}</p>
+                    )}
+                  </div>
 
-                  <AuthInput
-                    label="Confirm Password"
-                    icon={Lock}
-                    placeholder="Re-enter password"
-                    isPassword
-                    showPasswordToggle
-                    showPassword={showConfirmPassword}
-                    onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
-                    value={formData.confirmPassword}
-                    onChange={(e) => {
-                      setFormData({ ...formData, confirmPassword: e.target.value });
-                      if (fieldErrors.confirmPassword) setFieldErrors({ ...fieldErrors, confirmPassword: '' });
-                    }}
-                    error={fieldErrors.confirmPassword}
-                    required
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      Confirm Password <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        placeholder="Re-enter password"
+                        value={formData.confirmPassword}
+                        onChange={(e) => {
+                          setFormData({ ...formData, confirmPassword: e.target.value });
+                          if (fieldErrors.confirmPassword) setFieldErrors({ ...fieldErrors, confirmPassword: '' });
+                        }}
+                        className={`w-full px-3.5 py-2.5 pr-10 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
+                          fieldErrors.confirmPassword
+                            ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                            : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                        }`}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        tabIndex={-1}
+                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#60769B] hover:text-[#0879E8] cursor-pointer"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {fieldErrors.confirmPassword && (
+                      <p className="text-[11px] text-rose-600 font-medium mt-1">{fieldErrors.confirmPassword}</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Password Policy Indicator */}
@@ -586,62 +658,116 @@ export const RegisterBgaPage: React.FC = () => {
             {step === 2 && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <AuthInput
-                    label="PAN Card Number"
-                    placeholder="ABCDE1234F"
-                    value={formData.panNumber}
-                    onChange={(e) => {
-                      const upper = e.target.value.toUpperCase().slice(0, 10);
-                      setFormData({ ...formData, panNumber: upper });
-                      if (fieldErrors.panNumber) setFieldErrors({ ...fieldErrors, panNumber: '' });
-                    }}
-                    error={fieldErrors.panNumber}
-                    required
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      PAN Card Number <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="ABCDE1234F"
+                      maxLength={10}
+                      value={formData.panNumber}
+                      onChange={(e) => {
+                        const upper = e.target.value.toUpperCase().slice(0, 10);
+                        setFormData({ ...formData, panNumber: upper });
+                        if (fieldErrors.panNumber) setFieldErrors({ ...fieldErrors, panNumber: '' });
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
+                        fieldErrors.panNumber
+                          ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                          : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                      }`}
+                      required
+                    />
+                    {fieldErrors.panNumber && (
+                      <p className="text-[11px] text-rose-600 font-medium mt-1">{fieldErrors.panNumber}</p>
+                    )}
+                  </div>
 
-                  <AuthInput
-                    label="Aadhaar Number (Optional)"
-                    placeholder="12-digit UID"
-                    value={formData.aadhaarNumber}
-                    onChange={(e) => {
-                      const clean = e.target.value.replace(/\D/g, '').slice(0, 12);
-                      setFormData({ ...formData, aadhaarNumber: clean });
-                    }}
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      Aadhaar Number (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={12}
+                      placeholder="12-digit UID"
+                      value={formData.aadhaarNumber}
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/\D/g, '').slice(0, 12);
+                        setFormData({ ...formData, aadhaarNumber: clean });
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                    Street Address
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Door / Flat / Street name"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
                   />
                 </div>
 
-                <AuthInput
-                  label="Street Address"
-                  icon={MapPin}
-                  placeholder="Door / Flat / Street name"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                />
-
                 <div className="grid grid-cols-3 gap-3">
-                  <AuthInput
-                    label="City"
-                    placeholder="City"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  />
-                  <AuthInput
-                    label="State"
-                    placeholder="State"
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                  />
-                  <AuthInput
-                    label="PIN Code"
-                    placeholder="6 digits"
-                    value={formData.pinCode}
-                    onChange={(e) => {
-                      const clean = e.target.value.replace(/\D/g, '').slice(0, 6);
-                      setFormData({ ...formData, pinCode: clean });
-                      if (fieldErrors.pinCode) setFieldErrors({ ...fieldErrors, pinCode: '' });
-                    }}
-                    error={fieldErrors.pinCode}
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="City"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      State
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="State"
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      PIN Code
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      placeholder="6 digits"
+                      value={formData.pinCode}
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setFormData({ ...formData, pinCode: clean });
+                        if (fieldErrors.pinCode) setFieldErrors({ ...fieldErrors, pinCode: '' });
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
+                        fieldErrors.pinCode
+                          ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                          : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                      }`}
+                    />
+                    {fieldErrors.pinCode && (
+                      <p className="text-[11px] text-rose-600 font-medium mt-1">{fieldErrors.pinCode}</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* PAN Document Upload */}
@@ -660,11 +786,27 @@ export const RegisterBgaPage: React.FC = () => {
                   }}
                 />
 
+                {/* Aadhaar Document Upload (Requested by user) */}
+                <DocumentUploadField
+                  label="Aadhaar Document / Photo"
+                  helpText="Upload front & back copy of Aadhaar card for address and identity verification"
+                  value={formData.addressProofUrl}
+                  docName={docMeta.aadhaar?.name}
+                  onUploaded={(url, name) => {
+                    setFormData({ ...formData, addressProofUrl: url });
+                    setDocMeta({ ...docMeta, aadhaar: { name } });
+                  }}
+                  onRemove={() => {
+                    setFormData({ ...formData, addressProofUrl: '' });
+                    setDocMeta({ ...docMeta, aadhaar: { name: '' } });
+                  }}
+                />
+
                 <div className="flex items-center gap-3 pt-2">
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="py-3 px-4 rounded-xl font-bold text-xs text-[#60769B] hover:text-[#10244D] hover:bg-slate-100 transition-colors flex items-center gap-1.5"
+                    className="py-3 px-4 rounded-xl font-bold text-xs text-[#60769B] hover:text-[#10244D] hover:bg-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <ArrowLeft className="w-4 h-4" /> Back
                   </button>
@@ -684,66 +826,114 @@ export const RegisterBgaPage: React.FC = () => {
             {step === 3 && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <AuthInput
-                    label="Bank Name"
-                    icon={Building2}
-                    placeholder="e.g. HDFC Bank, SBI"
-                    value={formData.bankName}
-                    onChange={(e) => {
-                      setFormData({ ...formData, bankName: e.target.value });
-                      if (fieldErrors.bankName) setFieldErrors({ ...fieldErrors, bankName: '' });
-                    }}
-                    error={fieldErrors.bankName}
-                    required
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      Bank Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. HDFC Bank, SBI, ICICI"
+                      value={formData.bankName}
+                      onChange={(e) => {
+                        setFormData({ ...formData, bankName: e.target.value });
+                        if (fieldErrors.bankName) setFieldErrors({ ...fieldErrors, bankName: '' });
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
+                        fieldErrors.bankName
+                          ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                          : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                      }`}
+                      required
+                    />
+                    {fieldErrors.bankName && (
+                      <p className="text-[11px] text-rose-600 font-medium mt-1">{fieldErrors.bankName}</p>
+                    )}
+                  </div>
 
-                  <AuthInput
-                    label="Beneficiary Account Name"
-                    icon={User}
-                    placeholder="Name as per passbook"
-                    value={formData.bankAccountHolder}
-                    onChange={(e) => {
-                      setFormData({ ...formData, bankAccountHolder: e.target.value });
-                      if (fieldErrors.bankAccountHolder) setFieldErrors({ ...fieldErrors, bankAccountHolder: '' });
-                    }}
-                    error={fieldErrors.bankAccountHolder}
-                    required
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      Bank Account Beneficiary Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Name as registered with your bank"
+                      value={formData.bankAccountHolder}
+                      onChange={(e) => {
+                        setFormData({ ...formData, bankAccountHolder: e.target.value });
+                        if (fieldErrors.bankAccountHolder) setFieldErrors({ ...fieldErrors, bankAccountHolder: '' });
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
+                        fieldErrors.bankAccountHolder
+                          ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                          : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                      }`}
+                      required
+                    />
+                    {fieldErrors.bankAccountHolder && (
+                      <p className="text-[11px] text-rose-600 font-medium mt-1">{fieldErrors.bankAccountHolder}</p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <AuthInput
-                    label="Account Number"
-                    icon={CreditCard}
-                    placeholder="9 to 18 digits"
-                    value={formData.bankAccountNumber}
-                    onChange={(e) => {
-                      const clean = e.target.value.replace(/\D/g, '').slice(0, 18);
-                      setFormData({ ...formData, bankAccountNumber: clean });
-                      if (fieldErrors.bankAccountNumber) setFieldErrors({ ...fieldErrors, bankAccountNumber: '' });
-                    }}
-                    error={fieldErrors.bankAccountNumber}
-                    required
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      Bank Account Number <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={18}
+                      placeholder="9 to 18 digits"
+                      value={formData.bankAccountNumber}
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/\D/g, '').slice(0, 18);
+                        setFormData({ ...formData, bankAccountNumber: clean });
+                        if (fieldErrors.bankAccountNumber) setFieldErrors({ ...fieldErrors, bankAccountNumber: '' });
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
+                        fieldErrors.bankAccountNumber
+                          ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                          : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                      }`}
+                      required
+                    />
+                    {fieldErrors.bankAccountNumber && (
+                      <p className="text-[11px] text-rose-600 font-medium mt-1">{fieldErrors.bankAccountNumber}</p>
+                    )}
+                  </div>
 
-                  <AuthInput
-                    label="IFSC Code"
-                    placeholder="e.g. HDFC0001234"
-                    value={formData.bankIfsc}
-                    onChange={(e) => {
-                      const upper = e.target.value.toUpperCase().slice(0, 11);
-                      setFormData({ ...formData, bankIfsc: upper });
-                      if (fieldErrors.bankIfsc) setFieldErrors({ ...fieldErrors, bankIfsc: '' });
-                    }}
-                    error={fieldErrors.bankIfsc}
-                    required
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      Bank IFSC Code <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={11}
+                      placeholder="e.g. HDFC0001234"
+                      value={formData.bankIfsc}
+                      onChange={(e) => {
+                        const upper = e.target.value.toUpperCase().slice(0, 11);
+                        setFormData({ ...formData, bankIfsc: upper });
+                        if (fieldErrors.bankIfsc) setFieldErrors({ ...fieldErrors, bankIfsc: '' });
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
+                        fieldErrors.bankIfsc
+                          ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                          : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                      }`}
+                      required
+                    />
+                    {fieldErrors.bankIfsc && (
+                      <p className="text-[11px] text-rose-600 font-medium mt-1">{fieldErrors.bankIfsc}</p>
+                    )}
+                  </div>
                 </div>
 
-                {/* Bank Proof Upload */}
+                {/* Bank Passbook Upload (Updated from Cancelled Cheque / Passbook Copy) */}
                 <DocumentUploadField
-                  label="Cancelled Cheque / Passbook Copy"
-                  helpText="Upload bank passbook or cancelled cheque for NEFT verification"
+                  label="Bank passbook"
+                  helpText="Upload front page of bank passbook clearly showing account number and IFSC code"
                   value={formData.bankProofUrl}
                   docName={docMeta.bank?.name}
                   onUploaded={(url, name) => {
@@ -783,14 +973,29 @@ export const RegisterBgaPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setStep(2)}
-                    className="py-3 px-4 rounded-xl font-bold text-xs text-[#60769B] hover:text-[#10244D] hover:bg-slate-100 transition-colors flex items-center gap-1.5"
+                    className="py-3 px-4 rounded-xl font-bold text-xs text-[#60769B] hover:text-[#10244D] hover:bg-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <ArrowLeft className="w-4 h-4" /> Back
                   </button>
                   <div className="flex-1">
-                    <AuthPrimaryButton loading={loading} loadingText="Submitting Application...">
-                      Create Account
-                    </AuthPrimaryButton>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className={`w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white shadow-[0_6px_20px_rgba(8,121,232,0.28)] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+                        loading
+                          ? 'bg-slate-300 text-slate-500 shadow-none cursor-not-allowed'
+                          : 'bg-gradient-to-r from-[#0879E8] to-[#123FAD] hover:from-[#076cd0] hover:to-[#0f3494] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] active:scale-[0.99]'
+                      }`}
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                          <span>Submitting Application...</span>
+                        </>
+                      ) : (
+                        <span>Create Account</span>
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
