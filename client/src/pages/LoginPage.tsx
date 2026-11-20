@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AuthLayout } from '../components/auth/AuthLayout';
 import { AuthCard } from '../components/auth/AuthCard';
-import { AuthInput } from '../components/auth/AuthInput';
-import { AuthPrimaryButton } from '../components/auth/AuthPrimaryButton';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -121,84 +119,128 @@ export const LoginPage: React.FC = () => {
     <AuthLayout customSubtitle="Sign in to access your associate account and unlock new opportunities.">
       <AuthCard
         title="Welcome Back!"
-        subtitle="Sign in to your Growth Associate account."
+        subtitle="Sign in to your Growth Associate account"
         error={error}
         info={info}
       >
         <form onSubmit={handleLogin} className="space-y-4" noValidate>
           {/* Registered Email */}
-          <AuthInput
-            label="Registered Email Address"
-            type="email"
-            icon={Mail}
-            placeholder="associate@example.com"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (emailError) setEmailError(null);
-            }}
-            error={emailError || undefined}
-            required
-            autoComplete="email"
-            autoFocus
-          />
+          <div className="space-y-1">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#60769B]">
+                <Mail className="w-4 h-4" />
+              </div>
+              <input
+                id="auth-email"
+                type="email"
+                placeholder="Enter registered email address"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError(null);
+                }}
+                className={`w-full text-xs font-medium text-[#10244D] bg-white border rounded-xl py-3.5 pl-10 pr-4 placeholder:text-[#60769B]/70 transition-all focus:outline-none focus:ring-2 ${
+                  emailError
+                    ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                    : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                }`}
+                required
+                autoComplete="email"
+                autoFocus
+              />
+            </div>
+            {emailError && (
+              <p className="text-[11px] text-rose-600 font-medium pl-1">{emailError}</p>
+            )}
+          </div>
 
-          {/* Password with Forgot Password link in header */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label
-                htmlFor="auth-password"
-                className="block text-xs font-semibold text-[#10244D]"
+          {/* Password with Eye Toggle */}
+          <div className="space-y-1">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#60769B]">
+                <Lock className="w-4 h-4" />
+              </div>
+              <input
+                id="auth-password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (passwordError) setPasswordError(null);
+                }}
+                className={`w-full text-xs font-medium text-[#10244D] bg-white border rounded-xl py-3.5 pl-10 pr-11 placeholder:text-[#60769B]/70 transition-all focus:outline-none focus:ring-2 ${
+                  passwordError
+                    ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                    : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                }`}
+                required
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#60769B] hover:text-[#0879E8] transition-colors focus:outline-none cursor-pointer"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                Password <span className="text-rose-500">*</span>
-              </label>
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {passwordError && (
+              <p className="text-[11px] text-rose-600 font-medium pl-1">{passwordError}</p>
+            )}
+
+            {/* Forgot Password link positioned right below the password field */}
+            <div className="flex justify-end pt-1">
               <Link
                 to="/forgot-password"
-                className="text-[11px] font-semibold text-[#0879E8] hover:text-[#123FAD] hover:underline transition-colors"
+                className="text-xs font-semibold text-[#0879E8] hover:text-[#123FAD] hover:underline transition-colors"
               >
                 Forgot Password?
               </Link>
             </div>
-
-            <AuthInput
-              id="auth-password"
-              label=""
-              icon={Lock}
-              placeholder="Enter your password"
-              isPassword
-              showPasswordToggle
-              showPassword={showPassword}
-              onTogglePassword={() => setShowPassword(!showPassword)}
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (passwordError) setPasswordError(null);
-              }}
-              error={passwordError || undefined}
-              required
-              autoComplete="current-password"
-            />
           </div>
 
-          {/* Primary Submit Button */}
+          {/* Primary Submit Button matching reference */}
           <div className="pt-2">
-            <AuthPrimaryButton loading={loading} loadingText="Signing In...">
-              Sign In
-            </AuthPrimaryButton>
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-3.5 px-6 rounded-xl font-bold text-sm text-white shadow-[0_6px_20px_rgba(8,121,232,0.28)] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+                loading
+                  ? 'bg-slate-300 text-slate-500 shadow-none cursor-not-allowed'
+                  : 'bg-gradient-to-r from-[#0879E8] to-[#123FAD] hover:from-[#076cd0] hover:to-[#0f3494] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] active:scale-[0.99]'
+              }`}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                  <span>Signing In...</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-4 h-4 rounded-full bg-white text-[#0879E8] flex items-center justify-center font-bold text-[10px] shrink-0">
+                    ➔
+                  </span>
+                  <span>Sign In</span>
+                </>
+              )}
+            </button>
           </div>
 
           {/* Divider with "OR" */}
           <div className="relative my-5">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#D6E2F2]" />
+              <div className="w-full border-t border-[#E8EFF8]" />
             </div>
             <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
-              <span className="bg-white px-3 text-[#60769B] font-bold">OR</span>
+              <span className="bg-white px-3 text-[#60769B] font-semibold">OR</span>
             </div>
           </div>
 
           {/* New to program / Register link */}
-          <div className="text-center pt-1">
+          <div className="text-center pt-0.5">
             <p className="text-xs text-[#60769B]">
               New to the program?{' '}
               <Link

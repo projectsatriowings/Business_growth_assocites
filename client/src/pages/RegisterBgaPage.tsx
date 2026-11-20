@@ -127,11 +127,10 @@ const DocumentUploadField: React.FC<DocumentUploadFieldProps> = ({
       ) : (
         <div
           onClick={() => !uploading && fileInputRef.current?.click()}
-          className={`p-3.5 rounded-xl border-2 border-dashed transition-all cursor-pointer text-center ${
-            error || uploadError
-              ? 'border-rose-300 bg-rose-50/20'
-              : 'border-[#D6E2F2] bg-[#F5F9FF]/60 hover:border-[#0879E8] hover:bg-[#DCEBFF]/30'
-          }`}
+          className={`p-3.5 rounded-xl border-2 border-dashed transition-all cursor-pointer text-center ${error || uploadError
+            ? 'border-rose-300 bg-rose-50/20'
+            : 'border-[#D6E2F2] bg-[#F5F9FF]/60 hover:border-[#0879E8] hover:bg-[#DCEBFF]/30'
+            }`}
         >
           {uploading ? (
             <div className="py-1 flex items-center justify-center gap-2 text-xs font-semibold text-[#0879E8]">
@@ -428,33 +427,30 @@ export const RegisterBgaPage: React.FC = () => {
           {/* Step Progression Bar */}
           <div className="grid grid-cols-3 gap-2 mb-6">
             <div
-              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${
-                step === 1
-                  ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
-                  : step > 1
+              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${step === 1
+                ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
+                : step > 1
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   : 'bg-slate-50 text-slate-400 border-slate-200'
-              }`}
+                }`}
             >
               1. Personal & Security
             </div>
             <div
-              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${
-                step === 2
-                  ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
-                  : step > 2
+              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${step === 2
+                ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
+                : step > 2
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   : 'bg-slate-50 text-slate-400 border-slate-200'
-              }`}
+                }`}
             >
               2. Location & KYC
             </div>
             <div
-              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${
-                step === 3
-                  ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
-                  : 'bg-slate-50 text-slate-400 border-slate-200'
-              }`}
+              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${step === 3
+                ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
+                : 'bg-slate-50 text-slate-400 border-slate-200'
+                }`}
             >
               3. Bank & Agreement
             </div>
