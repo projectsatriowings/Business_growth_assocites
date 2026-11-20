@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   FileText,
@@ -12,6 +12,11 @@ import {
   Check,
   X,
   Loader2,
+  Mail,
+  Phone,
+  KeyRound,
+  Clock,
+  ShieldCheck,
 } from 'lucide-react';
 import { AuthLayout } from '../components/auth/AuthLayout';
 import { AuthCard } from '../components/auth/AuthCard';
@@ -189,6 +194,318 @@ export const RegisterBgaPage: React.FC = () => {
     agreementDocumentUrl: '',
   });
 
+  // Unique Registration Session ID
+  const [sessionId] = useState<string>(() => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return `bga-sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  });
+
+  // Email Verification State
+  const [emailStatus, setEmailStatus] = useState<
+    'IDLE' | 'CHECKING' | 'AVAILABLE' | 'OTP_SENDING' | 'OTP_SENT' | 'VERIFYING' | 'VERIFIED' | 'ALREADY_REGISTERED' | 'INVALID_OTP' | 'EXPIRED_OTP' | 'ERROR'
+  >('IDLE');
+  const [emailOtp, setEmailOtp] = useState('');
+  const [emailCooldown, setEmailCooldown] = useState(0);
+  const [emailMessage, setEmailMessage] = useState<string | null>(null);
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
+
+  // Mobile Verification State
+  const [mobileCountryCode, setMobileCountryCode] = useState('+91');
+  const [mobileStatus, setMobileStatus] = useState<
+    'IDLE' | 'CHECKING' | 'AVAILABLE' | 'OTP_SENDING' | 'OTP_SENT' | 'VERIFYING' | 'VERIFIED' | 'ALREADY_REGISTERED' | 'INVALID_OTP' | 'EXPIRED_OTP' | 'DELIVERY_FAILED' | 'ERROR'
+  >('IDLE');
+  const [mobileOtp, setMobileOtp] = useState('');
+  const [mobileCooldown, setMobileCooldown] = useState(0);
+  const [mobileMessage, setMobileMessage] = useState<string | null>(null);
+  const [verifiedMobile, setVerifiedMobile] = useState<string | null>(null);
+
+  const isEmailVerified = emailStatus === 'VERIFIED' && verifiedEmail === formData.email.trim().toLowerCase();
+  const isMobileVerified = mobileStatus === 'VERIFIED' && verifiedMobile === formData.mobile.replace(/\D/g, '').slice(-10);
+
+  // Cooldown countdown timers
+  useEffect(() => {
+    if (emailCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setEmailCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [emailCooldown]);
+
+  useEffect(() => {
+    if (mobileCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setMobileCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [mobileCooldown]);
+
+  // Invalidate email verification on change
+  const handleEmailChange = (val: string) => {
+    setFormData((prev) => ({ ...prev, email: val }));
+    if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: '' }));
+    if (emailStatus !== 'IDLE') {
+      setEmailStatus('IDLE');
+      setVerifiedEmail(null);
+      setEmailOtp('');
+      setEmailMessage(null);
+    }
+  };
+
+  // Invalidate mobile verification on change
+  const handleMobileChange = (val: string) => {
+    const clean = val.replace(/\D/g, '').slice(0, 10);
+    setFormData((prev) => ({ ...prev, mobile: clean }));
+    if (fieldErrors.mobile) setFieldErrors((prev) => ({ ...prev, mobile: '' }));
+    if (mobileStatus !== 'IDLE') {
+      setMobileStatus('IDLE');
+      setVerifiedMobile(null);
+      setMobileOtp('');
+      setMobileMessage(null);
+    }
+  };
+
+  // 1. Check Email Availability
+  const handleCheckEmail = async () => {
+    setEmailMessage(null);
+    const emailErr = validateField('email', formData.email);
+    if (emailErr) {
+      setFieldErrors((prev) => ({ ...prev, email: emailErr }));
+      return;
+    }
+
+    setEmailStatus('CHECKING');
+    try {
+      const res = await fetch('/api/auth/verify/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email.trim().toLowerCase() }),
+      });
+      const data = await res.json();
+      if (data.available) {
+        setEmailStatus('AVAILABLE');
+        setEmailMessage('Email address is available for registration.');
+      } else {
+        setEmailStatus('ALREADY_REGISTERED');
+        setEmailMessage(data.message || 'This email address is already registered. Please sign in or use another email address.');
+      }
+    } catch {
+      setEmailStatus('ERROR');
+      setEmailMessage('Network error checking email availability.');
+    }
+  };
+
+  // 2. Send Email OTP
+  const handleSendEmailOtp = async () => {
+    setEmailMessage(null);
+    const emailErr = validateField('email', formData.email);
+    if (emailErr) {
+      setFieldErrors((prev) => ({ ...prev, email: emailErr }));
+      return;
+    }
+
+    setEmailStatus('OTP_SENDING');
+    try {
+      const res = await fetch('/api/auth/verify/send-email-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          email: formData.email.trim().toLowerCase(),
+          fullName: formData.fullName.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setEmailStatus('OTP_SENT');
+        setEmailCooldown(data.cooldownSeconds || 60);
+        setEmailMessage(data.message || `Verification code sent to ${formData.email}. Valid for 5 minutes.`);
+        setEmailOtp('');
+      } else {
+        if (data.message && data.message.includes('already registered')) {
+          setEmailStatus('ALREADY_REGISTERED');
+        } else {
+          setEmailStatus('ERROR');
+        }
+        setEmailMessage(data.message || 'Failed to dispatch email verification OTP.');
+        if (data.cooldownSeconds) setEmailCooldown(data.cooldownSeconds);
+      }
+    } catch {
+      setEmailStatus('ERROR');
+      setEmailMessage('Cannot connect to authentication service.');
+    }
+  };
+
+  // 3. Verify Email OTP
+  const handleVerifyEmailOtp = async () => {
+    setEmailMessage(null);
+    const cleanOtp = emailOtp.trim();
+    if (cleanOtp.length !== 6 || !/^\d{6}$/.test(cleanOtp)) {
+      setEmailStatus('INVALID_OTP');
+      setEmailMessage('Please enter a valid 6-digit numeric verification code.');
+      return;
+    }
+
+    setEmailStatus('VERIFYING');
+    try {
+      const res = await fetch('/api/auth/verify/confirm-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          type: 'EMAIL',
+          identifier: formData.email.trim().toLowerCase(),
+          otp: cleanOtp,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setEmailStatus('VERIFIED');
+        setVerifiedEmail(formData.email.trim().toLowerCase());
+        setEmailMessage('Email address verified successfully.');
+        setFieldErrors((prev) => {
+          const next = { ...prev };
+          delete next.email;
+          return next;
+        });
+      } else {
+        if (data.message && data.message.toLowerCase().includes('expired')) {
+          setEmailStatus('EXPIRED_OTP');
+        } else {
+          setEmailStatus('INVALID_OTP');
+        }
+        setEmailMessage(data.message || 'Invalid verification code.');
+      }
+    } catch {
+      setEmailStatus('ERROR');
+      setEmailMessage('Network error while verifying OTP.');
+    }
+  };
+
+  // 4. Check Mobile Availability
+  const handleCheckMobile = async () => {
+    setMobileMessage(null);
+    const mobileErr = validateField('mobile', formData.mobile);
+    if (mobileErr) {
+      setFieldErrors((prev) => ({ ...prev, mobile: mobileErr }));
+      return;
+    }
+
+    setMobileStatus('CHECKING');
+    try {
+      const res = await fetch('/api/auth/verify/check-mobile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mobile: formData.mobile,
+          countryCode: mobileCountryCode,
+        }),
+      });
+      const data = await res.json();
+      if (data.available) {
+        setMobileStatus('AVAILABLE');
+        setMobileMessage('Mobile number is available for registration.');
+      } else {
+        setMobileStatus('ALREADY_REGISTERED');
+        setMobileMessage(data.message || 'This mobile number is already registered. Please use another number or contact support.');
+      }
+    } catch {
+      setMobileStatus('ERROR');
+      setMobileMessage('Network error checking mobile availability.');
+    }
+  };
+
+  // 5. Send Mobile OTP
+  const handleSendMobileOtp = async () => {
+    setMobileMessage(null);
+    const mobileErr = validateField('mobile', formData.mobile);
+    if (mobileErr) {
+      setFieldErrors((prev) => ({ ...prev, mobile: mobileErr }));
+      return;
+    }
+
+    setMobileStatus('OTP_SENDING');
+    try {
+      const res = await fetch('/api/auth/verify/send-mobile-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          mobile: formData.mobile,
+          countryCode: mobileCountryCode,
+          fullName: formData.fullName.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMobileStatus('OTP_SENT');
+        setMobileCooldown(data.cooldownSeconds || 60);
+        setMobileMessage(data.message || `Verification code sent to ${mobileCountryCode} ${formData.mobile}. Valid for 5 minutes.`);
+        setMobileOtp('');
+      } else {
+        if (data.message && data.message.includes('already registered')) {
+          setMobileStatus('ALREADY_REGISTERED');
+        } else if (data.message && (data.message.includes('not configured') || data.message.includes('failed'))) {
+          setMobileStatus('DELIVERY_FAILED');
+        } else {
+          setMobileStatus('ERROR');
+        }
+        setMobileMessage(data.message || 'Failed to dispatch mobile OTP.');
+        if (data.cooldownSeconds) setMobileCooldown(data.cooldownSeconds);
+      }
+    } catch {
+      setMobileStatus('ERROR');
+      setMobileMessage('Cannot connect to authentication service.');
+    }
+  };
+
+  // 6. Verify Mobile OTP
+  const handleVerifyMobileOtp = async () => {
+    setMobileMessage(null);
+    const cleanOtp = mobileOtp.trim();
+    if (cleanOtp.length !== 6 || !/^\d{6}$/.test(cleanOtp)) {
+      setMobileStatus('INVALID_OTP');
+      setMobileMessage('Please enter a valid 6-digit numeric verification code.');
+      return;
+    }
+
+    setMobileStatus('VERIFYING');
+    try {
+      const res = await fetch('/api/auth/verify/confirm-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          type: 'MOBILE',
+          identifier: `${mobileCountryCode}${formData.mobile.replace(/\D/g, '').slice(-10)}`,
+          otp: cleanOtp,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMobileStatus('VERIFIED');
+        setVerifiedMobile(formData.mobile.replace(/\D/g, '').slice(-10));
+        setMobileMessage('Mobile phone number verified successfully.');
+        setFieldErrors((prev) => {
+          const next = { ...prev };
+          delete next.mobile;
+          return next;
+        });
+      } else {
+        if (data.message && data.message.toLowerCase().includes('expired')) {
+          setMobileStatus('EXPIRED_OTP');
+        } else {
+          setMobileStatus('INVALID_OTP');
+        }
+        setMobileMessage(data.message || 'Invalid verification code.');
+      }
+    } catch {
+      setMobileStatus('ERROR');
+      setMobileMessage('Network error while verifying mobile OTP.');
+    }
+  };
+
   const validateField = (name: string, value: any, form = formData): string | undefined => {
     switch (name) {
       case 'fullName':
@@ -297,6 +614,14 @@ export const RegisterBgaPage: React.FC = () => {
       for (const f of step1Fields) {
         const err = validateField(f, (formData as any)[f], formData);
         if (err) newErrors[f] = err;
+      }
+
+      // Strict Ownership Verification Checks
+      if (!isEmailVerified) {
+        newErrors.email = 'Email address must be OTP-verified before proceeding.';
+      }
+      if (!isMobileVerified) {
+        newErrors.mobile = 'Mobile phone number must be OTP-verified before proceeding.';
       }
     } else if (step === 2) {
       const step2Fields = ['panNumber'];

@@ -5,8 +5,7 @@ const SMTP_HOST = process.env.SMTP_HOST || 'smtp.hostinger.com';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465', 10);
 const SMTP_SECURE = process.env.SMTP_SECURE === 'true' || SMTP_PORT === 465;
 const SMTP_USER = process.env.SMTP_USER || 'info@atriowings.in';
-// Hostinger uses the exact application password as provided
-const SMTP_PASS = process.env.SMTP_PASS || 'gi11-9zp4-haoz-nifl';
+const SMTP_PASS = process.env.SMTP_PASS || '';
 const SMTP_FROM = process.env.SMTP_FROM || `Atriowings Technologies <${SMTP_USER}>`;
 export const ADMIN_ALERT_EMAIL = process.env.ADMIN_ALERT_EMAIL || SMTP_USER;
 
@@ -416,9 +415,18 @@ export async function sendBgaWelcomeEmail(associate: {
       Welcome to Atriowings Growth Associate Portal, ${associate.name}!
     </h2>
     <p style="color: #475569; font-size: 14px; line-height: 1.6;">
-      Congratulations on registering as an authorized <strong>Business Growth Associate (BGA)</strong> with Atriowings Technologies.
+      Thank you for submitting your registration to join the <strong>Atriowings Growth Associate (BGA) Network</strong>.
     </p>
     
+    <div class="card" style="border-left: 4px solid #f59e0b; background-color: #fffbeb; padding: 12px 16px; margin: 16px 0;">
+      <p style="margin: 0; color: #92400e; font-size: 13px; font-weight: 700;">
+        Account Status: PENDING ADMINISTRATIVE REVIEW
+      </p>
+      <p style="margin: 4px 0 0 0; color: #78350f; font-size: 12px;">
+        Your application has been received and is currently under review by Atriowings Administration. Full commercial portal operations will be activated once your profile and KYC are approved.
+      </p>
+    </div>
+
     <div class="card" style="border-left: 4px solid #119DA4;">
       <table class="data-table">
         <tr>
@@ -440,11 +448,11 @@ export async function sendBgaWelcomeEmail(associate: {
       </table>
     </div>
 
-    <h3 style="font-size: 14px; color: #152544; font-weight: 700; margin-top: 24px;">Next Steps to Activate Your Associate Account:</h3>
+    <h3 style="font-size: 14px; color: #152544; font-weight: 700; margin-top: 24px;">What Happens Next:</h3>
     <ol style="padding-left: 20px; font-size: 13px; color: #334155; line-height: 1.8;">
-      <li>Log in to your <strong>BGA Associate Portal</strong> using your registered email and password.</li>
-      <li>Navigate to <strong>My Profile &amp; KYC</strong> to complete your Identity (PAN &amp; Aadhaar) and Bank verification.</li>
-      <li>Start registering clients and submitting commercial project scopes to earn direct commissions.</li>
+      <li>Our compliance desk reviews your submitted details and identification documents.</li>
+      <li>You will receive an official approval notification and email as soon as your account is verified.</li>
+      <li>Once activated, you will have complete access to register exclusive clients, request quotations, and earn guaranteed commissions.</li>
     </ol>
 
     <div style="text-align: center; margin: 26px 0;">
@@ -735,6 +743,64 @@ export async function sendTransactionalNotificationEmail(
       preheader: options.eventDescription.slice(0, 90),
       badge: options.badge || 'TRANSACTION ALERT',
       subtitle: 'ATRIOWINGS ENTERPRISE PORTAL',
+    }),
+  });
+}
+
+/**
+ * 8. Registration Email OTP Verification
+ */
+export async function sendRegistrationEmailOtp(data: {
+  email: string;
+  name?: string;
+  otp: string;
+  expiryMinutes?: number;
+}): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const expiry = data.expiryMinutes || 5;
+  const displayName = data.name ? `Dear ${data.name},` : 'Hello,';
+
+  const content = `
+    <h2 style="font-size: 20px; color: #152544; margin-top: 0; font-weight: 800;">Verify Your Email Address</h2>
+    <p>${displayName}</p>
+    <p style="color: #475569; line-height: 1.6;">
+      Thank you for initiating your Growth Associate (BGA) registration with <strong>Atriowings Technologies</strong>.
+      To ensure the security of your associate account, please verify ownership of this email address using the one-time verification code below:
+    </p>
+
+    <div style="text-align: center; margin: 32px 0 24px;">
+      <div style="display: inline-block; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 2px dashed #3066BE; border-radius: 14px; padding: 18px 36px; box-shadow: 0 4px 14px rgba(48, 102, 190, 0.08);">
+        <span style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #64748b; font-weight: 700; margin-bottom: 6px;">
+          One-Time Verification Code
+        </span>
+        <span style="font-family: -apple-system, BlinkMacSystemFont, 'Courier New', monospace; font-size: 34px; font-weight: 900; letter-spacing: 8px; color: #0879E8;">
+          ${data.otp}
+        </span>
+      </div>
+    </div>
+
+    <div class="card" style="border-left: 4px solid #119DA4; background-color: #f0fdfa; padding: 14px; margin-top: 20px;">
+      <strong style="color: #0f766e; font-size: 12px; text-transform: uppercase; display: block; margin-bottom: 4px;">
+        Security Notice
+      </strong>
+      <ul style="margin: 4px 0 0; padding-left: 18px; color: #134e4a; font-size: 12px; line-height: 1.6;">
+        <li>This verification code is strictly confidential and expires in <strong>${expiry} minutes</strong>.</li>
+        <li>Never disclose this OTP to anyone, including Atriowings staff.</li>
+        <li>If you did not initiate this BGA registration, you can safely disregard this message.</li>
+      </ul>
+    </div>
+
+    <p style="margin-top: 24px; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 14px;">
+      Generated securely on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
+    </p>
+  `;
+
+  return await sendEmail({
+    to: data.email,
+    subject: `${data.otp} is your Atriowings Email Verification Code`,
+    html: wrapEmailHtml(content, {
+      preheader: `Your verification code is ${data.otp}. Valid for ${expiry} minutes.`,
+      badge: 'SECURITY VERIFICATION',
+      subtitle: 'BGA REGISTRATION VERIFICATION',
     }),
   });
 }

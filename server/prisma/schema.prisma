@@ -109,7 +109,11 @@ model User {
   id               String       @id @default(cuid())
   name             String
   email            String       @unique
+  emailVerified    Boolean      @default(false)
+  emailVerifiedAt  DateTime?
   mobile           String       @unique
+  mobileVerified   Boolean      @default(false)
+  mobileVerifiedAt DateTime?
   passwordHash     String
   role             Role         @default(BGA)
   status           BgaStatus    @default(ACTIVE)
@@ -722,6 +726,34 @@ model EmailDeliveryLog {
   @@index([eventType])
   @@index([createdAt])
 }
+
+enum OtpType {
+  EMAIL
+  MOBILE
+}
+
+model RegistrationOtp {
+  id          String    @id @default(cuid())
+  sessionId   String
+  identifier  String
+  type        OtpType
+  otpHash     String
+  expiresAt   DateTime
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  resendAfter DateTime
+  verified    Boolean   @default(false)
+  verifiedAt  DateTime?
+  consumed    Boolean   @default(false)
+  ipAddress   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([sessionId, type])
+  @@index([identifier, type])
+  @@index([expiresAt])
+}
+
 
 
 

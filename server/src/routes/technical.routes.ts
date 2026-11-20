@@ -756,7 +756,7 @@ router.post('/projects/:id/feedback', async (req: AuthRequest, res: Response): P
           `/technical?tab=projects&projectId=${project.id}`
         );
       }
-    } else if (project.workOrder?.bgaId) {
+    } else if (visibility !== 'INTERNAL' && project.workOrder?.bgaId) {
       // Technical/Admin posted: notify assigned BGA
       await createNotification(
         project.workOrder.bgaId,
@@ -765,6 +765,21 @@ router.post('/projects/:id/feedback', async (req: AuthRequest, res: Response): P
         'INFO',
         '/bga?tab=work-orders'
       );
+    } else if (visibility === 'INTERNAL') {
+      // Internal note: strictly kept internal to Technical & Admin
+      const internalRecipients = await prisma.user.findMany({
+        where: { role: { in: [Role.TECHNICAL, Role.ADMIN] }, id: { not: req.user!.id } },
+        select: { id: true },
+      });
+      for (const recipient of internalRecipients) {
+        await createNotification(
+          recipient.id,
+          'Internal Project Note Recorded',
+          `${req.user!.name} posted an internal note on project ${project.projectNumber}: "${content.slice(0, 70)}..."`,
+          'INFO',
+          `/technical?tab=projects&projectId=${project.id}`
+        );
+      }
     }
 
     appCache.invalidatePrefix('technical:');

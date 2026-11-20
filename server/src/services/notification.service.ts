@@ -191,7 +191,19 @@ export class NotificationService {
           subject: emailData.subject,
           status: 'PENDING',
           attempts: 0,
-          metadata: metadata ? JSON.stringify(metadata) : null,
+          metadata: JSON.stringify({
+            ...(metadata || {}),
+            recipientName: user.name,
+            badge: emailData.badge,
+            eventTitle: emailData.eventTitle,
+            eventDescription: emailData.eventDescription,
+            details: emailData.details,
+            actionUrl: emailData.actionUrl,
+            actionText: emailData.actionText,
+            remarks: emailData.remarks,
+            remarksLabel: emailData.remarksLabel,
+            priorityNotice: emailData.priorityNotice,
+          }),
         },
       });
       logId = createdLog.id;
@@ -251,6 +263,70 @@ export class NotificationService {
       } catch (updateLogErr) {
         console.warn('[NotificationService] Failed to update EmailDeliveryLog:', updateLogErr);
       }
+    }
+  }
+
+  /**
+   * Durable recovery runner for unfulfilled emails across server restarts.
+   * Scans for PENDING or retryable FAILED logs in EmailDeliveryLog.
+   */
+  static async recoverPendingEmails(): Promise<number> {
+    try {
+      const pendingLogs = await prisma.emailDeliveryLog.findMany({
+        where: {
+          status: 'PENDING',
+          attempts: { lt: 3 },
+        },
+        take: 50,
+      });
+
+      if (pendingLogs.length === 0) return 0;
+
+      console.log(`[Notification Recovery] Found ${pendingLogs.length} pending email delivery tasks. Processing recovery...`);
+
+      for (const log of pendingLogs) {
+        if (!log.recipientEmail || !log.recipientEmail.includes('@')) {
+          await prisma.emailDeliveryLog.update({
+            where: { id: log.id },
+            data: { status: 'FAILED', errorMessage: 'Invalid recipient email' },
+          });
+          continue;
+        }
+
+        let meta: any = {};
+        try {
+          meta = log.metadata ? JSON.parse(log.metadata) : {};
+        } catch {
+          meta = {};
+        }
+
+        const sendResult = await sendTransactionalNotificationEmail({
+          to: log.recipientEmail,
+          recipientName: meta.recipientName || 'Valued Partner',
+          subject: log.subject,
+          badge: meta.badge || 'SYSTEM ALERT',
+          eventTitle: meta.eventTitle || log.subject,
+          eventDescription: meta.eventDescription || 'Automated transaction notification update.',
+          details: meta.details,
+          actionUrl: meta.actionUrl,
+          actionText: meta.actionText,
+          remarks: meta.remarks,
+        });
+
+        await prisma.emailDeliveryLog.update({
+          where: { id: log.id },
+          data: {
+            status: sendResult.success ? 'SENT' : 'FAILED',
+            attempts: log.attempts + 1,
+            errorMessage: sendResult.success ? null : (sendResult.error || 'Recovery attempt failed'),
+          },
+        });
+      }
+
+      return pendingLogs.length;
+    } catch (err: any) {
+      console.warn('[Notification Recovery Error]:', err?.message || err);
+      return 0;
     }
   }
 

@@ -2,10 +2,20 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { Role, BgaStatus } from '@prisma/client';
+import { Role, BgaStatus, OtpType } from '@prisma/client';
 import { prisma } from '../prisma';
 import { authenticateJWT, AuthRequest, logAudit, createNotification } from '../middleware/auth';
 import { sendBgaWelcomeEmail, sendBgaRegistrationAdminAlert, sendPasswordResetEmail } from '../utils/mailer';
+import {
+  checkEmailAvailability,
+  checkMobileAvailability,
+  requestEmailOtp,
+  requestMobileOtp,
+  verifyRegistrationOtp,
+  assertSessionOwnershipVerified,
+  consumeSessionVerifications,
+} from '../services/otp.service';
+import { validateAndNormalizePhone } from '../services/sms.service';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'bga_super_secret_jwt_key_2026_growth_portal_secure_auth';
@@ -154,6 +164,117 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+// --- Registration Pre-Verification Endpoints ---
+
+// 1. Check Email Availability
+router.post('/verify/check-email', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ available: false, message: 'Email address is required.' });
+      return;
+    }
+    const result = await checkEmailAvailability(email);
+    res.json(result);
+  } catch (error: any) {
+    console.error('Check email error:', error);
+    res.status(500).json({ available: false, message: 'Server error checking email availability.' });
+  }
+});
+
+// 2. Check Mobile Availability
+router.post('/verify/check-mobile', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { mobile, countryCode } = req.body;
+    if (!mobile) {
+      res.status(400).json({ available: false, message: 'Mobile phone number is required.' });
+      return;
+    }
+    const result = await checkMobileAvailability(mobile, countryCode || '+91');
+    res.json(result);
+  } catch (error: any) {
+    console.error('Check mobile error:', error);
+    res.status(500).json({ available: false, message: 'Server error checking mobile availability.' });
+  }
+});
+
+// 3. Request Email OTP
+router.post('/verify/send-email-otp', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { sessionId, email, fullName } = req.body;
+    if (!sessionId || !email) {
+      res.status(400).json({ success: false, message: 'Registration session ID and email address are required.' });
+      return;
+    }
+    const result = await requestEmailOtp({
+      sessionId,
+      email,
+      fullName,
+      ipAddress: req.ip,
+    });
+    if (!result.success) {
+      res.status(result.cooldownSeconds ? 429 : 400).json(result);
+      return;
+    }
+    res.json(result);
+  } catch (error: any) {
+    console.error('Send email OTP error:', error);
+    res.status(500).json({ success: false, message: 'Internal error sending email OTP.' });
+  }
+});
+
+// 4. Request Mobile SMS OTP
+router.post('/verify/send-mobile-otp', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { sessionId, mobile, countryCode, fullName } = req.body;
+    if (!sessionId || !mobile) {
+      res.status(400).json({ success: false, message: 'Registration session ID and mobile phone number are required.' });
+      return;
+    }
+    const result = await requestMobileOtp({
+      sessionId,
+      mobile,
+      countryCode: countryCode || '+91',
+      fullName,
+      ipAddress: req.ip,
+    });
+    if (!result.success) {
+      res.status(result.cooldownSeconds ? 429 : 400).json(result);
+      return;
+    }
+    res.json(result);
+  } catch (error: any) {
+    console.error('Send mobile OTP error:', error);
+    res.status(500).json({ success: false, message: 'Internal error sending mobile OTP.' });
+  }
+});
+
+// 5. Confirm OTP Code
+router.post('/verify/confirm-otp', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { sessionId, type, identifier, otp } = req.body;
+    if (!sessionId || !type || !identifier || !otp) {
+      res.status(400).json({ success: false, message: 'Session ID, type (EMAIL/MOBILE), identifier, and 6-digit OTP code are required.' });
+      return;
+    }
+    const otpType = type === 'EMAIL' ? OtpType.EMAIL : OtpType.MOBILE;
+    const result = await verifyRegistrationOtp({
+      sessionId,
+      type: otpType,
+      identifier,
+      otp,
+    });
+    if (!result.success) {
+      res.status(400).json(result);
+      return;
+    }
+    res.json(result);
+  } catch (error: any) {
+    console.error('Confirm OTP error:', error);
+    res.status(500).json({ success: false, message: 'Internal error verifying OTP code.' });
+  }
+});
+
 // 2. Public BGA Registration
 router.post('/register-bga', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -178,11 +299,30 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
       addressProofUrl,
       bankProofUrl,
       agreementDocumentUrl,
+      registrationSessionId,
     } = req.body;
 
     // Validations
     if (!fullName || !mobile || !email || !password) {
       res.status(400).json({ error: 'Full name, mobile, email, and password are required' });
+      return;
+    }
+
+    if (!registrationSessionId) {
+      res.status(400).json({ error: 'Registration session verification token is missing. Please restart registration.' });
+      return;
+    }
+
+    // STRICT VERIFICATION PROOF: Backend independently verifies that both Email and Mobile
+    // have been successfully OTP-verified under this registration session.
+    const ownershipVerified = await assertSessionOwnershipVerified({
+      sessionId: registrationSessionId,
+      email,
+      mobile,
+    });
+
+    if (!ownershipVerified.valid) {
+      res.status(403).json({ error: ownershipVerified.error || 'Email and mobile number must both be OTP-verified.' });
       return;
     }
 
@@ -296,39 +436,59 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
     // Generate sequential professional Associate ID (e.g. AT-BGA-1001)
     const associateId = await getNextAssociateId();
 
-    // Initial Registration Workflow Status: SUBMITTED
-    const newBga = await prisma.user.create({
-      data: {
-        id: associateId,
-        name: fullName.trim(),
-        email: normalizedEmail,
-        mobile: normalizedMobile,
-        passwordHash,
-        role: Role.BGA,
-        status: BgaStatus.SUBMITTED,
-        dob: dob ? new Date(dob) : null,
-        address: address ? address.trim() : null,
-        city: city ? city.trim() : null,
-        state: state ? state.trim() : null,
-        pinCode: cleanPinCode,
-        panNumber: cleanPan,
-        panVerified: false,
-        aadhaarNumber: validAadhaar,
-        aadhaarMasked: formattedAadhaar || validAadhaar,
-        aadhaarVerified: false, // Pending admin or authorized provider verification
-        kycSubmittedAt: new Date(),
-        bankName: bankName ? bankName.trim() : null,
-        bankAccountHolder: bankAccountHolder ? bankAccountHolder.trim() : null,
-        bankAccountNumber: cleanBankAccount,
-        bankIfsc: cleanIfscCode,
-        bankVerified: false,
-        agreementAccepted: true,
-        agreementAcceptedAt: new Date(),
-        panDocumentUrl: panDocumentUrl ? panDocumentUrl.trim() : (cleanPan ? `/uploads/documents/pan-${normalizedMobile}.pdf` : null),
-        addressProofUrl: addressProofUrl ? addressProofUrl.trim() : (address ? `/uploads/documents/address-${normalizedMobile}.pdf` : null),
-        bankProofUrl: bankProofUrl ? bankProofUrl.trim() : (bankAccountNumber ? `/uploads/documents/bank-${normalizedMobile}.pdf` : null),
-        agreementDocumentUrl: agreementDocumentUrl ? agreementDocumentUrl.trim() : `/uploads/documents/agreement-${normalizedMobile}.pdf`,
-      },
+    // Initial Registration Workflow Status: SUBMITTED (with verified email and mobile flags)
+    const newBga = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          id: associateId,
+          name: fullName.trim(),
+          email: normalizedEmail,
+          emailVerified: true,
+          emailVerifiedAt: ownershipVerified.emailVerifiedAt || new Date(),
+          mobile: normalizedMobile,
+          mobileVerified: true,
+          mobileVerifiedAt: ownershipVerified.mobileVerifiedAt || new Date(),
+          passwordHash,
+          role: Role.BGA,
+          status: BgaStatus.SUBMITTED,
+          dob: dob ? new Date(dob) : null,
+          address: address ? address.trim() : null,
+          city: city ? city.trim() : null,
+          state: state ? state.trim() : null,
+          pinCode: cleanPinCode,
+          panNumber: cleanPan,
+          panVerified: false,
+          aadhaarNumber: validAadhaar,
+          aadhaarMasked: formattedAadhaar || validAadhaar,
+          aadhaarVerified: false, // Pending admin or authorized provider verification
+          kycSubmittedAt: new Date(),
+          bankName: bankName ? bankName.trim() : null,
+          bankAccountHolder: bankAccountHolder ? bankAccountHolder.trim() : null,
+          bankAccountNumber: cleanBankAccount,
+          bankIfsc: cleanIfscCode,
+          bankVerified: false,
+          agreementAccepted: true,
+          agreementAcceptedAt: new Date(),
+          panDocumentUrl: panDocumentUrl ? panDocumentUrl.trim() : (cleanPan ? `/uploads/documents/pan-${normalizedMobile}.pdf` : null),
+          addressProofUrl: addressProofUrl ? addressProofUrl.trim() : (address ? `/uploads/documents/address-${normalizedMobile}.pdf` : null),
+          bankProofUrl: bankProofUrl ? bankProofUrl.trim() : (bankAccountNumber ? `/uploads/documents/bank-${normalizedMobile}.pdf` : null),
+          agreementDocumentUrl: agreementDocumentUrl ? agreementDocumentUrl.trim() : `/uploads/documents/agreement-${normalizedMobile}.pdf`,
+        },
+      });
+
+      // Mark session verification OTPs as consumed to prevent reuse
+      await tx.registrationOtp.updateMany({
+        where: {
+          sessionId: registrationSessionId,
+          verified: true,
+          consumed: false,
+        },
+        data: {
+          consumed: true,
+        },
+      });
+
+      return created;
     });
 
     // Notify Admins

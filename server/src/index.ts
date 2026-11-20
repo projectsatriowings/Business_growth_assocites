@@ -179,6 +179,13 @@ if (process.env.NODE_ENV !== 'test') {
           console.warn(`⚠️ [AutoRelease Notice] Startup reconciliation:`, err.message);
         });
       });
+
+      // Durable recovery for pending/unfulfilled transactional emails across restarts
+      import('./services/notification.service').then(({ NotificationService }) => {
+        NotificationService.recoverPendingEmails().catch((err) => {
+          console.warn(`⚠️ [Notification Recovery Notice] Startup recovery:`, err.message);
+        });
+      });
     });
 
     server.on('error', (err: any) => {
