@@ -738,12 +738,12 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col text-slate-800 selection:bg-[#80DED9]/30 selection:text-[#152544]">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col text-slate-800 selection:bg-[#80DED9]/30 selection:text-[#152544] w-full max-w-full overflow-x-hidden">
       {/* 1. HEADER AND NAVIGATION */}
       <Navbar />
 
       {/* 2. HERO – GROW YOUR BUSINESS WITH ATRIOWINGS */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#152544] via-[#1a365d] to-[#0f172a] text-white pt-20 pb-28 sm:pt-28 sm:pb-36">
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#152544] via-[#1a365d] to-[#0f172a] text-white pt-10 pb-16 sm:pt-14 sm:pb-20 lg:pt-16 lg:pb-24 xl:pt-20 xl:pb-28">
         {/* Subtle Architectural Grid */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#3066BE15_1px,transparent_1px),linear-gradient(to_bottom,#119DA415_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_10%,#000_70%,transparent_100%)] opacity-70" />
 
@@ -753,13 +753,13 @@ export const LandingPage: React.FC = () => {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Dual Identity Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#119DA4]/20 border border-[#80DED9]/40 text-[#80DED9] text-xs font-bold mb-8 uppercase tracking-wider backdrop-blur-md shadow-sm">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full bg-[#119DA4]/20 border border-[#80DED9]/40 text-[#80DED9] text-[11px] sm:text-xs font-bold mb-6 sm:mb-8 uppercase tracking-wider backdrop-blur-md shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-[#80DED9]" />
             <span>Atriowings Technologies • Growth Associate Network</span>
           </div>
 
           {/* Heading */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight max-w-4xl mx-auto leading-[1.15] sm:leading-[1.12]">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight max-w-4xl mx-auto leading-[1.18] sm:leading-[1.15] xl:leading-[1.12]">
             Grow Your Business with Atriowings. <br />
             <span className="bg-gradient-to-r from-[#AEECEF] via-[#80DED9] to-[#119DA4] bg-clip-text text-transparent">
               Earn Verified, High-Value Commissions.
@@ -767,23 +767,23 @@ export const LandingPage: React.FC = () => {
           </h1>
 
           {/* Subheading with Clear Dual Relationship */}
-          <p className="mt-6 text-base sm:text-lg lg:text-xl text-slate-300 max-w-3xl mx-auto font-normal leading-relaxed">
+          <p className="mt-4 sm:mt-5 text-sm sm:text-base lg:text-base xl:text-lg text-slate-300 max-w-2xl lg:max-w-3xl mx-auto font-normal leading-relaxed">
             <strong className="text-white font-semibold">Atriowings Technologies</strong> provides industry-leading digital and IT solutions. Through our <strong className="text-white font-semibold">Growth Associate Platform</strong>, Growth Associates register exclusive clients, coordinate quotations and projects, and earn guaranteed commercial commissions.
           </p>
 
           {/* Call to Actions */}
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-7 sm:mt-9 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <Link
               to="/register"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white font-bold text-base shadow-lg shadow-[#3066BE]/30 hover:shadow-xl hover:shadow-[#119DA4]/30 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-[#3066BE] to-[#119DA4] hover:from-[#25549e] hover:to-[#0d8187] text-white font-bold text-sm sm:text-base shadow-lg shadow-[#3066BE]/30 hover:shadow-xl hover:shadow-[#119DA4]/30 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
             >
               <span>Become a Growth Associate</span>
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </Link>
 
             <a
               href="#about"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/20 font-bold text-base backdrop-blur-md transition-all duration-200 flex items-center justify-center gap-2 hover:border-[#80DED9]/50"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/20 font-bold text-sm sm:text-base backdrop-blur-md transition-all duration-200 flex items-center justify-center gap-2 hover:border-[#80DED9]/50"
             >
               <span>Explore Atriowings Solutions</span>
               <ChevronRight className="w-4 h-4 text-[#80DED9]" />
@@ -791,22 +791,22 @@ export const LandingPage: React.FC = () => {
           </div>
 
           {/* Verified Quick Metrics Bar */}
-          <div className="mt-16 sm:mt-20 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto border-t border-slate-800/80 pt-10 text-center">
-            <div className="p-3">
-              <div className="text-2xl sm:text-3xl font-extrabold text-white">6+ Years</div>
-              <div className="text-xs text-[#AEECEF] font-semibold uppercase tracking-wider mt-1">Industry IT Experience</div>
+          <div className="mt-12 sm:mt-16 lg:mt-20 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto border-t border-slate-800/80 pt-8 sm:pt-10 text-center">
+            <div className="p-2 sm:p-3">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white">6+ Years</div>
+              <div className="text-[11px] sm:text-xs text-[#AEECEF] font-semibold uppercase tracking-wider mt-1">Industry IT Experience</div>
             </div>
-            <div className="p-3">
-              <div className="text-2xl sm:text-3xl font-extrabold text-[#80DED9]">100%</div>
-              <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Exclusive Client Ownership</div>
+            <div className="p-2 sm:p-3">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#80DED9]">100%</div>
+              <div className="text-[11px] sm:text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Exclusive Client Ownership</div>
             </div>
-            <div className="p-3">
-              <div className="text-2xl sm:text-3xl font-extrabold text-[#6D96C5]">{overallRangeText}</div>
-              <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Configurable Commission Range</div>
+            <div className="p-2 sm:p-3">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#6D96C5]">{overallRangeText}</div>
+              <div className="text-[11px] sm:text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Configurable Commission Range</div>
             </div>
-            <div className="p-3">
-              <div className="text-2xl sm:text-3xl font-extrabold text-[#119DA4]">End-to-End</div>
-              <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Quotation to Delivery</div>
+            <div className="p-2 sm:p-3">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#119DA4]">End-to-End</div>
+              <div className="text-[11px] sm:text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Quotation to Delivery</div>
             </div>
           </div>
         </div>

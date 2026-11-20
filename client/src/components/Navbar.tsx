@@ -37,10 +37,10 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 glass-nav border-b border-slate-200/80 transition-all duration-200 bg-white/95 backdrop-blur-md shadow-sm">
-      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
-        <div className="flex justify-between items-center h-20 gap-4">
-          {/* Official Company Logo (Guaranteed right margin so it never collides with nav links) */}
+    <nav className="sticky top-0 z-50 glass-nav border-b border-slate-200/80 transition-all duration-200 bg-white/95 backdrop-blur-md shadow-sm w-full max-w-full overflow-x-hidden">
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-6 2xl:px-10">
+        <div className="flex justify-between items-center h-20 gap-2 sm:gap-4">
+          {/* Official Company Logo */}
           <Link
             to="/"
             onClick={() => {
@@ -48,24 +48,24 @@ export const Navbar: React.FC = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className="flex items-center shrink-0 group py-1.5 mr-2 lg:mr-4 xl:mr-6"
+            className="flex items-center shrink-0 group py-1.5 mr-2 lg:mr-3 xl:mr-3 2xl:mr-6"
             title="Atriowings Technologies India Private Limited"
           >
             <img
               src="/img/atriowings-official-logo.png"
               alt="Atriowings Technologies India Private Limited"
-              className="h-10 sm:h-11 xl:h-12 w-auto object-contain transition-transform duration-200 group-hover:scale-[1.02]"
+              className="h-8 sm:h-9 xl:h-9 2xl:h-11 w-auto object-contain transition-transform duration-200 group-hover:scale-[1.02]"
             />
           </Link>
 
-          {/* Desktop Nav Links (Clean gap spacing and whitespace-nowrap to prevent text wrapping or overlapping) */}
-          <div className="hidden xl:flex items-center gap-x-4 2xl:gap-x-6 text-[13px] font-semibold text-slate-600 shrink-0">
+          {/* Desktop Nav Links (Responsive font and gap for standard laptops vs ultra-wide displays) */}
+          <div className="hidden xl:flex items-center gap-x-2 2xl:gap-x-5 text-[11.5px] 2xl:text-[13px] font-semibold text-slate-600 shrink min-w-0">
             {navLinks.map((link) => (
               <a
                 key={link.target}
                 href={`#${link.target}`}
                 onClick={(e) => handleNavClick(e, link.target)}
-                className="relative py-1.5 px-1 whitespace-nowrap hover:text-[#3066BE] transition-colors duration-150 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#3066BE] hover:after:w-full after:transition-all after:duration-200"
+                className="relative py-1 px-1 2xl:px-1.5 whitespace-nowrap hover:text-[#3066BE] transition-colors duration-150 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#3066BE] hover:after:w-full after:transition-all after:duration-200"
               >
                 {link.label}
               </a>
@@ -75,17 +75,17 @@ export const Navbar: React.FC = () => {
             {!user && (
               <Link
                 to="/login"
-                className="ml-2 px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-[#3066BE] bg-slate-50 hover:bg-white rounded-lg transition-all duration-150 border border-slate-300 hover:border-[#3066BE]/40 shadow-sm whitespace-nowrap"
+                className="ml-1 2xl:ml-2 px-2.5 py-1 2xl:px-3.5 2xl:py-1.5 text-[11px] 2xl:text-xs font-bold text-slate-700 hover:text-[#3066BE] bg-slate-50 hover:bg-white rounded-lg transition-all duration-150 border border-slate-300 hover:border-[#3066BE]/40 shadow-sm whitespace-nowrap shrink-0"
               >
                 Portal Login
               </Link>
             )}
           </div>
 
-          {/* Desktop Action Buttons (Guaranteed shrink-0 and whitespace-nowrap) */}
+          {/* Desktop Action Buttons */}
           <div className="hidden sm:flex items-center shrink-0 ml-auto xl:ml-0">
             {user ? (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 2xl:space-x-3">
                 <button
                   onClick={() => {
                     if (user.role === 'ADMIN') navigate('/admin');
@@ -93,7 +93,7 @@ export const Navbar: React.FC = () => {
                     else if (user.role === 'ACCOUNTS') navigate('/accounts');
                     else if (user.role === 'TECHNICAL') navigate('/technical');
                   }}
-                  className="px-4 py-2 text-xs font-bold rounded-xl bg-[#edf4fc] text-[#3066BE] hover:bg-[#dbe9fa] border border-[#6D96C5]/30 transition-all duration-150 flex items-center gap-2 shadow-sm whitespace-nowrap"
+                  className="px-3 py-1.5 2xl:px-4 2xl:py-2 text-xs font-bold rounded-xl bg-[#edf4fc] text-[#3066BE] hover:bg-[#dbe9fa] border border-[#6D96C5]/30 transition-all duration-150 flex items-center gap-1.5 2xl:gap-2 shadow-sm whitespace-nowrap"
                 >
                   <Briefcase className="w-3.5 h-3.5 text-[#119DA4]" />
                   <span>My Portal ({user.role})</span>
@@ -106,19 +106,19 @@ export const Navbar: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 2xl:space-x-3">
                 <Link
                   to="/login"
-                  className="xl:hidden px-4 py-2.5 text-xs font-bold text-slate-700 hover:text-[#3066BE] hover:bg-slate-50 rounded-xl transition-all duration-150 border border-slate-200 shadow-sm whitespace-nowrap"
+                  className="xl:hidden px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-[#3066BE] hover:bg-slate-50 rounded-xl transition-all duration-150 border border-slate-200 shadow-sm whitespace-nowrap"
                 >
                   Portal Login
                 </Link>
                 <Link
                   to="/register"
-                  className="px-6 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-[#1E40AF] via-[#2563EB] to-[#0D9488] hover:from-[#1E3A8A] hover:to-[#0F766E] text-white shadow-md shadow-blue-900/25 hover:shadow-lg hover:shadow-blue-900/35 transition-all duration-200 flex items-center space-x-2 whitespace-nowrap transform hover:-translate-y-0.5"
+                  className="px-3.5 py-2 2xl:px-5 2xl:py-2.5 text-xs 2xl:text-sm font-bold rounded-xl bg-gradient-to-r from-[#1E40AF] via-[#2563EB] to-[#0D9488] hover:from-[#1E3A8A] hover:to-[#0F766E] text-white shadow-md shadow-blue-900/25 hover:shadow-lg hover:shadow-blue-900/35 transition-all duration-200 flex items-center space-x-1.5 2xl:space-x-2 whitespace-nowrap transform hover:-translate-y-0.5"
                 >
                   <span className="text-white drop-shadow-sm font-bold tracking-wide">Become a Growth Associate</span>
-                  <ArrowRight className="w-4 h-4 shrink-0 text-white" />
+                  <ArrowRight className="w-3.5 h-3.5 2xl:w-4 2xl:h-4 shrink-0 text-white" />
                 </Link>
               </div>
             )}

@@ -21,10 +21,14 @@
   html {
     scroll-behavior: smooth;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    max-width: 100%;
+    overflow-x: hidden;
   }
   body {
     @apply antialiased text-slate-800 bg-[#f8fafc] selection:bg-[#3066BE] selection:text-white;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 }
 
