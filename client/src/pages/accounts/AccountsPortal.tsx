@@ -1075,6 +1075,7 @@ export const AccountsPortal: React.FC = () => {
                                         paymentMethod: 'BANK_TRANSFER',
                                         transactionReference: '',
                                         paymentDate: new Date().toISOString().slice(0, 10),
+                                        autoVerify: true,
                                       });
                                     }}
                                     className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold shadow-2xs transition-colors shrink-0"
@@ -1695,6 +1696,7 @@ export const AccountsPortal: React.FC = () => {
                           paymentMethod: 'UPI',
                           transactionReference: '',
                           paymentDate: new Date().toISOString().slice(0, 10),
+                          autoVerify: true,
                         });
                       }}
                       className="px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl shadow-xs transition-all inline-flex items-center gap-1.5"

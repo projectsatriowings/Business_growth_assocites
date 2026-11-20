@@ -2795,6 +2795,7 @@ export const BgaPortal: React.FC = () => {
                               {timelineData.upcomingFollowUps.map((up: any) => {
                                 const isPayment = up.type === 'PAYMENT_EXPECTED';
                                 const isEnquiry = up.type === 'ENQUIRY_FOLLOW_UP';
+                                const isQuote = up.type === 'QUOTATION_DECISION_PENDING';
                                 return (
                                   <div
                                     key={up.id}
@@ -2802,7 +2803,7 @@ export const BgaPortal: React.FC = () => {
                                   >
                                     <div className="space-y-1 min-w-0">
                                       <div className="flex items-center gap-1.5">
-                                        <span className={`w-2 h-2 rounded-full ${isPayment ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                        <span className={`w-2 h-2 rounded-full ${isPayment ? 'bg-emerald-500' : isQuote ? 'bg-blue-500' : 'bg-amber-500'}`} />
                                         <h4 className="text-xs font-bold text-slate-900 truncate">{up.title}</h4>
                                       </div>
                                       <div className="flex items-center gap-2 text-[11px] text-slate-500">
@@ -2827,7 +2828,7 @@ export const BgaPortal: React.FC = () => {
                                       onClick={() =>
                                         setUnifiedFollowUpModal({
                                           isOpen: true,
-                                          initialContext: isPayment ? 'FINAL_PAYMENT' : isEnquiry ? 'ENQUIRY' : 'GENERAL',
+                                          initialContext: isPayment ? 'FINAL_PAYMENT' : isQuote ? 'QUOTATION' : isEnquiry ? 'ENQUIRY' : 'GENERAL',
                                           initialTargetId: up.referenceNumber || undefined,
                                         })
                                       }
@@ -3855,7 +3856,12 @@ export const BgaPortal: React.FC = () => {
                         <div>
                           <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
                             <CreditCard className="w-4 h-4 text-[#119DA4]" />
-                            Commercial Quotations ({selectedClientDetails.quotations.length})
+                            Commercial Quotations ({selectedClientDetails.quotations.filter((q: any) => q.status !== 'REQUESTED').length})
+                            {selectedClientDetails.quotations.some((q: any) => q.status === 'REQUESTED') && (
+                              <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
+                                {selectedClientDetails.quotations.filter((q: any) => q.status === 'REQUESTED').length} Draft Requested
+                              </span>
+                            )}
                           </h4>
                           <div className="space-y-2">
                             {selectedClientDetails.quotations.map((q: any) => (
@@ -3871,9 +3877,11 @@ export const BgaPortal: React.FC = () => {
                                 </div>
                                 <div className="text-right">
                                   <span className="font-extrabold text-slate-900 block">
-                                    ₹{q.totalAmount?.toLocaleString()}
+                                    {q.status === 'REQUESTED' ? 'Awaiting Draft' : `₹${q.totalAmount?.toLocaleString()}`}
                                   </span>
-                                  <span className="text-[10px] font-bold text-indigo-700">{q.status}</span>
+                                  <span className={`text-[10px] font-bold ${q.status === 'REQUESTED' ? 'text-amber-700' : 'text-indigo-700'}`}>
+                                    {q.status === 'REQUESTED' ? 'Awaiting Accounts Preparation' : q.status}
+                                  </span>
                                 </div>
                               </div>
                             ))}

@@ -1,5 +1,5 @@
 import { prisma } from '../prisma';
-import { Role } from '@prisma/client';
+import { Role, EnquiryStatus } from '@prisma/client';
 
 export interface TimelineEvent {
   id: string;
@@ -47,7 +47,7 @@ export interface ActivityTimelineResponse {
   totalCount: number;
   upcomingFollowUps: {
     id: string;
-    type: 'ENQUIRY_FOLLOW_UP' | 'CONTACT_FOLLOW_UP' | 'PAYMENT_EXPECTED';
+    type: 'ENQUIRY_FOLLOW_UP' | 'CONTACT_FOLLOW_UP' | 'PAYMENT_EXPECTED' | 'QUOTATION_DECISION_PENDING';
     title: string;
     dueDate: string;
     notes?: string | null;
@@ -208,6 +208,7 @@ export async function getClientActivityTimeline(
   // ==========================================================================
   for (const enq of enquiries) {
     // 1. Submission
+    const hasInitialDiscussion = !!(enq.discussionNotes && enq.discussionNotes.trim());
     rawEvents.push({
       id: `enq-${enq.id}`,
       clientId: client.id,
@@ -216,7 +217,9 @@ export async function getClientActivityTimeline(
       title: `Service Request: ${enq.serviceCategory.replace(/_/g, ' ')}`,
       description: `Requirements: ${enq.requirements.slice(0, 160)}${
         enq.requirements.length > 160 ? '...' : ''
-      }${enq.expectedBudget ? ` • Expected Budget: ₹${Number(enq.expectedBudget).toLocaleString('en-IN')}` : ''}`,
+      }${enq.expectedBudget ? ` • Expected Budget: ₹${Number(enq.expectedBudget).toLocaleString('en-IN')}` : ''}${
+        hasInitialDiscussion ? ` • Discussion Notes: "${enq.discussionNotes!.trim()}"` : ''
+      }`,
       timestamp: enq.createdAt.toISOString(),
       authorName: enq.bga?.name || client.bga?.name || 'BGA',
       authorRole: 'BGA',
@@ -270,23 +273,29 @@ export async function getClientActivityTimeline(
       });
     }
 
-    // 3. Enquiry Consultation Follow-up
-    if (enq.discussionNotes && enq.discussionNotes.trim()) {
-      rawEvents.push({
-        id: `enq-consult-${enq.id}`,
-        clientId: client.id,
-        type: 'ENQUIRY_CONSULTATION',
-        category: 'ENQUIRY',
-        title: `Client Consultation & Feedback on Enquiry`,
-        description: `Consultation Notes: "${enq.discussionNotes}"`,
-        timestamp: (enq.followUpDate || enq.updatedAt || enq.createdAt).toISOString(),
-        authorName: enq.bga?.name || client.bga?.name || 'BGA',
-        authorRole: 'BGA',
-        badgeLabel: 'CONSULTATION',
-        badgeColor: 'bg-blue-50 text-blue-800 border-blue-200',
-        sourceType: 'ENQUIRY',
-        sourceId: enq.id,
-      });
+    // 3. Enquiry Consultation Follow-up (Only if updated AFTER initial creation and not already logged in ContactActivity)
+    const isUpdatedAfterCreation = enq.updatedAt && Math.abs(enq.updatedAt.getTime() - enq.createdAt.getTime()) > 30000;
+    if (hasInitialDiscussion && isUpdatedAfterCreation) {
+      const alreadyInContactActivity = contactActivities.some(
+        (ca) => ca.followUpNotes?.includes(enq.discussionNotes!) || ca.discussionSummary?.includes(enq.discussionNotes!)
+      );
+      if (!alreadyInContactActivity) {
+        rawEvents.push({
+          id: `enq-consult-${enq.id}`,
+          clientId: client.id,
+          type: 'ENQUIRY_CONSULTATION',
+          category: 'ENQUIRY',
+          title: `Client Consultation & Feedback on Enquiry`,
+          description: `Consultation Notes: "${enq.discussionNotes}"`,
+          timestamp: enq.updatedAt.toISOString(),
+          authorName: enq.bga?.name || client.bga?.name || 'BGA',
+          authorRole: 'BGA',
+          badgeLabel: 'CONSULTATION',
+          badgeColor: 'bg-blue-50 text-blue-800 border-blue-200',
+          sourceType: 'ENQUIRY',
+          sourceId: enq.id,
+        });
+      }
     }
   }
 
@@ -303,29 +312,57 @@ export async function getClientActivityTimeline(
     const isAccepted = q.status === 'ACCEPTED' || !!q.acceptedAt;
 
     // 1. Quotation Generation
-    rawEvents.push({
-      id: `quote-${q.id}`,
-      clientId: client.id,
-      type: 'QUOTATION_CREATED',
-      category: 'QUOTATION',
-      title: `Commercial Quotation ${q.quotationNumber} (v${q.version}) Prepared`,
-      description: `Contract Value: ₹${(q.totalAmount || 0).toLocaleString('en-IN')} (Advance: ₹${(
-        q.advanceRequiredAmount || 0
-      ).toLocaleString('en-IN')}) • Scope: ${q.serviceScope?.slice(0, 100) || 'Official scope'}`,
-      timestamp: q.createdAt.toISOString(),
-      authorName: 'Accounts Department',
-      authorRole: 'ACCOUNTS',
-      badgeLabel: `VERSION v${q.version}`,
-      badgeColor: 'bg-indigo-50 text-indigo-800 border-indigo-200',
-      sourceType: 'QUOTATION',
-      sourceId: q.id,
-      metadata: {
-        quotationNumber: q.quotationNumber,
-        version: q.version,
-        totalAmount: q.totalAmount,
-        advanceRequiredAmount: q.advanceRequiredAmount,
-      },
-    });
+    if (q.status === 'REQUESTED') {
+      rawEvents.push({
+        id: `quote-req-${q.id}`,
+        clientId: client.id,
+        type: 'QUOTATION_REQUESTED',
+        category: 'QUOTATION',
+        title: `Official Quotation Requested from Accounts`,
+        description: `Quotation drafting request for ${q.serviceCategory.replace(/_/g, ' ')} dispatched to Accounts Department following Admin enquiry approval. Awaiting commercial preparation.`,
+        timestamp: q.createdAt.toISOString(),
+        authorName: 'Admin Executive',
+        authorRole: 'ADMIN',
+        badgeLabel: 'AWAITING ACCOUNTS DRAFT',
+        badgeColor: 'bg-amber-50 text-amber-800 border-amber-200',
+        sourceType: 'QUOTATION',
+        sourceId: q.id,
+        metadata: {
+          quotationNumber: q.quotationNumber,
+          version: q.version,
+          status: q.status,
+        },
+      });
+    } else {
+      // Prepared by Accounts (Draft submitted to Admin or Approved)
+      rawEvents.push({
+        id: `quote-${q.id}`,
+        clientId: client.id,
+        type: 'QUOTATION_CREATED',
+        category: 'QUOTATION',
+        title: isApproved
+          ? `Commercial Quotation ${q.quotationNumber} (v${q.version}) Approved & Released`
+          : `Commercial Quotation ${q.quotationNumber} (v${q.version}) Drafted by Accounts`,
+        description: `Contract Value: ₹${(q.totalAmount || 0).toLocaleString('en-IN')} (Advance: ₹${(
+          q.advanceRequiredAmount || 0
+        ).toLocaleString('en-IN')}) • Scope: ${q.serviceScope?.slice(0, 100) || 'Official scope'}`,
+        timestamp: (q.updatedAt || q.createdAt).toISOString(),
+        authorName: 'Accounts Department',
+        authorRole: 'ACCOUNTS',
+        badgeLabel: isApproved ? `APPROVED v${q.version}` : `DRAFT v${q.version}`,
+        badgeColor: isApproved
+          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+          : 'bg-indigo-50 text-indigo-800 border-indigo-200',
+        sourceType: 'QUOTATION',
+        sourceId: q.id,
+        metadata: {
+          quotationNumber: q.quotationNumber,
+          version: q.version,
+          totalAmount: q.totalAmount,
+          advanceRequiredAmount: q.advanceRequiredAmount,
+        },
+      });
+    }
 
     // 2. Revision Notes if requested
     if (q.revisionNotes) {
@@ -825,9 +862,14 @@ export async function getClientActivityTimeline(
   const now = new Date();
   const upcomingFollowUps: ActivityTimelineResponse['upcomingFollowUps'] = [];
 
-  // Check Enquiry Follow-ups
+  // Check Enquiry Follow-ups: Only active/pending enquiries awaiting consultation or revisions
   for (const enq of enquiries) {
-    if (enq.followUpDate && new Date(enq.followUpDate) >= now) {
+    const isEnquiryActive =
+      enq.status === EnquiryStatus.SUBMITTED ||
+      enq.status === EnquiryStatus.UNDER_REVIEW ||
+      enq.status === EnquiryStatus.CHANGES_REQUESTED;
+
+    if (isEnquiryActive && enq.followUpDate && new Date(enq.followUpDate) >= now) {
       upcomingFollowUps.push({
         id: `up-enq-${enq.id}`,
         type: 'ENQUIRY_FOLLOW_UP',
@@ -840,7 +882,27 @@ export async function getClientActivityTimeline(
     }
   }
 
-  // Check Contact Activity Next Follow-ups
+  // Check Quotations Awaiting Client Decision: Only Admin-approved quotes awaiting client acceptance
+  for (const q of quotations) {
+    const isAwaitingClient =
+      (q.status === 'ADMIN_APPROVED' || q.status === 'SENT_TO_BGA' || q.adminApprovalStatus === 'APPROVED') &&
+      q.status !== 'ACCEPTED' &&
+      !q.acceptedAt;
+
+    if (isAwaitingClient && q.validityDate && new Date(q.validityDate) >= now) {
+      upcomingFollowUps.push({
+        id: `up-quote-${q.id}`,
+        type: 'QUOTATION_DECISION_PENDING',
+        title: `Client Decision on Quotation: ${q.quotationNumber} (v${q.version})`,
+        dueDate: q.validityDate.toISOString(),
+        notes: `Total: ₹${(q.totalAmount || 0).toLocaleString('en-IN')}. Follow up with client for commercial sign-off and advance payment.`,
+        referenceNumber: q.quotationNumber,
+        status: q.status,
+      });
+    }
+  }
+
+  // Check Contact Activity Next Follow-ups: Scheduled callbacks/meetings
   for (const act of contactActivities) {
     if (act.nextFollowUpDate && new Date(act.nextFollowUpDate) >= now) {
       upcomingFollowUps.push({
@@ -854,11 +916,12 @@ export async function getClientActivityTimeline(
     }
   }
 
-  // Check Final Payment Follow-up Expected Dates
+  // Check Final Payment Follow-up Expected Dates: Only pending payments not yet collected/verified
   for (const wo of workOrders) {
     if (wo.project) {
       for (const fUp of wo.project.finalPaymentFollowUps) {
-        if (fUp.expectedPaymentDate && new Date(fUp.expectedPaymentDate) >= now) {
+        const isPaymentPending = fUp.status !== 'COLLECTED' && fUp.status !== 'VERIFIED';
+        if (isPaymentPending && fUp.expectedPaymentDate && new Date(fUp.expectedPaymentDate) >= now) {
           upcomingFollowUps.push({
             id: `up-fup-${fUp.id}`,
             type: 'PAYMENT_EXPECTED',
