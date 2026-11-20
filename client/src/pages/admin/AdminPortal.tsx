@@ -801,7 +801,7 @@ export const AdminPortal: React.FC = () => {
 
       <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
         {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
-        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] flex flex-col justify-between z-30">
+        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] md:self-start flex flex-col justify-between z-30">
           <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1">
               Management Modules
