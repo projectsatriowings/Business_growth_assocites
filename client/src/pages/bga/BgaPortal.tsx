@@ -5023,174 +5023,6 @@ export const BgaPortal: React.FC = () => {
                     );
                   }))}
               </div>
-
-  {/* Revision Request Modal */ }
-              <ModalPortal
-                isOpen={!!revisionModal}
-                onClose={() => !modalSubmitting && setRevisionModal(null)}
-              >
-  { revisionModal && (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-      transition={{ duration: 0.2 }}
-      className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600" />
-      <div className="p-6 space-y-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
-              <Edit3 className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900">
-                Request Quotation Revision
-              </h3>
-              <p className="text-xs text-slate-500 font-mono">
-                {revisionModal.quotationNumber}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => !modalSubmitting && setRevisionModal(null)}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <p className="text-xs text-slate-600 leading-relaxed">
-          Enter the requested scope modifications, commercial revisions, or client feedback. The Accounts Department will draft an updated quotation.
-        </p>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Client Feedback / Revision Notes <span className="text-rose-500">*</span>
-          </label>
-          <textarea
-            rows={3}
-            value={revisionNotes}
-            onChange={(e) => setRevisionNotes(e.target.value)}
-            placeholder="e.g. Client requested a 10% commercial discount and inclusion of 2 additional landing pages..."
-            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none transition-all"
-          />
-        </div>
-
-        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-          <button
-            type="button"
-            disabled={modalSubmitting}
-            onClick={() => setRevisionModal(null)}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={!revisionNotes.trim() || modalSubmitting}
-            onClick={handleSubmitRevision}
-            className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-          >
-            {modalSubmitting ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Send className="w-3.5 h-3.5" />
-            )}
-            {modalSubmitting ? 'Sending...' : 'Send to Accounts'}
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  )}
-              </ModalPortal>
-
-  {/* Client Acceptance Modal */ }
-              <ModalPortal
-                isOpen={!!acceptanceModal}
-                onClose={() => !modalSubmitting && setAcceptanceModal(null)}
-              >
-  { acceptanceModal && (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-      transition={{ duration: 0.2 }}
-      className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-600" />
-      <div className="p-6 space-y-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 border border-teal-200">
-              <CheckCircle2 className="w-5 h-5 text-teal-600" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900">
-                Record Client Acceptance
-              </h3>
-              <p className="text-xs text-slate-500 font-mono">
-                {acceptanceModal.quotationNumber}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => !modalSubmitting && setAcceptanceModal(null)}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-200/70 text-xs text-teal-900 leading-relaxed">
-          Recording client acceptance automatically generates an official <strong>Work Order</strong> and notifies Accounts to collect and verify the required advance payment.
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Acceptance Evidence / PO Reference Notes <span className="text-rose-500">*</span>
-          </label>
-          <textarea
-            rows={3}
-            value={acceptanceNotes}
-            onChange={(e) => setAcceptanceNotes(e.target.value)}
-            placeholder="e.g. Approved via email confirmation from MD on 17 Nov 2026. PO Ref: APEX-2026-PO99"
-            className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 resize-none transition-all"
-          />
-        </div>
-
-        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-          <button
-            type="button"
-            disabled={modalSubmitting}
-            onClick={() => setAcceptanceModal(null)}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={!acceptanceNotes.trim() || modalSubmitting}
-            onClick={handleClientAcceptance}
-            className="px-5 py-2 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
-          >
-            {modalSubmitting ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <CheckCircle2 className="w-3.5 h-3.5" />
-            )}
-            {modalSubmitting ? 'Confirming...' : 'Confirm Acceptance'}
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  )}
-              </ModalPortal>
             </div>
           )}
 
@@ -7325,6 +7157,174 @@ export const BgaPortal: React.FC = () => {
               }}
             />
           )}
+
+          {/* Revision Request Modal (Rendered globally across all tabs) */}
+          <ModalPortal
+            isOpen={!!revisionModal}
+            onClose={() => !modalSubmitting && setRevisionModal(null)}
+          >
+            {revisionModal && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600" />
+                <div className="p-6 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-200">
+                        <Edit3 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">
+                          Request Quotation Revision
+                        </h3>
+                        <p className="text-xs text-slate-500 font-mono">
+                          {revisionModal.quotationNumber}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => !modalSubmitting && setRevisionModal(null)}
+                      className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Enter the requested scope modifications, commercial revisions, or client feedback. The Accounts Department will draft an updated quotation.
+                  </p>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Client Feedback / Revision Notes <span className="text-rose-500">*</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={revisionNotes}
+                      onChange={(e) => setRevisionNotes(e.target.value)}
+                      placeholder="e.g. Client requested a 10% commercial discount and inclusion of 2 additional landing pages..."
+                      className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none transition-all"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      disabled={modalSubmitting}
+                      onClick={() => setRevisionModal(null)}
+                      className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!revisionNotes.trim() || modalSubmitting}
+                      onClick={handleSubmitRevision}
+                      className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {modalSubmitting ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5" />
+                      )}
+                      {modalSubmitting ? 'Sending...' : 'Send to Accounts'}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </ModalPortal>
+
+          {/* Client Acceptance Modal (Rendered globally across all tabs) */}
+          <ModalPortal
+            isOpen={!!acceptanceModal}
+            onClose={() => !modalSubmitting && setAcceptanceModal(null)}
+          >
+            {acceptanceModal && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden relative"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="h-1.5 w-full bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-600" />
+                <div className="p-6 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0 border border-teal-200">
+                        <CheckCircle2 className="w-5 h-5 text-teal-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">
+                          Record Client Acceptance
+                        </h3>
+                        <p className="text-xs text-slate-500 font-mono">
+                          {acceptanceModal.quotationNumber}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => !modalSubmitting && setAcceptanceModal(null)}
+                      className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-200/70 text-xs text-teal-900 leading-relaxed">
+                    Recording client acceptance automatically generates an official <strong>Work Order</strong> and notifies Accounts to collect and verify the required advance payment.
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Acceptance Evidence / PO Reference Notes <span className="text-rose-500">*</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={acceptanceNotes}
+                      onChange={(e) => setAcceptanceNotes(e.target.value)}
+                      placeholder="e.g. Approved via email confirmation from MD on 17 Nov 2026. PO Ref: APEX-2026-PO99"
+                      className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 resize-none transition-all"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      disabled={modalSubmitting}
+                      onClick={() => setAcceptanceModal(null)}
+                      className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!acceptanceNotes.trim() || modalSubmitting}
+                      onClick={handleClientAcceptance}
+                      className="px-5 py-2 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {modalSubmitting ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      )}
+                      {modalSubmitting ? 'Confirming...' : 'Confirm Acceptance'}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </ModalPortal>
         </main>
       </div>
     </div>
