@@ -301,6 +301,7 @@ router.get('/bgas', async (req: AuthRequest, res: Response): Promise<void> => {
         dob: true,
         address: true,
         city: true,
+        district: true,
         state: true,
         pinCode: true,
         panNumber: true,

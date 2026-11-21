@@ -332,6 +332,7 @@ async function runTests() {
         dob: '1995-05-15',
         address: '12 Gandhi Road',
         city: 'Chennai',
+        district: 'Chennai',
         state: 'Tamil Nadu',
         pinCode: '600076',
         panNumber: 'ABCDE1234F',

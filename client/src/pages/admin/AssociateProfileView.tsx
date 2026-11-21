@@ -707,9 +707,11 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">City / State / PIN</span>
+                  <span className="text-slate-400 font-semibold block uppercase text-[10px]">City / District / State / PIN</span>
                   <span className="text-slate-900 font-bold text-sm mt-0.5 block">
-                    {associate.city || associate.state ? `${associate.city || ''}, ${associate.state || ''} - ${associate.pinCode || ''}` : 'Not provided'}
+                    {[associate.city, (associate as any).district, associate.state].filter(Boolean).length > 0
+                      ? `${[associate.city, (associate as any).district, associate.state].filter(Boolean).join(', ')}${associate.pinCode ? ` - ${associate.pinCode}` : ''}`
+                      : 'Not provided'}
                   </span>
                 </div>
               </div>

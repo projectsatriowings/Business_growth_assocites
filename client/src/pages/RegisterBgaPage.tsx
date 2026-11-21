@@ -175,6 +175,7 @@ export const RegisterBgaPage: React.FC = () => {
     dob: '',
     address: '',
     city: '',
+    district: '',
     state: '',
     pinCode: '',
     mobile: '',
@@ -1194,7 +1195,7 @@ export const RegisterBgaPage: React.FC = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-[#10244D] mb-1.5">
                       City
@@ -1204,6 +1205,19 @@ export const RegisterBgaPage: React.FC = () => {
                       placeholder="City"
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value.toUpperCase() })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium uppercase text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      District
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="District"
+                      value={formData.district}
+                      onChange={(e) => setFormData({ ...formData, district: e.target.value.toUpperCase() })}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium uppercase text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
                     />
                   </div>

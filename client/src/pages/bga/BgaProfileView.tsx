@@ -641,7 +641,7 @@ export const BgaProfileView: React.FC = () => {
               <span className="text-slate-500 font-medium flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-slate-400" /> District
               </span>
-              <p className="font-bold text-slate-900 text-sm">{addressDetails?.district || 'Not specified'}</p>
+              <p className="font-bold text-slate-900 text-sm">{addressDetails?.district || (user as any)?.district || 'Not specified'}</p>
             </div>
 
             <div className="space-y-1">

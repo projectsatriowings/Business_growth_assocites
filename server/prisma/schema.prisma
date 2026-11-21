@@ -120,6 +120,7 @@ model User {
   dob              DateTime?
   address          String?
   city             String?
+  district         String?
   state            String?
   pinCode          String?
   panNumber        String?

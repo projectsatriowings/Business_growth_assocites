@@ -283,6 +283,7 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
       dob,
       address,
       city,
+      district,
       state,
       pinCode,
       mobile,
@@ -452,6 +453,26 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
     // Generate sequential professional Associate ID (e.g. AT-BGA-1001)
     const associateId = await getNextAssociateId();
 
+    const cleanDistrict = district ? String(district).trim() : null;
+    const cleanCity = city ? String(city).trim() : null;
+    const cleanState = state ? String(state).trim() : null;
+    const cleanAddress = address ? String(address).trim() : null;
+
+    const structuredAddress = {
+      houseNumber: '',
+      streetAddress: cleanAddress || '',
+      locality: '',
+      district: cleanDistrict || '',
+      city: cleanCity || '',
+      state: cleanState || '',
+      pinCode: cleanPinCode || '',
+      country: 'India',
+      fullAddress: [cleanAddress, cleanCity, cleanDistrict, cleanState, cleanPinCode ? `PIN: ${cleanPinCode}` : ''].filter(Boolean).join(', '),
+    };
+    const savedAddress = (cleanAddress || cleanDistrict || cleanCity || cleanState || cleanPinCode)
+      ? JSON.stringify(structuredAddress)
+      : null;
+
     // Initial Registration Workflow Status: SUBMITTED (with verified email and mobile flags)
     const newBga = await prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
@@ -468,9 +489,10 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
           role: Role.BGA,
           status: BgaStatus.SUBMITTED,
           dob: dob ? new Date(dob) : null,
-          address: address ? address.trim() : null,
-          city: city ? city.trim() : null,
-          state: state ? state.trim() : null,
+          address: savedAddress,
+          city: cleanCity,
+          district: cleanDistrict,
+          state: cleanState,
           pinCode: cleanPinCode,
           panNumber: cleanPan,
           panVerified: false,
