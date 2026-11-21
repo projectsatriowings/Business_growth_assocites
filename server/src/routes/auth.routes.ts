@@ -313,16 +313,15 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // STRICT VERIFICATION PROOF: Backend independently verifies that both Email and Mobile
-    // have been successfully OTP-verified under this registration session.
+    // STRICT EMAIL OWNERSHIP VERIFICATION: Backend independently verifies that Email
+    // has been successfully OTP-verified under this registration session.
     const ownershipVerified = await assertSessionOwnershipVerified({
       sessionId: registrationSessionId,
       email,
-      mobile,
     });
 
     if (!ownershipVerified.valid) {
-      res.status(403).json({ error: ownershipVerified.error || 'Email and mobile number must both be OTP-verified.' });
+      res.status(403).json({ error: ownershipVerified.error || 'Email address must be OTP-verified before completing registration.' });
       return;
     }
 
@@ -463,8 +462,8 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
           emailVerified: true,
           emailVerifiedAt: ownershipVerified.emailVerifiedAt || new Date(),
           mobile: normalizedMobile,
-          mobileVerified: true,
-          mobileVerifiedAt: ownershipVerified.mobileVerifiedAt || new Date(),
+          mobileVerified: false,
+          mobileVerifiedAt: null,
           passwordHash,
           role: Role.BGA,
           status: BgaStatus.SUBMITTED,

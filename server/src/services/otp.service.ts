@@ -110,7 +110,7 @@ export async function requestEmailOtp(params: {
   email: string;
   fullName?: string;
   ipAddress?: string;
-}): Promise<{ success: boolean; message: string; cooldownSeconds?: number }> {
+}): Promise<{ success: boolean; message: string; cooldownSeconds?: number; otpHint?: string }> {
   const { sessionId, email, fullName, ipAddress } = params;
   const normalizedEmail = email.trim().toLowerCase();
 
@@ -226,7 +226,7 @@ export async function requestMobileOtp(params: {
   countryCode?: string;
   fullName?: string;
   ipAddress?: string;
-}): Promise<{ success: boolean; message: string; cooldownSeconds?: number; normalizedMobile?: string }> {
+}): Promise<{ success: boolean; message: string; cooldownSeconds?: number; normalizedMobile?: string; otpHint?: string }> {
   const { sessionId, mobile, countryCode = '+91', fullName, ipAddress } = params;
 
   // Validate and normalize
@@ -447,19 +447,17 @@ export async function verifyRegistrationOtp(params: {
 export async function assertSessionOwnershipVerified(params: {
   sessionId: string;
   email: string;
-  mobile: string;
+  mobile?: string;
 }): Promise<{ valid: boolean; emailVerifiedAt?: Date; mobileVerifiedAt?: Date; error?: string }> {
-  const { sessionId, email, mobile } = params;
+  const { sessionId, email } = params;
 
   if (!sessionId) {
     return { valid: false, error: 'Registration session verification token is missing.' };
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const phone = validateAndNormalizePhone(mobile);
-  const normalizedMobile = phone.normalized;
 
-  // 1. Verify Email OTP Record
+  // 1. Verify Email OTP Record (Mandatory)
   const emailRecord = await prisma.registrationOtp.findFirst({
     where: {
       sessionId,
@@ -478,29 +476,9 @@ export async function assertSessionOwnershipVerified(params: {
     };
   }
 
-  // 2. Verify Mobile OTP Record
-  const mobileRecord = await prisma.registrationOtp.findFirst({
-    where: {
-      sessionId,
-      type: OtpType.MOBILE,
-      identifier: normalizedMobile,
-      verified: true,
-      consumed: false,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  if (!mobileRecord || !mobileRecord.verifiedAt) {
-    return {
-      valid: false,
-      error: 'Mobile phone number has not been OTP-verified for this registration session. Please verify your mobile number.',
-    };
-  }
-
   return {
     valid: true,
     emailVerifiedAt: emailRecord.verifiedAt,
-    mobileVerifiedAt: mobileRecord.verifiedAt,
   };
 }
 

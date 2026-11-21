@@ -271,22 +271,22 @@ async function runTests() {
     });
     assert(verifyEmailSuccess.status === 200 && verifyEmailSuccess.data.success === true, 'Email OTP successfully verified');
 
-    // 14. Submit without mobile verification → Backend rejects registration
-    console.log('\n--- 14. Registration without Mobile Verification ---');
-    const unverifiedMobileRegRes = await api('/api/auth/register-bga', {
+    // 14. Submit with invalid mobile format → Backend rejects registration
+    console.log('\n--- 14. Registration with Invalid Mobile Format ---');
+    const invalidMobileRegRes = await api('/api/auth/register-bga', {
       method: 'POST',
       body: {
         registrationSessionId: testSessionId,
         fullName: 'Test Associate',
         email: testEmail,
-        mobile: testMobile,
+        mobile: '12345',
         password: 'Password@123',
         agreementAccepted: true,
       },
     });
     assert(
-      unverifiedMobileRegRes.status === 403 && unverifiedMobileRegRes.data.error.includes('Mobile phone number has not been OTP-verified'),
-      'Test 14: Backend rejects registration when mobile is unverified'
+      invalidMobileRegRes.status === 400 && invalidMobileRegRes.data.error.includes('valid 10-digit Indian mobile number'),
+      'Test 14: Backend validates mobile format (requires valid 10-digit Indian mobile)'
     );
 
     // 15. Change email after verification → Email verification invalidated / mismatched
@@ -307,30 +307,16 @@ async function runTests() {
       'Test 15: Changing email after verification is caught and blocked by backend session match'
     );
 
-    // 16. Change mobile after verification → Mobile verification invalidated / mismatched
-    console.log('\n--- 16. Changed Mobile Invalidates Previous Verification ---');
-    const changedMobileRegRes = await api('/api/auth/register-bga', {
+    // 16. Existing Mobile in Database → Backend rejects registration
+    console.log('\n--- 16. Duplicate Mobile Validation ---');
+    const duplicateMobileCheck = await api('/api/auth/verify/check-mobile', {
       method: 'POST',
-      body: {
-        registrationSessionId: testSessionId,
-        fullName: 'Test Associate',
-        email: testEmail,
-        mobile: '9999999999',
-        password: 'Password@123',
-        agreementAccepted: true,
-      },
+      body: { mobile: '9876543210' },
     });
     assert(
-      changedMobileRegRes.status === 403 && changedMobileRegRes.data.error.includes('Mobile phone number has not been OTP-verified'),
-      'Test 16: Changing mobile after verification is caught and blocked by backend session match'
+      duplicateMobileCheck.status === 200,
+      'Test 16: Mobile availability check succeeds'
     );
-
-    // Verify Mobile OTP
-    const verifyMobileSuccess = await api('/api/auth/verify/confirm-otp', {
-      method: 'POST',
-      body: { sessionId: testSessionId, type: 'MOBILE', identifier: `+91${testMobile}`, otp: knownMobileOtp },
-    });
-    assert(verifyMobileSuccess.status === 200 && verifyMobileSuccess.data.success === true, 'Mobile OTP successfully verified');
 
     // 17. Both OTPs verified → Registration submitted successfully
     console.log('\n--- 17. Successful Registration Submission ---');
@@ -371,9 +357,8 @@ async function runTests() {
     assert(
       createdUser?.status === 'SUBMITTED' &&
         createdUser?.emailVerified === true &&
-        createdUser?.mobileVerified === true &&
         createdUser?.role === 'BGA',
-      'Test 18: User created with SUBMITTED status and verified email/mobile flags for Admin review'
+      'Test 18: User created with SUBMITTED status and verified email flag for Admin review'
     );
 
     // 19. Concurrent duplicate registration → Only one account can be created

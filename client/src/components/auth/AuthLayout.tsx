@@ -14,7 +14,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 }) => {
   return (
     <div
-      className="min-h-screen flex flex-col justify-between bg-cover bg-center bg-no-repeat text-[#10244D] relative overflow-x-hidden selection:bg-[#DCEBFF] selection:text-[#0879E8]"
+      className="min-h-screen lg:h-screen lg:overflow-hidden flex flex-col justify-between bg-cover bg-center bg-no-repeat text-[#10244D] relative overflow-x-hidden selection:bg-[#DCEBFF] selection:text-[#0879E8]"
       style={{
         backgroundImage: "url('/image/loginpagebg.png')",
         backgroundColor: '#F0F6FF',
@@ -33,7 +33,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       </div>
 
       {/* Main Two-Column Desktop Layout */}
-      <main className="relative z-10 flex-1 flex items-center justify-center py-6 sm:py-10 px-4 sm:px-8 lg:px-12 xl:px-16">
+      <main className="relative z-10 flex-1 flex items-center justify-center py-4 lg:py-6 px-4 sm:px-8 lg:px-12 xl:px-16 min-h-0">
         <div className="w-full max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 items-center gap-8 lg:gap-12 xl:gap-16">
           {/* Left Panel (~45% / 5.5 cols) */}
           <div className="lg:col-span-5 hidden lg:block">

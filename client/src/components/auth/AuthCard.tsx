@@ -22,22 +22,22 @@ export const AuthCard: React.FC<AuthCardProps> = ({
 }) => {
   return (
     <div
-      className={`w-full ${cardMaxWidth} mx-auto bg-white rounded-[26px] border border-[#EAF0F9] shadow-[0_20px_60px_rgba(16,36,77,0.08)] p-7 sm:p-10 transition-all duration-300 animate-fadeIn`}
+      className={`w-full ${cardMaxWidth} mx-auto bg-white rounded-[24px] border border-[#EAF0F9] shadow-[0_20px_60px_rgba(16,36,77,0.08)] p-5 sm:p-7 transition-all duration-300 animate-fadeIn max-h-[calc(100vh-90px)] overflow-y-auto custom-scrollbar`}
     >
       {/* Top Company Emblem Lockup */}
-      <div className="flex flex-col items-center text-center mb-6">
-        <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center mx-auto mb-3 shadow-xs">
+      <div className="flex flex-col items-center text-center mb-4">
+        <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center mx-auto mb-2 shadow-xs">
           <img
             src="/favicon.png"
             alt="Atriowings Emblem"
-            className="w-16 h-16 object-contain"
+            className="w-12 h-12 object-contain"
           />
         </div>
 
-        <h2 className="text-2xl sm:text-[28px] font-extrabold text-[#10244D] tracking-tight">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-[#10244D] tracking-tight">
           {title}
         </h2>
-        <p className="text-xs sm:text-sm text-[#60769B] mt-1 leading-relaxed">
+        <p className="text-xs sm:text-xs text-[#60769B] mt-0.5 leading-relaxed">
           {subtitle}
         </p>
       </div>
