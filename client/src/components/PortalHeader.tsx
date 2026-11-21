@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { Bell, ShieldCheck, UserCheck, AlertCircle, LogOut, CheckCircle2, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -12,7 +13,14 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
   const [showNotifs, setShowNotifs] = useState(false);
   const [activeToast, setActiveToast] = useState<{ id: string; title: string; message: string; link?: string } | null>(null);
   const prevUnreadRef = useRef<number | null>(null);
+  const toastTimeoutRef = useRef<any>(null);
   const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const updateHeight = () => {
@@ -34,16 +42,23 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
       const list = data.notifications || [];
       const count = data.unreadCount || 0;
 
-      // Real-time toast alert when new unread notification arrives
-      if (prevUnreadRef.current !== null && count > prevUnreadRef.current && list.length > 0) {
+      // Real-time toast alert in the top-right corner on login if unread, or when a new unread arrives
+      if (list.length > 0 && !list[0].isRead) {
         const latest = list[0];
-        setActiveToast({
-          id: latest.id,
-          title: latest.title,
-          message: latest.message,
-          link: latest.link,
-        });
-        setTimeout(() => setActiveToast(null), 6000);
+        const seenKey = `notif_seen_${latest.id}`;
+        const hasBeenSeen = sessionStorage.getItem(seenKey);
+
+        if (!hasBeenSeen || (prevUnreadRef.current !== null && count > prevUnreadRef.current)) {
+          sessionStorage.setItem(seenKey, 'true');
+          setActiveToast({
+            id: latest.id,
+            title: latest.title,
+            message: latest.message,
+            link: latest.link,
+          });
+          if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+          toastTimeoutRef.current = setTimeout(() => setActiveToast(null), 8000);
+        }
       }
       prevUnreadRef.current = count;
 
@@ -381,37 +396,54 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
         </div>
       </div>
 
-      {/* Real-time Notification Toast Pill */}
-      {activeToast && (
-        <div
-          onClick={() => {
-            handleNotificationClick(activeToast);
-            setActiveToast(null);
-          }}
-          className="fixed bottom-6 right-6 max-w-sm bg-slate-900 text-white rounded-2xl shadow-2xl p-4 border border-slate-700/80 z-[100] cursor-pointer animate-slideUp flex items-start gap-3 hover:bg-slate-800 transition-colors"
-        >
-          <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
-            <Bell className="w-4 h-4 animate-bounce" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-1 mb-0.5">
-              <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider">New Notification</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveToast(null);
-                }}
-                className="text-slate-400 hover:text-white p-0.5"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+      {/* Real-time Notification Toast Pill - Portaled to document.body so it is never clipped by header backdrop-blur */}
+      {typeof document !== 'undefined' &&
+        activeToast &&
+        createPortal(
+          <div
+            role="alert"
+            aria-live="assertive"
+            onClick={() => {
+              handleNotificationClick(activeToast);
+              setActiveToast(null);
+            }}
+            className="fixed top-5 right-5 z-[9999] max-w-md w-[calc(100vw-2.5rem)] sm:w-[420px] bg-slate-900/98 text-white rounded-2xl shadow-[0_20px_50px_rgba(15,23,42,0.45)] p-4 border border-slate-700/80 cursor-pointer animate-fadeIn transition-all duration-300 flex items-start gap-3.5 hover:bg-slate-900 hover:border-[#3066BE] hover:shadow-[0_25px_60px_rgba(48,102,190,0.35)] group"
+          >
+            <div className="w-9 h-9 rounded-xl bg-[#3066BE]/25 text-[#80DED9] border border-[#3066BE]/40 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+              <Bell className="w-4 h-4 animate-bounce" />
             </div>
-            <p className="text-xs font-bold text-white truncate">{activeToast.title}</p>
-            <p className="text-[11px] text-slate-300 line-clamp-2 mt-0.5">{activeToast.message}</p>
-          </div>
-        </div>
-      )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-[10px] font-extrabold tracking-wider text-[#80DED9] uppercase bg-[#119DA4]/20 px-2 py-0.5 rounded-full border border-[#119DA4]/30">
+                  New Notification
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveToast(null);
+                  }}
+                  className="text-slate-400 hover:text-white hover:bg-slate-800 p-1 rounded-lg transition-colors"
+                  title="Dismiss"
+                  aria-label="Dismiss notification"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <p className="text-xs font-bold text-white leading-snug break-words">
+                {activeToast.title}
+              </p>
+              <p className="text-[11px] text-slate-300 font-medium leading-relaxed mt-1 break-words">
+                {activeToast.message}
+              </p>
+              <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-[#80DED9] group-hover:underline">
+                <span>Click to open section</span>
+                <span className="transition-transform group-hover:translate-x-1">→</span>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </header>
   );
 };

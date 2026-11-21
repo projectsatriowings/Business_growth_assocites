@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -75,13 +76,15 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <ToastContext.Provider value={{ toasts, showToast, removeToast, toast }}>
       {children}
-      {/* Toast Notification Container */}
-      <div
-        aria-live="polite"
-        className="fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 max-w-sm sm:max-w-md w-full pointer-events-none px-3"
-      >
-        <AnimatePresence mode="popLayout">
-          {toasts.map((t) => {
+      {/* Toast Notification Container - Portaled directly to document.body to prevent containing-block clipping */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            aria-live="polite"
+            className="fixed top-5 right-5 z-[9999] flex flex-col gap-2.5 max-w-sm sm:max-w-md w-full pointer-events-none px-3"
+          >
+            <AnimatePresence mode="popLayout">
+              {toasts.map((t) => {
             let bgClass = 'bg-white border-slate-200 text-slate-800 shadow-xl';
             let iconColor = 'text-blue-500';
             let IconComponent = Info;
@@ -158,8 +161,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               </motion.div>
             );
           })}
-        </AnimatePresence>
-      </div>
+            </AnimatePresence>
+          </div>,
+          document.body
+        )}
     </ToastContext.Provider>
   );
 };

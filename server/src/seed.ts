@@ -290,60 +290,7 @@ async function main() {
     });
   }
 
-  // 4. Initial Company Resources
-  const sampleResources = [
-    {
-      title: 'Company Profile & Capabilities 2026',
-      description: 'Comprehensive corporate presentation of company services, leadership, and track record.',
-      category: 'PROFILE',
-      serviceCategory: null,
-      fileUrl: '/uploads/resources/company-profile-2026.pdf',
-      fileType: 'PDF',
-      isPublished: true,
-      isConfidential: false,
-      uploadedById: admin.id,
-    },
-    {
-      title: 'Digital Marketing Playbook & Pricing Deck',
-      description: 'Official client deck for SEO, PPC, and Social Media growth campaigns.',
-      category: 'PRESENTATION',
-      serviceCategory: ServiceCategoryType.DIGITAL_MARKETING,
-      fileUrl: '/uploads/resources/dm-playbook.pdf',
-      fileType: 'PDF',
-      isPublished: true,
-      isConfidential: false,
-      uploadedById: admin.id,
-    },
-    {
-      title: 'Web & Mobile Apps Portfolio Catalog',
-      description: 'Showcase of 40+ completed web and mobile development client case studies.',
-      category: 'PORTFOLIO',
-      serviceCategory: ServiceCategoryType.WEBSITE_DEVELOPMENT,
-      fileUrl: '/uploads/resources/tech-portfolio.pdf',
-      fileType: 'PDF',
-      isPublished: true,
-      isConfidential: false,
-      uploadedById: admin.id,
-    },
-    {
-      title: 'ERP & Custom Software Solutions Brochure',
-      description: 'Brochure highlighting ERP modules, billing, and custom SaaS architecture.',
-      category: 'BROCHURE',
-      serviceCategory: ServiceCategoryType.SOFTWARE_DEVELOPMENT,
-      fileUrl: '/uploads/resources/erp-software-brochure.pdf',
-      fileType: 'PDF',
-      isPublished: true,
-      isConfidential: false,
-      uploadedById: admin.id,
-    },
-  ];
 
-  for (const res of sampleResources) {
-    const existing = await prisma.companyResource.findFirst({ where: { title: res.title } });
-    if (!existing) {
-      await prisma.companyResource.create({ data: res });
-    }
-  }
 
   // 5. Initial Notifications
   await prisma.notification.create({
