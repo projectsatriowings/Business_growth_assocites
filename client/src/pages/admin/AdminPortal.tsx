@@ -58,7 +58,6 @@ import { X } from 'lucide-react';
 import { ModalPortal } from '../../components/ModalPortal';
 import { MediaUploader } from '../../components/MediaUploader';
 import { QuotationHistoryTimeline } from '../../components/QuotationHistoryTimeline';
-import { CommissionSettingsPanel } from '../../components/CommissionSettingsPanel';
 import {
   MonthlyAreaChart,
   CategoryDonutChart,
@@ -282,8 +281,7 @@ export const AdminPortal: React.FC = () => {
   const [quotationDetailModal, setQuotationDetailModal] = useState<any | null>(null);
   const [projectDetailModal, setProjectDetailModal] = useState<any | null>(null);
 
-  // Commission Sub-Tab & Rejection Modal State
-  const [adminCommissionSubTab, setAdminCommissionSubTab] = useState<'LEDGER' | 'SETTINGS'>('LEDGER');
+  // Commission Rejection Modal State
   const [commissionRejectModal, setCommissionRejectModal] = useState<{ id: string; bgaName?: string; amount?: number } | null>(null);
   const [commissionRejectReason, setCommissionRejectReason] = useState('');
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
@@ -3686,39 +3684,7 @@ export const AdminPortal: React.FC = () => {
           {/* TAB 10: COMMISSIONS & PAYOUTS */}
           {activeTab === 'commissions' && (
             <div className="space-y-4 w-full">
-              {/* Sub-tab Navigation: Commission Approvals vs Commission Percentage Settings */}
-              <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                <button
-                  type="button"
-                  onClick={() => setAdminCommissionSubTab('LEDGER')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${adminCommissionSubTab === 'LEDGER'
-                      ? 'bg-[#3066BE] text-white shadow-sm'
-                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                    }`}
-                >
-                  <DollarSign className="w-3.5 h-3.5" />
-                  <span>Stage 4: Commission Approvals & Ledger</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAdminCommissionSubTab('SETTINGS')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${adminCommissionSubTab === 'SETTINGS'
-                      ? 'bg-[#3066BE] text-white shadow-sm'
-                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                    }`}
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  <span>Section 8: Commission Percentage Settings</span>
-                </button>
-              </div>
-
-              {adminCommissionSubTab === 'SETTINGS' && (
-                <CommissionSettingsPanel />
-              )}
-
-              {adminCommissionSubTab === 'LEDGER' && (
-                <div className="space-y-4 w-full">
-                  <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm w-full">
+              <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm w-full">
                     <div>
                       <h2 className="text-base font-bold text-slate-900">Commission Ledger & Associate Payouts</h2>
                       <p className="text-xs text-slate-500 mt-0.5">
@@ -3896,8 +3862,6 @@ export const AdminPortal: React.FC = () => {
                       </table>
                     </div>
                   )}
-                </div>
-              )}
 
               {/* Payout Reference Modal */}
               <ModalPortal
