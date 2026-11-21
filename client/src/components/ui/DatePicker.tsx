@@ -225,9 +225,6 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               <X className="w-3.5 h-3.5" />
             </button>
           )}
-          <span className="text-[10px] font-bold text-[#0879E8] bg-[#DCEBFF]/60 px-1.5 py-0.5 rounded-md">
-            {isDob ? '18+' : 'Pick'}
-          </span>
         </div>
       </div>
 
@@ -359,11 +356,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               Clear
             </button>
 
-            {isDob ? (
-              <span className="text-[10px] text-[#0879E8] font-bold">
-                18+ Only (≤ {currentYear - 18})
-              </span>
-            ) : (
+            {!isDob && (
               <button
                 type="button"
                 onClick={handleSetToday}

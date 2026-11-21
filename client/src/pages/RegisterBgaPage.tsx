@@ -846,14 +846,9 @@ export const RegisterBgaPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-bold text-[#10244D]">
-                        Date of Birth
-                      </label>
-                      <span className="text-[10px] font-semibold text-[#0879E8] bg-[#DCEBFF]/70 px-2 py-0.5 rounded-full">
-                        18+ Only
-                      </span>
-                    </div>
+                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                      Date of Birth
+                    </label>
                     <DatePicker
                       value={formData.dob}
                       onChange={(val) => {
@@ -861,7 +856,7 @@ export const RegisterBgaPage: React.FC = () => {
                         const err = validateField('dob', val);
                         setFieldErrors((prev) => ({ ...prev, dob: err || '' }));
                       }}
-                      placeholder="Select date of birth (18+ only)"
+                      placeholder="Select date of birth"
                       isDob={true}
                     />
                     {fieldErrors.dob && (
