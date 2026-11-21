@@ -1378,6 +1378,51 @@ export const BgaPortal: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Urgent Final Payment Collection Alerts for Completed Projects */}
+                {workOrders.filter((w) => {
+                  const p = w.project;
+                  const vPayments = (w.payments || []).filter((pm: any) => pm.status === 'VERIFIED');
+                  const tPaid = vPayments.reduce((acc: number, pm: any) => acc + (pm.amount || 0), 0);
+                  const isDone = vPayments.some((pm: any) => pm.paymentType === 'FINAL') || (w.totalValue > 0 && tPaid >= w.totalValue);
+                  return p && p.status === 'COMPLETED' && !isDone;
+                }).length > 0 && (
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-start sm:items-center gap-3">
+                      <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-xs shrink-0 mt-0.5 sm:mt-0">
+                        <AlertTriangle className="w-6 h-6 text-white animate-pulse" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-extrabold tracking-wide">
+                            Action Required: Collect Final Client Payment
+                          </h4>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white text-amber-800">
+                            Tech Work Done
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-100 mt-1">
+                          The technical team has completed execution for {
+                            workOrders.filter((w) => {
+                              const p = w.project;
+                              const vPayments = (w.payments || []).filter((pm: any) => pm.status === 'VERIFIED');
+                              const tPaid = vPayments.reduce((acc: number, pm: any) => acc + (pm.amount || 0), 0);
+                              const isDone = vPayments.some((pm: any) => pm.paymentType === 'FINAL') || (w.totalValue > 0 && tPaid >= w.totalValue);
+                              return p && p.status === 'COMPLETED' && !isDone;
+                            }).length
+                          } project(s). Contact clients to collect the final balance settlement to unlock your commissions.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('projects')}
+                      className="px-4 py-2 bg-white text-amber-900 hover:bg-amber-50 rounded-xl text-xs font-black shadow-sm shrink-0 cursor-pointer transition-all self-end sm:self-center"
+                    >
+                      View Projects & Follow-up →
+                    </button>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
                     <span className="text-xs text-slate-500 font-semibold uppercase">My Registered Clients</span>
@@ -5280,6 +5325,39 @@ export const BgaPortal: React.FC = () => {
 
                           {prj ? (
                             <div className="mt-3 space-y-3">
+                              {/* Urgent Action Banner: Collect Final Payment when tech is completed */}
+                              {prj.status === 'COMPLETED' && !hasVerifiedFinal && (
+                                <div className="p-3.5 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-300 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs animate-in fade-in duration-300">
+                                  <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-amber-100 rounded-lg text-amber-700 shrink-0 mt-0.5 sm:mt-0">
+                                      <AlertTriangle className="w-5 h-5 text-amber-600 animate-pulse" />
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs font-black text-amber-950 uppercase tracking-wide">
+                                          Action Required: Collect Final Payment from Client
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                          Tech Work Completed ✓
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                                        The technical team has completed all deliverables for <strong>{wo.client?.clientName}</strong>. Please contact the client now to collect the final payment balance of <strong>₹{(totalVal - totalVerifiedPaid).toLocaleString('en-IN')}</strong> to unlock final release and commission clearance.
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => setFollowUpProjectModal({ project: prj, clientName: wo.client?.clientName || 'Client' })}
+                                      className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-all"
+                                    >
+                                      <Phone className="w-3.5 h-3.5" />
+                                      Record Follow-up
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                               <div>
                                 <div className="flex justify-between items-center text-xs text-slate-600 mb-1">
                                   <div className="flex items-center gap-2">

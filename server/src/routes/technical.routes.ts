@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { Role, ProjectStatus, MilestoneStatus, CommissionEligibility, WorkOrderStatus } from '@prisma/client';
+import { Role, ProjectStatus, MilestoneStatus, CommissionEligibility, WorkOrderStatus, PaymentType, PaymentStatus } from '@prisma/client';
 import crypto from 'crypto';
 import { prisma } from '../prisma';
 import { authenticateJWT, authorizeRoles, AuthRequest, logAudit, createNotification } from '../middleware/auth';
@@ -400,12 +400,12 @@ router.put('/projects/:id/status', async (req: AuthRequest, res: Response): Prom
       updateData.progressPercentage = 100;
 
       // Only mark WorkOrder COMPLETED if final payment has actually been verified
-      const verifiedPayments = await prisma.projectPayment.findMany({
+      const verifiedPayments = await prisma.payment.findMany({
         where: { workOrderId: project.workOrderId, status: PaymentStatus.VERIFIED },
       });
-      const totalPaid = verifiedPayments.reduce((sum, p) => sum + p.amount, 0);
+      const totalPaid = verifiedPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
       const isFullyPaid =
-        verifiedPayments.some((p) => p.paymentType === PaymentType.FINAL) ||
+        verifiedPayments.some((p: any) => p.paymentType === PaymentType.FINAL) ||
         (project.workOrder.totalValue > 0 && totalPaid >= project.workOrder.totalValue);
 
       if (isFullyPaid) {
@@ -437,17 +437,30 @@ router.put('/projects/:id/status', async (req: AuthRequest, res: Response): Prom
       // Notify BGA, Accounts and Admin with complete structured details & direct links
       const bgaName = project.workOrder.bga?.name || 'Growth Associate';
       const woNum = project.workOrder.workOrderNumber;
-      const totalVal = (project.workOrder.totalValue || 0).toLocaleString('en-IN');
+      const totalValNum = project.workOrder.totalValue || 0;
+      const totalVal = totalValNum.toLocaleString('en-IN');
+      const remainingBalance = Math.max(0, totalValNum - totalPaid);
+      const formattedRemaining = remainingBalance.toLocaleString('en-IN');
       const serviceCat = project.serviceCategory;
 
-      // 1. Notify Assigned BGA
-      await createNotification(
-        project.workOrder.bgaId,
-        'Project Completed – Final Payment Follow-up Required',
-        `Technical team completed project ${project.projectNumber} for ${project.client.clientName} (WO: ${woNum}, Value: ₹${totalVal}, Category: ${serviceCat}). Action required: Contact client regarding final payment clearance.`,
-        'ACTION_REQUIRED',
-        `/bga?tab=projects&projectId=${project.id}`
-      );
+      // 1. Notify Assigned BGA with clear actionable reminder to collect final payment
+      if (!isFullyPaid) {
+        await createNotification(
+          project.workOrder.bgaId,
+          'Action Required: Collect Final Payment from Client',
+          `The technical team has completed all deliverables and marked project ${project.projectNumber} (${project.client.clientName}) as COMPLETED. Action required: Contact ${project.client.clientName} to collect the remaining final payment of ₹${formattedRemaining} (Total Project Value: ₹${totalVal}) to unlock final delivery and commission clearance.`,
+          'ACTION_REQUIRED',
+          `/bga?tab=projects&projectId=${project.id}`
+        );
+      } else {
+        await createNotification(
+          project.workOrder.bgaId,
+          'Project Completed by Technical Team',
+          `Technical team completed project ${project.projectNumber} for ${project.client.clientName} (WO: ${woNum}, Value: ₹${totalVal}, Category: ${serviceCat}). Final payment is verified.`,
+          'SUCCESS',
+          `/bga?tab=projects&projectId=${project.id}`
+        );
+      }
 
       // 2. Notify Accounts Team
       const accountsUsers = await prisma.user.findMany({
@@ -485,6 +498,8 @@ router.put('/projects/:id/status', async (req: AuthRequest, res: Response): Prom
 
     appCache.invalidatePrefix('technical:');
     appCache.invalidatePrefix('admin:');
+    appCache.invalidatePrefix('bga:');
+    appCache.invalidatePrefix('notifications:');
 
     await logAudit(
       req.user!.id,

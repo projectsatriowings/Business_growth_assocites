@@ -175,7 +175,11 @@ export const TechnicalPortal: React.FC = () => {
         method: 'PUT',
         body: JSON.stringify({ status: newStatus, progressPercentage: progress }),
       });
-      toast.success(res.message || 'Project status updated successfully.');
+      if (newStatus === 'COMPLETED') {
+        toast.success('Project marked completed! Reminder sent to BGA to collect final payment from client.');
+      } else {
+        toast.success(res.message || 'Project status updated successfully.');
+      }
       
       // Update with server confirmed data
       if (res.project) {
@@ -739,12 +743,20 @@ export const TechnicalPortal: React.FC = () => {
                         )}
 
                         {selectedProject.status === 'IN_PROGRESS' && (
-                          <button
-                            onClick={() => handleUpdateStatus(selectedProject.id, 'UNDER_REVIEW', 90)}
-                            className="px-3.5 py-2 bg-[#119DA4] hover:bg-[#0e8389] text-white rounded-lg text-xs font-bold cursor-pointer"
-                          >
-                            Submit for Client Review
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleUpdateStatus(selectedProject.id, 'UNDER_REVIEW', 90)}
+                              className="px-3.5 py-2 bg-[#119DA4] hover:bg-[#0e8389] text-white rounded-lg text-xs font-bold cursor-pointer transition-colors"
+                            >
+                              Submit for Client Review
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(selectedProject.id, 'COMPLETED', 100)}
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer transition-colors"
+                            >
+                              <CheckCircle2 className="w-4 h-4" /> Mark Project Completed ✓
+                            </button>
+                          </div>
                         )}
 
                         {selectedProject.status === 'UNDER_REVIEW' && (

@@ -159,7 +159,8 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
         text.includes('ready to start') ||
         text.includes('released to technical') ||
         text.includes('handover') ||
-        text.includes('correction_required')
+        text.includes('correction_required') ||
+        text.includes('final payment')
       ) {
         return '/bga?tab=projects';
       }
