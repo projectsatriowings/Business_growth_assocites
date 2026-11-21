@@ -88,8 +88,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   }, [isOpen]);
 
   // Year range generation
-  const startYear = isDob ? currentYear - 90 : currentYear - 30;
-  const endYear = isDob ? currentYear - 10 : currentYear + 15;
+  const startYear = isDob ? currentYear - 100 : currentYear - 30;
+  const endYear = isDob ? currentYear : currentYear + 15;
   const yearsList: number[] = [];
   for (let y = endYear; y >= startYear; y--) {
     yearsList.push(y);
