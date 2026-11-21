@@ -221,7 +221,7 @@ export const RegisterBgaPage: React.FC = () => {
   const [mobileMessage, setMobileMessage] = useState<string | null>(null);
   const [verifiedMobile, setVerifiedMobile] = useState<string | null>(null);
 
-  const isEmailVerified = emailStatus === 'VERIFIED' && verifiedEmail === formData.email.trim().toLowerCase();
+  const isEmailVerified = emailStatus === 'VERIFIED' && verifiedEmail?.toLowerCase() === formData.email.trim().toLowerCase();
   const isMobileVerified = mobileStatus === 'VERIFIED' && verifiedMobile === formData.mobile.replace(/\D/g, '').slice(-10);
 
   // Cooldown countdown timers
@@ -243,7 +243,8 @@ export const RegisterBgaPage: React.FC = () => {
 
   // Invalidate email verification on change
   const handleEmailChange = (val: string) => {
-    setFormData((prev) => ({ ...prev, email: val }));
+    const upper = val.toUpperCase();
+    setFormData((prev) => ({ ...prev, email: upper }));
     if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: '' }));
     if (emailStatus !== 'IDLE') {
       setEmailStatus('IDLE');
@@ -848,10 +849,11 @@ export const RegisterBgaPage: React.FC = () => {
                       placeholder="Enter your full name"
                       value={formData.fullName}
                       onChange={(e) => {
-                        setFormData({ ...formData, fullName: e.target.value });
+                        const upper = e.target.value.toUpperCase();
+                        setFormData({ ...formData, fullName: upper });
                         if (fieldErrors.fullName) setFieldErrors({ ...fieldErrors, fullName: '' });
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.fullName
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium uppercase text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.fullName
                           ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
                           : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
                         }`}
@@ -1032,7 +1034,7 @@ export const RegisterBgaPage: React.FC = () => {
                         value={formData.email}
                         disabled={isEmailVerified}
                         onChange={(e) => handleEmailChange(e.target.value)}
-                        className={`w-full pl-9 pr-3 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${isEmailVerified
+                        className={`w-full pl-9 pr-3 py-2.5 rounded-xl border text-xs font-medium uppercase text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${isEmailVerified
                             ? 'bg-slate-50 text-slate-600 border-emerald-300'
                             : fieldErrors.email
                               ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
@@ -1476,7 +1478,7 @@ export const RegisterBgaPage: React.FC = () => {
                         setFormData({ ...formData, panNumber: upper });
                         if (fieldErrors.panNumber) setFieldErrors({ ...fieldErrors, panNumber: '' });
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.panNumber
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono uppercase text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.panNumber
                           ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
                           : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
                         }`}
@@ -1514,8 +1516,8 @@ export const RegisterBgaPage: React.FC = () => {
                     type="text"
                     placeholder="Door / Flat / Street name"
                     value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value.toUpperCase() })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium uppercase text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
                   />
                 </div>
 
@@ -1528,8 +1530,8 @@ export const RegisterBgaPage: React.FC = () => {
                       type="text"
                       placeholder="City"
                       value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value.toUpperCase() })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium uppercase text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
                     />
                   </div>
 
@@ -1541,8 +1543,8 @@ export const RegisterBgaPage: React.FC = () => {
                       type="text"
                       placeholder="State"
                       value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value.toUpperCase() })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium uppercase text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
                     />
                   </div>
 
@@ -1637,10 +1639,11 @@ export const RegisterBgaPage: React.FC = () => {
                       placeholder="e.g. HDFC Bank, SBI, ICICI"
                       value={formData.bankName}
                       onChange={(e) => {
-                        setFormData({ ...formData, bankName: e.target.value });
+                        const upper = e.target.value.toUpperCase();
+                        setFormData({ ...formData, bankName: upper });
                         if (fieldErrors.bankName) setFieldErrors({ ...fieldErrors, bankName: '' });
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.bankName
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium uppercase text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.bankName
                           ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
                           : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
                         }`}
@@ -1660,10 +1663,11 @@ export const RegisterBgaPage: React.FC = () => {
                       placeholder="Name as registered with your bank"
                       value={formData.bankAccountHolder}
                       onChange={(e) => {
-                        setFormData({ ...formData, bankAccountHolder: e.target.value });
+                        const upper = e.target.value.toUpperCase();
+                        setFormData({ ...formData, bankAccountHolder: upper });
                         if (fieldErrors.bankAccountHolder) setFieldErrors({ ...fieldErrors, bankAccountHolder: '' });
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.bankAccountHolder
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium uppercase text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.bankAccountHolder
                           ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
                           : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
                         }`}
@@ -1716,7 +1720,7 @@ export const RegisterBgaPage: React.FC = () => {
                         setFormData({ ...formData, bankIfsc: upper });
                         if (fieldErrors.bankIfsc) setFieldErrors({ ...fieldErrors, bankIfsc: '' });
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.bankIfsc
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono uppercase text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.bankIfsc
                           ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
                           : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
                         }`}
