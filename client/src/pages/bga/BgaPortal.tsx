@@ -71,7 +71,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { apiRequest } from '../../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SkeletonStatsRow, SkeletonTable, BgaDashboardSkeleton } from '../../components/Skeleton';
+import { SkeletonStatsRow, SkeletonTable, BgaDashboardSkeleton, ResourcesGridSkeleton } from '../../components/Skeleton';
 import { BgaProfileView } from './BgaProfileView';
 import { DatePicker } from '../../components/DatePicker';
 import { getQuotationPdfUrl } from '../../utils/downloadPdf';
@@ -130,6 +130,7 @@ export const BgaPortal: React.FC = () => {
   const [quotationsLoaded, setQuotationsLoaded] = useState(false);
   const [workOrdersLoaded, setWorkOrdersLoaded] = useState(false);
   const [commissionsLoaded, setCommissionsLoaded] = useState(false);
+  const [resourcesLoaded, setResourcesLoaded] = useState(false);
 
   // My Clients UI State
   const [clientViewMode, setClientViewMode] = useState<'list' | 'add' | 'edit' | 'detail'>('list');
@@ -551,6 +552,7 @@ export const BgaPortal: React.FC = () => {
       } else if (tab === 'resources') {
         const r = await apiRequest('/api/bga/resources');
         setResources(r.resources || []);
+        setResourcesLoaded(true);
       }
     } catch (e) {
       console.error(e);
@@ -6766,6 +6768,9 @@ export const BgaPortal: React.FC = () => {
           {/* TAB 8: COMPANY RESOURCES */}
           {
             activeTab === 'resources' && (
+              !resourcesLoaded || (tabLoading && resources.length === 0) ? (
+                <ResourcesGridSkeleton />
+              ) : (
               <div className="space-y-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h2 className="text-base font-bold text-slate-900">Company Resources</h2>
@@ -6806,6 +6811,7 @@ export const BgaPortal: React.FC = () => {
                   ))}
                 </div>
               </div>
+              )
             )
           }
 

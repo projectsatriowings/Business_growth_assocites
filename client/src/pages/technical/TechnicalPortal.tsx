@@ -27,7 +27,13 @@ import {
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
-import { SkeletonStatsRow, SkeletonTable, TechnicalDashboardSkeleton } from '../../components/Skeleton';
+import {
+  SkeletonStatsRow,
+  SkeletonTable,
+  TechnicalDashboardSkeleton,
+  TechnicalProjectsSkeleton,
+  TechnicalWorkspaceSkeleton,
+} from '../../components/Skeleton';
 import { useToast } from '../../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ModalPortal } from '../../components/ModalPortal';
@@ -63,6 +69,7 @@ export const TechnicalPortal: React.FC = () => {
   }, [activeTab]);
   const [loading, setLoading] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
@@ -125,6 +132,7 @@ export const TechnicalPortal: React.FC = () => {
       const p = await apiRequest('/api/technical/projects', { bypassCache: bypass });
       const projectList = p.projects || [];
       setProjects(projectList);
+      setProjectsLoaded(true);
       
       // Use functional state updater to eliminate stale closure bugs
       setSelectedProject((prev: any) => {
@@ -570,6 +578,9 @@ export const TechnicalPortal: React.FC = () => {
 
           {/* TAB 2: ASSIGNED PROJECTS & PROJECT DETAILS */}
           {activeTab === 'projects' && (
+            !projectsLoaded || (tabLoading && projects.length === 0) ? (
+              <TechnicalProjectsSkeleton />
+            ) : (
             <div className="space-y-6">
               {!selectedProject ? (
                 <>
@@ -1326,6 +1337,7 @@ export const TechnicalPortal: React.FC = () => {
                 )}
               </ModalPortal>
             </div>
+            )
           )}
         </main>
       </div>

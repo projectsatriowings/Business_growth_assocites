@@ -243,6 +243,7 @@ export const AccountsPortal: React.FC = () => {
       if (tab === 'quotation-requests') {
         const q = await apiRequest('/api/accounts/quotation-requests');
         setQuotationRequests(q.requests || []);
+        setLoadedTabs((prev) => ({ ...prev, 'quotation-requests': true }));
       } else if (
         tab === 'payments-work-orders' ||
         (tab as string) === 'work-orders' ||
@@ -256,6 +257,7 @@ export const AccountsPortal: React.FC = () => {
         setPayments(p.payments || []);
         setWorkOrders(w.workOrders || []);
         setFinalPaymentProjects(fp.projects || []);
+        setLoadedTabs((prev) => ({ ...prev, 'payments-work-orders': true }));
       } else if (tab === 'commissions') {
         const [comm, payouts] = await Promise.all([
           apiRequest('/api/accounts/commissions'),
@@ -263,6 +265,7 @@ export const AccountsPortal: React.FC = () => {
         ]);
         setCommissions(comm.commissions || []);
         setPayoutsList(payouts.commissions || []);
+        setLoadedTabs((prev) => ({ ...prev, 'commissions': true }));
       }
     } catch (e) {
       console.error(e);
@@ -275,6 +278,7 @@ export const AccountsPortal: React.FC = () => {
     setLoading(true);
     try {
       await Promise.all([loadStats(bypassCache), loadTabData()]);
+      setLoadedTabs((prev) => ({ ...prev, [activeTab]: true }));
     } finally {
       setLoading(false);
     }
@@ -1313,6 +1317,9 @@ export const AccountsPortal: React.FC = () => {
           {/* TAB 2: QUOTATION REQUESTS */}
           {/* TAB 2: APPROVED ENQUIRIES & QUOTATION PREPARATION */}
           {activeTab === 'quotation-requests' && (
+            tabLoading || !loadedTabs['quotation-requests'] ? (
+              <QuotationRequestsSkeleton />
+            ) : (
             <div className="space-y-4">
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                 <div>
@@ -1819,10 +1826,14 @@ export const AccountsPortal: React.FC = () => {
                 )}
               </ModalPortal>
             </div>
+            )
           )}
 
           {/* UNIFIED TAB: PAYMENT & WORK ORDERS */}
           {activeTab === 'payments-work-orders' && (
+            tabLoading || !loadedTabs['payments-work-orders'] ? (
+              <WorkOrdersDeskSkeleton />
+            ) : (
             <div className="space-y-6">
               {/* Header Title & Actions */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -3478,10 +3489,17 @@ export const AccountsPortal: React.FC = () => {
                 )}
               </ModalPortal>
             </div>
+            )
           )}
 
           {/* TAB 5: COMMISSION ENGINE */}
           {activeTab === 'commissions' && (
+            tabLoading || !loadedTabs['commissions'] ? (
+              <div className="space-y-6">
+                <SkeletonStatsRow count={4} />
+                <SkeletonTable rows={5} cols={6} />
+              </div>
+            ) : (
             <div className="space-y-4">
               <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
@@ -3978,6 +3996,7 @@ export const AccountsPortal: React.FC = () => {
                 )}
               </ModalPortal>
             </div>
+            )
           )}
         </main>
       </div>
