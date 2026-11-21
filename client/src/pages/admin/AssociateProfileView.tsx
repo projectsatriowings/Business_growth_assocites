@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ProfileViewSkeleton } from '../../components/Skeleton';
 import {
   ArrowLeft,
   User,
@@ -278,12 +279,8 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="w-full flex items-center justify-center p-16">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3066BE]" />
-      </div>
-    );
+  if (loading && !associate) {
+    return <ProfileViewSkeleton />;
   }
 
   if (!associate) {

@@ -330,6 +330,266 @@ export const TechnicalDashboardSkeleton: React.FC = () => {
 };
 
 /**
+ * Specialized Profile Dossier Skeleton for Associate & Admin Profile Views
+ */
+export const ProfileViewSkeleton: React.FC = () => {
+  return (
+    <div className="w-full space-y-6 animate-shimmer relative">
+      {/* Header Profile Dossier Banner */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex items-center gap-5">
+          <div className="w-20 h-20 rounded-2xl bg-slate-200/90 shrink-0" />
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="h-6 bg-slate-200/90 rounded-lg w-48" />
+              <div className="h-5 bg-slate-200/70 rounded-full w-20" />
+            </div>
+            <div className="h-3.5 bg-slate-200/70 rounded-md w-72" />
+            <div className="flex gap-2 pt-1">
+              <div className="h-4 bg-slate-200/70 rounded-md w-28" />
+              <div className="h-4 bg-slate-200/70 rounded-md w-24" />
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-9 bg-slate-200/80 rounded-xl w-28" />
+          <div className="h-9 bg-slate-200/80 rounded-xl w-32" />
+        </div>
+      </div>
+
+      {/* 4 Summary Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </div>
+
+      {/* Tabs Row Placeholder */}
+      <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex gap-2 overflow-x-auto">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-9 bg-slate-100 rounded-xl w-32 shrink-0" />
+        ))}
+      </div>
+
+      {/* Main Content Box */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+        <div className="h-5 bg-slate-200/90 rounded-md w-44" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+              <div className="h-3 bg-slate-200/80 rounded-md w-24" />
+              <div className="h-4 bg-slate-200/90 rounded-md w-48" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Specialized Skeleton for Quotation Requests & Preparation Tab in Accounts Portal
+ */
+export const QuotationRequestsSkeleton: React.FC = () => {
+  return (
+    <div className="space-y-4 w-full animate-shimmer relative">
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+        <div className="space-y-1.5">
+          <div className="h-5 bg-slate-200/90 rounded-md w-72" />
+          <div className="h-3 bg-slate-200/70 rounded-md w-96" />
+        </div>
+        <div className="h-8 bg-slate-200/80 rounded-xl w-36" />
+      </div>
+
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="h-4 bg-slate-200/90 rounded-md w-36" />
+                <div className="h-4 bg-slate-200/70 rounded-md w-12" />
+              </div>
+              <div className="h-5 bg-slate-200/80 rounded-full w-24" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="h-10 bg-slate-50 rounded-lg" />
+              <div className="h-10 bg-slate-50 rounded-lg" />
+              <div className="h-10 bg-slate-50 rounded-lg" />
+            </div>
+            <div className="h-16 bg-slate-50 rounded-xl" />
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="h-8 bg-slate-200/80 rounded-lg w-28" />
+              <div className="h-8 bg-slate-200/80 rounded-lg w-36" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Specialized Skeleton for Work Orders & Technical Release Desk in Accounts Portal
+ */
+export const WorkOrdersDeskSkeleton: React.FC = () => {
+  return (
+    <div className="space-y-6 w-full animate-shimmer relative">
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <div className="h-5 bg-slate-200/90 rounded-md w-64" />
+          <div className="h-3 bg-slate-200/70 rounded-md w-96" />
+        </div>
+        <div className="h-8 bg-slate-200/80 rounded-xl w-32" />
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </div>
+
+      <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+        <div className="h-8 bg-slate-100 rounded-lg flex-1 max-w-sm" />
+        <div className="flex gap-2">
+          <div className="h-8 bg-slate-100 rounded-lg w-32" />
+          <div className="h-8 bg-slate-100 rounded-lg w-32" />
+        </div>
+      </div>
+
+      <SkeletonTable rows={5} cols={6} />
+    </div>
+  );
+};
+
+/**
+ * Specialized Skeleton for Active Technical Projects in Technical Portal
+ */
+export const TechnicalProjectsSkeleton: React.FC = () => {
+  return (
+    <div className="space-y-6 w-full animate-shimmer relative">
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <div className="h-5 bg-slate-200/90 rounded-md w-52" />
+          <div className="h-3 bg-slate-200/70 rounded-md w-96" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-8 bg-slate-100 rounded-xl w-24" />
+          <div className="h-8 bg-slate-100 rounded-xl w-36" />
+          <div className="h-8 bg-slate-100 rounded-xl w-32" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+            <div className="flex justify-between items-start border-b border-slate-100 pb-2">
+              <div className="space-y-1">
+                <div className="h-3.5 bg-slate-200/80 rounded-md w-28" />
+                <div className="h-5 bg-slate-200/90 rounded-md w-48" />
+              </div>
+              <div className="h-5 bg-slate-200/80 rounded-full w-24" />
+            </div>
+            <div className="space-y-1.5 pt-1">
+              <div className="flex justify-between text-xs">
+                <div className="h-3 bg-slate-200/80 rounded-md w-28" />
+                <div className="h-3 bg-slate-200/80 rounded-md w-10" />
+              </div>
+              <div className="h-2 bg-slate-200/80 rounded-full w-full" />
+            </div>
+            <div className="h-14 bg-slate-50 rounded-lg p-2.5" />
+            <div className="flex justify-between pt-2 border-t border-slate-100">
+              <div className="h-3 bg-slate-200/80 rounded-md w-36" />
+              <div className="h-3 bg-slate-200/80 rounded-md w-24" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Specialized Skeleton for Technical Project Workspace Detail
+ */
+export const TechnicalWorkspaceSkeleton: React.FC = () => {
+  return (
+    <div className="space-y-6 w-full animate-shimmer relative">
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+          <div className="h-7 bg-slate-200/80 rounded-xl w-40" />
+          <div className="h-6 bg-slate-200/80 rounded-full w-28" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+            <div className="h-3.5 bg-slate-200/80 rounded-md w-32" />
+            <div className="h-4 bg-slate-200/90 rounded-md w-48" />
+          </div>
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+            <div className="h-3.5 bg-slate-200/80 rounded-md w-32" />
+            <div className="h-4 bg-slate-200/90 rounded-md w-48" />
+          </div>
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+            <div className="h-3.5 bg-slate-200/80 rounded-md w-32" />
+            <div className="h-4 bg-slate-200/90 rounded-md w-48" />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+          <div className="h-5 bg-slate-200/90 rounded-md w-40" />
+          <div className="h-7 bg-slate-200/80 rounded-lg w-28" />
+        </div>
+        <div className="space-y-2.5">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="p-3.5 rounded-xl border border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-slate-200/80" />
+                <div className="h-4 bg-slate-200/90 rounded-md w-64" />
+              </div>
+              <div className="h-6 bg-slate-200/80 rounded-lg w-24" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Specialized Skeleton for Company Resources & Pitch Decks Grid
+ */
+export const ResourcesGridSkeleton: React.FC = () => {
+  return (
+    <div className="space-y-4 w-full animate-shimmer relative">
+      <div className="bg-white p-4 rounded-xl border border-slate-200 flex justify-between items-center">
+        <div className="space-y-1">
+          <div className="h-4 bg-slate-200/90 rounded-md w-48" />
+          <div className="h-3 bg-slate-200/70 rounded-md w-72" />
+        </div>
+        <div className="h-7 bg-slate-200/80 rounded-lg w-24" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+            <div className="space-y-2">
+              <div className="h-3 bg-slate-200/80 rounded-full w-20" />
+              <div className="h-4 bg-slate-200/90 rounded-md w-56" />
+              <div className="h-3 bg-slate-200/70 rounded-md w-full" />
+            </div>
+            <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
+              <div className="h-3 bg-slate-200/80 rounded-md w-20" />
+              <div className="h-7 bg-slate-200/80 rounded-lg w-24" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/**
  * Modern Executive Branded Full-Screen Page Loading Fallback (For React Suspense)
  */
 export const PageLoadingFallback: React.FC = () => {

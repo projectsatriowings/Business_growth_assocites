@@ -32,6 +32,7 @@ import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ChangePasswordModal } from '../../components/ChangePasswordModal';
+import { ProfileViewSkeleton } from '../../components/Skeleton';
 
 export const BgaProfileView: React.FC = () => {
   const { user: authUser, refreshUser } = useAuth();
@@ -337,12 +338,7 @@ export const BgaProfileView: React.FC = () => {
   };
 
   if (loading && !profileData) {
-    return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
-        <RefreshCw className="w-8 h-8 text-[#119DA4] animate-spin mx-auto mb-3" />
-        <p className="text-sm font-semibold text-slate-700">Loading your comprehensive profile & verification records...</p>
-      </div>
-    );
+    return <ProfileViewSkeleton />;
   }
 
   const user = profileData?.user || authUser;

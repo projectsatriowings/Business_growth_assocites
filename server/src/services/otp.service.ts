@@ -110,7 +110,7 @@ export async function requestEmailOtp(params: {
   email: string;
   fullName?: string;
   ipAddress?: string;
-}): Promise<{ success: boolean; message: string; cooldownSeconds?: number; otpHint?: string }> {
+}): Promise<{ success: boolean; message: string; cooldownSeconds?: number }> {
   const { sessionId, email, fullName, ipAddress } = params;
   const normalizedEmail = email.trim().toLowerCase();
 
@@ -193,20 +193,12 @@ export async function requestEmailOtp(params: {
     },
   });
 
-  console.log(`\n======================================================`);
-  console.log(`🔑 [BGA REGISTRATION OTP - EMAIL]`);
-  console.log(`📧 Destination: ${normalizedEmail}`);
-  console.log(`🔢 6-Digit OTP: ${rawOtp}`);
-  console.log(`⏱️  Expires at: ${expiresAt.toLocaleTimeString('en-IN')}`);
-  console.log(`======================================================\n`);
-
   if (!mailResult.success) {
-    console.warn(`[OTP Mailer Notice] External SMTP delivery failed (${mailResult.error}). Providing local fallback code.`);
+    console.error(`[OTP Mailer Error] External SMTP delivery failed (${mailResult.error})`);
     return {
-      success: true,
-      message: `Verification code generated. Your OTP is: ${rawOtp}`,
-      cooldownSeconds: RESEND_COOLDOWN_SECONDS,
-      otpHint: rawOtp,
+      success: false,
+      message: 'Failed to deliver verification email. Please check your email address or try again shortly.',
+      cooldownSeconds: 30,
     };
   }
 
@@ -226,7 +218,7 @@ export async function requestMobileOtp(params: {
   countryCode?: string;
   fullName?: string;
   ipAddress?: string;
-}): Promise<{ success: boolean; message: string; cooldownSeconds?: number; normalizedMobile?: string; otpHint?: string }> {
+}): Promise<{ success: boolean; message: string; cooldownSeconds?: number; normalizedMobile?: string }> {
   const { sessionId, mobile, countryCode = '+91', fullName, ipAddress } = params;
 
   // Validate and normalize
@@ -310,21 +302,13 @@ export async function requestMobileOtp(params: {
     },
   });
 
-  console.log(`\n======================================================`);
-  console.log(`📱 [BGA REGISTRATION OTP - MOBILE SMS]`);
-  console.log(`📞 Destination: ${normalizedMobile}`);
-  console.log(`🔢 6-Digit OTP: ${rawOtp}`);
-  console.log(`⏱️  Expires at: ${expiresAt.toLocaleTimeString('en-IN')}`);
-  console.log(`======================================================\n`);
-
   if (!smsResult.success) {
-    console.warn(`[OTP SMS Notice] SMS Gateway unconfigured/rejected (${smsResult.error}). Providing local fallback code.`);
+    console.error(`[OTP SMS Error] SMS Gateway dispatch failed (${smsResult.error})`);
     return {
-      success: true,
-      message: `SMS code generated. Your OTP is: ${rawOtp}`,
-      cooldownSeconds: RESEND_COOLDOWN_SECONDS,
+      success: false,
+      message: 'Failed to deliver SMS verification code. Please check your mobile number or try again shortly.',
+      cooldownSeconds: 30,
       normalizedMobile,
-      otpHint: rawOtp,
     };
   }
 

@@ -302,11 +302,7 @@ export const RegisterBgaPage: React.FC = () => {
         setEmailStatus('OTP_SENT');
         setEmailCooldown(data.cooldownSeconds || 60);
         setEmailMessage(data.message || `Verification code sent to ${formData.email}. Valid for 5 minutes.`);
-        if (data.otpHint) {
-          setEmailOtp(data.otpHint);
-        } else {
-          setEmailOtp('');
-        }
+        setEmailOtp('');
       } else {
         if (data.message && data.message.includes('already registered')) {
           setEmailStatus('ALREADY_REGISTERED');

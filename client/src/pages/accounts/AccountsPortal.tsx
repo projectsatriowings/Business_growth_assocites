@@ -40,7 +40,13 @@ import {
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
-import { SkeletonStatsRow, SkeletonTable, AccountsDashboardSkeleton } from '../../components/Skeleton';
+import {
+  SkeletonStatsRow,
+  SkeletonTable,
+  AccountsDashboardSkeleton,
+  QuotationRequestsSkeleton,
+  WorkOrdersDeskSkeleton,
+} from '../../components/Skeleton';
 import { validateBankUtr, getUtrPlaceholderAndHint, UtrValidationResult } from '../../utils/utrValidator';
 import { useToast } from '../../context/ToastContext';
 import { getQuotationPdfUrl, downloadQuotationPdf } from '../../utils/downloadPdf';
@@ -82,6 +88,7 @@ export const AccountsPortal: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
+  const [loadedTabs, setLoadedTabs] = useState<Record<string, boolean>>({});
   const [modalSubmitting, setModalSubmitting] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [quotationRequests, setQuotationRequests] = useState<any[]>([]);
