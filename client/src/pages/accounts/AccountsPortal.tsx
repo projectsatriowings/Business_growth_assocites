@@ -46,6 +46,7 @@ import { useToast } from '../../context/ToastContext';
 import { getQuotationPdfUrl, downloadQuotationPdf } from '../../utils/downloadPdf';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ModalPortal } from '../../components/ModalPortal';
+import { DatePicker } from '../../components/DatePicker';
 import { QuotationHistoryTimeline } from '../../components/QuotationHistoryTimeline';
 import {
   MonthlyAreaChart,
@@ -3790,15 +3791,14 @@ export const AccountsPortal: React.FC = () => {
                           </div>
 
                           <div>
-                            <label className="block font-bold text-slate-700 mb-1">
+                            <label className="block font-bold text-slate-700 mb-1 text-xs">
                               Transfer Date <span className="text-rose-500">*</span>
                             </label>
-                            <input
-                              type="date"
+                            <DatePicker
                               value={payoutDate}
-                              onChange={(e) => setPayoutDate(e.target.value)}
+                              onChange={(val) => setPayoutDate(val)}
+                              placeholder="Select transfer date"
                               required
-                              className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                             />
                           </div>
                         </div>

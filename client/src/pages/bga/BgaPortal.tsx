@@ -73,6 +73,7 @@ import { apiRequest } from '../../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SkeletonStatsRow, SkeletonTable, BgaDashboardSkeleton } from '../../components/Skeleton';
 import { BgaProfileView } from './BgaProfileView';
+import { DatePicker } from '../../components/DatePicker';
 import { getQuotationPdfUrl } from '../../utils/downloadPdf';
 import { BUSINESS_CATEGORIES } from '../../constants/categories';
 import { ModalPortal } from '../../components/ModalPortal';
@@ -1888,12 +1889,11 @@ export const BgaPortal: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <label className="block text-slate-700 font-semibold mb-1">Next Follow-Up Date</label>
-                          <input
-                            type="date"
+                          <label className="block text-slate-700 font-semibold mb-1 text-xs">Next Follow-Up Date</label>
+                          <DatePicker
                             value={clientForm.followUpDate}
-                            onChange={(e) => setClientForm({ ...clientForm, followUpDate: e.target.value })}
-                            className="w-full p-2.5 border border-slate-300 rounded-lg text-sm"
+                            onChange={(val) => setClientForm({ ...clientForm, followUpDate: val })}
+                            placeholder="Select follow-up date"
                           />
                         </div>
                       </div>
@@ -4453,14 +4453,13 @@ export const BgaPortal: React.FC = () => {
                         </div>
 
                         <div>
-                          <label className="block text-slate-700 font-semibold mb-1">Next Follow-Up Date</label>
-                          <input
-                            type="date"
+                          <label className="block text-slate-700 font-semibold mb-1 text-xs">Next Follow-Up Date</label>
+                          <DatePicker
                             value={activityForm.nextFollowUpDate}
-                            onChange={(e) =>
-                              setActivityForm({ ...activityForm, nextFollowUpDate: e.target.value })
+                            onChange={(val) =>
+                              setActivityForm({ ...activityForm, nextFollowUpDate: val })
                             }
-                            className="w-full p-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#3066BE]"
+                            placeholder="Select follow-up date"
                           />
                         </div>
 

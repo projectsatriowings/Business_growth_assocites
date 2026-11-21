@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { AuthLayout } from '../components/auth/AuthLayout';
 import { AuthCard } from '../components/auth/AuthCard';
+import { DatePicker } from '../components/DatePicker';
 import { uploadPublicFile } from '../utils/api';
 
 interface DocumentUploadFieldProps {
@@ -833,11 +834,11 @@ export const RegisterBgaPage: React.FC = () => {
                     <label className="block text-xs font-bold text-[#10244D] mb-1.5">
                       Date of Birth
                     </label>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={formData.dob}
-                      onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6E2F2] text-xs font-medium text-[#10244D] bg-white transition-all focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
+                      onChange={(val) => setFormData({ ...formData, dob: val })}
+                      placeholder="Select date of birth"
+                      isDob={true}
                     />
                   </div>
                 </div>

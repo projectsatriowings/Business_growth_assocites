@@ -16,6 +16,7 @@ import {
   Send,
 } from 'lucide-react';
 import { ModalPortal } from './ModalPortal';
+import { DatePicker } from './DatePicker';
 import { apiRequest } from '../utils/api';
 import { useToast } from '../context/ToastContext';
 
@@ -501,13 +502,12 @@ export const UnifiedClientFollowUpModal: React.FC<UnifiedClientFollowUpModalProp
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Next Follow-up Date</label>
-                  <input
-                    type="date"
+                  <label className="block font-bold text-slate-700 mb-1 text-xs">Next Follow-up Date</label>
+                  <DatePicker
                     min={new Date().toISOString().split('T')[0]}
                     value={nextFollowUpDate}
-                    onChange={(e) => setNextFollowUpDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs"
+                    onChange={(val) => setNextFollowUpDate(val)}
+                    placeholder="Select next follow-up"
                   />
                 </div>
               </div>
@@ -556,13 +556,12 @@ export const UnifiedClientFollowUpModal: React.FC<UnifiedClientFollowUpModalProp
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Next Follow-up Date</label>
-                  <input
-                    type="date"
+                  <label className="block font-bold text-slate-700 mb-1 text-xs">Next Follow-up Date</label>
+                  <DatePicker
                     min={new Date().toISOString().split('T')[0]}
                     value={nextFollowUpDate}
-                    onChange={(e) => setNextFollowUpDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs"
+                    onChange={(val) => setNextFollowUpDate(val)}
+                    placeholder="Select next follow-up"
                   />
                 </div>
               </div>
@@ -602,13 +601,12 @@ export const UnifiedClientFollowUpModal: React.FC<UnifiedClientFollowUpModalProp
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Next Follow-up Date</label>
-                    <input
-                      type="date"
+                    <label className="block font-bold text-slate-700 mb-1 text-xs">Next Follow-up Date</label>
+                    <DatePicker
                       min={new Date().toISOString().split('T')[0]}
                       value={nextFollowUpDate}
-                      onChange={(e) => setNextFollowUpDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs"
+                      onChange={(val) => setNextFollowUpDate(val)}
+                      placeholder="Select next follow-up"
                     />
                   </div>
                 </div>
@@ -729,13 +727,12 @@ export const UnifiedClientFollowUpModal: React.FC<UnifiedClientFollowUpModalProp
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Promised Date</label>
-                  <input
-                    type="date"
+                  <label className="block font-bold text-slate-700 mb-1 text-xs">Promised Date</label>
+                  <DatePicker
                     min={new Date().toISOString().split('T')[0]}
                     value={expectedPaymentDate}
-                    onChange={(e) => setExpectedPaymentDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono"
+                    onChange={(val) => setExpectedPaymentDate(val)}
+                    placeholder="Select promised date"
                   />
                 </div>
               </div>

@@ -20,6 +20,7 @@ import {
 import { apiRequest } from '../utils/api';
 import { useToast } from '../context/ToastContext';
 import { ModalPortal } from './ModalPortal';
+import { DatePicker } from './DatePicker';
 
 export const CommissionSettingsPanel: React.FC = () => {
   const { toast } = useToast();
@@ -527,21 +528,19 @@ export const CommissionSettingsPanel: React.FC = () => {
             {/* Dates */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Effective Date</label>
-                <input
-                  type="date"
+                <label className="block font-bold text-slate-700 mb-1 text-xs">Effective Date</label>
+                <DatePicker
                   value={effectiveDate}
-                  onChange={(e) => setEffectiveDate(e.target.value)}
-                  className="w-full p-2 rounded-xl border border-slate-200"
+                  onChange={(val) => setEffectiveDate(val)}
+                  placeholder="Select effective date"
                 />
               </div>
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Expiry Date (Optional)</label>
-                <input
-                  type="date"
+                <label className="block font-bold text-slate-700 mb-1 text-xs">Expiry Date (Optional)</label>
+                <DatePicker
                   value={expiryDate}
-                  onChange={(e) => setExpiryDate(e.target.value)}
-                  className="w-full p-2 rounded-xl border border-slate-200"
+                  onChange={(val) => setExpiryDate(val)}
+                  placeholder="Select expiry date"
                 />
               </div>
             </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Phone, MessageSquare, Mail, Users, Calendar, DollarSign, Clock, CheckCircle2, AlertCircle, X, ShieldAlert } from 'lucide-react';
 import { ModalPortal } from './ModalPortal';
+import { DatePicker } from './DatePicker';
 import { apiRequest } from '../utils/api';
 import { useToast } from '../context/ToastContext';
 
@@ -142,14 +143,13 @@ export const FinalPaymentFollowUpModal: React.FC<FinalPaymentFollowUpModalProps>
           {/* Expected Payment Date & Amount */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">
+              <label className="block font-bold text-slate-700 mb-1 text-xs">
                 Expected Payment Date
               </label>
-              <input
-                type="date"
+              <DatePicker
                 value={expectedPaymentDate}
-                onChange={(e) => setExpectedPaymentDate(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#3066BE]/20 focus:border-[#3066BE]"
+                onChange={(val) => setExpectedPaymentDate(val)}
+                placeholder="Select expected payment date"
               />
             </div>
             <div>
