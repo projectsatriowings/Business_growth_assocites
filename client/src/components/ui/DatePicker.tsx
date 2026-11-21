@@ -88,8 +88,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   }, [isOpen]);
 
   // Year range generation
+  // For DOB, users must be at least 18 years old: latest allowed birth year is (currentYear - 18)
   const startYear = isDob ? currentYear - 100 : currentYear - 30;
-  const endYear = isDob ? currentYear : currentYear + 15;
+  const endYear = isDob ? currentYear - 18 : currentYear + 15;
   const yearsList: number[] = [];
   for (let y = endYear; y >= startYear; y--) {
     yearsList.push(y);
@@ -160,8 +161,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     if (max && dateStr > max) return true;
     if (isDob) {
       const today = new Date();
-      const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
-      if (dateStr > todayStr) return true;
+      const maxDob = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+      const maxDobStr = `${maxDob.getFullYear()}-${pad(maxDob.getMonth() + 1)}-${pad(maxDob.getDate())}`;
+      if (dateStr > maxDobStr) return true;
     }
     return false;
   };
@@ -224,7 +226,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             </button>
           )}
           <span className="text-[10px] font-bold text-[#0879E8] bg-[#DCEBFF]/60 px-1.5 py-0.5 rounded-md">
-            {isDob ? 'DOB' : 'Pick'}
+            {isDob ? '18+' : 'Pick'}
           </span>
         </div>
       </div>
@@ -358,8 +360,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             </button>
 
             {isDob ? (
-              <span className="text-[10px] text-[#60769B] font-medium">
-                Pick Month & Year above
+              <span className="text-[10px] text-[#0879E8] font-bold">
+                18+ Only (≤ {currentYear - 18})
               </span>
             ) : (
               <button

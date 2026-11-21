@@ -326,6 +326,23 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    // Age Verification: Applicants must be at least 18 years old
+    if (dob) {
+      const birthDate = new Date(dob);
+      if (!isNaN(birthDate.getTime())) {
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        if (age < 18) {
+          res.status(400).json({ error: 'Applicants must be at least 18 years of age to register as a Growth Associate.' });
+          return;
+        }
+      }
+    }
+
     // Password Complexity Rules: minimum 6 characters, uppercase, lowercase, number, special character
     if (password.length < 6) {
       res.status(400).json({ error: 'Password must be at least 6 characters long.' });

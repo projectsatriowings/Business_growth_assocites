@@ -530,6 +530,21 @@ export const RegisterBgaPage: React.FC = () => {
         if (!/^[6-9]\d{9}$/.test(cleanMobile)) return 'Enter valid Indian mobile starting with 6, 7, 8, or 9';
         return undefined;
 
+      case 'dob':
+        if (value && value.trim()) {
+          const birthDate = new Date(value);
+          const today = new Date();
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const m = today.getMonth() - birthDate.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+          if (age < 18) {
+            return 'Applicants must be at least 18 years of age to register';
+          }
+        }
+        return undefined;
+
       case 'email':
         if (!value || !value.trim()) return 'Email address is required';
         if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value.trim())) {
@@ -619,7 +634,7 @@ export const RegisterBgaPage: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (step === 1) {
-      const step1Fields = ['fullName', 'email', 'mobile', 'password', 'confirmPassword'];
+      const step1Fields = ['fullName', 'dob', 'email', 'mobile', 'password', 'confirmPassword'];
       for (const f of step1Fields) {
         const err = validateField(f, (formData as any)[f], formData);
         if (err) newErrors[f] = err;
@@ -831,15 +846,27 @@ export const RegisterBgaPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#10244D] mb-1.5">
-                      Date of Birth
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold text-[#10244D]">
+                        Date of Birth
+                      </label>
+                      <span className="text-[10px] font-semibold text-[#0879E8] bg-[#DCEBFF]/70 px-2 py-0.5 rounded-full">
+                        18+ Only
+                      </span>
+                    </div>
                     <DatePicker
                       value={formData.dob}
-                      onChange={(val) => setFormData({ ...formData, dob: val })}
-                      placeholder="Select date of birth"
+                      onChange={(val) => {
+                        setFormData({ ...formData, dob: val });
+                        const err = validateField('dob', val);
+                        setFieldErrors((prev) => ({ ...prev, dob: err || '' }));
+                      }}
+                      placeholder="Select date of birth (18+ only)"
                       isDob={true}
                     />
+                    {fieldErrors.dob && (
+                      <p className="text-[11px] text-rose-600 font-medium mt-1">{fieldErrors.dob}</p>
+                    )}
                   </div>
                 </div>
 
