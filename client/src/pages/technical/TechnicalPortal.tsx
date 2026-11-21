@@ -1306,7 +1306,7 @@ export const TechnicalPortal: React.FC = () => {
                           type="submit"
                           className="px-4 py-1.5 bg-[#3066BE] text-white rounded font-bold hover:bg-[#255299] transition-colors"
                         >
-                          Send Reply to BGA
+                          Send to BGA
                         </button>
                       </div>
                     </form>
