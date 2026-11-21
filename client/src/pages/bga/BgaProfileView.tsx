@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   User,
   ShieldCheck,
@@ -27,8 +27,9 @@ import {
   History,
   FileCheck,
   KeyRound,
+  Camera,
 } from 'lucide-react';
-import { apiRequest } from '../../utils/api';
+import { apiRequest, uploadFile } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ChangePasswordModal } from '../../components/ChangePasswordModal';
@@ -99,6 +100,41 @@ export const BgaProfileView: React.FC = () => {
   const [uploadDocUrl, setUploadDocUrl] = useState('');
   const [uploadDocName, setUploadDocName] = useState('');
   const [savingDoc, setSavingDoc] = useState(false);
+
+  // Profile Image Avatar Upload
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file (JPG, PNG, or WEBP)');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image file size must be less than 10MB');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const uploaded = await uploadFile(file);
+      await apiRequest('/api/bga/profile-image', {
+        method: 'PUT',
+        body: JSON.stringify({ profileImageUrl: uploaded.url }),
+      });
+      toast.success('Profile photo updated successfully!');
+      if (refreshUser) refreshUser();
+      await fetchProfile();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update profile photo');
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -378,9 +414,56 @@ export const BgaProfileView: React.FC = () => {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#3066BE] to-[#119DA4] text-white flex items-center justify-center font-extrabold text-2xl shadow-md shadow-[#3066BE]/20 shrink-0">
-              {user?.name ? user.name.slice(0, 2).toUpperCase() : 'BA'}
+            {/* Hidden Profile Image File Input */}
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/jpg"
+              className="hidden"
+              onChange={handleProfileImageUpload}
+            />
+
+            <div className="relative group shrink-0">
+              {user?.profileImageUrl ? (
+                <img
+                  src={user.profileImageUrl}
+                  alt={user.name}
+                  className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-200 shadow-md shadow-[#3066BE]/15"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#3066BE] to-[#119DA4] text-white flex items-center justify-center font-extrabold text-2xl shadow-md shadow-[#3066BE]/20">
+                  {user?.name ? user.name.slice(0, 2).toUpperCase() : 'BA'}
+                </div>
+              )}
+              {/* Overlay on hover */}
+              <button
+                type="button"
+                onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="absolute inset-0 bg-slate-900/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer"
+                title="Change Profile Photo"
+              >
+                {uploadingAvatar ? (
+                  <RefreshCw className="w-5 h-5 animate-spin text-white" />
+                ) : (
+                  <>
+                    <Camera className="w-5 h-5 text-white" />
+                    <span className="text-[9px] font-bold mt-1 uppercase tracking-wider text-white">Change</span>
+                  </>
+                )}
+              </button>
+              {/* Badge Button */}
+              <button
+                type="button"
+                onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-[#0879E8] hover:bg-[#076cd0] text-white shadow-md border-2 border-white cursor-pointer transition-transform hover:scale-110"
+                title="Upload / Change Photo"
+              >
+                {uploadingAvatar ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+              </button>
             </div>
+
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{user?.name}</h1>
@@ -409,6 +492,14 @@ export const BgaProfileView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap w-full md:w-auto">
+            <button
+              onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+            >
+              <Camera className="w-3.5 h-3.5 text-[#0879E8]" />
+              <span>{uploadingAvatar ? 'Uploading...' : user?.profileImageUrl ? 'Change Photo' : 'Upload Photo'}</span>
+            </button>
             <button
               onClick={openEditPersonalModal}
               className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"

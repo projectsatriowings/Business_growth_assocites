@@ -244,6 +244,7 @@ router.get('/profile', async (req: AuthRequest, res: Response): Promise<void> =>
         mobile: true,
         role: true,
         status: true,
+        profileImageUrl: true,
         dob: true,
         address: true,
         city: true,
@@ -525,6 +526,44 @@ router.put('/profile', async (req: AuthRequest, res: Response): Promise<void> =>
   } catch (error) {
     console.error('Failed to update profile:', error);
     res.status(500).json({ error: 'Failed to update personal details' });
+  }
+});
+
+// 1c-2. Upload / Update Profile Image
+router.put('/profile-image', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const bgaId = req.user!.id;
+    const { profileImageUrl } = req.body;
+
+    if (!profileImageUrl || typeof profileImageUrl !== 'string' || !profileImageUrl.trim()) {
+      res.status(400).json({ error: 'Profile image URL is required' });
+      return;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: bgaId },
+      data: { profileImageUrl: profileImageUrl.trim() },
+      select: { id: true, name: true, email: true, profileImageUrl: true },
+    });
+
+    appCache.invalidatePrefix('bga:');
+    appCache.invalidatePrefix('admin:');
+
+    await logAudit(
+      req.user!.id,
+      req.user!.email,
+      req.user!.role,
+      'UPDATE_PROFILE_IMAGE',
+      'USER',
+      bgaId,
+      { profileImageUrl: updated.profileImageUrl },
+      req.ip
+    );
+
+    res.json({ message: 'Profile image updated successfully', user: updated });
+  } catch (error) {
+    console.error('Failed to update profile image:', error);
+    res.status(500).json({ error: 'Failed to update profile image' });
   }
 });
 

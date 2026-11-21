@@ -389,13 +389,21 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
           {/* Avatar & Core Identity */}
           <div className="flex items-center gap-4 md:col-span-1 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 pr-0 md:pr-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#3066BE] to-[#119DA4] text-white font-bold text-2xl flex items-center justify-center shadow-md shadow-[#3066BE]/25 shrink-0">
-              {associate.name
-                .split(' ')
-                .map((n: string) => n[0])
-                .slice(0, 2)
-                .join('')}
-            </div>
+            {associate.profileImageUrl ? (
+              <img
+                src={associate.profileImageUrl}
+                alt={associate.name}
+                className="w-16 h-16 rounded-2xl object-cover shadow-md shadow-[#3066BE]/25 shrink-0 border border-slate-200"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#3066BE] to-[#119DA4] text-white font-bold text-2xl flex items-center justify-center shadow-md shadow-[#3066BE]/25 shrink-0">
+                {associate.name
+                  .split(' ')
+                  .map((n: string) => n[0])
+                  .slice(0, 2)
+                  .join('')}
+              </div>
+            )}
             <div className="min-w-0">
               <h3 className="font-bold text-slate-900 text-base truncate">{associate.name}</h3>
               <p className="text-xs text-slate-500 truncate">{associate.email}</p>

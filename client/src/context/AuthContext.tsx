@@ -9,6 +9,7 @@ export interface User {
   mobile: string;
   role: UserRole;
   status: string;
+  profileImageUrl?: string;
   panVerified?: boolean;
   aadhaarNumber?: string;
   aadhaarMasked?: string;

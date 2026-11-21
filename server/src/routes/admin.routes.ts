@@ -318,6 +318,7 @@ router.get('/bgas', async (req: AuthRequest, res: Response): Promise<void> => {
         bankIfsc: true,
         bankVerified: true,
         bankVerifiedAt: true,
+        profileImageUrl: true,
         panDocumentUrl: true,
         addressProofUrl: true,
         bankProofUrl: true,

@@ -359,6 +359,17 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
 
           {/* User Profile Pill */}
           <div className="flex items-center space-x-3 pl-3.5 border-l border-slate-200">
+            {user?.profileImageUrl ? (
+              <img
+                src={user.profileImageUrl}
+                alt={user.name}
+                className="w-9 h-9 rounded-xl object-cover border border-slate-200 shadow-xs shrink-0"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#3066BE] to-[#119DA4] text-white flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
+                {user?.name ? user.name.slice(0, 2).toUpperCase() : 'U'}
+              </div>
+            )}
             <div className="text-right">
               <div className="flex items-center gap-1.5 justify-end">
                 <span className="text-sm font-bold text-slate-900">{user?.name}</span>

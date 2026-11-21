@@ -17,6 +17,8 @@ import {
   KeyRound,
   Clock,
   ShieldCheck,
+  Camera,
+  User,
 } from 'lucide-react';
 import { AuthLayout } from '../components/auth/AuthLayout';
 import { AuthCard } from '../components/auth/AuthCard';
@@ -189,11 +191,15 @@ export const RegisterBgaPage: React.FC = () => {
     bankAccountNumber: '',
     bankIfsc: '',
     agreementAccepted: false,
+    profileImageUrl: '',
     panDocumentUrl: '',
     addressProofUrl: '', // Aadhaar document
     bankProofUrl: '',    // Bank passbook
     agreementDocumentUrl: '',
   });
+
+  const profileImageInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingProfileImage, setUploadingProfileImage] = useState(false);
 
   // Unique Registration Session ID
   const [sessionId] = useState<string>(() => {
@@ -467,6 +473,22 @@ export const RegisterBgaPage: React.FC = () => {
         if (!value) return 'You must accept the associate terms to proceed';
         return undefined;
 
+      case 'profileImageUrl':
+        if (!value) return 'Profile image is mandatory. Please upload a clear photo.';
+        return undefined;
+
+      case 'panDocumentUrl':
+        if (!value) return 'PAN card document is mandatory. Please upload a copy.';
+        return undefined;
+
+      case 'addressProofUrl':
+        if (!value) return 'Aadhaar document is mandatory. Please upload a copy.';
+        return undefined;
+
+      case 'bankProofUrl':
+        if (!value) return 'Bank passbook document is mandatory. Please upload a copy.';
+        return undefined;
+
       default:
         return undefined;
     }
@@ -485,11 +507,14 @@ export const RegisterBgaPage: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (step === 1) {
-      // Step 1: Personal Details & Password Setup
+      // Step 1: Personal Details, Profile Photo & Password Setup
       const step1Fields = ['fullName', 'dob', 'password', 'confirmPassword'];
       for (const f of step1Fields) {
         const err = validateField(f, (formData as any)[f], formData);
         if (err) newErrors[f] = err;
+      }
+      if (!formData.profileImageUrl) {
+        newErrors.profileImageUrl = 'Profile image is mandatory. Please upload a clear photo.';
       }
     } else if (step === 2) {
       // Step 2: Contact Ownership & OTP Verification
@@ -503,7 +528,7 @@ export const RegisterBgaPage: React.FC = () => {
         newErrors.email = 'Email address must be OTP-verified before proceeding.';
       }
     } else if (step === 3) {
-      // Step 3: Location & KYC Information
+      // Step 3: Location & KYC Information (All Documents Mandatory)
       const step3Fields = ['panNumber'];
       if (formData.pinCode) step3Fields.push('pinCode');
       if (formData.aadhaarNumber) step3Fields.push('aadhaarNumber');
@@ -511,11 +536,18 @@ export const RegisterBgaPage: React.FC = () => {
         const err = validateField(f, (formData as any)[f], formData);
         if (err) newErrors[f] = err;
       }
+
+      if (!formData.panDocumentUrl) {
+        newErrors.panDocumentUrl = 'PAN card document is mandatory. Please upload a copy.';
+      }
+      if (!formData.addressProofUrl) {
+        newErrors.addressProofUrl = 'Aadhaar document is mandatory. Please upload a copy.';
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
       setFieldErrors((prev) => ({ ...prev, ...newErrors }));
-      setError('Please review the highlighted fields before proceeding.');
+      setError('Please complete all mandatory fields and upload required documents before proceeding.');
       return;
     }
 
@@ -534,9 +566,23 @@ export const RegisterBgaPage: React.FC = () => {
       if (err) newErrors[f] = err;
     }
 
+    if (!formData.bankProofUrl) {
+      newErrors.bankProofUrl = 'Bank passbook document is mandatory. Please upload a copy.';
+    }
+
+    if (!formData.profileImageUrl) {
+      newErrors.profileImageUrl = 'Profile image is mandatory.';
+    }
+    if (!formData.panDocumentUrl) {
+      newErrors.panDocumentUrl = 'PAN card document is mandatory.';
+    }
+    if (!formData.addressProofUrl) {
+      newErrors.addressProofUrl = 'Aadhaar document is mandatory.';
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setFieldErrors((prev) => ({ ...prev, ...newErrors }));
-      setError('Please complete all required bank and agreement fields.');
+      setError('Please complete all required bank details and upload all mandatory documents.');
       return;
     }
 
@@ -682,6 +728,137 @@ export const RegisterBgaPage: React.FC = () => {
             {/* STEP 1: Personal Details & Password Setup */}
             {step === 1 && (
               <div className="space-y-4">
+                {/* Profile Photo / Image Upload (Mandatory) */}
+                <div
+                  className={`p-4 rounded-2xl border transition-all ${
+                    fieldErrors.profileImageUrl
+                      ? 'border-rose-400 bg-rose-50/25 ring-2 ring-rose-100'
+                      : formData.profileImageUrl
+                      ? 'border-emerald-200 bg-emerald-50/20'
+                      : 'border-[#D6E2F2] bg-[#F5F9FF]/60'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <label className="block text-xs font-bold text-[#10244D]">
+                        Profile Photo / Image <span className="text-rose-500">*</span>
+                      </label>
+                      <p className="text-[10px] text-[#60769B]">
+                        Recent passport-style photo or professional headshot (JPG, PNG, WebP max 10MB)
+                      </p>
+                    </div>
+                    {formData.profileImageUrl && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Uploaded ✓
+                      </span>
+                    )}
+                  </div>
+
+                  <input
+                    ref={profileImageInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/jpg"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 10 * 1024 * 1024) {
+                        setFieldErrors((prev) => ({ ...prev, profileImageUrl: 'File size exceeds 10MB limit.' }));
+                        return;
+                      }
+                      setUploadingProfileImage(true);
+                      try {
+                        const res = await uploadPublicFile(file);
+                        setFormData((prev) => ({ ...prev, profileImageUrl: res.url }));
+                        setFieldErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.profileImageUrl;
+                          return next;
+                        });
+                      } catch (err: any) {
+                        setFieldErrors((prev) => ({ ...prev, profileImageUrl: err.message || 'Failed to upload photo' }));
+                      } finally {
+                        setUploadingProfileImage(false);
+                        if (profileImageInputRef.current) profileImageInputRef.current.value = '';
+                      }
+                    }}
+                    className="hidden"
+                  />
+
+                  <div className="flex items-center gap-4">
+                    {/* Avatar Preview */}
+                    <div className="relative shrink-0">
+                      {formData.profileImageUrl ? (
+                        <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-sm bg-white">
+                          <img
+                            src={formData.profileImageUrl}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => !uploadingProfileImage && profileImageInputRef.current?.click()}
+                          className={`w-20 h-20 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                            fieldErrors.profileImageUrl
+                              ? 'border-rose-400 bg-rose-50 text-rose-500'
+                              : 'border-[#0879E8] bg-white text-[#0879E8] hover:bg-[#DCEBFF]/30'
+                          }`}
+                        >
+                          <Camera className="w-6 h-6 mb-0.5" />
+                          <span className="text-[9px] font-bold uppercase tracking-wider">Upload</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          disabled={uploadingProfileImage}
+                          onClick={() => profileImageInputRef.current?.click()}
+                          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#0879E8] to-[#123FAD] hover:from-[#076cd1] hover:to-[#0f3491] text-white text-xs font-bold shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          {uploadingProfileImage ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>Uploading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>{formData.profileImageUrl ? 'Change Photo' : 'Upload Profile Photo'}</span>
+                            </>
+                          )}
+                        </button>
+
+                        {formData.profileImageUrl && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData((prev) => ({ ...prev, profileImageUrl: '' }));
+                              setFieldErrors((prev) => ({ ...prev, profileImageUrl: 'Profile image is mandatory. Please upload a clear photo.' }));
+                            }}
+                            className="px-3 py-2 rounded-xl border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-semibold transition-all cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+
+                      {fieldErrors.profileImageUrl ? (
+                        <p className="text-[11px] text-rose-600 font-medium flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3 shrink-0" />
+                          <span>{fieldErrors.profileImageUrl}</span>
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-[#60769B]">
+                          Mandatory: This photo will be verified against your government ID and displayed on your associate profile.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* 1. Full Legal Name & Date of Birth */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -1260,32 +1437,40 @@ export const RegisterBgaPage: React.FC = () => {
                 {/* PAN Document Upload */}
                 <DocumentUploadField
                   label="PAN Document / Photo"
+                  required={true}
                   helpText="Upload front copy of PAN card for identity verification"
                   value={formData.panDocumentUrl}
                   docName={docMeta.pan?.name}
+                  error={fieldErrors.panDocumentUrl}
                   onUploaded={(url, name) => {
                     setFormData({ ...formData, panDocumentUrl: url });
                     setDocMeta({ ...docMeta, pan: { name } });
+                    if (fieldErrors.panDocumentUrl) setFieldErrors((prev) => ({ ...prev, panDocumentUrl: '' }));
                   }}
                   onRemove={() => {
                     setFormData({ ...formData, panDocumentUrl: '' });
                     setDocMeta({ ...docMeta, pan: { name: '' } });
+                    setFieldErrors((prev) => ({ ...prev, panDocumentUrl: 'PAN card document is mandatory. Please upload a copy.' }));
                   }}
                 />
 
                 {/* Aadhaar Document Upload (Requested by user) */}
                 <DocumentUploadField
                   label="Aadhaar Document / Photo"
+                  required={true}
                   helpText="Upload front & back copy of Aadhaar card for address and identity verification"
                   value={formData.addressProofUrl}
                   docName={docMeta.aadhaar?.name}
+                  error={fieldErrors.addressProofUrl}
                   onUploaded={(url, name) => {
                     setFormData({ ...formData, addressProofUrl: url });
                     setDocMeta({ ...docMeta, aadhaar: { name } });
+                    if (fieldErrors.addressProofUrl) setFieldErrors((prev) => ({ ...prev, addressProofUrl: '' }));
                   }}
                   onRemove={() => {
                     setFormData({ ...formData, addressProofUrl: '' });
                     setDocMeta({ ...docMeta, aadhaar: { name: '' } });
+                    setFieldErrors((prev) => ({ ...prev, addressProofUrl: 'Aadhaar document is mandatory. Please upload a copy.' }));
                   }}
                 />
 
@@ -1418,16 +1603,20 @@ export const RegisterBgaPage: React.FC = () => {
                 {/* Bank Passbook Upload (Updated from Cancelled Cheque / Passbook Copy) */}
                 <DocumentUploadField
                   label="Bank passbook"
+                  required={true}
                   helpText="Upload front page of bank passbook clearly showing account number and IFSC code"
                   value={formData.bankProofUrl}
                   docName={docMeta.bank?.name}
+                  error={fieldErrors.bankProofUrl}
                   onUploaded={(url, name) => {
                     setFormData({ ...formData, bankProofUrl: url });
                     setDocMeta({ ...docMeta, bank: { name } });
+                    if (fieldErrors.bankProofUrl) setFieldErrors((prev) => ({ ...prev, bankProofUrl: '' }));
                   }}
                   onRemove={() => {
                     setFormData({ ...formData, bankProofUrl: '' });
                     setDocMeta({ ...docMeta, bank: { name: '' } });
+                    setFieldErrors((prev) => ({ ...prev, bankProofUrl: 'Bank passbook document is mandatory. Please upload a copy.' }));
                   }}
                 />
 

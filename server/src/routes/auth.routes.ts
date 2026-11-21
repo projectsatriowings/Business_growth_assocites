@@ -153,6 +153,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
         mobile: user.mobile,
         role: user.role,
         status: user.status,
+        profileImageUrl: user.profileImageUrl,
         panVerified: user.panVerified,
         aadhaarVerified: user.aadhaarVerified,
         bankVerified: user.bankVerified,
@@ -296,6 +297,7 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
       bankAccountNumber,
       bankIfsc,
       agreementAccepted,
+      profileImageUrl,
       panDocumentUrl,
       addressProofUrl,
       bankProofUrl,
@@ -306,6 +308,27 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
     // Validations
     if (!fullName || !mobile || !email || !password) {
       res.status(400).json({ error: 'Full name, mobile, email, and password are required' });
+      return;
+    }
+
+    // MANDATORY DOCUMENT & PROFILE IMAGE VALIDATIONS
+    if (!profileImageUrl || !String(profileImageUrl).trim()) {
+      res.status(400).json({ error: 'Profile image is mandatory. Please upload a clear profile photo.' });
+      return;
+    }
+
+    if (!panDocumentUrl || !String(panDocumentUrl).trim()) {
+      res.status(400).json({ error: 'PAN card document is mandatory. Please upload your PAN document.' });
+      return;
+    }
+
+    if (!addressProofUrl || !String(addressProofUrl).trim()) {
+      res.status(400).json({ error: 'Aadhaar document is mandatory. Please upload your Aadhaar document.' });
+      return;
+    }
+
+    if (!bankProofUrl || !String(bankProofUrl).trim()) {
+      res.status(400).json({ error: 'Bank passbook proof document is mandatory. Please upload your bank passbook.' });
       return;
     }
 
@@ -507,9 +530,10 @@ router.post('/register-bga', async (req: Request, res: Response): Promise<void> 
           bankVerified: false,
           agreementAccepted: true,
           agreementAcceptedAt: new Date(),
-          panDocumentUrl: panDocumentUrl ? panDocumentUrl.trim() : (cleanPan ? `/uploads/documents/pan-${normalizedMobile}.pdf` : null),
-          addressProofUrl: addressProofUrl ? addressProofUrl.trim() : (address ? `/uploads/documents/address-${normalizedMobile}.pdf` : null),
-          bankProofUrl: bankProofUrl ? bankProofUrl.trim() : (bankAccountNumber ? `/uploads/documents/bank-${normalizedMobile}.pdf` : null),
+          profileImageUrl: profileImageUrl ? profileImageUrl.trim() : null,
+          panDocumentUrl: panDocumentUrl.trim(),
+          addressProofUrl: addressProofUrl.trim(),
+          bankProofUrl: bankProofUrl.trim(),
           agreementDocumentUrl: agreementDocumentUrl ? agreementDocumentUrl.trim() : `/uploads/documents/agreement-${normalizedMobile}.pdf`,
         },
       });
@@ -593,6 +617,7 @@ router.get('/me', authenticateJWT, async (req: AuthRequest, res: Response): Prom
         mobile: true,
         role: true,
         status: true,
+        profileImageUrl: true,
         dob: true,
         address: true,
         city: true,
