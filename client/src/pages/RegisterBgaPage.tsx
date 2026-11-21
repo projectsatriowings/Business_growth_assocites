@@ -1078,11 +1078,10 @@ export const RegisterBgaPage: React.FC = () => {
                         placeholder="10-digit mobile number"
                         value={formData.mobile}
                         onChange={(e) => handleMobileChange(e.target.value)}
-                        className={`w-full pl-9 pr-3 py-2.5 rounded-xl border text-xs font-mono font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
-                          fieldErrors.mobile
+                        className={`w-full pl-9 pr-3 py-2.5 rounded-xl border text-xs font-mono font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.mobile
                             ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
                             : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
-                        }`}
+                          }`}
                         required
                       />
                     </div>
