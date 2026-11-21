@@ -419,7 +419,8 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
               handleNotificationClick(activeToast);
               setActiveToast(null);
             }}
-            className="fixed top-5 right-5 z-[9999] max-w-md w-[calc(100vw-2.5rem)] sm:w-[420px] bg-slate-900/98 text-white rounded-2xl shadow-[0_20px_50px_rgba(15,23,42,0.45)] p-4 border border-slate-700/80 cursor-pointer animate-fadeIn transition-all duration-300 flex items-start gap-3.5 hover:bg-slate-900 hover:border-[#3066BE] hover:shadow-[0_25px_60px_rgba(48,102,190,0.35)] group"
+            style={{ backgroundColor: '#0f172a' }}
+            className="fixed top-5 right-5 z-[9999] max-w-md w-[calc(100vw-2.5rem)] sm:w-[420px] bg-slate-900 text-white rounded-2xl shadow-[0_25px_60px_rgba(15,23,42,0.65)] p-4 border border-slate-700 cursor-pointer animate-fadeIn transition-all duration-300 flex items-start gap-3.5 hover:bg-slate-950 hover:border-[#3066BE] hover:shadow-[0_25px_60px_rgba(48,102,190,0.45)] group"
           >
             <div className="w-9 h-9 rounded-xl bg-[#3066BE]/25 text-[#80DED9] border border-[#3066BE]/40 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
               <Bell className="w-4 h-4 animate-bounce" />

@@ -140,7 +140,7 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile dropdown menu */}
       {mobileMenuOpen && (
-        <div className="xl:hidden border-t border-slate-200 bg-white/98 backdrop-blur-xl px-5 pt-3 pb-6 space-y-4 shadow-xl animate-fadeIn">
+        <div className="xl:hidden border-t border-slate-200 bg-white/95 backdrop-blur-xl px-5 pt-3 pb-6 space-y-4 shadow-xl animate-fadeIn">
           <div className="grid grid-cols-2 gap-1.5">
             {navLinks.map((link) => (
               <a
