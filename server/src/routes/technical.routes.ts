@@ -399,11 +399,21 @@ router.put('/projects/:id/status', async (req: AuthRequest, res: Response): Prom
       updateData.completedAt = new Date();
       updateData.progressPercentage = 100;
 
-      // Update WorkOrder
-      await prisma.workOrder.update({
-        where: { id: project.workOrderId },
-        data: { status: WorkOrderStatus.COMPLETED },
+      // Only mark WorkOrder COMPLETED if final payment has actually been verified
+      const verifiedPayments = await prisma.projectPayment.findMany({
+        where: { workOrderId: project.workOrderId, status: PaymentStatus.VERIFIED },
       });
+      const totalPaid = verifiedPayments.reduce((sum, p) => sum + p.amount, 0);
+      const isFullyPaid =
+        verifiedPayments.some((p) => p.paymentType === PaymentType.FINAL) ||
+        (project.workOrder.totalValue > 0 && totalPaid >= project.workOrder.totalValue);
+
+      if (isFullyPaid) {
+        await prisma.workOrder.update({
+          where: { id: project.workOrderId },
+          data: { status: WorkOrderStatus.COMPLETED },
+        });
+      }
 
       // Check if any commission was waiting for project completion
       const pendingCommissions = await prisma.commission.findMany({

@@ -5226,6 +5226,15 @@ export const BgaPortal: React.FC = () => {
                   ) : (
                     workOrders.map((wo) => {
                       const prj = wo.project;
+                      const payments = wo.payments || [];
+                      const verifiedPayments = payments.filter((p: any) => p.status === 'VERIFIED');
+                      const totalVerifiedPaid = verifiedPayments.reduce((acc: number, p: any) => acc + (p.amount || 0), 0);
+                      const totalVal = wo.totalValue || 0;
+                      const hasVerifiedFinal = verifiedPayments.some((p: any) => p.paymentType === 'FINAL') || (totalVal > 0 && totalVerifiedPaid >= totalVal);
+                      const hasPendingFinal = payments.some((p: any) => p.paymentType === 'FINAL' && p.status === 'PENDING_VERIFICATION');
+                      const hasVerifiedAdvance = Boolean(wo.advanceVerified || verifiedPayments.some((p: any) => p.paymentType === 'ADVANCE'));
+                      const hasPendingAdvance = payments.some((p: any) => p.paymentType === 'ADVANCE' && p.status === 'PENDING_VERIFICATION');
+
                       return (
                         <div key={wo.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
@@ -5238,14 +5247,31 @@ export const BgaPortal: React.FC = () => {
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${wo.status === 'COMPLETED'
-                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                : wo.advanceVerified
-                                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                  : 'bg-amber-100 text-amber-800'
-                                }`}>
-                                {wo.status === 'COMPLETED' ? 'Final Payment: VERIFIED (100% Settled)' : wo.advanceVerified ? 'Advance: VERIFIED' : 'Advance: AWAITING VERIFICATION'}
-                              </span>
+                              {hasVerifiedFinal ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  Final Payment: VERIFIED (100% Settled)
+                                </span>
+                              ) : hasPendingFinal ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-1 animate-pulse">
+                                  <Clock className="w-3 h-3 text-amber-600" />
+                                  Final Payment: AWAITING AUDIT
+                                </span>
+                              ) : hasVerifiedAdvance ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200 inline-flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                                  Advance: VERIFIED (Final Payment Pending)
+                                </span>
+                              ) : hasPendingAdvance ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-1 animate-pulse">
+                                  <Clock className="w-3 h-3 text-amber-600" />
+                                  Advance: AWAITING VERIFICATION
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                  Advance: PENDING
+                                </span>
+                              )}
                               <span className="text-xs font-bold text-slate-800">
                                 Value: ₹{wo.totalValue?.toLocaleString()}
                               </span>
