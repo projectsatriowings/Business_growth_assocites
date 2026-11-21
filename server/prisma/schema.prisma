@@ -117,6 +117,7 @@ model User {
   passwordHash     String
   role             Role         @default(BGA)
   status           BgaStatus    @default(ACTIVE)
+  profileImageUrl  String?
   dob              DateTime?
   address          String?
   city             String?
