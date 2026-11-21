@@ -161,11 +161,20 @@ export const AccountsPortal: React.FC = () => {
   const [payoutsList, setPayoutsList] = useState<any[]>([]);
   const [disburseModal, setDisburseModal] = useState<any | null>(null);
   const [payoutUtr, setPayoutUtr] = useState('');
+  const [payoutUtrTouched, setPayoutUtrTouched] = useState(false);
   const [payoutMethod, setPayoutMethod] = useState('NEFT');
   const [payoutDate, setPayoutDate] = useState(new Date().toISOString().slice(0, 10));
   const [payoutReceiptUrl, setPayoutReceiptUrl] = useState('');
   const [payoutNotes, setPayoutNotes] = useState('');
   const [disbursing, setDisbursing] = useState(false);
+
+  const payoutUtrConfig = useMemo(() => {
+    return getUtrPlaceholderAndHint(payoutMethod);
+  }, [payoutMethod]);
+
+  const payoutUtrValidation = useMemo((): UtrValidationResult => {
+    return validateBankUtr(payoutUtr, payoutMethod);
+  }, [payoutUtr, payoutMethod]);
 
   const loadStats = async (bypass = false) => {
     try {
@@ -596,6 +605,7 @@ export const AccountsPortal: React.FC = () => {
       toast.success(res.message || `Commission payout of ₹${disburseModal.calculatedCommission?.toLocaleString()} processed successfully!`);
       setDisburseModal(null);
       setPayoutUtr('');
+      setPayoutUtrTouched(false);
       setPayoutNotes('');
       setPayoutReceiptUrl('');
       loadData();
@@ -3675,6 +3685,7 @@ export const AccountsPortal: React.FC = () => {
                                       onClick={() => {
                                         setDisburseModal(c);
                                         setPayoutUtr('');
+                                        setPayoutUtrTouched(false);
                                         setPayoutMethod('NEFT');
                                         setPayoutDate(new Date().toISOString().slice(0, 10));
                                         setPayoutReceiptUrl('');
@@ -3804,20 +3815,110 @@ export const AccountsPortal: React.FC = () => {
                         </div>
 
                         <div>
-                          <label className="block font-bold text-slate-700 mb-1">
-                            Bank Transaction Reference / UTR <span className="text-rose-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="e.g. CMS123456789012 or HDFC000123456"
-                            value={payoutUtr}
-                            onChange={(e) => setPayoutUtr(e.target.value.toUpperCase())}
-                            required
-                            className="w-full p-2.5 font-mono border border-slate-200 rounded-xl uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                          />
-                          <p className="text-[10px] text-slate-400 mt-0.5">
-                            Standard 12 to 22 alphanumeric bank UTR from company net banking.
-                          </p>
+                          <div className="flex justify-between items-center mb-1">
+                            <label className="block font-bold text-slate-700">
+                              {payoutMethod === 'BANK_TRANSFER'
+                                ? 'Bank Transaction Reference'
+                                : payoutMethod === 'UPI' || payoutMethod === 'IMPS'
+                                ? `${payoutMethod} Reference / RRN`
+                                : `${payoutMethod} Unique Transaction Reference (UTR)`}{' '}
+                              <span className="text-rose-500">*</span>
+                            </label>
+                            <span
+                              className={`text-[11px] font-mono ${
+                                payoutUtr.length === 0
+                                  ? 'text-slate-400'
+                                  : payoutUtrValidation.isValid
+                                  ? 'text-emerald-600 font-bold'
+                                  : 'text-slate-500 font-medium'
+                              }`}
+                            >
+                              {payoutUtr.length}/{payoutUtrConfig.maxLength} chars • Req: {payoutUtrConfig.expectedLength}
+                            </span>
+                          </div>
+
+                          <div className="relative">
+                            <input
+                              type="text"
+                              required
+                              maxLength={payoutUtrConfig.maxLength}
+                              value={payoutUtr}
+                              onFocus={() => setPayoutUtrTouched(false)}
+                              onBlur={() => setPayoutUtrTouched(true)}
+                              onChange={(e) => {
+                                let val = e.target.value.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
+                                if (val.length > payoutUtrConfig.maxLength) {
+                                  val = val.slice(0, payoutUtrConfig.maxLength);
+                                }
+                                setPayoutUtr(val);
+                              }}
+                              placeholder={payoutUtrConfig.placeholder}
+                              className={`w-full p-2.5 pr-9 font-mono border rounded-xl uppercase text-xs tracking-wide transition-all ${
+                                !payoutUtr
+                                  ? 'border-slate-300 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500'
+                                  : payoutUtrValidation.isValid
+                                  ? 'border-emerald-500 bg-emerald-50/20 text-emerald-900 focus:ring-2 focus:ring-emerald-500'
+                                  : payoutUtrTouched && payoutUtr.length < payoutUtrConfig.minLength
+                                  ? 'border-amber-400 bg-amber-50/20 text-amber-900 focus:ring-2 focus:ring-amber-500'
+                                  : !payoutUtrTouched && payoutUtr.length < payoutUtrConfig.minLength
+                                  ? 'border-slate-300 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500'
+                                  : 'border-red-400 bg-red-50/20 text-red-900 focus:ring-2 focus:ring-red-500'
+                              }`}
+                            />
+                            <div className="absolute right-3 top-2.5">
+                              {payoutUtr && (
+                                payoutUtrValidation.isValid ? (
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                ) : !payoutUtrTouched && payoutUtr.length < payoutUtrConfig.minLength ? (
+                                  <span className="text-[10px] font-semibold text-slate-400 font-mono">
+                                    {payoutUtr.length}/{payoutUtrConfig.maxLength}
+                                  </span>
+                                ) : payoutUtrTouched && payoutUtr.length < payoutUtrConfig.minLength ? (
+                                  <AlertCircle className="w-4 h-4 text-amber-500" />
+                                ) : (
+                                  <AlertCircle className="w-4 h-4 text-red-500" />
+                                )
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Live Helper and Error feedback banner */}
+                          {payoutUtr && payoutUtrValidation.isValid ? (
+                            <div className="mt-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-800 flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span className="font-semibold">
+                                {payoutUtrValidation.hint || `Valid ${payoutMethod} transaction reference.`}
+                              </span>
+                            </div>
+                          ) : payoutUtr && !payoutUtrTouched && payoutUtr.length < payoutUtrConfig.minLength ? (
+                            <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                              <span>{payoutUtrConfig.helper}</span>
+                              <span className="text-emerald-600 font-semibold shrink-0 ml-2">
+                                {payoutUtrConfig.minLength - payoutUtr.length} more needed
+                              </span>
+                            </div>
+                          ) : payoutUtr && payoutUtrTouched && payoutUtr.length < payoutUtrConfig.minLength ? (
+                            <div className="mt-1.5 p-2 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex items-center gap-1.5">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                              <span>
+                                Incomplete reference: {payoutUtr.length} of {payoutUtrConfig.expectedLength} entered. Need{' '}
+                                {payoutUtrConfig.minLength - payoutUtr.length} more character
+                                {payoutUtrConfig.minLength - payoutUtr.length > 1 ? 's' : ''}.
+                              </span>
+                            </div>
+                          ) : payoutUtr && !payoutUtrValidation.isValid ? (
+                            <div className="mt-1.5 p-2 bg-red-50 border border-red-200 rounded-xl text-[11px] text-red-700 space-y-0.5">
+                              <div className="flex items-center gap-1.5 font-bold">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600" />
+                                <span>{payoutUtrValidation.error}</span>
+                              </div>
+                              {payoutUtrValidation.hint && (
+                                <p className="text-slate-600 pl-5">{payoutUtrValidation.hint}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="mt-1 text-[11px] text-slate-500">{payoutUtrConfig.helper}</p>
+                          )}
                         </div>
 
                         <div>
@@ -3857,8 +3958,8 @@ export const AccountsPortal: React.FC = () => {
                           </button>
                           <button
                             type="submit"
-                            disabled={disbursing}
-                            className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold shadow-md inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            disabled={disbursing || !payoutUtr || !payoutUtrValidation.isValid}
+                            className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold shadow-md inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                           >
                             {disbursing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                             <span>{disbursing ? 'Recording Payout...' : 'Confirm Bank Payout'}</span>

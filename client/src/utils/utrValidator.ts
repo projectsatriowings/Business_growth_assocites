@@ -227,8 +227,8 @@ export function getUtrPlaceholderAndHint(paymentMethod: string): UtrConfig {
       };
     default:
       return {
-        placeholder: 'e.g. UTR123456789012',
-        helper: 'Enter the official bank transaction reference or journal reference number.',
+        placeholder: 'e.g. CMS123456789012 or HDFC000123456 (8-24 chars)',
+        helper: 'Enter standard 8 to 24 alphanumeric bank transaction reference or corporate net banking UTR.',
         expectedLength: '8-24 chars',
         minLength: 8,
         maxLength: 24,
