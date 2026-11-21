@@ -159,17 +159,17 @@ export async function generateQuotationPdfBuffer(data: QuotationPdfData): Promis
   const chunks: Buffer[] = [];
   kitDoc.on('data', (chunk) => chunks.push(chunk));
 
-  // --- HEADER SECTION (Y: 142 to 205) ---
-  // Left: PROFESSIONAL QUOTATION (Positioned with clear headroom below letterhead swoosh)
-  kitDoc.font(boldFont).fontSize(17).fillColor('#0f172a').text('PROFESSIONAL', 45, 142);
-  kitDoc.font(boldFont).fontSize(17).fillColor('#119DA4').text('QUOTATION', 45, 162);
-  kitDoc.font(boldFont).fontSize(7).fillColor('#64748b').text('OFFICIAL COMMERCIAL PROPOSAL • ATRIOWINGS GROWTH ASSOCIATE NETWORK', 45, 184);
+  // --- HEADER SECTION (Y: 145 to 205) ---
+  // Left: PROFESSIONAL QUOTATION (Positioned with clear headroom below letterhead logo)
+  kitDoc.font(boldFont).fontSize(16).fillColor('#0f172a').text('PROFESSIONAL', 45, 145);
+  kitDoc.font(boldFont).fontSize(16).fillColor('#119DA4').text('QUOTATION', 45, 165);
+  kitDoc.font(boldFont).fontSize(7).fillColor('#64748b').text('OFFICIAL COMMERCIAL PROPOSAL • ATRIOWINGS GROWTH ASSOCIATE NETWORK', 45, 187);
 
   // Right: Quote Meta Badge (Cleanly aligned to the right-hand column axis at X: 330, ending at X: 550)
   const metaX = 330;
-  const metaY = data.previousQuotationNumber ? 134 : 142;
+  const metaY = data.previousQuotationNumber ? 138 : 144;
   const metaW = 220;
-  const metaH = data.previousQuotationNumber ? 66 : 56;
+  const metaH = data.previousQuotationNumber ? 68 : 58;
 
   kitDoc.roundedRect(metaX, metaY, metaW, metaH, 6).fillAndStroke('#f8fafc', '#e2e8f0');
 
@@ -182,20 +182,22 @@ export async function generateQuotationPdfBuffer(data: QuotationPdfData): Promis
       .text(val, metaX + 65, metaY + yOff, { width: 145, align: 'right' });
   };
 
-  printMetaRow('Quote No:', `${data.quotationNumber} (v${data.version})`, 7, false);
   if (data.previousQuotationNumber) {
-    printMetaRow('Revision of:', `${data.previousQuotationNumber} (v${data.previousVersion || 1})`, 21, true);
-    printMetaRow('Issue Date:', formatDisplayDate(data.date), 35, false);
-    printMetaRow('Valid Until:', formatDisplayDate(data.validityDate), 49, true);
+    printMetaRow('Quote No:', `${data.quotationNumber} (v${data.version})`, 8, false);
+    printMetaRow('Revision of:', `${data.previousQuotationNumber} (v${data.previousVersion || 1})`, 22, true);
+    printMetaRow('Issue Date:', formatDisplayDate(data.date), 36, false);
+    printMetaRow('Valid Until:', formatDisplayDate(data.validityDate), 50, true);
   } else {
-    printMetaRow('Issue Date:', formatDisplayDate(data.date), 23, false);
-    printMetaRow('Valid Until:', formatDisplayDate(data.validityDate), 39, true);
+    printMetaRow('Quote No:', `${data.quotationNumber} (v${data.version})`, 8, false);
+    printMetaRow('Issue Date:', formatDisplayDate(data.date), 24, false);
+    printMetaRow('Valid Until:', formatDisplayDate(data.validityDate), 40, true);
   }
 
   // If this is an archived superseded quotation, add an official audit watermark banner
+  let partyStartY = 212;
   if (data.isArchivedVersion) {
     kitDoc
-      .roundedRect(45, 196, 505, 16, 4)
+      .roundedRect(45, 203, 505, 16, 4)
       .fillAndStroke('#fef2f2', '#fecaca');
     kitDoc
       .font(boldFont)
@@ -204,68 +206,90 @@ export async function generateQuotationPdfBuffer(data: QuotationPdfData): Promis
       .text(
         `OFFICIAL ARCHIVE RECORD: This Version ${data.version} quotation has been superseded by revised quotation ${data.supersededByNumber || 'V2'}. Retained for legal & audit proof.`,
         52,
-        200,
+        207,
         { width: 490, align: 'center' }
       );
+    partyStartY = 227;
   }
 
-  // --- TWO COLUMN PARTY INFO (Y: 206 to 275) ---
-  const partyY = 206;
+  // --- TWO COLUMN PARTY INFO (Dynamic Y calculation to prevent any overlapping) ---
   const colW = 265;
+  const rightX = 330;
+  const rightW = 220;
 
   // Left: Atriowings Details (Aligned at X: 45)
-  kitDoc.font(boldFont).fontSize(9.5).fillColor('#0f172a').text('ATRIOWINGS TECHNOLOGIES', 45, partyY);
-  kitDoc.strokeColor('#119DA4').lineWidth(1.5).moveTo(45, partyY + 13).lineTo(45 + 135, partyY + 13).stroke();
+  kitDoc.font(boldFont).fontSize(9.5).fillColor('#0f172a').text('ATRIOWINGS TECHNOLOGIES', 45, partyStartY);
+  kitDoc.strokeColor('#119DA4').lineWidth(1.5).moveTo(45, partyStartY + 13).lineTo(45 + 140, partyStartY + 13).stroke();
 
-  kitDoc.font(boldFont).fontSize(8).fillColor('#1e293b').text(data.company.name || 'Atriowings Technologies India Private Limited', 45, partyY + 18);
-  kitDoc
-    .font(regularFont)
-    .fontSize(7.5)
-    .fillColor('#475569')
-    .text(data.company.address || 'No. 1, Gurudev Complex, 57th St, Korattur, Chennai - 600080', 45, partyY + 29, { width: colW })
-    .text(`Phone: ${data.company.phone || '+91 8825948859'}  |  Email: ${data.company.email || 'info@atriowings.in'}`, 45, partyY + 47)
-    .text(`GSTIN: ${data.company.gstin || '33AASCA7189D1ZD'}  |  Web: ${data.company.website || 'https://atriowings.in'}`, 45, partyY + 57);
+  let leftY = partyStartY + 19;
+  const compName = data.company.name || 'Atriowings Technologies India Private Limited';
+  kitDoc.font(boldFont).fontSize(8).fillColor('#1e293b').text(compName, 45, leftY, { width: colW });
+  leftY += kitDoc.heightOfString(compName, { width: colW }) + 3;
+
+  const compAddr = data.company.address || 'No. 1, Gurudev Complex, 57th St, Korattur, Chennai - 600080';
+  kitDoc.font(regularFont).fontSize(7.5).fillColor('#475569').text(compAddr, 45, leftY, { width: colW });
+  leftY += kitDoc.heightOfString(compAddr, { width: colW }) + 3;
+
+  const compPhoneEmail = `Phone: ${data.company.phone || '+91 8825948859'}   |   Email: ${data.company.email || 'info@atriowings.in'}`;
+  kitDoc.font(regularFont).fontSize(7.5).fillColor('#475569').text(compPhoneEmail, 45, leftY, { width: colW });
+  leftY += kitDoc.heightOfString(compPhoneEmail, { width: colW }) + 3;
+
+  const compGstWeb = `GSTIN: ${data.company.gstin || '33AASCA7189D1ZD'}   |   Web: ${data.company.website || 'https://atriowings.in'}`;
+  kitDoc.font(regularFont).fontSize(7.5).fillColor('#475569').text(compGstWeb, 45, leftY, { width: colW });
+  leftY += kitDoc.heightOfString(compGstWeb, { width: colW }) + 2;
 
   // Right: Prepared For Client (Aligned at X: 330)
-  const rightX = 330;
-  kitDoc.font(boldFont).fontSize(9.5).fillColor('#0f172a').text('PREPARED FOR', rightX, partyY);
-  kitDoc.strokeColor('#119DA4').lineWidth(1.5).moveTo(rightX, partyY + 13).lineTo(rightX + 135, partyY + 13).stroke();
+  kitDoc.font(boldFont).fontSize(9.5).fillColor('#0f172a').text('PREPARED FOR', rightX, partyStartY);
+  kitDoc.strokeColor('#119DA4').lineWidth(1.5).moveTo(rightX, partyStartY + 13).lineTo(rightX + 105, partyStartY + 13).stroke();
 
-  kitDoc.font(boldFont).fontSize(8.5).fillColor('#0f172a').text(data.client.businessName || data.client.clientName, rightX, partyY + 18, { width: 220 });
-  kitDoc
-    .font(regularFont)
-    .fontSize(7.5)
-    .fillColor('#334155')
-    .text(`Attn: ${data.client.clientName}`, rightX, partyY + 29)
-    .text(data.client.location || 'Location Not Specified', rightX, partyY + 38, { width: 220, ellipsis: true })
-    .text(`${data.client.mobile}  |  ${data.client.email}`, rightX, partyY + 47);
-  kitDoc
-    .font(boldFont)
-    .fontSize(7.5)
-    .fillColor('#119DA4')
-    .text(`Growth Associate: ${data.bga.name} (${data.bga.mobile})`, rightX, partyY + 57);
+  let rightY = partyStartY + 19;
+  const clientBizName = data.client.businessName || data.client.clientName;
+  kitDoc.font(boldFont).fontSize(8.5).fillColor('#0f172a').text(clientBizName, rightX, rightY, { width: rightW });
+  rightY += kitDoc.heightOfString(clientBizName, { width: rightW }) + 3;
 
-  // Divider placed with clear, generous breathing space below both columns
-  const partyDividerY = 284;
+  if (data.client.clientName && data.client.businessName && data.client.clientName.trim().toLowerCase() !== data.client.businessName.trim().toLowerCase()) {
+    const attnText = `Attn: ${data.client.clientName}`;
+    kitDoc.font(regularFont).fontSize(7.5).fillColor('#334155').text(attnText, rightX, rightY, { width: rightW });
+    rightY += kitDoc.heightOfString(attnText, { width: rightW }) + 3;
+  }
+
+  if (data.client.location) {
+    kitDoc.font(regularFont).fontSize(7.5).fillColor('#334155').text(data.client.location, rightX, rightY, { width: rightW, ellipsis: true });
+    rightY += kitDoc.heightOfString(data.client.location, { width: rightW }) + 3;
+  }
+
+  const clientContact = `${data.client.mobile}   |   ${data.client.email}`;
+  kitDoc.font(regularFont).fontSize(7.5).fillColor('#334155').text(clientContact, rightX, rightY, { width: rightW });
+  rightY += kitDoc.heightOfString(clientContact, { width: rightW }) + 3.5;
+
+  const bgaText = `Growth Associate: ${data.bga.name} (${data.bga.mobile})`;
+  kitDoc.font(boldFont).fontSize(7.5).fillColor('#119DA4').text(bgaText, rightX, rightY, { width: rightW });
+  rightY += kitDoc.heightOfString(bgaText, { width: rightW }) + 2;
+
+  // Divider placed with clear breathing space below both columns
+  const partyDividerY = Math.max(leftY, rightY) + 8;
   kitDoc.strokeColor('#e2e8f0').lineWidth(0.8).moveTo(45, partyDividerY).lineTo(550, partyDividerY).stroke();
 
-  // --- SERVICE SCOPE SUMMARY BOX (Y: 292) ---
+  // --- SERVICE SCOPE SUMMARY BOX ---
   const scopeY = partyDividerY + 8;
   const scopeTitle = `SERVICE SPECIFICATION: ${formatServiceCategoryTitle(data.serviceCategory).toUpperCase()}`;
   const scopeText = data.serviceScope || 'Standard commercial and engineering scope as agreed upon between client and Atriowings Technologies.';
   
-  // Calculate dynamic height for scope text
+  // Calculate dynamic heights for title and scope text
+  kitDoc.font(boldFont).fontSize(8);
+  const scopeTitleH = kitDoc.heightOfString(scopeTitle, { width: 485 });
+
   kitDoc.font(regularFont).fontSize(7.8);
   const scopeTextH = kitDoc.heightOfString(scopeText, { width: 485, lineGap: 1.5 });
-  const scopeBoxH = Math.min(Math.max(45, scopeTextH + 26), 95);
+  const scopeBoxH = Math.min(Math.max(48, scopeTitleH + scopeTextH + 20), 105);
 
   kitDoc.roundedRect(45, scopeY, 505, scopeBoxH, 5).fillAndStroke('#f8fafc', '#e2e8f0');
 
-  kitDoc.font(boldFont).fontSize(8).fillColor('#119DA4').text(scopeTitle, 55, scopeY + 7);
-  kitDoc.font(regularFont).fontSize(7.8).fillColor('#334155').text(scopeText, 55, scopeY + 19, {
+  kitDoc.font(boldFont).fontSize(8).fillColor('#119DA4').text(scopeTitle, 55, scopeY + 8, { width: 485 });
+  kitDoc.font(regularFont).fontSize(7.8).fillColor('#334155').text(scopeText, 55, scopeY + 8 + scopeTitleH + 4, {
     width: 485,
     lineGap: 1.5,
-    height: scopeBoxH - 24,
+    height: scopeBoxH - (scopeTitleH + 16),
     ellipsis: true,
   });
 
