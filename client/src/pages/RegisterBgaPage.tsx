@@ -122,11 +122,10 @@ const DocumentUploadField: React.FC<DocumentUploadFieldProps> = ({
       ) : (
         <div
           onClick={() => !uploading && fileInputRef.current?.click()}
-          className={`p-3.5 rounded-xl border-2 border-dashed transition-all cursor-pointer text-center ${
-            error || uploadError
+          className={`p-3.5 rounded-xl border-2 border-dashed transition-all cursor-pointer text-center ${error || uploadError
               ? 'border-rose-300 bg-rose-50/20'
               : 'border-[#D6E2F2] bg-[#F5F9FF]/60 hover:border-[#0879E8] hover:bg-[#DCEBFF]/30'
-          }`}
+            }`}
         >
           {uploading ? (
             <div className="py-1 flex items-center justify-center gap-2 text-xs font-semibold text-[#0879E8]">
@@ -212,12 +211,20 @@ export const RegisterBgaPage: React.FC = () => {
   const [emailMessage, setEmailMessage] = useState<string | null>(null);
   const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
 
-  // Mobile Country Code
+  // Mobile Verification State
   const [mobileCountryCode, setMobileCountryCode] = useState('+91');
+  const [mobileStatus, setMobileStatus] = useState<
+    'IDLE' | 'CHECKING' | 'AVAILABLE' | 'OTP_SENDING' | 'OTP_SENT' | 'VERIFYING' | 'VERIFIED' | 'ALREADY_REGISTERED' | 'INVALID_OTP' | 'EXPIRED_OTP' | 'DELIVERY_FAILED' | 'ERROR'
+  >('IDLE');
+  const [mobileOtp, setMobileOtp] = useState('');
+  const [mobileCooldown, setMobileCooldown] = useState(0);
+  const [mobileMessage, setMobileMessage] = useState<string | null>(null);
+  const [verifiedMobile, setVerifiedMobile] = useState<string | null>(null);
 
   const isEmailVerified = emailStatus === 'VERIFIED' && verifiedEmail === formData.email.trim().toLowerCase();
+  const isMobileVerified = mobileStatus === 'VERIFIED' && verifiedMobile === formData.mobile.replace(/\D/g, '').slice(-10);
 
-  // Cooldown countdown timer for Email
+  // Cooldown countdown timers
   useEffect(() => {
     if (emailCooldown <= 0) return;
     const interval = setInterval(() => {
@@ -225,6 +232,14 @@ export const RegisterBgaPage: React.FC = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, [emailCooldown]);
+
+  useEffect(() => {
+    if (mobileCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setMobileCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [mobileCooldown]);
 
   // Invalidate email verification on change
   const handleEmailChange = (val: string) => {
@@ -238,12 +253,17 @@ export const RegisterBgaPage: React.FC = () => {
     }
   };
 
-  // Mobile number change handler with live validation
+  // Invalidate mobile verification on change
   const handleMobileChange = (val: string) => {
     const clean = val.replace(/\D/g, '').slice(0, 10);
     setFormData((prev) => ({ ...prev, mobile: clean }));
-    const err = validateField('mobile', clean);
-    setFieldErrors((prev) => ({ ...prev, mobile: err || '' }));
+    if (fieldErrors.mobile) setFieldErrors((prev) => ({ ...prev, mobile: '' }));
+    if (mobileStatus !== 'IDLE') {
+      setMobileStatus('IDLE');
+      setVerifiedMobile(null);
+      setMobileOtp('');
+      setMobileMessage(null);
+    }
   };
 
   // 1. Check Email Availability
@@ -367,7 +387,132 @@ export const RegisterBgaPage: React.FC = () => {
     }
   };
 
+  // 4. Check Mobile Availability
+  const handleCheckMobile = async () => {
+    setMobileMessage(null);
+    const mobileErr = validateField('mobile', formData.mobile);
+    if (mobileErr) {
+      setFieldErrors((prev) => ({ ...prev, mobile: mobileErr }));
+      return;
+    }
 
+    setMobileStatus('CHECKING');
+    try {
+      const res = await fetch('/api/auth/verify/check-mobile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mobile: formData.mobile,
+          countryCode: mobileCountryCode,
+        }),
+      });
+      const data = await res.json();
+      if (data.available) {
+        setMobileStatus('AVAILABLE');
+        setMobileMessage('Mobile number is available for registration.');
+      } else {
+        setMobileStatus('ALREADY_REGISTERED');
+        setMobileMessage(data.message || 'This mobile number is already registered. Please use another number or contact support.');
+      }
+    } catch {
+      setMobileStatus('ERROR');
+      setMobileMessage('Network error checking mobile availability.');
+    }
+  };
+
+  // 5. Send Mobile OTP
+  const handleSendMobileOtp = async () => {
+    setMobileMessage(null);
+    const mobileErr = validateField('mobile', formData.mobile);
+    if (mobileErr) {
+      setFieldErrors((prev) => ({ ...prev, mobile: mobileErr }));
+      return;
+    }
+
+    setMobileStatus('OTP_SENDING');
+    try {
+      const res = await fetch('/api/auth/verify/send-mobile-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          mobile: formData.mobile,
+          countryCode: mobileCountryCode,
+          fullName: formData.fullName.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMobileStatus('OTP_SENT');
+        setMobileCooldown(data.cooldownSeconds || 60);
+        setMobileMessage(data.message || `Verification code sent to ${mobileCountryCode} ${formData.mobile}. Valid for 5 minutes.`);
+        if (data.otpHint) {
+          setMobileOtp(data.otpHint);
+        } else {
+          setMobileOtp('');
+        }
+      } else {
+        if (data.message && data.message.includes('already registered')) {
+          setMobileStatus('ALREADY_REGISTERED');
+        } else if (data.message && (data.message.includes('not configured') || data.message.includes('failed'))) {
+          setMobileStatus('DELIVERY_FAILED');
+        } else {
+          setMobileStatus('ERROR');
+        }
+        setMobileMessage(data.message || 'Failed to dispatch mobile OTP.');
+        if (data.cooldownSeconds) setMobileCooldown(data.cooldownSeconds);
+      }
+    } catch {
+      setMobileStatus('ERROR');
+      setMobileMessage('Cannot connect to authentication service.');
+    }
+  };
+
+  // 6. Verify Mobile OTP
+  const handleVerifyMobileOtp = async () => {
+    setMobileMessage(null);
+    const cleanOtp = mobileOtp.trim();
+    if (cleanOtp.length !== 6 || !/^\d{6}$/.test(cleanOtp)) {
+      setMobileStatus('INVALID_OTP');
+      setMobileMessage('Please enter a valid 6-digit numeric verification code.');
+      return;
+    }
+
+    setMobileStatus('VERIFYING');
+    try {
+      const res = await fetch('/api/auth/verify/confirm-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          type: 'MOBILE',
+          identifier: `${mobileCountryCode}${formData.mobile.replace(/\D/g, '').slice(-10)}`,
+          otp: cleanOtp,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMobileStatus('VERIFIED');
+        setVerifiedMobile(formData.mobile.replace(/\D/g, '').slice(-10));
+        setMobileMessage('Mobile phone number verified successfully.');
+        setFieldErrors((prev) => {
+          const next = { ...prev };
+          delete next.mobile;
+          return next;
+        });
+      } else {
+        if (data.message && data.message.toLowerCase().includes('expired')) {
+          setMobileStatus('EXPIRED_OTP');
+        } else {
+          setMobileStatus('INVALID_OTP');
+        }
+        setMobileMessage(data.message || 'Invalid verification code.');
+      }
+    } catch {
+      setMobileStatus('ERROR');
+      setMobileMessage('Network error while verifying mobile OTP.');
+    }
+  };
 
   const validateField = (name: string, value: any, form = formData): string | undefined => {
     switch (name) {
@@ -505,6 +650,9 @@ export const RegisterBgaPage: React.FC = () => {
       if (!isEmailVerified) {
         newErrors.email = 'Email address must be OTP-verified before proceeding.';
       }
+      if (!isMobileVerified) {
+        newErrors.mobile = 'Mobile phone number must be OTP-verified before proceeding.';
+      }
     } else if (step === 3) {
       // Step 3: Location & KYC Information
       const step3Fields = ['panNumber'];
@@ -543,8 +691,8 @@ export const RegisterBgaPage: React.FC = () => {
       return;
     }
 
-    if (!isEmailVerified) {
-      setError('Email address must be OTP-verified to create your account.');
+    if (!isEmailVerified || !isMobileVerified) {
+      setError('Both Email and Mobile Phone Number must be OTP-verified to create your account.');
       setStep(2);
       return;
     }
@@ -639,43 +787,54 @@ export const RegisterBgaPage: React.FC = () => {
           cardMaxWidth="max-w-2xl"
           error={error}
         >
-          {/* Step Progression Bar */}
-          <div className="grid grid-cols-3 gap-2 mb-6">
+          {/* Step Progression Bar: 4 Clean Tabs */}
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-5">
             <div
-              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${
+              className={`py-2 px-1 rounded-xl text-center text-[10px] sm:text-xs font-bold transition-all border ${
                 step === 1
                   ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
                   : step > 1
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : 'bg-slate-50 text-slate-400 border-slate-200'
-              }`}
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-slate-50 text-slate-400 border-slate-200'
+                }`}
             >
-              1. Personal & Security
+              1. Personal
             </div>
             <div
-              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${
+              className={`py-2 px-1 rounded-xl text-center text-[10px] sm:text-xs font-bold transition-all border ${
                 step === 2
                   ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
                   : step > 2
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : 'bg-slate-50 text-slate-400 border-slate-200'
-              }`}
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-slate-50 text-slate-400 border-slate-200'
+                }`}
             >
-              2. Location & KYC
+              2. Verification
             </div>
             <div
-              className={`py-2 px-3 rounded-xl text-center text-xs font-bold transition-all border ${
+              className={`py-2 px-1 rounded-xl text-center text-[10px] sm:text-xs font-bold transition-all border ${
                 step === 3
+                  ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
+                  : step > 3
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-slate-50 text-slate-400 border-slate-200'
+                }`}
+            >
+              3. Location & KYC
+            </div>
+            <div
+              className={`py-2 px-1 rounded-xl text-center text-[10px] sm:text-xs font-bold transition-all border ${
+                step === 4
                   ? 'bg-[#DCEBFF] text-[#0879E8] border-[#0879E8]/30 shadow-xs'
                   : 'bg-slate-50 text-slate-400 border-slate-200'
               }`}
             >
-              3. Bank & Agreement
+              4. Bank & Terms
             </div>
           </div>
 
-          <form onSubmit={step === 3 ? handleSubmit : (e) => { e.preventDefault(); handleNextStep(); }} noValidate>
-            {/* STEP 1: Personal Information & Account Security */}
+          <form onSubmit={step === 4 ? handleSubmit : (e) => { e.preventDefault(); handleNextStep(); }} noValidate>
+            {/* STEP 1: Personal Details & Password Setup */}
             {step === 1 && (
               <div className="space-y-4">
                 {/* 1. Full Legal Name & Date of Birth */}
@@ -692,11 +851,10 @@ export const RegisterBgaPage: React.FC = () => {
                         setFormData({ ...formData, fullName: e.target.value });
                         if (fieldErrors.fullName) setFieldErrors({ ...fieldErrors, fullName: '' });
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
-                        fieldErrors.fullName
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.fullName
                           ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
                           : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
-                      }`}
+                        }`}
                       required
                     />
                     {fieldErrors.fullName && (
@@ -724,270 +882,7 @@ export const RegisterBgaPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 2. Registered Email Address & Real-Time OTP Verification */}
-                <div className="p-3.5 rounded-2xl border border-[#D6E2F2] bg-[#F8FAFD] space-y-2.5 text-left">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-[#10244D]">
-                      Registered Email Address <span className="text-rose-500">*</span>
-                    </label>
-                    {isEmailVerified ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Verified ✓
-                      </span>
-                    ) : emailStatus === 'CHECKING' ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
-                        <Loader2 className="w-3 h-3 animate-spin text-blue-600" /> Checking...
-                      </span>
-                    ) : emailStatus === 'AVAILABLE' ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                        <Check className="w-3 h-3 text-emerald-600" /> Available for OTP
-                      </span>
-                    ) : emailStatus === 'OTP_SENT' || emailStatus === 'VERIFYING' ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
-                        <Clock className="w-3 h-3 text-blue-600" /> OTP Sent (5m)
-                      </span>
-                    ) : emailStatus === 'ALREADY_REGISTERED' ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
-                        <AlertCircle className="w-3 h-3 text-rose-600" /> Already Registered
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                        Not Verified
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#60769B]">
-                        <Mail className="w-4 h-4" />
-                      </div>
-                      <input
-                        type="email"
-                        placeholder="associate@example.com"
-                        value={formData.email}
-                        disabled={isEmailVerified}
-                        onChange={(e) => handleEmailChange(e.target.value)}
-                        className={`w-full pl-9 pr-3 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
-                          isEmailVerified
-                            ? 'bg-slate-50 text-slate-600 border-emerald-300'
-                            : fieldErrors.email
-                            ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
-                            : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
-                        }`}
-                        required
-                      />
-                    </div>
-
-                    {isEmailVerified ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEmailStatus('IDLE');
-                          setVerifiedEmail(null);
-                          setEmailOtp('');
-                          setEmailMessage(null);
-                        }}
-                        className="px-3 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-[#60769B] hover:text-[#10244D] transition-colors cursor-pointer shrink-0"
-                      >
-                        Change
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={handleCheckEmail}
-                          disabled={!formData.email.trim() || emailStatus === 'CHECKING'}
-                          className="px-2.5 py-2.5 rounded-xl border border-[#D6E2F2] bg-white hover:bg-[#F0F7FF] text-xs font-bold text-[#0879E8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                        >
-                          {emailStatus === 'CHECKING' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Check'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleSendEmailOtp}
-                          disabled={!formData.email.trim() || emailStatus === 'OTP_SENDING' || emailCooldown > 0}
-                          className="px-3.5 py-2.5 rounded-xl bg-[#0879E8] hover:bg-[#076cd0] text-white text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xs cursor-pointer flex items-center gap-1.5"
-                        >
-                          {emailStatus === 'OTP_SENDING' ? (
-                            <>
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              <span>Sending...</span>
-                            </>
-                          ) : emailCooldown > 0 ? (
-                            <span>Resend ({emailCooldown}s)</span>
-                          ) : (
-                            <span>Send OTP</span>
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {fieldErrors.email && (
-                    <p className="text-[11px] text-rose-600 font-medium pl-1">{fieldErrors.email}</p>
-                  )}
-
-                  {!isEmailVerified && emailStatus === 'IDLE' && (
-                    <p className="text-[11px] text-[#60769B] pl-1 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#0879E8]"></span>
-                      Click <strong className="text-[#0879E8]">&quot;Send OTP&quot;</strong> to receive and enter your 6-digit verification code.
-                    </p>
-                  )}
-
-                  {emailStatus === 'ERROR' && emailMessage && (
-                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <span>{emailMessage}</span>
-                    </div>
-                  )}
-
-                  {emailStatus === 'ALREADY_REGISTERED' && (
-                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1">
-                      <div className="font-bold flex items-center gap-1.5">
-                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                        <span>This email address is already registered.</span>
-                      </div>
-                      <p className="text-[11px] text-rose-700 pl-5.5">
-                        Please <Link to="/login" className="font-bold underline text-rose-900">Sign In</Link> to your account, or use another email address.
-                      </p>
-                    </div>
-                  )}
-
-                  {emailStatus === 'AVAILABLE' && (
-                    <p className="text-[11px] text-emerald-700 font-medium pl-1 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Email address is available. Click &quot;Send OTP&quot; to verify.</span>
-                    </p>
-                  )}
-
-                  {(emailStatus === 'OTP_SENT' ||
-                    emailStatus === 'VERIFYING' ||
-                    emailStatus === 'INVALID_OTP' ||
-                    emailStatus === 'EXPIRED_OTP') && (
-                    <div className="p-3 rounded-xl bg-[#F0F7FF] border border-[#BFDBFE] space-y-2 animate-fadeIn">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#10244D] flex items-center gap-1">
-                          <KeyRound className="w-3.5 h-3.5 text-[#0879E8]" /> Enter 6-Digit Email OTP
-                        </span>
-                        <span className="text-[10px] text-[#60769B]">Expires in 5 minutes</span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={6}
-                          placeholder="••••••"
-                          value={emailOtp}
-                          onChange={(e) => {
-                            setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
-                            if (emailStatus === 'INVALID_OTP') setEmailStatus('OTP_SENT');
-                          }}
-                          className="w-36 px-3 py-2 rounded-lg border border-[#D6E2F2] text-sm font-mono font-extrabold tracking-widest text-center text-[#10244D] bg-white focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
-                        />
-
-                        <button
-                          type="button"
-                          onClick={handleVerifyEmailOtp}
-                          disabled={emailOtp.trim().length !== 6 || emailStatus === 'VERIFYING'}
-                          className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#0879E8] to-[#123FAD] text-white text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer flex items-center gap-1.5"
-                        >
-                          {emailStatus === 'VERIFYING' ? (
-                            <>
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                              <span>Verifying...</span>
-                            </>
-                          ) : (
-                            <span>Verify OTP</span>
-                          )}
-                        </button>
-
-                        {emailCooldown > 0 ? (
-                          <span className="text-[11px] text-[#60769B] font-medium pl-2">
-                            Resend in {emailCooldown}s
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={handleSendEmailOtp}
-                            className="text-[11px] font-bold text-[#0879E8] hover:underline pl-2 cursor-pointer"
-                          >
-                            Resend OTP
-                          </button>
-                        )}
-                      </div>
-
-                      {emailMessage && (
-                        <p
-                          className={`text-[11px] font-medium ${
-                            emailStatus === 'INVALID_OTP' || emailStatus === 'EXPIRED_OTP'
-                              ? 'text-rose-600'
-                              : 'text-[#0879E8]'
-                          }`}
-                        >
-                          {emailMessage}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {isEmailVerified && (
-                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span className="font-semibold">Email verified successfully via OTP. Ownership confirmed.</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* 3. Mobile Phone Number */}
-                <div>
-                  <label className="block text-xs font-bold text-[#10244D] mb-1.5">
-                    Mobile Phone Number <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {/* Country Code Selector */}
-                    <select
-                      value={mobileCountryCode}
-                      onChange={(e) => setMobileCountryCode(e.target.value)}
-                      className="px-2.5 py-2.5 rounded-xl border border-[#D6E2F2] bg-white text-xs font-bold text-[#10244D] focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF] shrink-0"
-                    >
-                      <option value="+91">🇮🇳 +91</option>
-                      <option value="+971">🇦🇪 +971</option>
-                      <option value="+1">🇺🇸 +1</option>
-                      <option value="+44">🇬🇧 +44</option>
-                      <option value="+65">🇸🇬 +65</option>
-                    </select>
-
-                    <div className="relative flex-1">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#60769B]">
-                        <Phone className="w-4 h-4" />
-                      </div>
-                      <input
-                        type="tel"
-                        inputMode="numeric"
-                        maxLength={10}
-                        placeholder="10-digit mobile number"
-                        value={formData.mobile}
-                        onChange={(e) => handleMobileChange(e.target.value)}
-                        className={`w-full pl-9 pr-3 py-2.5 rounded-xl border text-xs font-mono font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
-                          fieldErrors.mobile
-                            ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
-                            : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
-                        }`}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {fieldErrors.mobile ? (
-                    <p className="text-[11px] text-rose-600 font-medium mt-1 pl-1">{fieldErrors.mobile}</p>
-                  ) : (
-                    <p className="text-[10px] text-[#60769B] mt-1 pl-1">
-                      Enter your active 10-digit mobile number for communication and official notifications.
-                    </p>
-                  )}
-                </div>
-
+                {/* 2. Password Creation */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-[#10244D] mb-1.5">
@@ -1077,29 +972,484 @@ export const RegisterBgaPage: React.FC = () => {
                   </div>
                 </div>
 
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-[#0879E8] to-[#123FAD] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] shadow-[0_6px_20px_rgba(8,121,232,0.28)] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Continue to Verification</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: Contact Ownership & OTP Verification */}
+            {step === 2 && (
+              <div className="space-y-4">
+                {/* 1. Registered Email Address & Real-Time OTP Verification */}
+                <div className="p-3.5 rounded-2xl border border-[#D6E2F2] bg-[#F8FAFD] space-y-2.5 text-left">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-[#10244D]">
+                      Registered Email Address <span className="text-rose-500">*</span>
+                    </label>
+                    {isEmailVerified ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Verified ✓
+                      </span>
+                    ) : emailStatus === 'CHECKING' ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
+                        <Loader2 className="w-3 h-3 animate-spin text-blue-600" /> Checking...
+                      </span>
+                    ) : emailStatus === 'AVAILABLE' ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        <Check className="w-3 h-3 text-emerald-600" /> Available for OTP
+                      </span>
+                    ) : emailStatus === 'OTP_SENT' || emailStatus === 'VERIFYING' ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                        <Clock className="w-3 h-3 text-blue-600" /> OTP Sent (5m)
+                      </span>
+                    ) : emailStatus === 'ALREADY_REGISTERED' ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
+                        <AlertCircle className="w-3 h-3 text-rose-600" /> Already Registered
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                        Not Verified
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#60769B]">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="email"
+                        placeholder="associate@example.com"
+                        value={formData.email}
+                        disabled={isEmailVerified}
+                        onChange={(e) => handleEmailChange(e.target.value)}
+                        className={`w-full pl-9 pr-3 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${isEmailVerified
+                            ? 'bg-slate-50 text-slate-600 border-emerald-300'
+                            : fieldErrors.email
+                              ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                              : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                          }`}
+                        required
+                      />
+                    </div>
+
+                    {isEmailVerified ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmailStatus('IDLE');
+                          setVerifiedEmail(null);
+                          setEmailOtp('');
+                          setEmailMessage(null);
+                        }}
+                        className="px-3 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-[#60769B] hover:text-[#10244D] transition-colors cursor-pointer shrink-0"
+                      >
+                        Change
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={handleCheckEmail}
+                          disabled={!formData.email.trim() || emailStatus === 'CHECKING'}
+                          className="px-2.5 py-2.5 rounded-xl border border-[#D6E2F2] bg-white hover:bg-[#F0F7FF] text-xs font-bold text-[#0879E8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          {emailStatus === 'CHECKING' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Check'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSendEmailOtp}
+                          disabled={!formData.email.trim() || emailStatus === 'OTP_SENDING' || emailCooldown > 0}
+                          className="px-3.5 py-2.5 rounded-xl bg-[#0879E8] hover:bg-[#076cd0] text-white text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xs cursor-pointer flex items-center gap-1.5"
+                        >
+                          {emailStatus === 'OTP_SENDING' ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>Sending...</span>
+                            </>
+                          ) : emailCooldown > 0 ? (
+                            <span>Resend ({emailCooldown}s)</span>
+                          ) : (
+                            <span>Send OTP</span>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {fieldErrors.email && (
+                    <p className="text-[11px] text-rose-600 font-medium pl-1">{fieldErrors.email}</p>
+                  )}
+
+                  {!isEmailVerified && emailStatus === 'IDLE' && (
+                    <p className="text-[11px] text-[#60769B] pl-1 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0879E8]"></span>
+                      Click <strong className="text-[#0879E8]">&quot;Send OTP&quot;</strong> to receive and enter your 6-digit verification code.
+                    </p>
+                  )}
+
+                  {emailStatus === 'ERROR' && emailMessage && (
+                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <span>{emailMessage}</span>
+                    </div>
+                  )}
+
+                  {emailStatus === 'ALREADY_REGISTERED' && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1">
+                      <div className="font-bold flex items-center gap-1.5">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>This email address is already registered.</span>
+                      </div>
+                      <p className="text-[11px] text-rose-700 pl-5.5">
+                        Please <Link to="/login" className="font-bold underline text-rose-900">Sign In</Link> to your account, or use another email address.
+                      </p>
+                    </div>
+                  )}
+
+                  {emailStatus === 'AVAILABLE' && (
+                    <p className="text-[11px] text-emerald-700 font-medium pl-1 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Email address is available. Click &quot;Send OTP&quot; to verify.</span>
+                    </p>
+                  )}
+
+                  {(emailStatus === 'OTP_SENT' ||
+                    emailStatus === 'VERIFYING' ||
+                    emailStatus === 'INVALID_OTP' ||
+                    emailStatus === 'EXPIRED_OTP') && (
+                      <div className="p-3 rounded-xl bg-[#F0F7FF] border border-[#BFDBFE] space-y-2 animate-fadeIn">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#10244D] flex items-center gap-1">
+                            <KeyRound className="w-3.5 h-3.5 text-[#0879E8]" /> Enter 6-Digit Email OTP
+                          </span>
+                          <span className="text-[10px] text-[#60769B]">Expires in 5 minutes</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            placeholder="••••••"
+                            value={emailOtp}
+                            onChange={(e) => {
+                              setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                              if (emailStatus === 'INVALID_OTP') setEmailStatus('OTP_SENT');
+                            }}
+                            className="w-36 px-3 py-2 rounded-lg border border-[#D6E2F2] text-sm font-mono font-extrabold tracking-widest text-center text-[#10244D] bg-white focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={handleVerifyEmailOtp}
+                            disabled={emailOtp.trim().length !== 6 || emailStatus === 'VERIFYING'}
+                            className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#0879E8] to-[#123FAD] text-white text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer flex items-center gap-1.5"
+                          >
+                            {emailStatus === 'VERIFYING' ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <span>Verifying...</span>
+                              </>
+                            ) : (
+                              <span>Verify OTP</span>
+                            )}
+                          </button>
+
+                          {emailCooldown > 0 ? (
+                            <span className="text-[11px] text-[#60769B] font-medium pl-2">
+                              Resend in {emailCooldown}s
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handleSendEmailOtp}
+                              className="text-[11px] font-bold text-[#0879E8] hover:underline pl-2 cursor-pointer"
+                            >
+                              Resend OTP
+                            </button>
+                          )}
+                        </div>
+
+                        {emailMessage && (
+                          <p
+                            className={`text-[11px] font-medium ${emailStatus === 'INVALID_OTP' || emailStatus === 'EXPIRED_OTP'
+                                ? 'text-rose-600'
+                                : 'text-[#0879E8]'
+                              }`}
+                          >
+                            {emailMessage}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                  {isEmailVerified && (
+                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span className="font-semibold">Email verified successfully via OTP. Ownership confirmed.</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Mobile Phone Number */}
+                <div>
+                  <label className="block text-xs font-bold text-[#10244D] mb-1.5">
+                    Mobile Phone Number <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {/* Country Code Selector */}
+                    <select
+                      value={mobileCountryCode}
+                      disabled={isMobileVerified}
+                      onChange={(e) => {
+                        setMobileCountryCode(e.target.value);
+                        if (mobileStatus !== 'IDLE') {
+                          setMobileStatus('IDLE');
+                          setVerifiedMobile(null);
+                          setMobileOtp('');
+                          setMobileMessage(null);
+                        }
+                      }}
+                      className="px-2.5 py-2.5 rounded-xl border border-[#D6E2F2] bg-white text-xs font-bold text-[#10244D] focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF] shrink-0"
+                    >
+                      <option value="+91">🇮🇳 +91</option>
+                      <option value="+971">🇦🇪 +971</option>
+                      <option value="+1">🇺🇸 +1</option>
+                      <option value="+44">🇬🇧 +44</option>
+                      <option value="+65">🇸🇬 +65</option>
+                    </select>
+
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#60769B]">
+                        <Phone className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={10}
+                        placeholder="10-digit mobile number"
+                        value={formData.mobile}
+                        disabled={isMobileVerified}
+                        onChange={(e) => handleMobileChange(e.target.value)}
+                        className={`w-full pl-9 pr-3 py-2.5 rounded-xl border text-xs font-mono font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${isMobileVerified
+                            ? 'bg-slate-50 text-slate-600 border-emerald-300'
+                            : fieldErrors.mobile
+                              ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                              : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
+                          }`}
+                        required
+                      />
+                    </div>
+
+                    {isMobileVerified ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileStatus('IDLE');
+                          setVerifiedMobile(null);
+                          setMobileOtp('');
+                          setMobileMessage(null);
+                        }}
+                        className="px-3 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-[#60769B] hover:text-[#10244D] transition-colors cursor-pointer shrink-0"
+                      >
+                        Change
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={handleCheckMobile}
+                          disabled={!formData.mobile.trim() || mobileStatus === 'CHECKING'}
+                          className="px-2.5 py-2.5 rounded-xl border border-[#D6E2F2] bg-white hover:bg-[#F0F7FF] text-xs font-bold text-[#0879E8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          {mobileStatus === 'CHECKING' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Check'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSendMobileOtp}
+                          disabled={!formData.mobile.trim() || mobileStatus === 'OTP_SENDING' || mobileCooldown > 0}
+                          className="px-3.5 py-2.5 rounded-xl bg-[#0879E8] hover:bg-[#076cd0] text-white text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xs cursor-pointer flex items-center gap-1.5"
+                        >
+                          {mobileStatus === 'OTP_SENDING' ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>Sending...</span>
+                            </>
+                          ) : mobileCooldown > 0 ? (
+                            <span>Resend ({mobileCooldown}s)</span>
+                          ) : (
+                            <span>Send OTP</span>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {fieldErrors.mobile && (
+                    <p className="text-[11px] text-rose-600 font-medium pl-1">{fieldErrors.mobile}</p>
+                  )}
+
+                  {!isMobileVerified && mobileStatus === 'IDLE' && (
+                    <p className="text-[11px] text-[#60769B] pl-1 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0879E8]"></span>
+                      Click <strong className="text-[#0879E8]">&quot;Send OTP&quot;</strong> to receive and enter your 6-digit SMS verification code.
+                    </p>
+                  )}
+
+                  {mobileStatus === 'ERROR' && mobileMessage && (
+                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <span>{mobileMessage}</span>
+                    </div>
+                  )}
+
+                  {mobileStatus === 'ALREADY_REGISTERED' && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1">
+                      <div className="font-bold flex items-center gap-1.5">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>This mobile number is already registered.</span>
+                      </div>
+                      <p className="text-[11px] text-rose-700 pl-5.5">
+                        Please use another number or contact <a href="mailto:info@atriowings.in" className="font-bold underline text-rose-900">support@atriowings.in</a>.
+                      </p>
+                    </div>
+                  )}
+
+                  {mobileStatus === 'DELIVERY_FAILED' && mobileMessage && (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1">
+                      <div className="font-bold flex items-center gap-1.5">
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>SMS Gateway Delivery Notice</span>
+                      </div>
+                      <p className="text-[11px] text-amber-800 pl-5.5">{mobileMessage}</p>
+                    </div>
+                  )}
+
+                  {mobileStatus === 'AVAILABLE' && (
+                    <p className="text-[11px] text-emerald-700 font-medium pl-1 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Mobile number is available. Click &quot;Send OTP&quot; to verify.</span>
+                    </p>
+                  )}
+
+                  {(mobileStatus === 'OTP_SENT' ||
+                    mobileStatus === 'VERIFYING' ||
+                    mobileStatus === 'INVALID_OTP' ||
+                    mobileStatus === 'EXPIRED_OTP') && (
+                      <div className="p-3 rounded-xl bg-[#F0F7FF] border border-[#BFDBFE] space-y-2 animate-fadeIn">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#10244D] flex items-center gap-1">
+                            <KeyRound className="w-3.5 h-3.5 text-[#0879E8]" /> Enter 6-Digit Mobile SMS OTP
+                          </span>
+                          <span className="text-[10px] text-[#60769B]">Expires in 5 minutes</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            placeholder="••••••"
+                            value={mobileOtp}
+                            onChange={(e) => {
+                              setMobileOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                              if (mobileStatus === 'INVALID_OTP') setMobileStatus('OTP_SENT');
+                            }}
+                            className="w-36 px-3 py-2 rounded-lg border border-[#D6E2F2] text-sm font-mono font-extrabold tracking-widest text-center text-[#10244D] bg-white focus:outline-none focus:border-[#0879E8] focus:ring-2 focus:ring-[#DCEBFF]"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={handleVerifyMobileOtp}
+                            disabled={mobileOtp.trim().length !== 6 || mobileStatus === 'VERIFYING'}
+                            className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#0879E8] to-[#123FAD] text-white text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer flex items-center gap-1.5"
+                          >
+                            {mobileStatus === 'VERIFYING' ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <span>Verifying...</span>
+                              </>
+                            ) : (
+                              <span>Verify OTP</span>
+                            )}
+                          </button>
+
+                          {mobileCooldown > 0 ? (
+                            <span className="text-[11px] text-[#60769B] font-medium pl-2">
+                              Resend in {mobileCooldown}s
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handleSendMobileOtp}
+                              className="text-[11px] font-bold text-[#0879E8] hover:underline pl-2 cursor-pointer"
+                            >
+                              Resend OTP
+                            </button>
+                          )}
+                        </div>
+
+                        {mobileMessage && (
+                          <p
+                            className={`text-[11px] font-medium ${mobileStatus === 'INVALID_OTP' || mobileStatus === 'EXPIRED_OTP'
+                                ? 'text-rose-600'
+                                : 'text-[#0879E8]'
+                              }`}
+                          >
+                            {mobileMessage}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                  {isMobileVerified && (
+                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span className="font-semibold">Mobile number verified successfully via OTP. Ownership confirmed.</span>
+                    </div>
+                  )}
+                </div>
+
                 {/* Security & Verification Reminder */}
-                {!isEmailVerified && (
+                {(!isEmailVerified || !isMobileVerified) && (
                   <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
                     <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold">Email Verification Required</p>
+                      <p className="font-bold">Ownership Verification Required</p>
                       <p className="text-[11px] text-amber-800">
-                        Please verify ownership of your email address via OTP before proceeding.
+                        Please verify ownership of your email address via OTP before proceeding to KYC.
                       </p>
                     </div>
                   </div>
                 )}
 
-                <div className="pt-2">
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="py-3 px-4 rounded-xl font-bold text-xs text-[#60769B] hover:text-[#10244D] hover:bg-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" /> Back
+                  </button>
                   <button
                     type="button"
                     onClick={handleNextStep}
                     disabled={!isEmailVerified}
-                    className={`w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white shadow-[0_6px_20px_rgba(8,121,232,0.28)] transition-all flex items-center justify-center gap-2 ${
+                    className={`flex-1 py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white shadow-[0_6px_20px_rgba(8,121,232,0.28)] transition-all flex items-center justify-center gap-2 ${
                       !isEmailVerified
                         ? 'bg-slate-300 text-slate-500 shadow-none cursor-not-allowed opacity-60'
                         : 'bg-gradient-to-r from-[#0879E8] to-[#123FAD] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] cursor-pointer'
-                    }`}
+                      }`}
                   >
                     <span>Continue to Location & KYC</span>
                     <ArrowRight className="w-4 h-4" />
@@ -1108,8 +1458,8 @@ export const RegisterBgaPage: React.FC = () => {
               </div>
             )}
 
-            {/* STEP 2: Location & KYC Information */}
-            {step === 2 && (
+            {/* STEP 3: Location & KYC Information */}
+            {step === 3 && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -1126,11 +1476,10 @@ export const RegisterBgaPage: React.FC = () => {
                         setFormData({ ...formData, panNumber: upper });
                         if (fieldErrors.panNumber) setFieldErrors({ ...fieldErrors, panNumber: '' });
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
-                        fieldErrors.panNumber
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.panNumber
                           ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
                           : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
-                      }`}
+                        }`}
                       required
                     />
                     {fieldErrors.panNumber && (
@@ -1212,11 +1561,10 @@ export const RegisterBgaPage: React.FC = () => {
                         setFormData({ ...formData, pinCode: clean });
                         if (fieldErrors.pinCode) setFieldErrors({ ...fieldErrors, pinCode: '' });
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
-                        fieldErrors.pinCode
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.pinCode
                           ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
                           : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
-                      }`}
+                        }`}
                     />
                     {fieldErrors.pinCode && (
                       <p className="text-[11px] text-rose-600 font-medium mt-1">{fieldErrors.pinCode}</p>
@@ -1259,7 +1607,7 @@ export const RegisterBgaPage: React.FC = () => {
                 <div className="flex items-center gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setStep(1)}
+                    onClick={() => setStep(2)}
                     className="py-3 px-4 rounded-xl font-bold text-xs text-[#60769B] hover:text-[#10244D] hover:bg-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <ArrowLeft className="w-4 h-4" /> Back
@@ -1269,15 +1617,15 @@ export const RegisterBgaPage: React.FC = () => {
                     onClick={handleNextStep}
                     className="flex-1 py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-[#0879E8] to-[#123FAD] shadow-[0_6px_20px_rgba(8,121,232,0.28)] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span>Continue to Bank & Agreement</span>
+                    <span>Continue to Bank & Terms</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 3: Banking & Agreement */}
-            {step === 3 && (
+            {/* STEP 4: Banking & Terms */}
+            {step === 4 && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -1292,11 +1640,10 @@ export const RegisterBgaPage: React.FC = () => {
                         setFormData({ ...formData, bankName: e.target.value });
                         if (fieldErrors.bankName) setFieldErrors({ ...fieldErrors, bankName: '' });
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
-                        fieldErrors.bankName
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.bankName
                           ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
                           : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
-                      }`}
+                        }`}
                       required
                     />
                     {fieldErrors.bankName && (
@@ -1316,11 +1663,10 @@ export const RegisterBgaPage: React.FC = () => {
                         setFormData({ ...formData, bankAccountHolder: e.target.value });
                         if (fieldErrors.bankAccountHolder) setFieldErrors({ ...fieldErrors, bankAccountHolder: '' });
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
-                        fieldErrors.bankAccountHolder
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.bankAccountHolder
                           ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
                           : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
-                      }`}
+                        }`}
                       required
                     />
                     {fieldErrors.bankAccountHolder && (
@@ -1345,11 +1691,10 @@ export const RegisterBgaPage: React.FC = () => {
                         setFormData({ ...formData, bankAccountNumber: clean });
                         if (fieldErrors.bankAccountNumber) setFieldErrors({ ...fieldErrors, bankAccountNumber: '' });
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
-                        fieldErrors.bankAccountNumber
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.bankAccountNumber
                           ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
                           : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
-                      }`}
+                        }`}
                       required
                     />
                     {fieldErrors.bankAccountNumber && (
@@ -1371,11 +1716,10 @@ export const RegisterBgaPage: React.FC = () => {
                         setFormData({ ...formData, bankIfsc: upper });
                         if (fieldErrors.bankIfsc) setFieldErrors({ ...fieldErrors, bankIfsc: '' });
                       }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${
-                        fieldErrors.bankIfsc
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium font-mono text-[#10244D] placeholder:text-[#60769B]/70 bg-white transition-all focus:outline-none focus:ring-2 ${fieldErrors.bankIfsc
                           ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
                           : 'border-[#D6E2F2] focus:border-[#0879E8] focus:ring-[#DCEBFF]'
-                      }`}
+                        }`}
                       required
                     />
                     {fieldErrors.bankIfsc && (
@@ -1426,7 +1770,7 @@ export const RegisterBgaPage: React.FC = () => {
                 <div className="flex items-center gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setStep(2)}
+                    onClick={() => setStep(3)}
                     className="py-3 px-4 rounded-xl font-bold text-xs text-[#60769B] hover:text-[#10244D] hover:bg-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <ArrowLeft className="w-4 h-4" /> Back
@@ -1434,12 +1778,11 @@ export const RegisterBgaPage: React.FC = () => {
                   <div className="flex-1">
                     <button
                       type="submit"
-                      disabled={loading || !formData.agreementAccepted || !isEmailVerified}
-                      className={`w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white shadow-[0_6px_20px_rgba(8,121,232,0.28)] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
-                        loading || !formData.agreementAccepted || !isEmailVerified
+                      disabled={loading || !formData.agreementAccepted || !isEmailVerified || !isMobileVerified}
+                      className={`w-full py-3.5 px-6 rounded-xl font-bold text-xs sm:text-sm text-white shadow-[0_6px_20px_rgba(8,121,232,0.28)] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${loading || !formData.agreementAccepted || !isEmailVerified || !isMobileVerified
                           ? 'bg-slate-300 text-slate-500 shadow-none cursor-not-allowed'
                           : 'bg-gradient-to-r from-[#0879E8] to-[#123FAD] hover:from-[#076cd0] hover:to-[#0f3494] hover:shadow-[0_8px_24px_rgba(8,121,232,0.36)] active:scale-[0.99]'
-                      }`}
+                        }`}
                     >
                       {loading ? (
                         <>
