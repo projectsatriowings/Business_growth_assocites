@@ -27,7 +27,7 @@ async function runEndToEndTests() {
 
   try {
     // TEST 1: Database Connectivity & Seeding Verification
-    const adminUser = await prisma.user.findUnique({ where: { email: 'admin@bga.com' } });
+    const adminUser = await prisma.user.findUnique({ where: { email: 'admin.atriowings@gmail.com' } });
     assert(adminUser !== null && adminUser.role === Role.ADMIN, 'Test 1: Admin user exists and has ADMIN role');
 
     const bga1 = await prisma.user.findUnique({ where: { email: 'bga@bga.com' } });
@@ -36,10 +36,10 @@ async function runEndToEndTests() {
     const bga2 = await prisma.user.findUnique({ where: { email: 'bga2@bga.com' } });
     assert(bga2 !== null && bga2.role === Role.BGA, 'Test 3: Secondary BGA exists for isolation testing');
 
-    const accountsUser = await prisma.user.findUnique({ where: { email: 'accounts@bga.com' } });
+    const accountsUser = await prisma.user.findUnique({ where: { email: 'acc.atriowings@gmail.com' } });
     assert(accountsUser !== null && accountsUser.role === Role.ACCOUNTS, 'Test 4: Accounts user exists and has ACCOUNTS role');
 
-    const techUser = await prisma.user.findUnique({ where: { email: 'tech@bga.com' } });
+    const techUser = await prisma.user.findUnique({ where: { email: 'tech.atriowings@gmail.com' } });
     assert(techUser !== null && techUser.role === Role.TECHNICAL, 'Test 5: Technical user exists and has TECHNICAL role');
 
     // TEST 2: Service Classification & Category Integrity

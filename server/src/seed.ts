@@ -11,16 +11,18 @@ async function main() {
   const adminPassword = await bcrypt.hash('Admin@123', salt);
   const bgaPassword = await bcrypt.hash('Bga@123', salt);
   const bga2Password = await bcrypt.hash('Bga2@123', salt);
-  const accountsPassword = await bcrypt.hash('Accounts@123', salt);
-  const techPassword = await bcrypt.hash('Tech@123', salt);
+  const accountsPassword = await bcrypt.hash('Admin@123', salt);
+  const techPassword = await bcrypt.hash('Admin@123', salt);
 
   // 1. Create Portal Users
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@bga.com' },
-    update: {},
+    where: { email: 'admin.atriowings@gmail.com' },
+    update: {
+      passwordHash: adminPassword,
+    },
     create: {
       name: 'Super Admin',
-      email: 'admin@bga.com',
+      email: 'admin.atriowings@gmail.com',
       mobile: '9876543210',
       passwordHash: adminPassword,
       role: Role.ADMIN,
@@ -176,11 +178,13 @@ async function main() {
   });
 
   const accounts = await prisma.user.upsert({
-    where: { email: 'accounts@bga.com' },
-    update: {},
+    where: { email: 'acc.atriowings@gmail.com' },
+    update: {
+      passwordHash: accountsPassword,
+    },
     create: {
       name: 'Sunita Rao (Accounts Head)',
-      email: 'accounts@bga.com',
+      email: 'acc.atriowings@gmail.com',
       mobile: '9876543213',
       passwordHash: accountsPassword,
       role: Role.ACCOUNTS,
@@ -193,11 +197,13 @@ async function main() {
   });
 
   const technical = await prisma.user.upsert({
-    where: { email: 'tech@bga.com' },
-    update: {},
+    where: { email: 'tech.atriowings@gmail.com' },
+    update: {
+      passwordHash: techPassword,
+    },
     create: {
       name: 'Vikram Verma (Tech Lead)',
-      email: 'tech@bga.com',
+      email: 'tech.atriowings@gmail.com',
       mobile: '9876543214',
       passwordHash: techPassword,
       role: Role.TECHNICAL,

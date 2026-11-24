@@ -7,7 +7,7 @@ const SMTP_SECURE = process.env.SMTP_SECURE === 'true' || SMTP_PORT === 465;
 const SMTP_USER = process.env.SMTP_USER || 'info@atriowings.in';
 const SMTP_PASS = process.env.SMTP_PASS || '';
 const SMTP_FROM = process.env.SMTP_FROM || `Atriowings Technologies <${SMTP_USER}>`;
-export const ADMIN_ALERT_EMAIL = process.env.ADMIN_ALERT_EMAIL || SMTP_USER;
+export const ADMIN_ALERT_EMAIL = process.env.ADMIN_ALERT_EMAIL || 'admin.atriowings@gmail.com';
 
 let transporter: Transporter | null = null;
 
