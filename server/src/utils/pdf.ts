@@ -409,8 +409,8 @@ export async function generateQuotationPdfBuffer(data: QuotationPdfData): Promis
   );
 
   // --- TERMS & CONDITIONS & SIGNATURE ---
-  let footerY = Math.max(curY + 22, 625);
-  if (footerY + 90 > 740) {
+  let footerY = Math.max(curY + 22, 620);
+  if (footerY + 105 > 740) {
     kitDoc.addPage({ margins: { top: 125, bottom: 90, left: 45, right: 45 } });
     footerY = 135;
   }
@@ -445,10 +445,39 @@ export async function generateQuotationPdfBuffer(data: QuotationPdfData): Promis
   // Right: Authorized Signatory (Strictly aligned to the right-hand column axis at X: 330)
   const sigX = 330;
   kitDoc.font(boldFont).fontSize(8.5).fillColor('#0f172a').text('AUTHORIZED SIGNATORY', sigX, termsY);
+
+  // Embed Company Seal & Official Signature
+  const sealPath = findAssetPath('company-seal.png');
+  const sigPath = findAssetPath('company-signature.png');
+
+  // Company Seal: Positioned on the right side of the signatory block
+  if (fs.existsSync(sealPath)) {
+    try {
+      kitDoc.image(sealPath, 452, termsY + 6, {
+        width: 56,
+        height: 50,
+      });
+    } catch (sealErr) {
+      console.warn('[PDF Generation] Failed to embed company seal:', sealErr);
+    }
+  }
+
+  // Official Signature: Positioned cleanly above the signatory title line
+  if (fs.existsSync(sigPath)) {
+    try {
+      kitDoc.image(sigPath, sigX, termsY + 13, {
+        width: 105,
+        height: 32,
+      });
+    } catch (sigErr) {
+      console.warn('[PDF Generation] Failed to embed signature:', sigErr);
+    }
+  }
+
   // Signature Line placed with ample clearance
-  kitDoc.strokeColor('#cbd5e1').lineWidth(0.8).moveTo(sigX, termsY + 36).lineTo(550, termsY + 36).stroke();
-  kitDoc.font(boldFont).fontSize(8).fillColor('#0f172a').text(data.preparedBy || 'Accounts & Commercial Department', sigX, termsY + 42, { width: 220 });
-  kitDoc.font(regularFont).fontSize(7.5).fillColor('#64748b').text('Atriowings Technologies India Pvt. Ltd.', sigX, termsY + 52, { width: 220 });
+  kitDoc.strokeColor('#cbd5e1').lineWidth(0.8).moveTo(sigX, termsY + 48).lineTo(550, termsY + 48).stroke();
+  kitDoc.font(boldFont).fontSize(8).fillColor('#0f172a').text(data.preparedBy || 'Accounts & Commercial Department', sigX, termsY + 54, { width: 220 });
+  kitDoc.font(regularFont).fontSize(7.5).fillColor('#64748b').text('Atriowings Technologies India Pvt. Ltd.', sigX, termsY + 65, { width: 220 });
 
   kitDoc.end();
 
