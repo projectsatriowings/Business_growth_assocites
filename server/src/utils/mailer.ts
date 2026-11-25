@@ -1,12 +1,23 @@
 import nodemailer, { Transporter } from 'nodemailer';
+import dotenv from 'dotenv';
+import path from 'path';
 
-// Environment variables
-const SMTP_HOST = process.env.SMTP_HOST || 'smtp.hostinger.com';
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465', 10);
-const SMTP_SECURE = process.env.SMTP_SECURE === 'true' || SMTP_PORT === 465;
-const SMTP_USER = process.env.SMTP_USER || 'info@atriowings.in';
-const SMTP_PASS = process.env.SMTP_PASS || '';
-const SMTP_FROM = process.env.SMTP_FROM || `Atriowings Technologies <${SMTP_USER}>`;
+// Ensure environment variables are loaded regardless of import order
+dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') });
+
+function getSmtpConfig() {
+  const host = process.env.SMTP_HOST || 'smtp.hostinger.com';
+  const port = parseInt(process.env.SMTP_PORT || '465', 10);
+  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+  const user = process.env.SMTP_USER || 'info@atriowings.in';
+  const pass = process.env.SMTP_PASS || '';
+  const from = process.env.SMTP_FROM || `Atriowings Technologies <${user}>`;
+  const adminAlertEmail = process.env.ADMIN_ALERT_EMAIL || 'admin.atriowings@gmail.com';
+  return { host, port, secure, user, pass, from, adminAlertEmail };
+}
+
 export const ADMIN_ALERT_EMAIL = process.env.ADMIN_ALERT_EMAIL || 'admin.atriowings@gmail.com';
 
 let transporter: Transporter | null = null;
@@ -15,14 +26,15 @@ let transporter: Transporter | null = null;
  * Get or create the Nodemailer transporter instance
  */
 export function getMailTransporter(): Transporter {
+  const config = getSmtpConfig();
   if (!transporter) {
     transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_SECURE,
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
       auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS,
+        user: config.user,
+        pass: config.pass,
       },
       pool: true,
       maxConnections: 3,
@@ -40,11 +52,12 @@ export function getMailTransporter(): Transporter {
  */
 export async function verifySmtpConnection(): Promise<{ success: boolean; message: string }> {
   try {
+    const config = getSmtpConfig();
     const t = getMailTransporter();
     await t.verify();
     return {
       success: true,
-      message: `SMTP Connected successfully to ${SMTP_HOST}:${SMTP_PORT} as ${SMTP_USER}`,
+      message: `SMTP Connected successfully to ${config.host}:${config.port} as ${config.user}`,
     };
   } catch (error: any) {
     console.error('SMTP Connection verification failed:', error);
@@ -76,14 +89,15 @@ export interface SendMailOptions {
  */
 export async function sendEmail(options: SendMailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
+    const config = getSmtpConfig();
     const t = getMailTransporter();
     const mailOptions = {
-      from: SMTP_FROM,
+      from: config.from,
       to: options.to,
       subject: options.subject,
       html: options.html,
       text: options.text || options.html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
-      replyTo: options.replyTo || SMTP_USER,
+      replyTo: options.replyTo || config.user,
       cc: options.cc,
       bcc: options.bcc,
       attachments: options.attachments,

@@ -1,8 +1,14 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables immediately before any other module imports
+dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') });
+
 import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
-import dotenv from 'dotenv';
-import path from 'path';
 import fs from 'fs';
 
 import authRoutes from './routes/auth.routes';
@@ -15,10 +21,6 @@ import resourceRoutes from './routes/resource.routes';
 import contactRoutes from './routes/contact.routes';
 import uploadRoutes from './routes/upload.routes';
 import publicRoutes from './routes/public.routes';
-
-dotenv.config();
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
-dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') });
 
 export const app = express();
 const PORT = Number(process.env.PORT) || 5000;
