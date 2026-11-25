@@ -241,6 +241,7 @@ model Client {
   @@index([email])
   @@index([bgaId])
   @@index([bgaId, status])
+  @@index([bgaId, createdAt])
 }
 
 model Enquiry {
@@ -269,6 +270,8 @@ model Enquiry {
   @@index([clientId])
   @@index([status])
   @@index([createdAt])
+  @@index([bgaId, status])
+  @@index([serviceCategory])
 }
 
 model Quotation {
@@ -332,6 +335,11 @@ model Quotation {
   @@index([bgaId])
   @@index([status])
   @@index([createdAt])
+  @@index([bgaId, status])
+  @@index([status, updatedAt])
+  @@index([adminApprovalStatus])
+  @@index([serviceCategory])
+  @@index([previousVersionId])
 }
 
 model WorkOrder {
@@ -367,6 +375,10 @@ model WorkOrder {
   @@index([bgaId])
   @@index([status])
   @@index([createdAt])
+  @@index([bgaId, status])
+  @@index([status, advanceVerified])
+  @@index([advanceVerified, handoverApproved])
+  @@index([serviceCategory])
 }
 
 model Payment {
@@ -394,6 +406,9 @@ model Payment {
   @@index([status])
   @@index([paymentType])
   @@index([createdAt])
+  @@index([status, paymentType])
+  @@index([status, createdAt])
+  @@index([transactionReference])
 }
 
 model TechnicalProject {
@@ -431,6 +446,8 @@ model TechnicalProject {
   @@index([assignedLeadId])
   @@index([status])
   @@index([createdAt])
+  @@index([status, updatedAt])
+  @@index([serviceCategory])
   @@index([clientAccessToken])
 }
 
@@ -545,6 +562,9 @@ model Commission {
   @@index([workOrderId])
   @@index([eligibilityStatus, payoutStatus])
   @@index([approvalStatus, payoutStatus])
+  @@index([bgaId, payoutStatus])
+  @@index([workOrderId, billingType])
+  @@index([eligibilityStatus, approvalStatus])
   @@index([createdAt])
 }
 

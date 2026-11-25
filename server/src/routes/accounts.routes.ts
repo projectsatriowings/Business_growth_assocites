@@ -187,16 +187,22 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       },
     };
 
-    appCache.set('accounts:dashboard-stats', result, 20);
+    appCache.set('accounts:dashboard-stats', result, 60);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch accounts stats' });
   }
 });
 
-// 2. Approved Enquiries & Quotation Requests
+// 2. Approved Enquiries & Quotation Requests (Cached for 30s)
 router.get('/quotation-requests', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const cached = appCache.get('accounts:quotation-requests');
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
     const rawRequests = await prisma.quotation.findMany({
       where: {
         status: { not: QuotationStatus.EXPIRED },
@@ -210,12 +216,11 @@ router.get('/quotation-requests', async (req: AuthRequest, res: Response): Promi
           include: {
             payments: { orderBy: { createdAt: 'asc' } },
             project: {
-              include: {
-                deliverables: true,
-                finalPaymentFollowUps: {
-                  include: { bga: { select: { id: true, name: true } } },
-                  orderBy: { createdAt: 'desc' },
-                },
+              select: {
+                id: true,
+                projectNumber: true,
+                status: true,
+                progressPercentage: true,
               },
             },
             commissions: { orderBy: { createdAt: 'desc' } },
@@ -225,7 +230,9 @@ router.get('/quotation-requests', async (req: AuthRequest, res: Response): Promi
       orderBy: { createdAt: 'desc' },
     });
     const requests = await hydrateQuotationVersions(rawRequests);
-    res.json({ requests });
+    const responsePayload = { requests };
+    appCache.set('accounts:quotation-requests', responsePayload, 30);
+    res.json(responsePayload);
   } catch (error) {
     res.status(500).json({ error: 'Failed to load quotation requests' });
   }
@@ -433,9 +440,15 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
   }
 });
 
-// 4. Work Orders
+// 4. Work Orders (Cached for 30s)
 router.get('/work-orders', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const cached = appCache.get('accounts:work-orders');
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
     const workOrders = await prisma.workOrder.findMany({
       include: {
         client: true,
@@ -446,7 +459,9 @@ router.get('/work-orders', async (req: AuthRequest, res: Response): Promise<void
       },
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ workOrders });
+    const payload = { workOrders };
+    appCache.set('accounts:work-orders', payload, 30);
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: 'Failed to load work orders' });
   }
@@ -552,9 +567,15 @@ router.post('/work-orders/:id/hold', async (req: AuthRequest, res: Response): Pr
   }
 });
 
-// 5. Payment Management & Verification
+// 5. Payment Management & Verification (Cached for 30s)
 router.get('/payments', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const cached = appCache.get('accounts:payments');
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
     const payments = await prisma.payment.findMany({
       include: {
         workOrder: {
@@ -566,7 +587,9 @@ router.get('/payments', async (req: AuthRequest, res: Response): Promise<void> =
       },
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ payments });
+    const payload = { payments };
+    appCache.set('accounts:payments', payload, 30);
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: 'Failed to load payments' });
   }
@@ -1225,9 +1248,15 @@ router.post('/payments/:id/request-info', async (req: AuthRequest, res: Response
   }
 });
 
-// 6. Commission Overview for Accounts
+// 6. Commission Overview for Accounts (Cached for 30s)
 router.get('/commissions', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const cached = appCache.get('accounts:commissions');
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
     const commissions = await prisma.commission.findMany({
       include: {
         bga: {
@@ -1248,7 +1277,9 @@ router.get('/commissions', async (req: AuthRequest, res: Response): Promise<void
       },
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ commissions });
+    const payload = { commissions };
+    appCache.set('accounts:commissions', payload, 30);
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: 'Failed to load commissions' });
   }

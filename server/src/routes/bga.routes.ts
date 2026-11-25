@@ -41,6 +41,9 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
     }
     const sixMonthsAgo = months[0].start;
 
+    // Cached Associate Peer Network (5 min global cache)
+    const cachedPeerLeaderboard = appCache.get<any[]>('bga:global:peerLeaderboard');
+
     const [
       totalClients,
       totalEnquiries,
@@ -102,23 +105,28 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
         where: { bgaId },
         _count: { id: true },
       }),
-      // Associate Peer Network ("for the bga it should be one bga should show another bga")
-      prisma.user.findMany({
-        where: { role: Role.BGA, status: BgaStatus.ACTIVE },
-        select: {
-          id: true,
-          name: true,
-          createdAt: true,
-          _count: {
+      // Associate Peer Network
+      cachedPeerLeaderboard
+        ? Promise.resolve(cachedPeerLeaderboard)
+        : prisma.user.findMany({
+            where: { role: Role.BGA, status: BgaStatus.ACTIVE },
             select: {
-              clients: true,
-              enquiries: true,
-              quotations: { where: { status: QuotationStatus.ACCEPTED } },
-              workOrders: { where: { project: { status: ProjectStatus.COMPLETED } } },
+              id: true,
+              name: true,
+              createdAt: true,
+              _count: {
+                select: {
+                  clients: true,
+                  enquiries: true,
+                  quotations: { where: { status: QuotationStatus.ACCEPTED } },
+                  workOrders: { where: { project: { status: ProjectStatus.COMPLETED } } },
+                },
+              },
             },
-          },
-        },
-      }),
+          }).then((res) => {
+            appCache.set('bga:global:peerLeaderboard', res, 300);
+            return res;
+          }),
       // Active project execution cards
       prisma.technicalProject.findMany({
         where: { workOrder: { bgaId } },
@@ -224,7 +232,7 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       recentActiveProjects,
     };
 
-    appCache.set(cacheKey, result, 20);
+    appCache.set(cacheKey, result, 60);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to load BGA stats' });

@@ -274,7 +274,7 @@ export const AccountsPortal: React.FC = () => {
     }
   };
 
-  const loadData = async (bypassCache = true) => {
+  const loadData = async (bypassCache = false) => {
     setLoading(true);
     try {
       await Promise.all([loadStats(bypassCache), loadTabData()]);

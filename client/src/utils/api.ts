@@ -66,7 +66,7 @@ export async function apiRequest(endpoint: string, options: ApiRequestOptions = 
           throw new Error(data.error || `HTTP error ${response.status}`);
         }
 
-        const ttl = options.cacheTtlMs ?? 15_000; // 15s default client cache
+        const ttl = options.cacheTtlMs ?? 30_000; // 30s default client cache
         clientApiCache.set(cacheKey, {
           data,
           expiresAt: Date.now() + ttl,

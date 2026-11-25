@@ -9,56 +9,54 @@ export async function hydrateQuotationVersions<T extends { id: string; previousV
   const prevIds = Array.from(new Set(quotations.map((q) => q.previousVersionId).filter(Boolean) as string[]));
   const allCurrentIds = quotations.map((q) => q.id);
 
+  const versionSelect = {
+    id: true,
+    quotationNumber: true,
+    version: true,
+    enquiryId: true,
+    clientId: true,
+    bgaId: true,
+    preparedById: true,
+    serviceCategory: true,
+    serviceScope: true,
+    serviceFee: true,
+    adBudget: true,
+    discount: true,
+    taxRate: true,
+    taxAmount: true,
+    totalAmount: true,
+    advanceRequiredPercent: true,
+    advanceRequiredAmount: true,
+    paymentTerms: true,
+    validityDate: true,
+    status: true,
+    adminApprovalStatus: true,
+    adminNotes: true,
+    proposedCommissionRate: true,
+    approvedCommissionRate: true,
+    commissionNotes: true,
+    commissionExceptionReason: true,
+    isCommissionException: true,
+    commissionApprovalStatus: true,
+    revisionNotes: true,
+    previousVersionId: true,
+    createdAt: true,
+    updatedAt: true,
+    bga: { select: { id: true, name: true, email: true, mobile: true } },
+  };
+
   const [allEnquiryQuotations, prevQuotes, supersedingQuotes] = await Promise.all([
     enquiryIds.length > 0
       ? prisma.quotation.findMany({
           where: { enquiryId: { in: enquiryIds } },
-          include: {
-            client: true,
-            bga: { select: { id: true, name: true, email: true, mobile: true } },
-            reminders: { orderBy: { createdAt: 'asc' }, include: { bga: { select: { name: true } } } },
-            workOrder: {
-              include: {
-                payments: { orderBy: { createdAt: 'asc' } },
-                project: {
-                  include: {
-                    deliverables: true,
-                    finalPaymentFollowUps: {
-                      include: { bga: { select: { id: true, name: true } } },
-                      orderBy: { createdAt: 'desc' },
-                    },
-                  },
-                },
-                commissions: { orderBy: { createdAt: 'desc' } },
-              },
-            },
-          },
+          select: versionSelect,
           orderBy: { version: 'asc' },
         })
       : Promise.resolve([]),
     prevIds.length > 0
       ? prisma.quotation.findMany({
           where: { id: { in: prevIds } },
-          include: {
-            client: true,
-            bga: { select: { id: true, name: true, email: true, mobile: true } },
-            reminders: { orderBy: { createdAt: 'asc' }, include: { bga: { select: { name: true } } } },
-            workOrder: {
-              include: {
-                payments: { orderBy: { createdAt: 'asc' } },
-                project: {
-                  include: {
-                    deliverables: true,
-                    finalPaymentFollowUps: {
-                      include: { bga: { select: { id: true, name: true } } },
-                      orderBy: { createdAt: 'desc' },
-                    },
-                  },
-                },
-                commissions: { orderBy: { createdAt: 'desc' } },
-              },
-            },
-          },
+          select: versionSelect,
         })
       : Promise.resolve([]),
     prisma.quotation.findMany({

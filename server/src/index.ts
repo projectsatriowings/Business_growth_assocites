@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -23,6 +24,7 @@ export const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
 // Middleware
+app.use(compression());
 app.use(
   cors({
     origin: '*',

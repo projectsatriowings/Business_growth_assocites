@@ -264,17 +264,24 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       },
     };
 
-    appCache.set('admin:dashboard-stats', result, 20);
+    appCache.set('admin:dashboard-stats', result, 60);
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch admin stats' });
   }
 });
 
-// 2. BGA Management List
+// 2. BGA Management List (Cached for 30s)
 router.get('/bgas', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { status, search } = req.query;
+    const cacheKey = `admin:bgas:${status || 'ALL'}:${search || ''}`;
+    const cached = appCache.get(cacheKey);
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
     const where: any = { role: Role.BGA };
 
     if (status && status !== 'ALL') {
@@ -342,7 +349,9 @@ router.get('/bgas', async (req: AuthRequest, res: Response): Promise<void> => {
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ bgas });
+    const payload = { bgas };
+    appCache.set(cacheKey, payload, 30);
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: 'Failed to load BGAs' });
   }
@@ -876,9 +885,15 @@ router.delete('/resources/:id', async (req: AuthRequest, res: Response): Promise
   }
 });
 
-// 6. Client Management & Ownership Transfer
+// 6. Client Management & Ownership Transfer (Cached for 30s)
 router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const cached = appCache.get('admin:clients');
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
     const clients = await prisma.client.findMany({
       include: {
         bga: { select: { id: true, name: true, email: true, mobile: true } },
@@ -905,7 +920,9 @@ router.get('/clients', async (req: AuthRequest, res: Response): Promise<void> =>
       };
     });
 
-    res.json({ clients: enrichedClients });
+    const payload = { clients: enrichedClients };
+    appCache.set('admin:clients', payload, 30);
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: 'Failed to load clients' });
   }
@@ -1010,10 +1027,17 @@ router.post('/clients/:id/transfer-ownership', async (req: AuthRequest, res: Res
   }
 });
 
-// 7. Enquiry Management & Approvals
+// 7. Enquiry Management & Approvals (Cached for 30s)
 router.get('/enquiries', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { status } = req.query;
+    const cacheKey = `admin:enquiries:${status || 'ALL'}`;
+    const cached = appCache.get(cacheKey);
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
     const where: any = {};
     if (status && status !== 'ALL') {
       where.status = status as EnquiryStatus;
@@ -1029,7 +1053,9 @@ router.get('/enquiries', async (req: AuthRequest, res: Response): Promise<void> 
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ enquiries });
+    const payload = { enquiries };
+    appCache.set(cacheKey, payload, 30);
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: 'Failed to load enquiries' });
   }

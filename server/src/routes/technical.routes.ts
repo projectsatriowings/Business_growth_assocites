@@ -177,17 +177,23 @@ router.get('/dashboard-stats', async (req: AuthRequest, res: Response): Promise<
       })),
     };
 
-    appCache.set('technical:dashboard-stats', result, 20);
+    appCache.set('technical:dashboard-stats', result, 60);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch technical stats' });
   }
 });
 
-// 2. Assigned Projects (Auto-routed following Advance Payment Verification)
+// 2. Assigned Projects (Cached for 30s)
 router.get('/projects', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { team } = req.query;
+    const cacheKey = `technical:projects:${team || 'ALL'}`;
+    const cached = appCache.get(cacheKey);
+    if (cached) {
+      res.json(cached);
+      return;
+    }
 
     const projects = await prisma.technicalProject.findMany({
       where: {
@@ -300,7 +306,9 @@ router.get('/projects', async (req: AuthRequest, res: Response): Promise<void> =
       teamResolvedProjects = teamResolvedProjects.filter((p) => p.assignedTeam === team);
     }
 
-    res.json({ projects: teamResolvedProjects });
+    const payload = { projects: teamResolvedProjects };
+    appCache.set(cacheKey, payload, 30);
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: 'Failed to load projects' });
   }
