@@ -154,8 +154,9 @@ router.get('/quotations/:id/pdf', async (req: AuthRequest, res: Response): Promi
     }
 
     const totalAmount = quotation.totalAmount || (taxableAmount + taxAmount);
-    const advancePercent = quotation.advanceRequiredPercent || 50;
-    const advanceAmount = quotation.advanceRequiredAmount || Math.round(totalAmount * (advancePercent / 100));
+    const isDm = quotation.serviceCategory === 'DIGITAL_MARKETING';
+    const advancePercent = isDm ? 100 : (quotation.advanceRequiredPercent || 50);
+    const advanceAmount = isDm ? totalAmount : (quotation.advanceRequiredAmount || Math.round(totalAmount * (advancePercent / 100)));
 
     await generateQuotationPdf(
       {

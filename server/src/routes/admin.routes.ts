@@ -1096,21 +1096,34 @@ router.post('/enquiries/:id/review', async (req: AuthRequest, res: Response): Pr
             serviceScope: enquiry.requirements,
             serviceFee: enquiry.expectedBudget || 0,
             totalAmount: enquiry.expectedBudget || 0,
-            advanceRequiredAmount: (enquiry.expectedBudget || 0) * 0.5,
-            paymentTerms: '50% Advance on Kick-off, 50% on Delivery Completion',
+            advanceRequiredPercent: enquiry.serviceCategory === ServiceCategoryType.DIGITAL_MARKETING ? 100 : 50,
+            advanceRequiredAmount:
+              enquiry.serviceCategory === ServiceCategoryType.DIGITAL_MARKETING
+                ? enquiry.expectedBudget || 0
+                : (enquiry.expectedBudget || 0) * 0.5,
+            paymentTerms:
+              enquiry.serviceCategory === ServiceCategoryType.DIGITAL_MARKETING
+                ? '100% advance full payment required prior to campaign strategy, setup, and execution.'
+                : '50% Advance on Kick-off, 50% on Delivery Completion',
             validityDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
             status: QuotationStatus.REQUESTED,
             adminApprovalStatus: 'PENDING',
           },
         });
       } else {
+        const isDm = enquiry.serviceCategory === ServiceCategoryType.DIGITAL_MARKETING;
+        const total = enquiry.expectedBudget || existingQuotation.totalAmount;
         await prisma.quotation.update({
           where: { id: existingQuotation.id },
           data: {
             serviceFee: enquiry.expectedBudget || existingQuotation.serviceFee,
             serviceScope: enquiry.requirements || existingQuotation.serviceScope,
-            totalAmount: enquiry.expectedBudget || existingQuotation.totalAmount,
-            advanceRequiredAmount: (enquiry.expectedBudget || existingQuotation.totalAmount) * 0.5,
+            totalAmount: total,
+            advanceRequiredPercent: isDm ? 100 : (existingQuotation.advanceRequiredPercent || 50),
+            advanceRequiredAmount: isDm ? total : total * 0.5,
+            paymentTerms: isDm
+              ? '100% advance full payment required prior to campaign strategy, setup, and execution.'
+              : existingQuotation.paymentTerms,
           },
         });
       }

@@ -448,6 +448,12 @@ export const AccountsPortal: React.FC = () => {
       ? String(q.proposedCommissionRate)
       : String(foundRange?.minPercentage ?? 10);
 
+    const isDigitalMarketing = q.serviceCategory === 'DIGITAL_MARKETING';
+    const defaultAdvancePercent = isDigitalMarketing ? '100' : String(q.advanceRequiredPercent || 50);
+    const defaultPaymentTerms = isDigitalMarketing
+      ? '100% advance full payment required prior to campaign strategy, setup, and project execution.'
+      : (q.paymentTerms || '50% advance to initiate technical architecture. Balance in milestones.');
+
     setPrepModal({ quotation: q });
     setQuoteForm({
       serviceScope: q.serviceScope || q.enquiry?.requirements || q.enquiry?.projectScope || '',
@@ -455,8 +461,8 @@ export const AccountsPortal: React.FC = () => {
       adBudget: String(q.adBudget || 0),
       discount: String(q.discount || 0),
       taxRate: String(q.taxRate || 18),
-      advanceRequiredPercent: String(q.advanceRequiredPercent || 50),
-      paymentTerms: q.paymentTerms || '50% advance to initiate technical architecture. Balance in milestones.',
+      advanceRequiredPercent: defaultAdvancePercent,
+      paymentTerms: defaultPaymentTerms,
       validityDays: '15',
       proposedCommissionRate: defaultRate,
       commissionExceptionReason: q.commissionExceptionReason || '',
@@ -1686,12 +1692,22 @@ export const AccountsPortal: React.FC = () => {
                             </div>
 
                             <div>
-                              <label className="block text-slate-700 font-semibold mb-1">Advance Required (%)</label>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="block text-slate-700 font-semibold">Advance Required (%)</label>
+                                {prepModal?.quotation?.serviceCategory === 'DIGITAL_MARKETING' && (
+                                  <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                                    100% Mandatory for Digital Marketing
+                                  </span>
+                                )}
+                              </div>
                               <input
                                 type="number"
+                                disabled={prepModal?.quotation?.serviceCategory === 'DIGITAL_MARKETING'}
                                 value={quoteForm.advanceRequiredPercent}
                                 onChange={(e) => setQuoteForm({ ...quoteForm, advanceRequiredPercent: e.target.value })}
-                                className="w-full p-2.5 border border-slate-200 rounded-xl font-semibold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                                className={`w-full p-2.5 border border-slate-200 rounded-xl font-semibold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 ${
+                                  prepModal?.quotation?.serviceCategory === 'DIGITAL_MARKETING' ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : ''
+                                }`}
                               />
                             </div>
                           </div>
@@ -2113,6 +2129,7 @@ export const AccountsPortal: React.FC = () => {
                           const pendingPayment = pendingPayments[0];
                           const isReleased = Boolean(w.handoverApproved || w.project || w.status === 'IN_PRODUCTION' || w.status === 'COMPLETED');
                           const isHeld = w.handoverStatus === 'ON_HOLD' || w.handoverStatus === 'CLARIFICATION_REQUESTED';
+                          const isDigitalMarketing = w.serviceCategory === 'DIGITAL_MARKETING' || w.quotation?.serviceCategory === 'DIGITAL_MARKETING';
 
                           return (
                             <tr key={w.id} className="hover:bg-slate-50/60 transition-colors">
@@ -2173,7 +2190,7 @@ export const AccountsPortal: React.FC = () => {
                                   <div className="space-y-0.5">
                                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-1 animate-pulse">
                                       <Clock className="w-3 h-3 text-amber-600" />
-                                      ADVANCE AWAITING AUDIT
+                                      {isDigitalMarketing ? 'FULL PAYMENT AWAITING AUDIT' : 'ADVANCE AWAITING AUDIT'}
                                     </span>
                                     <div className="text-[10px] text-amber-700">
                                       ₹{(pendingAdvancePayment || pendingPayment).amount?.toLocaleString('en-IN')} pending
@@ -2183,7 +2200,7 @@ export const AccountsPortal: React.FC = () => {
                                   <div className="space-y-0.5">
                                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 inline-flex items-center gap-1">
                                       <Clock className="w-3 h-3 text-slate-500" />
-                                      AWAITING ADVANCE
+                                      {isDigitalMarketing ? 'AWAITING FULL PAYMENT (100%)' : 'AWAITING ADVANCE'}
                                     </span>
                                     <div className="text-[10px] text-slate-400">
                                       Req: ₹{w.advanceRequired?.toLocaleString('en-IN')}
@@ -2215,7 +2232,7 @@ export const AccountsPortal: React.FC = () => {
                                   </span>
                                 ) : !hasVerifiedAdvance ? (
                                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500">
-                                    AWAITING ADVANCE
+                                    {isDigitalMarketing ? 'AWAITING FULL PAYMENT (100%)' : 'AWAITING ADVANCE'}
                                   </span>
                                 ) : (
                                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 inline-flex items-center gap-1">
@@ -2281,10 +2298,10 @@ export const AccountsPortal: React.FC = () => {
                                         }, 'VERIFY');
                                       }}
                                       className="px-2.5 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-colors inline-flex items-center gap-1"
-                                      title={pendingPayment.paymentType === 'FINAL' ? 'Verify final client payment against bank statement' : 'Verify client advance payment'}
+                                      title={pendingPayment.paymentType === 'FINAL' ? 'Verify final client payment against bank statement' : isDigitalMarketing ? 'Verify 100% full client payment' : 'Verify client advance payment'}
                                     >
                                       <CheckCircle2 className="w-3 h-3" />
-                                      {pendingPayment.paymentType === 'FINAL' ? 'Verify Final Payment' : 'Verify Advance'}
+                                      {pendingPayment.paymentType === 'FINAL' ? 'Verify Final Payment' : isDigitalMarketing ? 'Verify Full Payment' : 'Verify Advance'}
                                     </button>
                                   ) : isFullySettled ? (
                                     <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg inline-flex items-center gap-1">
@@ -2309,7 +2326,7 @@ export const AccountsPortal: React.FC = () => {
                                       }}
                                       className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-colors"
                                     >
-                                      + Record Advance
+                                      {isDigitalMarketing ? '+ Record Full Payment' : '+ Record Advance'}
                                     </button>
                                   ) : (
                                     <button

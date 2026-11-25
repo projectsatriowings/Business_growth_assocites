@@ -2201,9 +2201,15 @@ router.post('/enquiries/:id/request-quotation', async (req: AuthRequest, res: Re
         taxRate: 18,
         taxAmount: (enquiry.expectedBudget * 18) / 100,
         totalAmount: enquiry.expectedBudget + (enquiry.expectedBudget * 18) / 100,
-        advanceRequiredPercent: 50,
-        advanceRequiredAmount: (enquiry.expectedBudget + (enquiry.expectedBudget * 18) / 100) * 0.5,
-        paymentTerms: '50% advance upon contract signing. Balance upon delivery milestones.',
+        advanceRequiredPercent: enquiry.serviceCategory === ServiceCategoryType.DIGITAL_MARKETING ? 100 : 50,
+        advanceRequiredAmount:
+          enquiry.serviceCategory === ServiceCategoryType.DIGITAL_MARKETING
+            ? enquiry.expectedBudget + (enquiry.expectedBudget * 18) / 100
+            : (enquiry.expectedBudget + (enquiry.expectedBudget * 18) / 100) * 0.5,
+        paymentTerms:
+          enquiry.serviceCategory === ServiceCategoryType.DIGITAL_MARKETING
+            ? '100% advance full payment required prior to campaign strategy, setup, and execution.'
+            : '50% advance upon contract signing. Balance upon delivery milestones.',
         validityDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days
         status: QuotationStatus.REQUESTED,
       },

@@ -270,8 +270,17 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
     const taxAmount = (taxableAmount * rate) / 100;
     const totalAmount = taxableAmount + taxAmount;
 
-    const advPercent = parseFloat(advanceRequiredPercent) || 50;
+    // POLICY ENFORCED: Digital Marketing strictly requires 100% full advance payment prior to execution.
+    // Other categories (Web, Mobile, Software) follow standard flow (default 50% mobilization advance).
+    const isDigitalMarketing = existing.serviceCategory === ServiceCategoryType.DIGITAL_MARKETING;
+    const advPercent = isDigitalMarketing ? 100 : (parseFloat(advanceRequiredPercent) || 50);
     const advanceRequiredAmount = (totalAmount * advPercent) / 100;
+
+    const defaultPaymentTerms = isDigitalMarketing
+      ? '100% advance full payment required prior to campaign strategy, setup, and project execution.'
+      : '50% advance on project kick-off, remaining balance upon verified milestone delivery.';
+
+    const finalPaymentTerms = paymentTerms && paymentTerms.trim() ? paymentTerms.trim() : defaultPaymentTerms;
 
     const days = parseInt(validityDays) || 15;
     const validityDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
@@ -326,7 +335,7 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
           totalAmount,
           advanceRequiredPercent: advPercent,
           advanceRequiredAmount,
-          paymentTerms: paymentTerms || existing.paymentTerms,
+          paymentTerms: finalPaymentTerms,
           validityDate,
           status: QuotationStatus.PENDING_ADMIN_APPROVAL,
           adminApprovalStatus: 'PENDING',
@@ -369,7 +378,7 @@ router.post('/quotations/:id/prepare', async (req: AuthRequest, res: Response): 
           totalAmount,
           advanceRequiredPercent: advPercent,
           advanceRequiredAmount,
-          paymentTerms: paymentTerms || existing.paymentTerms,
+          paymentTerms: finalPaymentTerms,
           validityDate,
           status: QuotationStatus.PENDING_ADMIN_APPROVAL,
           adminApprovalStatus: 'PENDING',

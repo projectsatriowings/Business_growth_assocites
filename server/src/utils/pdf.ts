@@ -401,7 +401,12 @@ export async function generateQuotationPdfBuffer(data: QuotationPdfData): Promis
   kitDoc.font(boldFont).fontSize(8.5).fillColor('#0f766e').text(formatIndianCurrency(advance), totX + 70, curY + 2, { width: 140, align: 'right' });
 
   kitDoc.font(boldFont).fontSize(7.5).fillColor('#475569').text('BALANCE DUE ON COMPLETION:', totX + 10, curY + 18);
-  kitDoc.font(boldFont).fontSize(8.5).fillColor('#475569').text(formatIndianCurrency(balance), totX + 70, curY + 17, { width: 140, align: 'right' });
+  kitDoc.font(boldFont).fontSize(8.5).fillColor('#475569').text(
+    data.advanceRequiredPercent === 100 ? '₹0 (Fully Settled Upfront)' : formatIndianCurrency(balance),
+    totX + 70,
+    curY + 17,
+    { width: 140, align: 'right' }
+  );
 
   // --- TERMS & CONDITIONS & SIGNATURE ---
   let footerY = Math.max(curY + 22, 625);
@@ -417,10 +422,15 @@ export async function generateQuotationPdfBuffer(data: QuotationPdfData): Promis
   kitDoc.font(boldFont).fontSize(8.5).fillColor('#0f172a').text('TERMS & CONDITIONS', 45, termsY);
   kitDoc.font(regularFont).fontSize(7).fillColor('#475569');
   let termLineY = termsY + 12;
+  const is100Percent = data.advanceRequiredPercent === 100;
   const termsList = [
     `1. Validity: This commercial quotation is valid until ${formatDisplayDate(data.validityDate)} from the date of issue.`,
-    '2. Mobilization: Engineering kick-off commences within 2 business days of verified advance payment receipt.',
-    `3. Payment Milestones: ${data.advanceRequiredPercent}% mobilization advance, remaining balance upon verified milestone delivery.`,
+    is100Percent
+      ? '2. Mobilization: Campaign setup and execution commences upon 100% full upfront advance settlement.'
+      : '2. Mobilization: Engineering kick-off commences within 2 business days of verified advance payment receipt.',
+    is100Percent
+      ? '3. Payment Terms: 100% upfront advance settlement required prior to project/campaign execution.'
+      : `3. Payment Milestones: ${data.advanceRequiredPercent}% mobilization advance, remaining balance upon verified milestone delivery.`,
     '4. Account Details: Direct bank transfers to Atriowings Technologies India Private Limited (HDFC Bank).',
   ];
 
