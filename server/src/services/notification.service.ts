@@ -181,6 +181,10 @@ export class NotificationService {
     }
 
     let logId: string | null = null;
+    if (!(prisma as any).emailDeliveryLog) {
+      // Prisma client might not be regenerated yet with EmailDeliveryLog model
+      return;
+    }
     try {
       const createdLog = await prisma.emailDeliveryLog.create({
         data: {
@@ -272,6 +276,9 @@ export class NotificationService {
    */
   static async recoverPendingEmails(): Promise<number> {
     try {
+      if (!(prisma as any).emailDeliveryLog) {
+        return 0;
+      }
       const pendingLogs = await prisma.emailDeliveryLog.findMany({
         where: {
           status: 'PENDING',

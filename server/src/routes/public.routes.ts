@@ -18,6 +18,11 @@ router.get('/commission-ranges', async (req: Request, res: Response): Promise<vo
       return;
     }
 
+    if (!(prisma as any).commissionRangeConfig) {
+      res.json({ ranges: [], timestamp: new Date().toISOString() });
+      return;
+    }
+
     const ranges = await prisma.commissionRangeConfig.findMany({
       where: { status: 'ACTIVE' },
       orderBy: { serviceCategory: 'asc' },
