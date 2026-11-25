@@ -839,10 +839,10 @@ router.post('/work-orders/:id/payments', async (req: AuthRequest, res: Response)
         ? paymentType === 'FINAL'
           ? `Final payment of ₹${payAmount.toLocaleString('en-IN')} recorded and verified successfully. Contract is 100% settled.`
           : paymentType === 'ADVANCE'
-          ? releaseResult?.released
-            ? `Advance payment of ₹${payAmount.toLocaleString('en-IN')} recorded and verified successfully. Work order auto-released to ${releaseResult.teamName}.`
-            : `Advance payment of ₹${payAmount.toLocaleString('en-IN')} recorded and verified successfully.`
-          : `Payment of ₹${payAmount.toLocaleString('en-IN')} recorded and verified successfully.`
+            ? releaseResult?.released
+              ? `Advance payment of ₹${payAmount.toLocaleString('en-IN')} recorded and verified successfully. Work order auto-released to ${releaseResult.teamName}.`
+              : `Advance payment of ₹${payAmount.toLocaleString('en-IN')} recorded and verified successfully.`
+            : `Payment of ₹${payAmount.toLocaleString('en-IN')} recorded and verified successfully.`
         : 'Payment recorded successfully. Awaiting payment audit and verification.',
       payment,
       autoReleased: releaseResult?.released || false,
