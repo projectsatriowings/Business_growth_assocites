@@ -181,9 +181,10 @@ async function main() {
     where: { email: 'acc.atriowings@gmail.com' },
     update: {
       passwordHash: accountsPassword,
+      name: 'Accountant',
     },
     create: {
-      name: 'Sunita Rao (Accounts Head)',
+      name: 'Accountant',
       email: 'acc.atriowings@gmail.com',
       mobile: '9876543213',
       passwordHash: accountsPassword,
@@ -200,9 +201,10 @@ async function main() {
     where: { email: 'tech.atriowings@gmail.com' },
     update: {
       passwordHash: techPassword,
+      name: 'Technical',
     },
     create: {
-      name: 'Vikram Verma (Tech Lead)',
+      name: 'Technical',
       email: 'tech.atriowings@gmail.com',
       mobile: '9876543214',
       passwordHash: techPassword,
