@@ -228,11 +228,12 @@ async function main() {
   // 2. System Settings
   const settings = [
     { key: 'enquiry_approval_required_for_quotation', value: 'true', description: 'Whether enquiries must be approved by Admin before requesting quotation' },
-    { key: 'company_name', value: 'Business Growth Associates & Tech Solutions Ltd.', description: 'Official Company Name' },
-    { key: 'company_email', value: 'billing@bga-solutions.com', description: 'Official Company Email' },
-    { key: 'company_phone', value: '+91 98765 43210', description: 'Official Support Phone' },
-    { key: 'company_address', value: 'Level 4, Cyber Gateway, HITEC City, Hyderabad - 500081', description: 'Headquarters Address' },
-    { key: 'company_gstin', value: '36AAACB1234F1Z5', description: 'Company GSTIN Number' },
+    { key: 'company_name', value: 'Atriowings Technologies India Private Limited', description: 'Official Company Legal Name' },
+    { key: 'company_email', value: 'info@atriowings.in', description: 'Official Corporate & Billing Email' },
+    { key: 'company_phone', value: '+91 8825948859', description: 'Official Corporate Support Phone Number' },
+    { key: 'company_address', value: 'No. 1, Gurudev Complex, 57th St, Venkatraman Nagar, Korattur, Chennai, Tamil Nadu 600080', description: 'Official Headquarters Registered Address' },
+    { key: 'company_gstin', value: '33AASCA7189D1ZD', description: 'Official Company GSTIN Identification Number' },
+    { key: 'company_website', value: 'https://atriowings.in', description: 'Official Corporate Website Domain' },
     { key: 'dm_commission_rate', value: '15', description: 'Digital Marketing recurring commission percentage (excludes ad budget)' },
     { key: 'website_commission_rate', value: '12', description: 'Website Development project commission percentage' },
     { key: 'mobile_commission_rate', value: '12', description: 'Mobile Application project commission percentage' },
