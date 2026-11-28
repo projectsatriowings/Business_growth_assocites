@@ -43,6 +43,7 @@ import {
   Archive,
   History,
   SlidersHorizontal,
+  X,
 } from 'lucide-react';
 import { PortalHeader } from '../../components/PortalHeader';
 import { useAuth } from '../../context/AuthContext';
@@ -54,7 +55,6 @@ import { validateBankUtr } from '../../utils/utrValidator';
 import { useToast } from '../../context/ToastContext';
 import { getQuotationPdfUrl } from '../../utils/downloadPdf';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
 import { ModalPortal } from '../../components/ModalPortal';
 import { MediaUploader } from '../../components/MediaUploader';
 import { QuotationHistoryTimeline } from '../../components/QuotationHistoryTimeline';
@@ -192,6 +192,7 @@ export const AdminPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>(getInitialAdminTab);
 
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
@@ -199,6 +200,7 @@ export const AdminPortal: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
 
   const switchTab = (tab: typeof activeTab) => {
+    setMobileMenuOpen(false);
     if (activeTab === tab) return;
     setTabLoading(true);
     setActiveTab(tab);
@@ -370,7 +372,7 @@ export const AdminPortal: React.FC = () => {
     }
   };
 
-  // Listen for in-app notification tab switch event
+  // Listen for in-app notification tab switch event & mobile sidebar toggle
   useEffect(() => {
     const handleSwitch = (e: any) => {
       const targetTab = e.detail?.tab;
@@ -387,8 +389,17 @@ export const AdminPortal: React.FC = () => {
         else if (targetTab === 'settings' || targetTab === 'audit') switchTab('settings');
       }
     };
+    const handleToggleMobile = () => setMobileMenuOpen((prev) => !prev);
+    const handleCloseMobile = () => setMobileMenuOpen(false);
+
     window.addEventListener('portal-switch-tab', handleSwitch);
-    return () => window.removeEventListener('portal-switch-tab', handleSwitch);
+    window.addEventListener('portal-toggle-mobile-sidebar', handleToggleMobile);
+    window.addEventListener('portal-close-mobile-sidebar', handleCloseMobile);
+    return () => {
+      window.removeEventListener('portal-switch-tab', handleSwitch);
+      window.removeEventListener('portal-toggle-mobile-sidebar', handleToggleMobile);
+      window.removeEventListener('portal-close-mobile-sidebar', handleCloseMobile);
+    };
   }, []);
 
   // Sync active tab with URL path or query (e.g. from in-app notifications, browser back/forward, or direct links)
@@ -798,10 +809,41 @@ export const AdminPortal: React.FC = () => {
       <PortalHeader title="Admin Portal" subtitle="Central Company Management, Associate Approvals & Operations" />
 
       <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
-        {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
-        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] md:self-start flex flex-col justify-between z-30">
+        {/* Mobile Drawer Backdrop */}
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 md:hidden transition-opacity"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Sidebar Nav (Sticky on desktop, off-canvas sliding drawer on mobile) */}
+        <aside
+          className={`
+            fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-slate-900 text-slate-300 p-4 flex flex-col justify-between transition-transform duration-300 ease-in-out
+            md:static md:w-64 md:translate-x-0 md:z-30 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] md:self-start
+            ${mobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}
+          `}
+        >
           <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1">
+            {/* Mobile Drawer Header with Close Button */}
+            <div className="flex md:hidden items-center justify-between pb-3 mb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <img src="/favicon.png" alt="Atriowings" className="w-6 h-6 rounded object-contain" />
+                <span className="text-xs font-bold text-white">Management Modules</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1 hidden md:block">
               Management Modules
             </div>
 
@@ -929,7 +971,100 @@ export const AdminPortal: React.FC = () => {
         </aside>
 
         {/* Main Content Area */}
-        <main className="w-full flex-1 min-w-0 p-6 md:p-8">
+        <main className="w-full flex-1 min-w-0 p-3.5 sm:p-5 md:p-8 overflow-x-hidden">
+          {/* Mobile Quick Navigation Strip */}
+          <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-3 -mx-1 px-1 scrollbar-none">
+            <button
+              type="button"
+              onClick={() => switchTab('dashboard')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'dashboard' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={() => { setSelectedAssociateId(null); switchTab('bgas'); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'bgas' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              BGAs {stats?.bgas?.pendingApprovals > 0 ? `(${stats.bgas.pendingApprovals})` : ''}
+            </button>
+            <button
+              type="button"
+              onClick={() => switchTab('enquiries')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'enquiries' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              Enquiries {stats?.enquiries?.pending > 0 ? `(${stats.enquiries.pending})` : ''}
+            </button>
+            <button
+              type="button"
+              onClick={() => switchTab('clients')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'clients' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              Clients
+            </button>
+            <button
+              type="button"
+              onClick={() => switchTab('quotations')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'quotations' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              Quotations {pendingQuotationApprovalsCount > 0 ? `(${pendingQuotationApprovalsCount})` : ''}
+            </button>
+            <button
+              type="button"
+              onClick={() => switchTab('workorders')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'workorders' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              Work Orders
+            </button>
+            <button
+              type="button"
+              onClick={() => switchTab('technical')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'technical' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              Technical
+            </button>
+            <button
+              type="button"
+              onClick={() => switchTab('commissions')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'commissions' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              Commissions
+            </button>
+            <button
+              type="button"
+              onClick={() => switchTab('resources')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'resources' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              Resources
+            </button>
+            <button
+              type="button"
+              onClick={() => switchTab('settings')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'settings' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              Logs & Settings
+            </button>
+          </div>
           {/* TAB 1: DASHBOARD & ANALYTICS */}
           {activeTab === 'dashboard' && (
             !stats ? (

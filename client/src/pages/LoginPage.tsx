@@ -320,7 +320,7 @@ export const LoginPage: React.FC = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-left">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
                 {DEMO_ACCOUNTS.map((demo) => {
                   const Icon = demo.icon;
                   const isSelected = email === demo.email;

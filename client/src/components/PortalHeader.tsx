@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
-import { Bell, ShieldCheck, UserCheck, AlertCircle, LogOut, CheckCircle2, X } from 'lucide-react';
+import { Bell, ShieldCheck, UserCheck, AlertCircle, LogOut, CheckCircle2, X, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../utils/api';
 
@@ -254,8 +254,19 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
 
   return (
     <header ref={headerRef} className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-subtle shrink-0">
-      <div className="px-6 py-3 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {/* Mobile Navigation Drawer Toggle */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('portal-toggle-mobile-sidebar'))}
+            className="p-1.5 -ml-1 rounded-xl text-slate-700 hover:text-[#3066BE] hover:bg-slate-100 md:hidden transition-colors cursor-pointer shrink-0"
+            aria-label="Toggle navigation menu"
+            title="Toggle Menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
           <Link
             to="/"
             className="flex items-center shrink-0 group py-0.5"
@@ -269,30 +280,30 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
           </Link>
           <div className="h-6 w-px bg-slate-200 hidden sm:block shrink-0" />
           <div className="min-w-0">
-            <span className="text-[11px] font-semibold text-slate-500 block truncate leading-none mb-0.5">
+            <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 block truncate leading-none mb-0.5">
               Atriowings Technologies
             </span>
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight truncate">{title}</h1>
+            <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 tracking-tight leading-tight truncate">{title}</h1>
             {subtitle && <p className="text-[11px] text-slate-500 mt-0.5 truncate hidden md:block">{subtitle}</p>}
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-1.5 sm:space-x-4 shrink-0">
           {/* Notifications Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowNotifs(!showNotifs)}
-              className="p-2.5 rounded-xl text-slate-600 hover:text-[#3066BE] hover:bg-[#edf4fc] relative transition-colors"
+              className="p-2 sm:p-2.5 rounded-xl text-slate-600 hover:text-[#3066BE] hover:bg-[#edf4fc] relative transition-colors"
               title="Notifications"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
               {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#119DA4] rounded-full ring-2 ring-white animate-pulse" />
+                <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 sm:w-2.5 h-2 sm:h-2.5 bg-[#119DA4] rounded-full ring-2 ring-white animate-pulse" />
               )}
             </button>
 
             {showNotifs && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200 py-2.5 z-50 animate-fadeIn">
+              <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] max-w-sm sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200 py-2.5 z-50 animate-fadeIn">
                 <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between gap-2">
                   <span className="font-bold text-sm text-slate-900">
                     Notifications {unreadCount > 0 && <span className="text-[#119DA4]">({unreadCount} new)</span>}
@@ -370,7 +381,7 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
                 {user?.name ? user.name.slice(0, 2).toUpperCase() : 'U'}
               </div>
             )}
-            <div className="text-right">
+            <div className="text-right hidden sm:block">
               <div className="flex items-center gap-1.5 justify-end">
                 <span className="text-sm font-bold text-slate-900">{user?.name}</span>
                 <span
@@ -382,10 +393,10 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
                 </span>
               </div>
               <div className="flex items-center gap-1.5 justify-end text-[11px] text-slate-500 mt-0.5">
-                <span>{user?.email}</span>
+                <span className="truncate max-w-[160px] md:max-w-none">{user?.email}</span>
                 {user?.role === 'BGA' && (
                   <span
-                    className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                    className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0 ${
                       user.status === 'ACTIVE'
                         ? 'bg-[#e7f7f8] text-[#119DA4]'
                         : 'bg-amber-100 text-amber-800'
@@ -399,10 +410,10 @@ export const PortalHeader: React.FC<{ title: string; subtitle?: string }> = ({ t
 
             <button
               onClick={logout}
-              className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+              className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
               title="Sign Out"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>

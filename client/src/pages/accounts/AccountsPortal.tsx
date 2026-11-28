@@ -63,6 +63,7 @@ import {
 export const AccountsPortal: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
     'dashboard' | 'quotation-requests' | 'payments-work-orders' | 'commissions'
   >(() => {
@@ -84,6 +85,27 @@ export const AccountsPortal: React.FC = () => {
       localStorage.setItem('accounts_active_tab', activeTab);
     } catch (e) {}
   }, [activeTab]);
+
+  useEffect(() => {
+    const handleSwitch = (e: any) => {
+      const targetTab = e.detail?.tab;
+      if (targetTab && ['dashboard', 'quotation-requests', 'payments-work-orders', 'commissions'].includes(targetTab)) {
+        setActiveTab(targetTab as any);
+        setMobileMenuOpen(false);
+      }
+    };
+    const handleToggleMobile = () => setMobileMenuOpen((prev) => !prev);
+    const handleCloseMobile = () => setMobileMenuOpen(false);
+
+    window.addEventListener('portal-switch-tab', handleSwitch);
+    window.addEventListener('portal-toggle-mobile-sidebar', handleToggleMobile);
+    window.addEventListener('portal-close-mobile-sidebar', handleCloseMobile);
+    return () => {
+      window.removeEventListener('portal-switch-tab', handleSwitch);
+      window.removeEventListener('portal-toggle-mobile-sidebar', handleToggleMobile);
+      window.removeEventListener('portal-close-mobile-sidebar', handleCloseMobile);
+    };
+  }, []);
   const [subTab, setSubTab] = useState<'payments' | 'work-orders'>('payments');
 
   const [loading, setLoading] = useState(false);
@@ -638,15 +660,46 @@ export const AccountsPortal: React.FC = () => {
       <PortalHeader title="Accounts Portal" subtitle="Commercial Quotations, Verification & Commission Processing" />
 
       <div className="flex-1 flex flex-col md:flex-row relative min-h-0">
-        {/* Sidebar Nav (Sticky, fixed in viewport, independent internal scrolling) */}
-        <aside className="w-full md:w-64 bg-slate-900 text-slate-300 p-4 shrink-0 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] md:self-start flex flex-col justify-between z-30">
+        {/* Mobile Drawer Backdrop */}
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 md:hidden transition-opacity"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Sidebar Nav (Sticky on desktop, off-canvas sliding drawer on mobile) */}
+        <aside
+          className={`
+            fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-slate-900 text-slate-300 p-4 flex flex-col justify-between transition-transform duration-300 ease-in-out
+            md:static md:w-64 md:translate-x-0 md:z-30 md:sticky md:top-[var(--portal-header-height,68px)] md:h-[calc(100vh-var(--portal-header-height,68px))] md:self-start
+            ${mobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}
+          `}
+        >
           <div className="space-y-1 overflow-y-auto flex-1 pr-1 -mr-1 sidebar-scrollbar">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1">
+            {/* Mobile Drawer Header with Close Button */}
+            <div className="flex md:hidden items-center justify-between pb-3 mb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <img src="/favicon.png" alt="Atriowings" className="w-6 h-6 rounded object-contain" />
+                <span className="text-xs font-bold text-white">Financial Modules</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1 hidden md:block">
               Financial Modules
             </div>
 
             <button
-              onClick={() => setActiveTab('dashboard')}
+              onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'dashboard' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
@@ -656,7 +709,7 @@ export const AccountsPortal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('quotation-requests')}
+              onClick={() => { setActiveTab('quotation-requests'); setMobileMenuOpen(false); }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'quotation-requests' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
@@ -675,6 +728,7 @@ export const AccountsPortal: React.FC = () => {
             <button
               onClick={() => {
                 setActiveTab('payments-work-orders');
+                setMobileMenuOpen(false);
                 const params = new URLSearchParams(window.location.search);
                 params.set('tab', 'payments-work-orders');
                 window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
@@ -695,7 +749,7 @@ export const AccountsPortal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('commissions')}
+              onClick={() => { setActiveTab('commissions'); setMobileMenuOpen(false); }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 activeTab === 'commissions' ? 'bg-[#3066BE] text-white font-bold shadow-md shadow-[#3066BE]/25' : 'hover:bg-slate-800 text-slate-300'
               }`}
@@ -714,7 +768,52 @@ export const AccountsPortal: React.FC = () => {
         </aside>
 
         {/* Main Content Area */}
-        <main className="w-full flex-1 min-w-0 p-6 md:p-8">
+        <main className="w-full flex-1 min-w-0 p-3.5 sm:p-5 md:p-8 overflow-x-hidden">
+          {/* Mobile Quick Navigation Strip */}
+          <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-3 -mx-1 px-1 scrollbar-none">
+            <button
+              type="button"
+              onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'dashboard' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('quotation-requests'); setMobileMenuOpen(false); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'quotation-requests' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              Quotation Requests {stats?.quotationRequests > 0 ? `(${stats.quotationRequests})` : ''}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('payments-work-orders');
+                setMobileMenuOpen(false);
+                const params = new URLSearchParams(window.location.search);
+                params.set('tab', 'payments-work-orders');
+                window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'payments-work-orders' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              Work Orders {summaryCounts.awaitingVerificationCount > 0 ? `(${summaryCounts.awaitingVerificationCount})` : ''}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('commissions'); setMobileMenuOpen(false); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                activeTab === 'commissions' ? 'bg-[#3066BE] text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200'
+              }`}
+            >
+              Commission Engine
+            </button>
+          </div>
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
             !stats ? (

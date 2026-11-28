@@ -22,7 +22,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({
 }) => {
   return (
     <div
-      className={`w-full ${cardMaxWidth} mx-auto bg-white rounded-[24px] border border-[#EAF0F9] shadow-[0_20px_60px_rgba(16,36,77,0.08)] p-5 sm:p-7 transition-all duration-300 animate-fadeIn max-h-[calc(100vh-90px)] overflow-y-auto custom-scrollbar`}
+      className={`w-full ${cardMaxWidth} mx-auto bg-white rounded-2xl sm:rounded-[24px] border border-[#EAF0F9] shadow-[0_12px_40px_rgba(16,36,77,0.06)] sm:shadow-[0_20px_60px_rgba(16,36,77,0.08)] p-4 sm:p-7 transition-all duration-300 animate-fadeIn max-h-none lg:max-h-[calc(100vh-90px)] overflow-visible lg:overflow-y-auto custom-scrollbar`}
     >
       {/* Top Company Emblem Lockup */}
       <div className="flex flex-col items-center text-center mb-4">
