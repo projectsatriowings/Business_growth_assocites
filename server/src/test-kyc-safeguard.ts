@@ -88,7 +88,7 @@ async function runKycSafeguardTests() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
       body: JSON.stringify({ action: 'APPROVE_AND_ACTIVATE' }),
     });
-    const body1 = await res1.json();
+    const body1 = (await res1.json()) as any;
     assert(
       res1.status === 400 && body1.missingVerifications?.pan && body1.missingVerifications?.aadhaar && body1.missingVerifications?.bank,
       'Test 1: Backend rejects activation when all KYC items are unverified (HTTP 400)',
@@ -112,7 +112,7 @@ async function runKycSafeguardTests() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
       body: JSON.stringify({ action: 'APPROVE_AND_ACTIVATE' }),
     });
-    const body2 = await res2.json();
+    const body2 = (await res2.json()) as any;
     assert(
       res2.status === 400 && body2.missingVerifications?.pan === true && !body2.missingVerifications?.aadhaar && !body2.missingVerifications?.bank,
       'Test 2: Backend rejects activation when PAN is missing verification (HTTP 400)',
@@ -136,7 +136,7 @@ async function runKycSafeguardTests() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
       body: JSON.stringify({ action: 'APPROVE_AND_ACTIVATE' }),
     });
-    const body3 = await res3.json();
+    const body3 = (await res3.json()) as any;
     assert(res3.status === 200, 'Test 3: Backend successfully approves & activates when all 3 KYC items are verified', JSON.stringify(body3));
 
     const check3 = await prisma.user.findUnique({ where: { id: testUserId } });
