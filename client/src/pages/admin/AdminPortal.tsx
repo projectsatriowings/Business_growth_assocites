@@ -1505,26 +1505,27 @@ export const AdminPortal: React.FC = () => {
                               </span>
                             </td>
                             <td className="p-4 text-right space-x-1.5 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                              {b.status !== 'ACTIVE' ? (
+                              {b.status === 'ACTIVE' && (
                                 <button
-                                  onClick={() => handleBgaAction(b.id, 'APPROVE_AND_ACTIVATE')}
-                                  className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-colors"
-                                >
-                                  Approve & Activate
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleBgaAction(b.id, 'SUSPEND')}
-                                  className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 shadow-sm transition-colors"
+                                  onClick={() => {
+                                    if (window.confirm(`Are you sure you want to suspend ${b.name}? This will temporarily freeze their portal access.`)) {
+                                      handleBgaAction(b.id, 'SUSPEND');
+                                    }
+                                  }}
+                                  className="px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-300 rounded-lg text-xs font-bold transition-colors"
                                 >
                                   Suspend
                                 </button>
                               )}
                               <button
                                 onClick={() => setSelectedAssociateId(b.id)}
-                                className="px-3 py-1.5 bg-blue-50/70 text-[#3066BE] hover:bg-purple-100 border border-[#3066BE]/25 rounded-lg text-xs font-bold transition-colors"
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm ${
+                                  b.status !== 'ACTIVE'
+                                    ? 'bg-[#3066BE] text-white hover:bg-[#255299]'
+                                    : 'bg-blue-50/70 text-[#3066BE] hover:bg-blue-100 border border-[#3066BE]/25'
+                                }`}
                               >
-                                View Profile →
+                                {b.status !== 'ACTIVE' ? 'Review & Verify KYC →' : 'View Profile →'}
                               </button>
                             </td>
                           </tr>

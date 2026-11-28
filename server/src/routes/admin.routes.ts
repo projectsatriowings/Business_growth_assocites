@@ -667,16 +667,50 @@ router.post('/bgas/:id/status', async (req: AuthRequest, res: Response): Promise
       updateData.bankVerifiedAt = Boolean(bankVerified) ? new Date() : null;
     }
 
+    const effectivePan = panVerified !== undefined ? Boolean(panVerified) : bga.panVerified;
+    const effectiveAadhaar = aadhaarVerified !== undefined ? Boolean(aadhaarVerified) : bga.aadhaarVerified;
+    const effectiveBank = bankVerified !== undefined ? Boolean(bankVerified) : bga.bankVerified;
+
+    // AUTO-DEMOTE SAFETY: If any KYC document is revoked for an ACTIVE associate,
+    // automatically downgrade account to VERIFICATION_PENDING so portal access is suspended.
+    if (
+      bga.status === BgaStatus.ACTIVE &&
+      !action &&
+      (!effectivePan || !effectiveAadhaar || !effectiveBank)
+    ) {
+      updateData.status = BgaStatus.VERIFICATION_PENDING;
+      updateData.statusNotes = 'Demoted from ACTIVE: One or more KYC compliance verifications (PAN, Aadhaar, or Bank) were revoked or marked unverified.';
+      await createNotification(
+        bga.id,
+        'KYC Compliance Verification Pending',
+        'Your active portal status is temporarily paused because one or more KYC verification records were revoked for administrative review.',
+        'WARNING'
+      );
+    }
+
     if (action === 'APPROVE_AND_ACTIVATE') {
+      // STRICT KYC ENFORCEMENT: All 3 documents (PAN, Aadhaar, Bank) must be verified before activating
+      if (!effectivePan || !effectiveAadhaar || !effectiveBank) {
+        res.status(400).json({
+          error: 'Cannot approve and activate associate. All three compliance items (PAN Card, Aadhaar, and Bank Account) must be verified first.',
+          missingVerifications: {
+            pan: !effectivePan,
+            aadhaar: !effectiveAadhaar,
+            bank: !effectiveBank,
+          },
+        });
+        return;
+      }
+
       updateData.status = BgaStatus.ACTIVE;
       updateData.approvedAt = new Date();
       updateData.approvedById = req.user!.id;
       updateData.panVerified = true;
-      updateData.panVerifiedAt = new Date();
+      if (!bga.panVerifiedAt) updateData.panVerifiedAt = new Date();
       updateData.aadhaarVerified = true;
-      updateData.aadhaarVerifiedAt = new Date();
+      if (!bga.aadhaarVerifiedAt) updateData.aadhaarVerifiedAt = new Date();
       updateData.bankVerified = true;
-      updateData.bankVerifiedAt = new Date();
+      if (!bga.bankVerifiedAt) updateData.bankVerifiedAt = new Date();
 
       await createNotification(
         bga.id,

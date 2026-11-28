@@ -344,19 +344,57 @@ export const AssociateProfileView: React.FC<AssociateProfileViewProps> = ({
         {/* Executive Actions */}
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
           {associate.status !== 'ACTIVE' ? (
-            <button
-              onClick={() =>
-                setActionModal({
-                  type: 'ACTIVATE',
-                  title: 'Approve & Activate Associate',
-                  description: `Are you sure you want to approve and activate ${associate.name}? This grants active portal access to register clients and earn commissions.`,
-                })
-              }
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Approve & Activate</span>
-            </button>
+            associate.panVerified && associate.aadhaarVerified && associate.bankVerified ? (
+              <button
+                onClick={() =>
+                  setActionModal({
+                    type: 'ACTIVATE',
+                    title: 'Approve & Activate Associate',
+                    description: `All KYC documents (PAN, Aadhaar, Bank) are verified. Are you sure you want to approve and activate ${associate.name}? This grants active portal access to register clients and earn commissions.`,
+                  })
+                }
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Approve & Activate</span>
+              </button>
+            ) : (
+              <div className="relative group">
+                <button
+                  type="button"
+                  disabled
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold cursor-not-allowed flex items-center gap-1.5"
+                >
+                  <Lock className="w-4 h-4 text-slate-400" />
+                  <span>Approve & Activate (Locked)</span>
+                </button>
+                <div className="absolute right-0 top-full mt-2 hidden group-hover:block bg-slate-900 text-white text-[11px] p-3 rounded-xl shadow-xl z-50 w-64 pointer-events-none">
+                  <div className="font-bold text-slate-200 mb-1.5 border-b border-slate-700 pb-1">
+                    Requires All 3 KYC Verifications:
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span>PAN Card:</span>
+                      <strong className={associate.panVerified ? 'text-emerald-400' : 'text-amber-400'}>
+                        {associate.panVerified ? 'Verified ✓' : 'Pending'}
+                      </strong>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Aadhaar:</span>
+                      <strong className={associate.aadhaarVerified ? 'text-emerald-400' : 'text-amber-400'}>
+                        {associate.aadhaarVerified ? 'Verified ✓' : 'Pending'}
+                      </strong>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Bank Passbook:</span>
+                      <strong className={associate.bankVerified ? 'text-emerald-400' : 'text-amber-400'}>
+                        {associate.bankVerified ? 'Verified ✓' : 'Pending'}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
           ) : (
             <button
               onClick={() =>
